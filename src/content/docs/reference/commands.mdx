@@ -1,0 +1,23 @@
+---
+title: "Commands"
+description: "All 42 GSD commands — searchable, filterable cheat-sheet cards."
+---
+
+import commands from '../../../../content/generated/commands.json';
+import ReferenceCard from '../../../../src/components/ReferenceCard.astro';
+import ReferenceGrid from '../../../../src/components/ReferenceGrid.astro';
+
+export const categories = [...new Set(commands.map(c => c.category))];
+
+42 commands across 7 categories. Click any card to expand for details. Use the filter bar to narrow by category.
+
+<ReferenceGrid categories={categories}>
+  {categories.map((cat) => (
+    <>
+      <h2 class="category-heading" data-category={cat}>{cat}</h2>
+      {commands.filter(cmd => cmd.category === cat).map((cmd) => (
+        <ReferenceCard title={cmd.command} subtitle={cmd.description} category={cmd.category} />
+      ))}
+    </>
+  ))}
+</ReferenceGrid>

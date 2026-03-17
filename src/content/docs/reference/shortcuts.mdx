@@ -1,0 +1,15 @@
+---
+title: "Keyboard Shortcuts"
+description: "GSD keyboard shortcuts for quick actions."
+---
+
+import commands from '../../../../content/generated/commands.json';
+import ReferenceCard from '../../../../src/components/ReferenceCard.astro';
+
+export const shortcuts = commands.filter(c => c.category === "Keyboard Shortcuts");
+
+Master these 4 keyboard shortcuts to control GSD without leaving the terminal flow.
+
+{shortcuts.map((shortcut) => (
+  <ReferenceCard title={shortcut.command} subtitle={shortcut.description} category={shortcut.category} />
+))}

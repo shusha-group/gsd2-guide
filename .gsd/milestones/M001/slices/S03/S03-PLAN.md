@@ -64,7 +64,7 @@
   - Verify: Create a minimal test MDX page at `src/content/docs/reference/commands.mdx` that imports one component with hardcoded data to confirm the component renders in `npm run build`
   - Done when: All 3 components exist, render without build errors, card styling uses terminal theme
 
-- [ ] **T02: Create commands and shortcuts reference pages** `est:30m`
+- [x] **T02: Create commands and shortcuts reference pages** `est:30m`
   - Why: Commands are the primary user loop (R003) — "what does this command do?" is the #1 query. Shortcuts are a subset of the same data.
   - Files: `src/content/docs/reference/commands.mdx`, `src/content/docs/reference/shortcuts.mdx`
   - Do: In commands.mdx, import commands.json (path: `../../../../content/generated/commands.json`), group by category, render ReferenceGrid with filter bar + ReferenceCards for all 42 commands. In shortcuts.mdx, filter commands.json for category "Keyboard Shortcuts" (4 items), render without filter bar. Each card shows command name as title, description as summary.

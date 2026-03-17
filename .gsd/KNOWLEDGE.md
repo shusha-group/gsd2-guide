@@ -50,3 +50,9 @@ Available: `Card`, `CardGrid`, `LinkCard`, `Badge`, `Tabs`, `TabItem`, `Steps`, 
 **Context:** Overriding Starlight's built-in Header/Footer components.
 
 Import the default from `@astrojs/starlight/components/Header.astro`, wrap it with `<Default {...Astro.props}><slot /></Default>`, then add custom markup around it. Register in `astro.config.mjs` under `starlight({ components: { Header: './src/components/Header.astro' } })`. The path must be relative to the project root with `./` prefix.
+
+## grep -c vs grep -o for counting occurrences in minified HTML
+
+**Context:** Verifying element counts in Astro build output.
+
+`grep -c` counts the number of *lines* containing a match, not the number of occurrences. Astro's minified HTML often puts many elements on a single line, so `grep -c '<details'` may return 3 when there are actually 51 `<details` elements. Use `grep -o '<details' file.html | wc -l` to count actual occurrences. This applies to all element counting in `dist/` output.

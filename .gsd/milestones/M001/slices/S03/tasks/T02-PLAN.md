@@ -61,6 +61,14 @@ The data lives in `content/generated/commands.json`. Each entry has `{command, d
 - `grep '/gsd auto' dist/reference/commands/index.html` succeeds
 - `grep 'Session Commands\|CLI Flags\|Keyboard Shortcuts' dist/reference/commands/index.html` returns matches for all 3
 
+## Observability Impact
+
+- **Build-time verification**: `npm run build` will surface any JSON import or component prop errors with exact file+line context. A missing import path produces a `MODULE_NOT_FOUND` error in the Astro build log.
+- **Rendered output inspection**: `grep -c '<details' dist/reference/commands/index.html` confirms all 42 commands rendered. `grep -c '<details' dist/reference/shortcuts/index.html` confirms 4 shortcuts. These counts are the primary health signal.
+- **Category filter signals**: `grep 'data-category' dist/reference/commands/index.html` confirms ReferenceGrid rendered filter-able cards. In browser: `document.querySelectorAll('.ref-card[data-category]').length` should equal 42.
+- **Content completeness**: `grep 'Session Commands\|CLI Flags\|Keyboard Shortcuts' dist/reference/commands/index.html` verifies that all 7 category headings rendered.
+- **Failure shape**: If commands.json path is wrong → Astro build fails with clear import error. If ReferenceCard/ReferenceGrid not found → template compilation error with file context. Both are loud, not silent.
+
 ## Inputs
 
 - `content/generated/commands.json` — 42 entries, each `{command: string, description: string, category: string}`. Categories: "Session Commands" (14), "Configuration & Diagnostics" (10), "Session Management" (7), "CLI Flags" (4), "Keyboard Shortcuts" (4), "Getting Started" (2), "Git Commands" (1).
