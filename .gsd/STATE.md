@@ -1,7 +1,8 @@
 # GSD State
 
 **Active Milestone:** M003: Continuous Documentation Regeneration
-**Active Slice:** S02: LLM Page Regeneration
+**Active Slice:** S04: Pipeline Integration and Polish
+**Active Task:** T01: Wire regeneration and command handling into update pipeline with integration test
 **Phase:** executing
 **Requirements Status:** 13 active · 28 validated · 5 deferred · 1 out of scope
 
@@ -17,4 +18,4 @@
 - None
 
 ## Next Action
-Execute T01 of S02 (build regeneration module with prompt template and unit tests).
+Execute T01 of S04 — wire regeneration and command handling into update pipeline.
