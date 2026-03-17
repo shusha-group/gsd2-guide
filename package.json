@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
+    "prebuild": "node scripts/prebuild.mjs",
+    "dev": "node scripts/prebuild.mjs && astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "extract": "node scripts/extract.mjs"

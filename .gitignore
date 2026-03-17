@@ -3,6 +3,9 @@ content/generated/
 .cache/
 .astro/
 
+# Prebuild-generated content (regenerated from content/generated/docs/)
+src/content/docs/.generated-manifest.json
+
 # ── GSD baseline (auto-generated) ──
 .gsd/activity/
 .gsd/forensics/

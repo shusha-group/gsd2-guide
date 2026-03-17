@@ -1,0 +1,51 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+---
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>
+      Built with <a href="https://github.com/gsd-build/gsd2-guide" rel="noopener">GSD</a>
+      <span class="sep">·</span>
+      Powered by <a href="https://starlight.astro.build" rel="noopener">Starlight</a>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--sl-color-hairline, #1a2e1a);
+    padding: 1.25rem 1rem;
+    font-family: var(--sl-font-system-mono, 'JetBrains Mono Variable', monospace);
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-3, #6b7f6b);
+    text-align: center;
+    background: var(--sl-color-bg, #0a0e0a);
+  }
+
+  .footer-inner {
+    max-width: var(--sl-content-width, 72rem);
+    margin: 0 auto;
+  }
+
+  .site-footer p {
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .site-footer a {
+    color: var(--sl-color-accent, #39ff14);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .site-footer a:hover {
+    border-bottom-color: var(--sl-color-accent, #39ff14);
+  }
+
+  .sep {
+    margin: 0 0.4em;
+    opacity: 0.4;
+  }
+</style>

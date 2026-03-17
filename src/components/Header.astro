@@ -1,0 +1,39 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import Default from '@astrojs/starlight/components/Header.astro';
+---
+
+<div class="header-wrapper">
+  <Default {...Astro.props}><slot /></Default>
+  <div class="version-badge">
+    <span>v0.0.0</span>
+  </div>
+</div>
+
+<style>
+  .header-wrapper {
+    position: relative;
+    display: contents;
+  }
+
+  .version-badge {
+    position: fixed;
+    top: 0.6rem;
+    right: 1rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    font-family: var(--sl-font-system-mono, 'JetBrains Mono Variable', monospace);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-accent-high, #b8ffb0);
+    background: var(--sl-color-accent-low, #0f2b0f);
+    border: 1px solid var(--sl-color-accent, #39ff14);
+    border-radius: 3px;
+    opacity: 0.85;
+    pointer-events: none;
+    user-select: none;
+  }
+</style>

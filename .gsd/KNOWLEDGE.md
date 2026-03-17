@@ -26,3 +26,17 @@ Use `import { extract } from "tar"` (named export), NOT `import tar from "tar"`.
 **Context:** `@pasqal-io/starlight-client-mermaid@0.1.0` depends on `@astrojs/markdown-remark@6.x` which pulls in `@astrojs/internal-helpers@0.7.6`. Astro 6 needs `@astrojs/internal-helpers@0.8.0` (has `collapseDuplicateLeadingSlashes`). npm hoists 0.7.6, breaking the build with: `The requested module '@astrojs/internal-helpers/path' does not provide an export named 'collapseDuplicateLeadingSlashes'`.
 
 **Fix:** Add `"overrides": { "@astrojs/internal-helpers": "0.8.0" }` to `package.json` and re-run `npm install`.
+
+## npm `prebuild` lifecycle hook — avoid double execution
+
+**Context:** npm automatically runs a `prebuild` script (if present in `package.json`) before `npm run build`.
+
+If `package.json` has `"prebuild": "node scripts/prebuild.mjs"` AND `"build": "node scripts/prebuild.mjs && astro build"`, the prebuild runs twice. Fix: rely on the lifecycle hook for `build` (`"build": "astro build"`) and only chain explicitly for `dev` (since `predev` is NOT a standard npm lifecycle hook).
+
+Standard npm lifecycle hooks: `preinstall`/`postinstall`, `prebuild`/`postbuild`, `pretest`/`posttest`, `prestart`/`poststart`, `prepublishOnly`. There is no `predev`.
+
+## Starlight component override pattern
+
+**Context:** Overriding Starlight's built-in Header/Footer components.
+
+Import the default from `@astrojs/starlight/components/Header.astro`, wrap it with `<Default {...Astro.props}><slot /></Default>`, then add custom markup around it. Register in `astro.config.mjs` under `starlight({ components: { Header: './src/components/Header.astro' } })`. The path must be relative to the project root with `./` prefix.

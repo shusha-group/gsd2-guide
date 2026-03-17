@@ -126,6 +126,15 @@ The prebuild script is the most complex piece. S01 extracted docs start with `# 
 - Header shows version badge text on dev server
 - Footer shows custom content on dev server
 
+## Observability Impact
+
+- **Prebuild script stdout:** `node scripts/prebuild.mjs` logs the count of files processed and any skipped/error files. Success: `Prebuild complete: N files processed`. Failure: non-zero exit code with error message to stderr.
+- **Generated manifest:** `src/content/docs/.generated-manifest.json` lists every file the prebuild created — inspect this to verify coverage and diagnose missing pages.
+- **Content collection errors:** Astro surfaces frontmatter validation errors at build time in stderr with file path + line detail. If prebuild injects malformed YAML, these errors will pinpoint the file.
+- **Header version badge:** Visible in browser at top of every page — "v0.0.0" placeholder. Absence means component override registration failed in `astro.config.mjs`.
+- **Footer branding:** Visible at bottom of every page. Absence means Footer override not registered.
+- **Duplicate heading detection:** If a page shows two identical `<h1>` elements, the prebuild failed to strip the `#` heading from that file's body.
+
 ## Inputs
 
 - `astro.config.mjs` — from T02 (add `components` config)
