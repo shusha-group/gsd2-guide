@@ -1,14 +1,1 @@
-[
-  {
-    "id": "51bde73c",
-    "label": "astro-dev",
-    "command": "cd /Users/davidspence/dev/gsd2-guide && npm run dev -- --host",
-    "cwd": "/Users/davidspence/dev/gsd2-guide",
-    "startedAt": 1773733867689,
-    "processType": "server",
-    "group": null,
-    "readyPattern": null,
-    "readyPort": 4321,
-    "pid": 36102
-  }
-]
+[]
