@@ -41,7 +41,7 @@
   - Verify: `npm run build` exits 0, 9 total `.mdx` files in `commands/`, all have mermaid blocks, `node scripts/check-links.mjs` exits 0
   - Done when: All 9 command pages build, link-check passes, all are reachable via sidebar
 
-- [ ] **T03: Update commands landing page and final verification** `est:15m`
+- [x] **T03: Update commands landing page and final verification** `est:15m`
   - Why: The existing commands reference page (`commands.md`) lists commands in tables with one-line descriptions. It needs to link to the new deep-dive pages so users can navigate from the overview to detailed explanations. Final build + link check + Pagefind verification confirms the slice is complete.
   - Files: `src/content/docs/commands.md`
   - Do: Update the commands reference page to add "→ Deep dive" links next to each command that now has a dedicated page. Keep the table format but add a third column or inline links to the 9 deep-dive pages. Ensure all internal links use `../commands/auto/` format (from the commands.md page, deep-dives are siblings in the URL structure, but since commands.md renders at `/commands/` and deep-dives at `/commands/auto/`, the link format is `auto/` from commands.md's perspective — verify with check-links). Run full build and verification suite.

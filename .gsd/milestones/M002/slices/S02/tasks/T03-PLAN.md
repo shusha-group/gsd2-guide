@@ -39,6 +39,13 @@ Update the existing commands reference page (`src/content/docs/commands.md`) to 
 - `grep -c 'commands/auto\|commands/stop\|commands/pause\|commands/gsd\|commands/next\|commands/quick\|commands/discuss\|commands/status\|commands/visualize' src/content/docs/commands.md` returns 9
 - `ls dist/commands/*/index.html | wc -l` ≥ 9
 
+## Observability Impact
+
+- **Link coverage in commands.md** — `grep -c 'commands/auto\|commands/stop\|commands/pause\|commands/gsd\|commands/next\|commands/quick\|commands/discuss\|commands/status\|commands/visualize' src/content/docs/commands.md` returns 9 confirms all deep-dive links are present. A lower count means a command was missed.
+- **Build page count** — `npm run build` output shows total pages. Expect 36 (was 27 in S01). A count mismatch signals missing or broken pages.
+- **Link checker** — `node scripts/check-links.mjs` exit 0 confirms all cross-links resolve, including new landing-page-to-deep-dive links. Non-zero exit = broken navigation.
+- **Failure path: broken relative link** — If a link in `commands.md` uses `../auto/` instead of `auto/`, the link checker will report it as unresolved since `commands.md` renders at `/commands/` (not a subdirectory).
+
 ## Inputs
 
 - `src/content/docs/commands.md` — existing commands reference page with tables

@@ -68,3 +68,9 @@ Starlight renders each `.md` page as `/page/index.html`. This means a page at `/
 **Context:** Counting `<details>` elements in dist/ HTML for verification.
 
 Starlight's sidebar sections use `<details>` for collapsible groups. A page with 48 custom `<details class="release-entry">` elements will show ~58 total `<details>` elements in `grep -o '<details'` output. Always scope the grep with the class name: `grep -o '<details class="release-entry"'` to get accurate counts of your own components.
+
+## Generated pages — edit source in content/generated/docs/, not src/content/docs/
+
+**Context:** Editing markdown content pages that are managed by the prebuild script.
+
+Files listed in `src/content/docs/.generated-manifest.json` are overwritten by `scripts/prebuild.mjs` on every `npm run build` (and `npm run dev`). Edits to `src/content/docs/commands.md` (or any other generated file) will be silently lost. Always edit the source at `content/generated/docs/<same-path>` instead. Hand-authored files (like `.mdx` pages not in the manifest) can be edited directly in `src/content/docs/`.

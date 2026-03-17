@@ -6,20 +6,21 @@ title: "Commands Reference"
 
 | Command | Description |
 |---------|-------------|
-| `/gsd` | Step mode — execute one unit at a time, pause between each |
-| `/gsd next` | Explicit step mode (same as `/gsd`) |
-| `/gsd auto` | Autonomous mode — research, plan, execute, commit, repeat |
-| `/gsd quick` | Execute a quick task with GSD guarantees (atomic commits, state tracking) without full planning overhead |
-| `/gsd stop` | Stop auto mode gracefully |
+| [`/gsd`](gsd/) | Step mode — execute one unit at a time, pause between each |
+| [`/gsd next`](next/) | Explicit step mode (same as `/gsd`) |
+| [`/gsd auto`](auto/) | Autonomous mode — research, plan, execute, commit, repeat |
+| [`/gsd quick`](quick/) | Execute a quick task with GSD guarantees (atomic commits, state tracking) without full planning overhead |
+| [`/gsd stop`](stop/) | Stop auto mode gracefully |
+| [`/gsd pause`](pause/) | Pause auto mode (preserves conversation context) |
 | `/gsd steer` | Hard-steer plan documents during execution |
-| `/gsd discuss` | Discuss architecture and decisions (works alongside auto mode) |
-| `/gsd status` | Progress dashboard |
+| [`/gsd discuss`](discuss/) | Discuss architecture and decisions (works alongside auto mode) |
+| [`/gsd status`](status/) | Progress dashboard |
 | `/gsd queue` | Queue and reorder future milestones (safe during auto mode) |
 | `/gsd capture` | Fire-and-forget thought capture (works during auto mode) |
 | `/gsd triage` | Manually trigger triage of pending captures |
 | `/gsd forensics` | Post-mortem investigation of auto-mode failures — structured root-cause analysis with log inspection |
 | `/gsd cleanup` | Clean up GSD state files and stale worktrees |
-| `/gsd visualize` | Open workflow visualizer (progress, deps, metrics, timeline) |
+| [`/gsd visualize`](visualize/) | Open workflow visualizer (progress, deps, metrics, timeline) |
 | `/gsd knowledge` | Add persistent project knowledge (rule, pattern, or lesson) |
 | `/gsd help` | Categorized command reference with descriptions for all GSD subcommands |
 
