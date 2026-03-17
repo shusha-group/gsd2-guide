@@ -1,6 +1,7 @@
 node_modules/
 content/generated/
 .cache/
+.astro/
 
 # ── GSD baseline (auto-generated) ──
 .gsd/activity/

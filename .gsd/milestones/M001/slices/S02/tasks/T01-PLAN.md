@@ -110,6 +110,13 @@ The Mermaid plugin (`@pasqal-io/starlight-client-mermaid`) is installed here but
 - `find dist -name "*.html" | head -5` shows at least one HTML file
 - `npm run dev` starts dev server (start it, check it responds, then stop it)
 
+## Observability Impact
+
+- **New signals:** `npm run dev` / `npm run build` / `npm run preview` scripts become available. Dev server emits startup URL to stdout. Build emits file counts and timing to stdout, errors to stderr.
+- **Inspection surfaces:** `test -d dist` confirms build output exists. `find dist -name "*.html" | wc -l` counts rendered pages. `cat dist/index.html | head` confirms content renders.
+- **Failure visibility:** Build failures surface in stderr with file path + error. Missing content collection files produce explicit "collection not found" errors. Invalid frontmatter produces schema validation errors with field-level detail.
+- **Cache:** `.astro/` directory is Astro's build cache. Delete it to resolve stale-cache issues: `rm -rf .astro`.
+
 ## Inputs
 
 - `package.json` — existing project config with S01 deps and `extract` script (must preserve)

@@ -4,10 +4,20 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
     "extract": "node scripts/extract.mjs"
   },
   "dependencies": {
+    "@astrojs/starlight": "^0.38.1",
+    "@pasqal-io/starlight-client-mermaid": "^0.1.0",
+    "astro": "^6.0.5",
     "gray-matter": "^4.0.3",
+    "sharp": "^0.34.5",
     "tar": "^7.5.11"
+  },
+  "overrides": {
+    "@astrojs/internal-helpers": "0.8.0"
   }
 }

@@ -42,7 +42,7 @@
 
 ## Tasks
 
-- [ ] **T01: Initialize Astro + Starlight with minimal running dev server** `est:45m`
+- [x] **T01: Initialize Astro + Starlight with minimal running dev server** `est:45m`
   - Why: Everything else depends on a working Astro/Starlight project. This gets the foundation in place — dependencies, config, content collection, and a minimal index page that proves `npm run dev` works.
   - Files: `package.json`, `astro.config.mjs`, `src/content.config.ts`, `src/content/docs/index.mdx`, `tsconfig.json`, `.gitignore`
   - Do: Install Astro 6, Starlight 0.38, and `@pasqal-io/starlight-client-mermaid` as dependencies. Create `astro.config.mjs` with Starlight integration (title, sidebar placeholder, site/base for GitHub Pages, Mermaid plugin). Create `src/content.config.ts` with `docsLoader()` + `docsSchema()`. Create minimal `src/content/docs/index.mdx` landing page. Create `tsconfig.json` extending Astro's strict preset. Update `.gitignore` to ignore `.astro/` build cache and `src/content/docs/generated/` (but NOT the placeholder pages). Add `dev`, `build`, `preview` scripts to `package.json`.
@@ -69,6 +69,19 @@
   - Do: Create placeholder pages in `src/content/docs/placeholder/` demonstrating: (1) `components.mdx` — all Starlight aside variants (note, tip, caution, danger), tabs component, card/CardGrid layout, and inline links. (2) `diagrams.mdx` — multiple Mermaid diagram types (flowchart, sequence diagram, state diagram) to prove rendering works. (3) `code-examples.mdx` — ExpressiveCode code blocks with syntax highlighting for multiple languages, line highlighting, file names, and diff markers. Enhance `index.mdx` to be a proper landing page with hero content and links to placeholder sections. Update sidebar config in `astro.config.mjs` to include the placeholder group. Run `npm run build` and verify: sitemap exists at `dist/sitemap-index.xml`, Pagefind index exists at `dist/pagefind/`, all placeholder pages render as HTML without errors, Mermaid SVGs are present in output.
   - Verify: `npm run build` succeeds. `test -f dist/sitemap-index.xml` passes. `test -d dist/pagefind` passes. `find dist/ -name "*.html" | wc -l` returns > 5. `grep -l "mermaid" dist/placeholder/diagrams/index.html` finds Mermaid content.
   - Done when: Production build succeeds with all placeholder pages, Pagefind search index generated, sitemap present, Mermaid diagrams render, all component variants display correctly
+
+## Observability / Diagnostics
+
+- **Dev server health:** `npm run dev` emits startup URL and port to stdout — watch for `Local http://localhost:` line as readiness signal.
+- **Build success:** `npm run build` exits 0 and writes `dist/` with HTML files. Non-zero exit + stderr indicates failure.
+- **Prebuild pipeline:** `node scripts/prebuild.mjs` logs copied file count to stdout. Missing source directory → non-zero exit.
+- **Mermaid rendering:** Grep built HTML for `<svg` inside Mermaid containers — absence means plugin misconfiguration.
+- **Pagefind index:** `test -d dist/pagefind && ls dist/pagefind/*.js` — empty means Pagefind didn't run.
+- **Sitemap:** `test -f dist/sitemap-index.xml` — absence means `site` config is missing or wrong.
+- **CSS variable overrides:** Browser DevTools → computed styles on `html[data-theme='dark']` — check font-family and color tokens differ from Starlight defaults.
+- **Content collection errors:** Astro surfaces schema validation errors at build time in stderr with file path + line number.
+- **Failure artifacts:** Astro writes `.astro/` cache; deleting it (`rm -rf .astro`) resolves stale-cache build failures.
+- **Redaction:** No secrets in this slice. All config is public.
 
 ## Files Likely Touched
 
