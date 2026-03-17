@@ -84,6 +84,14 @@ Satisfies R014 (skills docs), R015 (extensions docs), R016 (agents docs).
 - `src/components/ReferenceGrid.astro` — from T01
 - `src/components/ToolList.astro` — from T01
 
+## Observability Impact
+
+- **Build output**: Three new HTML files appear in `dist/reference/` (skills, extensions, agents). Total reference page count rises from 2 to 5.
+- **Skills page content**: `grep -o 'debug-like-expert\|frontend-design\|lint\|review\|test\|swiftui\|github-workflows\|gh' dist/reference/skills/index.html | sort -u | wc -l` should return 8. Sub-skill nesting verifiable via `grep 'Sub-skill' dist/reference/skills/index.html`.
+- **Extensions page content**: `grep -o '<details' dist/reference/extensions/index.html | wc -l` returns 17. Empty-tool handling: `grep -c 'hooks or commands instead' dist/reference/extensions/index.html` returns 4.
+- **Agents page content**: `grep -o 'scout\|researcher\|worker\|javascript-pro\|typescript-pro' dist/reference/agents/index.html | sort -u | wc -l` returns 5.
+- **Failure visibility**: Wrong JSON import path → Astro build fails with MODULE_NOT_FOUND pointing to exact MDX file. Wrong component prop → template compilation error with file and line number. MDX-breaking characters (curly braces in tool descriptions) are safely handled through Astro component props, not inline MDX expressions.
+
 ## Expected Output
 
 - `src/content/docs/reference/skills.mdx` — 8 skills with conditional detail sections, gh nested under github-workflows

@@ -1,0 +1,18 @@
+---
+title: "Agents"
+description: "5 GSD agents — roles, capabilities, and when they're used."
+---
+
+import agents from '../../../../content/generated/agents.json';
+import ReferenceCard from '../../../../src/components/ReferenceCard.astro';
+
+5 specialized agents that can be delegated tasks via the subagent system. Each operates in an isolated context window with its own tools and capabilities.
+
+{agents.map((agent) => (
+  <ReferenceCard title={agent.name} subtitle={agent.description}>
+    <p>{agent.summary}</p>
+    {agent.model && <p><strong>Model:</strong> {agent.model}</p>}
+    {agent.memory && <p><strong>Memory:</strong> {agent.memory}</p>}
+    {agent.tools && <p><strong>Tools:</strong> {agent.tools}</p>}
+  </ReferenceCard>
+))}

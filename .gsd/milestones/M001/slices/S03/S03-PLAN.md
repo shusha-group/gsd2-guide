@@ -71,7 +71,7 @@
   - Verify: `npm run build` succeeds, `grep -c '<details' dist/reference/commands/index.html` ≥ 42, `grep -c '<details' dist/reference/shortcuts/index.html` ≥ 4
   - Done when: 42 commands render across 7 categories with working filter, 4 shortcuts on their own page
 
-- [ ] **T03: Create skills, extensions, and agents reference pages** `est:35m`
+- [x] **T03: Create skills, extensions, and agents reference pages** `est:35m`
   - Why: Satisfies R014 (skills docs), R015 (extensions docs), R016 (agents docs). Each has a different data shape requiring conditional rendering.
   - Files: `src/content/docs/reference/skills.mdx`, `src/content/docs/reference/extensions.mdx`, `src/content/docs/reference/agents.mdx`
   - Do: Skills page — import skills.json, render cards with conditional sections (objective, arguments, detection shown only when present). Display `gh` as a sub-skill of `github-workflows` (check `parentSkill` field). Extensions page — import extensions.json, render cards with ToolList for tools[]. Handle 4 extensions with 0 tools gracefully ("Uses hooks/commands instead of tools" or similar). Handle 2 extensions with empty descriptions (slash-commands, voice). Agents page — import agents.json, render cards showing summary, with conditional model/memory/tools info.

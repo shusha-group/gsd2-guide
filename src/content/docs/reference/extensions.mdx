@@ -1,0 +1,31 @@
+---
+title: "Extensions"
+description: "17 GSD extensions — tools, capabilities, and integrations."
+---
+
+import extensions from '../../../../content/generated/extensions.json';
+import ReferenceCard from '../../../../src/components/ReferenceCard.astro';
+import ReferenceGrid from '../../../../src/components/ReferenceGrid.astro';
+import ToolList from '../../../../src/components/ToolList.astro';
+
+export const sorted = [...extensions].sort((a, b) => b.tools.length - a.tools.length);
+export const categories = ["Has Tools", "No Tools"];
+
+17 extensions that provide tools and integrations for the agent. Sorted by tool count. Click any card to expand and see registered tools.
+
+<ReferenceGrid categories={categories}>
+  {sorted.map((ext) => (
+    <ReferenceCard
+      title={ext.name}
+      subtitle={ext.description || "No description available"}
+      badge={ext.tools.length > 0 ? ext.tools.length + (ext.tools.length === 1 ? " tool" : " tools") : undefined}
+      category={ext.tools.length > 0 ? "Has Tools" : "No Tools"}
+    >
+      {ext.tools.length > 0 ? (
+        <ToolList tools={ext.tools} />
+      ) : (
+        <p><em>This extension uses hooks or commands instead of registered tools.</em></p>
+      )}
+    </ReferenceCard>
+  ))}
+</ReferenceGrid>
