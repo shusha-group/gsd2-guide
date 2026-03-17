@@ -6,8 +6,8 @@ hero:
   title: GSD 2
   tagline: Build software with autonomous AI agents — from architecture through deployment.
   actions:
-    - text: Get Started
-      link: /gsd2-guide/placeholder/components/
+    - text: Quick Reference
+      link: /gsd2-guide/reference/
       icon: right-arrow
     - text: View on GitHub
       link: https://github.com/gsd-build/gsd2-guide
@@ -20,22 +20,23 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 ## Explore the Documentation
 
 <CardGrid>
-  <Card title="Component Gallery" icon="puzzle">
-    Every Starlight component variant — asides, tabs, cards, badges — demonstrated with real examples.
+  <Card title="Commands" icon="rocket">
+    42 commands across 7 categories — workflow, planning, context, execution, git, system, and shortcuts. Instant lookup with category filtering.
   </Card>
-  <Card title="Diagrams" icon="document">
-    Mermaid flowcharts, sequence diagrams, and state machines rendered as interactive SVGs.
+  <Card title="Skills" icon="puzzle">
+    8 bundled skills with capabilities and triggers — frontend design, debugging, linting, testing, code review, SwiftUI, and GitHub workflows.
   </Card>
-  <Card title="Code Examples" icon="seti:typescript">
-    ExpressiveCode blocks with syntax highlighting, line markers, file labels, and diff views.
+  <Card title="Extensions" icon="setting">
+    17 extensions with full tool inventories — browser tools, shell management, MCP servers, GitHub integration, and more.
   </Card>
-  <Card title="Architecture" icon="setting">
-    How GSD 2 orchestrates autonomous agents through milestones, slices, and tasks.
+  <Card title="Agents" icon="seti:typescript">
+    5 specialized agents with roles and capabilities — scout, researcher, worker, and language-specific pros for delegated tasks.
   </Card>
 </CardGrid>
 
 <CardGrid>
-  <LinkCard title="Component Gallery" description="All Starlight component variants in one page" href="/gsd2-guide/placeholder/components/" />
-  <LinkCard title="Diagrams" description="Mermaid diagram rendering examples" href="/gsd2-guide/placeholder/diagrams/" />
-  <LinkCard title="Code Examples" description="ExpressiveCode features and syntax" href="/gsd2-guide/placeholder/code-examples/" />
+  <LinkCard title="Commands Reference" description="42 commands across 7 categories with instant lookup" href="/gsd2-guide/reference/commands/" />
+  <LinkCard title="Skills Reference" description="8 bundled skills with capabilities and triggers" href="/gsd2-guide/reference/skills/" />
+  <LinkCard title="Extensions Reference" description="17 extensions with full tool inventories" href="/gsd2-guide/reference/extensions/" />
+  <LinkCard title="Agents Reference" description="5 agents with roles and capabilities" href="/gsd2-guide/reference/agents/" />
 </CardGrid>

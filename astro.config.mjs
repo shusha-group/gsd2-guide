@@ -20,6 +20,17 @@ export default defineConfig({
       sidebar: [
         { label: 'Home', link: '/' },
         {
+          label: 'Quick Reference',
+          items: [
+            { label: 'Overview', link: '/reference/' },
+            { label: 'Commands', link: '/reference/commands/' },
+            { label: 'Skills', link: '/reference/skills/' },
+            { label: 'Extensions', link: '/reference/extensions/' },
+            { label: 'Agents', link: '/reference/agents/' },
+            { label: 'Shortcuts', link: '/reference/shortcuts/' },
+          ],
+        },
+        {
           label: 'Placeholder',
           items: [
             { label: 'Components', link: '/placeholder/components/' },

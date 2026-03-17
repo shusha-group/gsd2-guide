@@ -78,7 +78,7 @@
   - Verify: `npm run build` succeeds. Skills: grep finds all 8 skill names. Extensions: grep finds extension names, extensions with 0 tools don't show empty lists. Agents: grep finds all 5 agent names.
   - Done when: All 3 pages render complete data with graceful empty-state handling
 
-- [ ] **T04: Create reference index, wire sidebar, and update hero** `est:20m`
+- [x] **T04: Create reference index, wire sidebar, and update hero** `est:20m`
   - Why: Integration task — makes reference pages discoverable via sidebar navigation, hero links, and the reference index overview page.
   - Files: `src/content/docs/reference/index.mdx`, `astro.config.mjs`, `src/content/docs/index.mdx`
   - Do: Create reference/index.mdx with CardGrid linking to all 5 reference pages (use Starlight LinkCard component, include item counts). Add "Quick Reference" sidebar group in astro.config.mjs — place it after Home, before Placeholder. Items: Commands (42), Skills (8), Extensions (17), Agents (5), Shortcuts (4), with Overview linking to index. Update hero page (index.mdx) to replace placeholder links with reference section links. All internal hrefs must include `/gsd2-guide/` base prefix.

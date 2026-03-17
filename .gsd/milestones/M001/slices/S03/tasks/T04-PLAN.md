@@ -80,6 +80,14 @@ The integration/wiring task that makes all 5 reference pages discoverable. Creat
 - Build output shows 137+ pages in Pagefind index
 - Sidebar in built HTML contains "Quick Reference" group links
 
+## Observability Impact
+
+- **Sidebar presence**: `grep 'Quick Reference' dist/index.html` confirms the sidebar group rendered. The sidebar HTML contains `<a href="/gsd2-guide/reference/">` links for all 6 reference entries — greppable in any built HTML page.
+- **Hero link verification**: `grep '/gsd2-guide/reference/' dist/index.html` confirms the hero primary action and CardGrid link to reference content instead of placeholders.
+- **Reference index page**: `dist/reference/index.html` exists and contains `<a` tags pointing to all 5 sub-pages — greppable with `grep -c '/gsd2-guide/reference/' dist/reference/index.html`.
+- **Page count signal**: Build output reports total page count and Pagefind index size. After this task, both should report 137+ pages (up from ~131 pre-slice).
+- **Failure visibility**: If a sidebar link points to a non-existent page, Starlight build emits a warning. If a LinkCard href is wrong, the built HTML will contain the wrong href — greppable for diagnosis.
+
 ## Inputs
 
 - `src/content/docs/reference/commands.mdx` — from T02
