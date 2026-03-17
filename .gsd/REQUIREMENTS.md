@@ -4,18 +4,7 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Active
 
-### R026 — End-to-end walkthrough following a real example project through all GSD phases, showing actual `.gsd/` artifacts at each stage.
-- Class: primary-user-loop
-- Status: active
-- Description: End-to-end walkthrough following a real example project through all GSD phases (discuss → research → plan → execute → verify → summarize), showing actual `.gsd/` artifacts at each stage with Mermaid diagrams, directory trees, and annotated terminal output.
-- Why it matters: Without seeing the full lifecycle with a real project, users can't connect individual commands to the overall workflow. This is the missing "how to actually use GSD" guide.
-- Source: user
-- Primary owning slice: M002/S01
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Must use a concrete example project (not abstract/conceptual). Show directory trees at each phase.
-
-### R027 — Per-command deep-dive pages for every GSD command explaining what it does, how it works internally, what files it reads/writes, with terminal examples and Mermaid diagrams.
+### R027 — Per-command deep-dive pages for every GSD command (~25) explaining what it does, how it works internally, what files it reads/writes, with terminal examples and Mermaid diagrams.
 - Class: core-capability
 - Status: active
 - Description: Per-command deep-dive pages for every GSD command (~25) explaining what it does, how it works internally, what files it reads/writes, with terminal examples and Mermaid diagrams.
@@ -26,7 +15,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Not prompt dumps — authored explanations with examples and visuals. Content created by studying GSD source (commands.ts, prompts/, auto-dispatch.ts, etc.).
 
-### R028 — Core workflow recipe pages covering common GSD usage patterns with step-by-step instructions.
+### R028 — Core workflow recipe pages — fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows commands, artifacts, and expected outcomes.
 - Class: primary-user-loop
 - Status: active
 - Description: Core workflow recipe pages — fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows commands, artifacts, and expected outcomes.
@@ -37,18 +26,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Core recipes only. Advanced patterns (parallel orchestration, headless/CI, custom hooks) deferred to later milestone.
 
-### R029 — Remove all generic pi/agent content and refocus sidebar to GSD-only.
-- Class: constraint
-- Status: active
-- Description: Remove all generic pi/agent content (What Is Pi, Building Coding Agents, Context and Hooks, Extending Pi, Pi UI/TUI, Proposals — 101 pages) and refocus sidebar to GSD-only content.
-- Why it matters: The generic content is noise for the target audience. The site should teach GSD, not pi extension development or agent architecture theory.
-- Source: user
-- Primary owning slice: M002/S01
-- Supporting slices: none
-- Validation: unmapped
-- Notes: This removes content from the sidebar and prebuild pipeline. The extracted docs still exist in content/generated/docs/ but are no longer copied into the site.
-
-### R030 — Each command page shows the command's lifecycle with annotated examples.
+### R030 — Each command page shows the command's lifecycle: what triggers it, what files it reads, what prompts/logic it runs, what artifacts it produces, with annotated examples.
 - Class: core-capability
 - Status: active
 - Description: Each command page shows the command's lifecycle: what triggers it, what files it reads, what prompts/logic it runs, what artifacts it produces, with annotated examples.
@@ -59,7 +37,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Study GSD source for accuracy but write for humans — explanations, not code dumps.
 
-### R031 — Visual documentation approach with Mermaid flowcharts, ASCII directory trees, and annotated terminal output.
+### R031 — Visual documentation approach — Mermaid flowcharts for command dispatch/logic, ASCII directory trees showing `.gsd/` state at each phase, annotated terminal output examples.
 - Class: differentiator
 - Status: active
 - Description: Visual documentation approach — Mermaid flowcharts for command dispatch/logic, ASCII directory trees showing `.gsd/` state at each phase, annotated terminal output examples.
@@ -67,19 +45,8 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S01
 - Supporting slices: M002/S02, M002/S03, M002/S04
-- Validation: unmapped
+- Validation: Pattern established in S01 walkthrough: 2 Mermaid flowcharts with dark terminal theme, 4 ASCII directory trees, annotated terminal output blocks. S02/S03/S04 must apply this pattern to per-command deep-dives and recipes for full validation.
 - Notes: Mermaid support already configured from M001.
-
-### R032 — Existing GSD-relevant guide pages remain accessible under reorganized sidebar.
-- Class: continuity
-- Status: active
-- Description: Existing GSD-relevant guide pages (getting-started, auto-mode, configuration, git-strategy, troubleshooting, etc.) remain accessible but reorganized under the GSD-focused sidebar.
-- Why it matters: These pages have useful content. Removing pi content shouldn't break existing GSD reference material.
-- Source: user
-- Primary owning slice: M002/S01
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Some existing guides may be superseded or absorbed by new deep-dive pages. Evaluate during S01.
 
 ## Validated
 
@@ -314,6 +281,39 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: S06 builds `scripts/check-links.mjs` — scans all dist/ HTML files, checks 17975 internal `<a>` links against filesystem after stripping /gsd2-guide/ base path. Exits 0 with count on success, exits 1 with per-link broken report on failure. Integrated into both `npm run update` pipeline and GitHub Actions workflow.
 - Notes: Build-time check, not runtime
 
+### R026 — End-to-end walkthrough following a real example project through all GSD phases (discuss → research → plan → execute → verify → summarize), showing actual `.gsd/` artifacts at each stage with Mermaid diagrams, directory trees, and annotated terminal output.
+- Class: primary-user-loop
+- Status: validated
+- Description: End-to-end walkthrough following a real example project through all GSD phases (discuss → research → plan → execute → verify → summarize), showing actual `.gsd/` artifacts at each stage with Mermaid diagrams, directory trees, and annotated terminal output.
+- Why it matters: Without seeing the full lifecycle with a real project, users can't connect individual commands to the overall workflow. This is the missing "how to actually use GSD" guide.
+- Source: user
+- Primary owning slice: M002/S01
+- Supporting slices: none
+- Validation: 467-line walkthrough at /user-guide/developing-with-gsd/ follows a Cookmate recipe app through all GSD phases: discuss, research, plan, execute, verify, summarize, complete. Includes 2 Mermaid diagrams (lifecycle flowchart, auto-mode dispatch state machine), 4 ASCII directory trees showing .gsd/ state at discussion, planning, mid-execution, and completion phases, and annotated terminal output examples. Build passes, 720 links checked, 0 broken.
+- Notes: Must use a concrete example project (not abstract/conceptual). Show directory trees at each phase.
+
+### R029 — Remove all generic pi/agent content (What Is Pi, Building Coding Agents, Context and Hooks, Extending Pi, Pi UI/TUI, Proposals — 101 pages) and refocus sidebar to GSD-only content.
+- Class: constraint
+- Status: validated
+- Description: Remove all generic pi/agent content (What Is Pi, Building Coding Agents, Context and Hooks, Extending Pi, Pi UI/TUI, Proposals — 101 pages) and refocus sidebar to GSD-only content.
+- Why it matters: The generic content is noise for the target audience. The site should teach GSD, not pi extension development or agent architecture theory.
+- Source: user
+- Primary owning slice: M002/S01
+- Supporting slices: none
+- Validation: 109 pi/agent files excluded from prebuild pipeline via EXCLUDED_DIRS/EXCLUDED_ROOT_FILES sets. Sidebar in astro.config.mjs has zero pi/agent entries. grep confirms no pi/agent content references in src/content/docs/. Build succeeds with 27 GSD-focused pages. 720 internal links checked, 0 broken.
+- Notes: This removes content from the sidebar and prebuild pipeline. The extracted docs still exist in content/generated/docs/ but are no longer copied into the site.
+
+### R032 — Existing GSD-relevant guide pages (getting-started, auto-mode, configuration, git-strategy, troubleshooting, etc.) remain accessible but reorganized under the GSD-focused sidebar.
+- Class: continuity
+- Status: validated
+- Description: Existing GSD-relevant guide pages (getting-started, auto-mode, configuration, git-strategy, troubleshooting, etc.) remain accessible but reorganized under the GSD-focused sidebar.
+- Why it matters: These pages have useful content. Removing pi content shouldn't break existing GSD reference material.
+- Source: user
+- Primary owning slice: M002/S01
+- Supporting slices: none
+- Validation: All existing GSD guide pages remain accessible under reorganized 5-section sidebar (User Guide, Commands, Recipes, Reference, Guides). 720 internal links checked, 0 broken. All 17 remaining GSD pages build and render correctly.
+- Notes: Some existing guides may be superseded or absorbed by new deep-dive pages. Evaluate during S01.
+
 ## Deferred
 
 ### R022 — Ability to view documentation as it was at any specific version.
@@ -349,7 +349,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Manual trigger chosen for M001. Could be added easily later since the pipeline will exist.
 
-### R033 — Advanced workflow recipes — parallel orchestration, worktree strategies, custom hooks, headless/CI mode, cost optimization.
+### R033 — Advanced workflow recipes covering parallel orchestration, worktree strategies, custom hooks, headless/CI mode, and cost optimization patterns.
 - Class: core-capability
 - Status: deferred
 - Description: Advanced workflow recipes covering parallel orchestration, worktree strategies, custom hooks, headless/CI mode, and cost optimization patterns.
@@ -402,18 +402,18 @@ This file is the explicit capability and coverage contract for the project.
 | R023 | differentiator | deferred | none | none | unmapped |
 | R024 | operability | deferred | none | none | unmapped |
 | R025 | constraint | out-of-scope | none | none | n/a |
-| R026 | primary-user-loop | active | M002/S01 | none | unmapped |
+| R026 | primary-user-loop | validated | M002/S01 | none | 467-line walkthrough at /user-guide/developing-with-gsd/ follows a Cookmate recipe app through all GSD phases: discuss, research, plan, execute, verify, summarize, complete. Includes 2 Mermaid diagrams (lifecycle flowchart, auto-mode dispatch state machine), 4 ASCII directory trees showing .gsd/ state at discussion, planning, mid-execution, and completion phases, and annotated terminal output examples. Build passes, 720 links checked, 0 broken. |
 | R027 | core-capability | active | M002/S02 | M002/S03 | unmapped |
 | R028 | primary-user-loop | active | M002/S04 | none | unmapped |
-| R029 | constraint | active | M002/S01 | none | unmapped |
+| R029 | constraint | validated | M002/S01 | none | 109 pi/agent files excluded from prebuild pipeline via EXCLUDED_DIRS/EXCLUDED_ROOT_FILES sets. Sidebar in astro.config.mjs has zero pi/agent entries. grep confirms no pi/agent content references in src/content/docs/. Build succeeds with 27 GSD-focused pages. 720 internal links checked, 0 broken. |
 | R030 | core-capability | active | M002/S02 | M002/S03 | unmapped |
-| R031 | differentiator | active | M002/S01 | M002/S02, M002/S03, M002/S04 | unmapped |
-| R032 | continuity | active | M002/S01 | none | unmapped |
+| R031 | differentiator | active | M002/S01 | M002/S02, M002/S03, M002/S04 | Pattern established in S01 walkthrough: 2 Mermaid flowcharts with dark terminal theme, 4 ASCII directory trees, annotated terminal output blocks. S02/S03/S04 must apply this pattern to per-command deep-dives and recipes for full validation. |
+| R032 | continuity | validated | M002/S01 | none | All existing GSD guide pages remain accessible under reorganized 5-section sidebar (User Guide, Commands, Recipes, Reference, Guides). 720 internal links checked, 0 broken. All 17 remaining GSD pages build and render correctly. |
 | R033 | core-capability | deferred | none | none | unmapped |
 
 ## Coverage Summary
 
-- Active requirements: 7
-- Mapped to slices: 7
-- Validated: 21 (R001–R021)
+- Active requirements: 4
+- Mapped to slices: 4
+- Validated: 24 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R029, R032)
 - Unmapped active requirements: 0

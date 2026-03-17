@@ -49,7 +49,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Site restructure and end-to-end walkthrough** `risk:high` `depends:[]`
+- [x] **S01: Site restructure and end-to-end walkthrough** `risk:high` `depends:[]`
   > After this: The site has a GSD-focused sidebar (pi/agent sections gone), existing GSD guides reorganized, and a "Developing with GSD" walkthrough page that follows a real project through discuss → research → plan → execute → verify → summarize with directory trees, Mermaid diagrams, and annotated terminal output at each phase. Build and link check pass.
 
 - [ ] **S02: Command deep-dives — session and execution commands** `risk:medium` `depends:[S01]`
