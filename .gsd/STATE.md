@@ -25,3 +25,4 @@ All milestones complete. Check queue for next milestone.
 |---|-------------|------|--------|-----------|
 | 3 | Homepage updated to reflect M002 content — command deep-dives, walkthrough, recipes | 2026-03-17 | 9a15a33 | [3-the-home-page-does-not-really-reflect-wh](./quick/3-the-home-page-does-not-really-reflect-wh/) |
 | 4 | Fix mobile header overlap and light mode sidebar visibility | 2026-03-17 | 106b531 | [4-so-on-the-mobile-version-the-top-right-c](./quick/4-so-on-the-mobile-version-the-top-right-c/) |
+| 5 | Fix light mode mobile "On this page" TOC visibility | 2026-03-17 | b6cd618 | [5-the-on-this-page-navigation-still-cant-b](./quick/5-the-on-this-page-navigation-still-cant-b/) |
