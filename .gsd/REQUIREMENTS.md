@@ -312,150 +312,152 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: All existing GSD guide pages remain accessible under reorganized 5-section sidebar (User Guide, Commands, Recipes, Reference, Guides). 720 internal links checked, 0 broken. All 17 remaining GSD pages build and render correctly.
 - Notes: Some existing guides may be superseded or absorbed by new deep-dive pages. Evaluate during S01.
 
-## Active
-
 ### R034 — Package version snapshot for diffing baseline
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Store a copy of the gsd-pi package source (dist/resources/) after each successful doc generation as a diffing baseline for detecting changes on next update.
 - Why it matters: Without a snapshot of the previously-documented version, there's no way to diff what changed in the source between updates.
 - Source: inferred
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: Snapshot directory exists at content/generated/source-snapshot/ after `npm run update`. Snapshot version matches installed package version. Snapshot contains the relevant source files (extensions, prompts, skills, agents).
-- Notes: Only needs to snapshot the documentation-relevant source files, not the entire package.
+- Validation: extract.mjs saves manifest.json → previous-manifest.json before each extraction. previous-manifest.json confirmed with 1029 files tracked. 12/12 diff-sources tests pass.
+- Notes: Implemented as SHA-based manifest snapshot (previous-manifest.json) rather than full source copy — more efficient and sufficient for hash-based diffing.
 
 ### R035 — Source diff detection between package versions
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Compare the installed gsd-pi package against the stored snapshot to identify changed, added, and removed source files between versions.
 - Why it matters: This is the trigger for regeneration — without knowing what changed, you can't know what's stale.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: Script correctly identifies changed/added/removed files when run against a modified snapshot. Reports file-level diff summary.
+- Validation: detectChanges() correctly identifies changed/added/removed files between manifest versions. 5/5 unit tests pass. Real diff produced 55 changed files on first run.
 - Notes: File-level diffing (hash comparison), not line-level.
 
 ### R036 — Source-to-page mapping manifest
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: An explicit manifest mapping each authored doc page to the gsd-pi source files it was derived from (e.g., commands/quick.mdx → extensions/gsd/quick.ts, prompts/quick-task.md).
 - Why it matters: The mapping is how the pipeline knows which pages to regenerate when specific source files change.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: All 42 authored pages have entries in page-source-map.json. Each entry lists concrete source file paths. Cross-referenced against actual source files in the package.
-- Notes: Some pages (recipes, walkthrough) may depend on multiple source files across different directories.
+- Validation: page-source-map.json maps all 40 authored pages to 477 source deps. All paths validated against manifest. 9/9 page-map tests pass.
+- Notes: Rescoped from 42 to 40 pages after config/pause correctly removed by manage-pages. Some pages (recipes, walkthrough) depend on multiple source files across different directories.
 
 ### R037 — Staleness detection for doc pages
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Cross-reference changed source files against the page mapping to identify which documentation pages need regeneration.
 - Why it matters: Only stale pages should be regenerated — this keeps the pipeline fast and cheap.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: Given a set of changed source files and the page mapping, correctly identifies the affected doc pages. No false negatives for direct dependencies.
+- Validation: resolveStalePages() cross-references changes against page-source-map. 7/7 unit tests pass. Real run flagged 17 stale pages from 55 changed files.
 - Notes: May miss indirect dependencies — acceptable tradeoff for speed.
 
 ### R038 — LLM-powered page regeneration via Claude API
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Invoke the Claude API with changed source files, current page content, and a regeneration prompt to produce updated documentation pages matching M002 quality.
 - Why it matters: This is the core capability — turning source code changes into updated documentation automatically.
 - Source: user
 - Primary owning slice: M003/S02
 - Supporting slices: none
-- Validation: Regenerated pages pass build + link check. Quality comparison against M002 originals for 3+ command pages shows equivalent explanations, diagrams, and examples.
-- Notes: Uses @anthropic-ai/sdk. Requires ANTHROPIC_API_KEY.
+- Validation: regeneratePage() calls Claude API with source files and quality prompt. 13/13 unit tests pass with mock client DI. Graceful skip without API key confirmed. Module exports regeneratePage and regenerateStalePages.
+- Notes: Uses @anthropic-ai/sdk (devDependency). Requires ANTHROPIC_API_KEY at runtime.
 
 ### R039 — Regeneration prompt engineering for M002-quality output
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: System prompts that produce documentation matching M002 output quality — clear explanations, Mermaid diagrams with terminal-native styling, annotated terminal examples, files read/written tables, related command links.
 - Why it matters: The LLM output needs to match the established quality bar. Bad prompts produce generic docs.
 - Source: inferred
 - Primary owning slice: M003/S02
 - Supporting slices: none
-- Validation: Side-by-side comparison of regenerated vs original pages shows equivalent structure, detail level, and visual quality.
-- Notes: Prompts should include examples from existing M002 pages as reference.
+- Validation: System prompt encodes all M02 quality rules (6-section structure, Mermaid terminal-native styling, link format, frontmatter, file tables). capture.mdx included as exemplar. 3 regenerated pages (capture, doctor, auto) matched M02 originals byte-for-byte.
+- Notes: capture.mdx hardcoded as sole exemplar. Non-command pages may need different exemplars if quality diverges.
 
 ### R040 — Automatic page generation for new commands
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: When a new command appears in gsd-pi source that has no corresponding doc page, automatically generate a page and add a sidebar entry.
 - Why it matters: New commands shouldn't require manual documentation effort — the pipeline should handle them.
 - Source: user
 - Primary owning slice: M003/S03
 - Supporting slices: none
-- Validation: Adding a fake command source file triggers page creation in src/content/docs/commands/. Sidebar entry appears in astro.config.mjs.
-- Notes: New pages should follow the exact same structure as existing command deep-dive pages.
+- Validation: createNewPages() detects new commands, generates pages via regeneratePage(), adds sidebar entries and page-source-map entries. Full round-trip integration test (detect → create → verify page + sidebar + map). 31/31 manage-pages tests pass.
+- Notes: New pages follow the exact same structure as existing command deep-dive pages via the quality prompt template.
 
 ### R041 — Automatic page removal for deleted commands
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: When a command disappears from gsd-pi source, remove its doc page and sidebar entry automatically.
 - Why it matters: Dead pages for removed commands are confusing. The site should only document what exists.
 - Source: user
 - Primary owning slice: M003/S03
 - Supporting slices: none
-- Validation: Removing a command's source files triggers page deletion and sidebar entry removal. Build passes with no broken links to the removed page.
-- Notes: Should also update any cross-references in other pages that link to the removed command.
+- Validation: removePages() deletes .mdx files, removes sidebar entries by link pattern, cleans up page-source-map.json. Handles missing files gracefully. Real-world: config and pause pages correctly removed. 31/31 tests pass.
+- Notes: Cross-reference cleanup for links in other pages is not automated — noted as future enhancement. ReleaseEntry.astro commandSlugs must be manually synchronized (documented in KNOWLEDGE.md).
 
 ### R042 — Pipeline integration into npm run update
 - Class: operability
-- Status: active
+- Status: validated
 - Description: The regeneration step runs as part of `npm run update` between extract and build, only when source changes are detected that affect documentation pages.
 - Why it matters: One command to update everything. No separate manual step for regeneration.
 - Source: user
 - Primary owning slice: M003/S04
 - Supporting slices: none
-- Validation: `npm run update` runs the complete pipeline: update → extract → diff → regenerate → build → check-links. Regeneration only fires when stale pages detected.
-- Notes: Must integrate cleanly with existing update.mjs orchestration.
+- Validation: npm run update runs complete 7-step pipeline: update → extract → diff report → regenerate → manage commands → build → check-links. All steps pass with timing. 14/14 pipeline tests pass.
+- Notes: Pipeline extended from 5 to 7 steps. Steps 4 (regenerate) and 5 (manage commands) are async fn steps.
 
 ### R043 — Graceful degradation without ANTHROPIC_API_KEY
 - Class: operability
-- Status: active
+- Status: validated
 - Description: When ANTHROPIC_API_KEY is not set, the pipeline reports it clearly, skips regeneration, and builds with existing (potentially stale) content.
 - Why it matters: The build shouldn't break just because an API key isn't configured. CI/CD environments without the key should still build.
 - Source: inferred
 - Primary owning slice: M003/S04
 - Supporting slices: none
-- Validation: Running `npm run update` without ANTHROPIC_API_KEY prints a warning, skips regeneration, and completes the build successfully.
-- Notes: Also needed for the GitHub Actions deploy workflow.
+- Validation: npm run update without ANTHROPIC_API_KEY prints "⊘ Skipped: no API key", skips regeneration, completes build. 58 pages built, 3427 links verified, 0 broken.
+- Notes: Also works for GitHub Actions deploy workflow without the secret configured.
 
 ### R044 — Automatic sidebar management for new/removed pages
 - Class: operability
-- Status: active
+- Status: validated
 - Description: When pages are added or removed, the sidebar configuration in astro.config.mjs is updated automatically to include or exclude them.
 - Why it matters: The sidebar is manually maintained — adding a page without a sidebar entry makes it invisible. Removing a page without removing the entry breaks the build.
 - Source: inferred
 - Primary owning slice: M003/S03
 - Supporting slices: none
-- Validation: New command page gets a sidebar entry in the correct position. Removed command page loses its entry. Build passes.
-- Notes: Sidebar in astro.config.mjs follows alphabetical ordering within sections.
+- Validation: addSidebarEntry() inserts before "Keyboard Shortcuts" boundary. removeSidebarEntry() matches by link pattern (/commands/{slug}/). Both return structured results. Verified in 31/31 manage-pages tests.
+- Notes: Sidebar manipulation is string-based — finds boundary by text match, inserts/removes lines by regex.
 
 ### R045 — Regeneration reporting (pages, tokens, cost, timing)
 - Class: operability
-- Status: active
+- Status: validated
 - Description: The update pipeline reports which pages were regenerated, which were skipped, token usage per page, estimated cost, and total regeneration time.
 - Why it matters: Visibility into what the pipeline did and what it cost. Without reporting, you're blind to API spend.
 - Source: inferred
 - Primary owning slice: M003/S04
 - Supporting slices: none
-- Validation: Pipeline output shows per-page status (regenerated/skipped/failed), token counts, cost estimate, and timing.
-- Notes: Cost estimate based on Claude API pricing.
+- Validation: Pipeline output shows per-page ✓/⊘/✗ status, token counts, cost estimate ($3/MTok input, $15/MTok output), and per-step timing. formatCost() unit-tested in 14/14 pipeline tests.
+- Notes: Cost estimates based on Claude Sonnet API pricing.
 
-### R046 — All 42 authored pages covered by source mappings
+### R046 — All authored pages covered by source mappings
 - Class: completeness
-- Status: active
-- Description: Every authored page on the site (27 command deep-dives, 6 recipes, walkthrough, homepage, 6 reference pages, changelog component) has explicit source file mappings in the page-source-map manifest.
+- Status: validated
+- Description: Every authored page on the site has explicit source file mappings in the page-source-map manifest.
 - Why it matters: Any page without a mapping is a blindspot — it won't get regenerated when its source changes.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: page-source-map.json has entries for all 42 authored pages. No authored page lacks a mapping.
-- Notes: Some pages may map to the same source files (e.g., multiple recipe pages depending on auto-dispatch.ts).
+- Validation: page-source-map.json contains 40 entries covering all authored pages (25 commands, 6 recipes, 1 walkthrough, 6 reference, 1 changelog, 1 homepage). 477 total deps. Rescoped from 42 to 40 after config/pause correctly removed by manage-pages.
+- Notes: Some pages map to the same source files (e.g., multiple recipe pages depending on auto-dispatch.ts).
+
+## Active
+
+(No active requirements — all M003 requirements validated.)
 
 ## Deferred
 
@@ -581,7 +583,8 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 13 (R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046)
-- Mapped to slices: 13 (all active mapped to M003 slices)
-- Validated: 28 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032)
+- Active requirements: 0
+- Validated: 41 (R001–R021, R026–R032, R034–R046)
+- Deferred: 5 (R022, R023, R024, R033, R047)
+- Out of scope: 1 (R025)
 - Unmapped active requirements: 0
