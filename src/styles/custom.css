@@ -203,6 +203,9 @@
 :root[data-theme='light'] .sl-link-card {
   border-color: #d0ddd0;
 }
+:root[data-theme='light'] .sl-link-card .title {
+  color: #0e580e !important;
+}
 :root[data-theme='light'] .sl-link-card .sl-flex {
   color: #0e580e;
 }
