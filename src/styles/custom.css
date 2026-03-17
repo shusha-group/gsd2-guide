@@ -203,8 +203,12 @@
 :root[data-theme='light'] .sl-link-card {
   border-color: #d0ddd0;
 }
+:root[data-theme='light'] .sl-link-card span.title,
 :root[data-theme='light'] .sl-link-card .title {
   color: #0e580e !important;
+}
+:root[data-theme='light'] .sl-link-card .description {
+  color: #384838 !important;
 }
 :root[data-theme='light'] .sl-link-card .sl-flex {
   color: #0e580e;
