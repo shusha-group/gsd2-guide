@@ -52,13 +52,13 @@ Use it to track what is actively in scope, what has been validated by completed 
 
 ### R005 — Changelog from GitHub releases
 - Class: continuity
-- Status: active
+- Status: validated
 - Description: A browsable changelog page aggregating all GitHub release notes, showing what changed in each version with Added/Fixed/Changed sections.
 - Why it matters: With 6+ releases/day, users need to know what changed. The changelog is how they find out if a bug was fixed or a feature was added.
 - Source: user
 - Primary owning slice: M001/S05
 - Supporting slices: none
-- Validation: unmapped
+- Validation: S05 builds changelog page at /changelog/ with all 48 GitHub releases — expand/collapse, dates, GitHub links, rendered markdown bodies. Verified by grep counts on dist/ output.
 - Notes: Pulls from GitHub API `gh release list`. Shows current version prominently (R010).
 
 ### R006 — Terminal-native dark design with visual aids
@@ -107,13 +107,13 @@ Use it to track what is actively in scope, what has been validated by completed 
 
 ### R010 — Current version prominently displayed
 - Class: continuity
-- Status: active
+- Status: validated
 - Description: The current GSD version number is visible in the site header or footer, updated on each build.
 - Why it matters: Developers need to know which version the docs reflect, especially with multiple releases per day.
 - Source: user
 - Primary owning slice: M001/S05
 - Supporting slices: M001/S06
-- Validation: unmapped
+- Validation: S05 wires Header.astro to import releases.json and display releases[0].tag_name (v2.22.0) as a clickable badge. Verified: grep confirms version present and v0.0.0 placeholder eliminated.
 - Notes: Extracted from package.json or GitHub latest release tag
 
 ### R011 — Incremental rebuild
@@ -293,12 +293,12 @@ Use it to track what is actively in scope, what has been validated by completed 
 | R002 | core-capability | active | M001/S01 | M001/S04, M001/S05 | unmapped |
 | R003 | primary-user-loop | active | M001/S03 | none | unmapped |
 | R004 | core-capability | active | M001/S04 | none | unmapped |
-| R005 | continuity | active | M001/S05 | none | unmapped |
+| R005 | continuity | validated | M001/S05 | none | S05: 48 releases with expand/collapse, dates, links, rendered bodies |
 | R006 | differentiator | active | M001/S02 | M001/S03, M001/S04 | unmapped |
 | R007 | operability | active | M001/S06 | none | unmapped |
 | R008 | launchability | active | M001/S06 | none | unmapped |
 | R009 | primary-user-loop | active | M001/S02 | none | unmapped |
-| R010 | continuity | active | M001/S05 | M001/S06 | unmapped |
+| R010 | continuity | validated | M001/S05 | M001/S06 | S05: v2.22.0 in header badge, v0.0.0 eliminated |
 | R011 | operability | active | M001/S06 | none | unmapped |
 | R012 | quality-attribute | active | M001/S02 | none | unmapped |
 | R013 | differentiator | active | M001/S02 | M001/S04 | unmapped |
@@ -317,7 +317,8 @@ Use it to track what is actively in scope, what has been validated by completed 
 
 ## Coverage Summary
 
-- Active requirements: 21
+- Active requirements: 19
 - Mapped to slices: 21
-- Validated: 0
+- Validated: 2
 - Unmapped active requirements: 0
+tive requirements: 0

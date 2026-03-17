@@ -10,7 +10,7 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 ## Current State
 
-S01–S04 complete. The site builds 133 HTML pages: 5 reference pages with 76 cheat-sheet cards (S03), 125 deep-dive doc pages from the GitHub repo (S04), plus the landing page, 404 page, and search page. All 125 doc pages have internal links rewritten from `.md` format to Starlight `/page/` routes. Sidebar is organized into 10 groups: Guides (15 root pages), Architecture (4 pages), and 6 autogenerate subdirectory groups. Landing page has Getting Started hero CTA and deep-dive LinkCards. Pagefind indexes all 133 pages. Next: S05 (changelog & release tracking) then S06 (update pipeline & deployment).
+S01–S05 complete. The site builds 134 HTML pages: 5 reference pages with 76 cheat-sheet cards (S03), 125 deep-dive doc pages from the GitHub repo (S04), a changelog page with all 48 GitHub releases (S05), plus the landing page, 404 page, and search page. All 125 doc pages have internal links rewritten from `.md` format to Starlight `/page/` routes. Sidebar is organized into 10 groups plus a top-level Changelog entry. Landing page has Getting Started hero CTA, deep-dive LinkCards, and a Changelog LinkCard. Header version badge shows real version (v2.22.0) from releases.json, linked to changelog. Pagefind indexes all 134 pages. Next: S06 (update pipeline & deployment) — the final slice.
 
 ## Architecture / Key Patterns
 
