@@ -88,3 +88,9 @@ Use Cookmate (a recipe-sharing web app) as the example project for scenarios, co
 - `src/content/docs/recipes/fix-a-bug.mdx` — ~100-150 lines, bug fix workflow recipe with Mermaid flowchart
 - `src/content/docs/recipes/small-change.mdx` — ~100-150 lines, `/gsd quick` workflow recipe with Mermaid flowchart
 - `src/content/docs/recipes/new-milestone.mdx` — ~100-150 lines, new milestone on existing project recipe with Mermaid flowchart
+
+## Observability Impact
+
+- **New pages in build output:** After this task, `dist/recipes/fix-a-bug/index.html`, `dist/recipes/small-change/index.html`, and `dist/recipes/new-milestone/index.html` should appear in the build output (though sidebar entries won't be wired until T03).
+- **Mermaid rendering:** Each page contains one Mermaid code block. If the Mermaid syntax is invalid, the diagram appears as raw text in the browser — no build error is emitted.
+- **Inspection surface:** `grep -l 'mermaid' src/content/docs/recipes/*.mdx | wc -l` confirms Mermaid presence. Frontmatter correctness is checkable with `head -5 src/content/docs/recipes/*.mdx`.

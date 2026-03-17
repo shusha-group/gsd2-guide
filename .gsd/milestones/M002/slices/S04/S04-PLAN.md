@@ -26,7 +26,7 @@
 
 ## Tasks
 
-- [ ] **T01: Author happy-path recipe pages (fix-a-bug, small-change, new-milestone)** `est:45m`
+- [x] **T01: Author happy-path recipe pages (fix-a-bug, small-change, new-milestone)** `est:45m`
   - Why: These three recipes cover the core GSD workflows that every user needs — fixing bugs via the full lifecycle, making small changes via `/gsd quick`, and starting new milestones on existing projects. They're the most-referenced patterns.
   - Files: `src/content/docs/recipes/fix-a-bug.mdx`, `src/content/docs/recipes/small-change.mdx`, `src/content/docs/recipes/new-milestone.mdx`
   - Do: Create `src/content/docs/recipes/` directory. Author 3 recipe MDX files following the consistent structure (When to Use This, Prerequisites, Steps, What Gets Created, Flow Diagram). Use Cookmate scenarios. Each recipe gets one Mermaid flowchart with dark terminal theme. Reference existing command deep-dive pages where relevant (e.g., link to `/commands/quick/` from small-change recipe). Study GSD source prompts for accuracy: `prompts/discuss.md`, `prompts/quick-task.md`, `prompts/guided-discuss-milestone.md`, `prompts/plan-milestone.md`.
@@ -46,6 +46,19 @@
   - Do: Add 6 sidebar entries to the Recipes section in `astro.config.mjs`, positioned before the existing 8 guide entries. Use format `{ label: 'Recipe: <Title>', link: '/recipes/<slug>/' }`. Run `npm run build` and `node scripts/check-links.mjs`. Verify all 6 recipe pages appear in `dist/recipes/*/index.html`. Verify Pagefind indexes them.
   - Verify: `npm run build` exits 0, `node scripts/check-links.mjs` exits 0, `ls dist/recipes/*/index.html | wc -l` returns 6, `grep -c "recipes/" astro.config.mjs` returns 6
   - Done when: All 6 recipes reachable via sidebar, build passes, link check passes, Pagefind indexes recipe content
+
+## Observability / Diagnostics
+
+- **Build output verification:** `npm run build` produces `dist/recipes/*/index.html` for each recipe — absence of any file is immediate signal of a broken page.
+- **Link integrity:** `node scripts/check-links.mjs` catches broken cross-references between recipe pages and command deep-dives. Run after any link change.
+- **Mermaid render verification:** Mermaid diagrams render client-side via `@pasqal-io/starlight-client-mermaid`. If a diagram has syntax errors, it renders as a raw code block with no visible error — verify by opening the built page in a browser and checking that a rendered SVG appears instead of text.
+- **Sidebar presence:** `grep -c "recipes/" astro.config.mjs` should match the number of recipe pages. A mismatch means a page exists but isn't navigable.
+- **Failure diagnostic:** If `npm run build` fails on a recipe MDX file, the error message includes the file path and line number. Read the build stderr for the exact location.
+
+## Verification (failure-path)
+
+- If build fails, `npm run build 2>&1 | grep -i error` surfaces the failing file and reason
+- If link check fails, `node scripts/check-links.mjs` prints each broken link with source file and target — inspect the link format (should be `../../commands/<slug>/` per Starlight convention)
 
 ## Files Likely Touched
 
