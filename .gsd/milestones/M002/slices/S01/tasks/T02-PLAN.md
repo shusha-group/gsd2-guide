@@ -48,6 +48,13 @@ Write the centerpiece content page — a comprehensive walkthrough following a r
 - D029 — "don't regurgitate the prompt back" — explanations and examples, not source dumps
 - D030 — use a real project example
 
+## Observability Impact
+
+- **Build verification:** `npm run build` exit code surfaces broken Mermaid syntax, invalid MDX, and Astro compilation errors. The walkthrough page appears in build output as `/user-guide/developing-with-gsd/index.html`.
+- **Link integrity:** `npm run check-links` validates all internal links in the walkthrough (getting-started, auto-mode, commands, configuration) resolve to real pages.
+- **Content metrics:** `wc -l`, `grep -c 'mermaid'`, and `grep -c '\.gsd/'` provide quick content completeness checks without reading the full file.
+- **Sidebar presence:** The walkthrough link in `astro.config.mjs` is declarative — missing or malformed entries cause Astro build failures with clear error messages.
+
 ## Expected Output
 
 - `src/content/docs/user-guide/developing-with-gsd.mdx` — end-to-end walkthrough
