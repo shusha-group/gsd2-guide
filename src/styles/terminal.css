@@ -539,6 +539,25 @@ nav.sidebar a {
   padding: 0;
 }
 
+/* ─── Command Links in Release Entries ─────────────────── */
+:root[data-theme='dark'] .release-body a.command-link code {
+  color: #39ff14;
+  border-bottom: 1px dashed #39ff1460;
+  cursor: pointer;
+}
+:root[data-theme='dark'] .release-body a.command-link:hover code {
+  border-bottom-color: #39ff14;
+  text-shadow: 0 0 6px #39ff1440;
+}
+:root[data-theme='light'] .release-body a.command-link code {
+  color: #0e580e;
+  border-bottom: 1px dashed #0e580e60;
+  cursor: pointer;
+}
+:root[data-theme='light'] .release-body a.command-link:hover code {
+  border-bottom-color: #0e580e;
+}
+
 /* ─── Release Entry (Dark) ─────────────────────────────── */
 :root[data-theme='dark'] .release-entry {
   border: 1px solid #1a2e1a;

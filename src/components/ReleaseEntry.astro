@@ -12,7 +12,72 @@ interface Props {
 
 const { tagName, name, publishedAt, htmlUrl, body, isLatest } = Astro.props;
 
-const bodyHtml = await marked(body);
+// Command slug map — maps command names to their deep-dive page slugs
+const commandSlugs: Record<string, string> = {
+  '/gsd auto': 'auto',
+  '/gsd stop': 'stop',
+  '/gsd pause': 'pause',
+  '/gsd': 'gsd',
+  '/gsd next': 'next',
+  '/gsd quick': 'quick',
+  '/gsd discuss': 'discuss',
+  '/gsd status': 'status',
+  '/gsd visualize': 'visualize',
+  '/gsd queue': 'queue',
+  '/gsd steer': 'steer',
+  '/gsd capture': 'capture',
+  '/gsd triage': 'triage',
+  '/gsd knowledge': 'knowledge',
+  '/gsd cleanup': 'cleanup',
+  '/gsd doctor': 'doctor',
+  '/gsd forensics': 'forensics',
+  '/gsd prefs': 'prefs',
+  '/gsd mode': 'mode',
+  '/gsd skill-health': 'skill-health',
+  '/gsd config': 'config',
+  '/gsd hooks': 'hooks',
+  '/gsd run-hook': 'run-hook',
+  '/gsd migrate': 'migrate',
+  // Variants without leading slash
+  'gsd auto': 'auto',
+  'gsd stop': 'stop',
+  'gsd pause': 'pause',
+  'gsd next': 'next',
+  'gsd quick': 'quick',
+  'gsd discuss': 'discuss',
+  'gsd status': 'status',
+  'gsd visualize': 'visualize',
+  'gsd queue': 'queue',
+  'gsd steer': 'steer',
+  'gsd capture': 'capture',
+  'gsd triage': 'triage',
+  'gsd knowledge': 'knowledge',
+  'gsd cleanup': 'cleanup',
+  'gsd doctor': 'doctor',
+  'gsd forensics': 'forensics',
+  'gsd prefs': 'prefs',
+  'gsd mode': 'mode',
+  'gsd skill-health': 'skill-health',
+  'gsd config': 'config',
+  'gsd hooks': 'hooks',
+  'gsd run-hook': 'run-hook',
+  'gsd migrate': 'migrate',
+  'gsd headless': 'headless',
+  'gsd sessions': 'headless',
+};
+
+let bodyHtml = await marked(body);
+
+// Linkify <code>/gsd X</code> → <a href="..."><code>/gsd X</code></a>
+// Match <code> tags containing gsd commands, but skip if already inside an <a>
+bodyHtml = bodyHtml.replace(
+  /<code>(\/?gsd(?:\s+[\w-]+)?)<\/code>/g,
+  (match, command) => {
+    const slug = commandSlugs[command];
+    if (!slug) return match; // No matching deep-dive page
+    return `<a href="/gsd2-guide/commands/${slug}/" class="command-link"><code>${command}</code></a>`;
+  }
+);
 
 const formattedDate = new Date(publishedAt).toLocaleDateString('en-US', {
   year: 'numeric',
