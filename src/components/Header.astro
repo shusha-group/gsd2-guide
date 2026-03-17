@@ -22,7 +22,7 @@ const version = releases[0]?.tag_name ?? 'v0.0.0';
   .version-badge {
     position: fixed;
     top: 0.6rem;
-    right: 1rem;
+    right: 7.5rem;
     z-index: 10;
     display: flex;
     align-items: center;
@@ -43,5 +43,12 @@ const version = releases[0]?.tag_name ?? 'v0.0.0';
   .version-badge:hover {
     opacity: 1;
     text-decoration: none;
+  }
+
+  /* Hide version badge on mobile to avoid overlapping search + hamburger menu */
+  @media (max-width: 49.99rem) {
+    .version-badge {
+      display: none;
+    }
   }
 </style>

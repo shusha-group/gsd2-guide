@@ -179,6 +179,13 @@
   font-weight: 600;
 }
 
+/* ─── Light Mode: Mobile Sidebar Overlay ───────────────── */
+/* Starlight sets mobile sidebar-pane background to var(--sl-color-black)
+   which is dark even in light mode. Override it for light mode. */
+:root[data-theme='light'] .sidebar-pane {
+  background-color: #f4f8f4 !important;
+}
+
 /* ─── Light Mode: Right Sidebar (TOC) ──────────────────── */
 :root[data-theme='light'] .right-sidebar-panel h2,
 :root[data-theme='light'] starlight-toc h2 {
