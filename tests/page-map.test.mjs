@@ -28,7 +28,6 @@ const COMMAND_SLUGS = [
   "capture",
   "cleanup",
   "cli-flags",
-  "config",
   "discuss",
   "doctor",
   "forensics",
@@ -40,7 +39,6 @@ const COMMAND_SLUGS = [
   "migrate",
   "mode",
   "next",
-  "pause",
   "prefs",
   "queue",
   "quick",
@@ -74,13 +72,13 @@ const REFERENCE_SLUGS = [
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("page-source-map", () => {
-  it("has exactly 42 page entries", () => {
+  it("has exactly 40 page entries", () => {
     const pageCount = Object.keys(map).length;
-    assert.equal(pageCount, 42, `Expected 42 pages, got ${pageCount}`);
+    assert.equal(pageCount, 40, `Expected 40 pages, got ${pageCount}`);
   });
 
-  it("includes all 27 command pages", () => {
-    assert.equal(COMMAND_SLUGS.length, 27, "Sanity: 27 command slugs defined");
+  it("includes all 25 command pages", () => {
+    assert.equal(COMMAND_SLUGS.length, 25, "Sanity: 25 command slugs defined");
     for (const slug of COMMAND_SLUGS) {
       const key = `commands/${slug}.mdx`;
       assert.ok(

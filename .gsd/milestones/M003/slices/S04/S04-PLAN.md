@@ -50,7 +50,7 @@
   - Verify: `node --test tests/update-pipeline.test.mjs` passes all tests; `node --test tests/*.test.mjs` — no regressions
   - Done when: Both new steps exist in `update.mjs`, pipeline loop is async, integration tests pass, all existing tests pass
 
-- [ ] **T02: End-to-end pipeline verification** `est:15m`
+- [x] **T02: End-to-end pipeline verification** `est:15m`
   - Why: T01 wires the code and tests the orchestration logic with mocks. T02 runs the actual `npm run update` pipeline to prove the real entrypoint works — the final-assembly proof that the milestone's main deliverable functions correctly.
   - Files: `scripts/update.mjs` (read-only verification)
   - Do: (1) Run `npm run update` without `ANTHROPIC_API_KEY` and verify: exits 0, regeneration step shows skip message, manage-commands step runs detection, build succeeds, check-links passes. (2) Verify pipeline output shows all 7 steps with timing. (3) Verify `content/generated/stale-pages.json` is written. (4) If any issues surface during the real run, fix them in `update.mjs`. (5) Run `node --test tests/*.test.mjs` to confirm zero regressions across all test suites.

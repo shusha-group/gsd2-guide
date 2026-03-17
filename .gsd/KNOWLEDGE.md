@@ -80,3 +80,7 @@ Files listed in `src/content/docs/.generated-manifest.json` are overwritten by `
 **Context:** Tests calling `regeneratePage()` with a `pkgPath` override.
 
 `resolvePackagePath()` in `extract-local.mjs` validates that the path has `src/resources/`. The gsd-pi package is installed globally (via `npm i -g gsd-pi`), not in the project's `node_modules/`. Passing `pkgPath: path.join(ROOT, "node_modules/gsd-pi")` fails because that directory doesn't have `src/resources/`. Omit `pkgPath` and let `resolvePackagePath` fall back to `npm root -g` to find the global install.
+
+## ReleaseEntry.astro commandSlugs must stay in sync with manage-pages removals
+
+**Context:** When `manage-pages.mjs` removes a command page (e.g., `config`, `pause`), the corresponding slug entry in `src/components/ReleaseEntry.astro`'s `commandSlugs` map must also be removed. Otherwise, the component generates dead links from changelog release notes (`/gsd config` → `/commands/config/`) that fail the link checker. The `page-map.test.mjs` `COMMAND_SLUGS` array and counts must also be updated.

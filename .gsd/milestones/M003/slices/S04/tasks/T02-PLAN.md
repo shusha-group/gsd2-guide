@@ -53,6 +53,13 @@ Run the actual `npm run update` pipeline to prove the real entrypoint works end-
 - All existing test files in `tests/`
 - `content/generated/stale-pages.json` — written by the diff report step during pipeline execution
 
+## Observability Impact
+
+- **Signals verified (not created):** This task validates that all observability surfaces from T01 function correctly in a real pipeline run — `[update] Step: <name>` log blocks, per-page ✓/⊘/✗ markers, step timings, regeneration summary, and `content/generated/stale-pages.json` boundary contract.
+- **Inspection surface:** `npm run update` stdout is the primary inspection surface — it proves all 7 steps execute, reports timing for each, and shows the regeneration summary with cost data (or skip reason).
+- **Failure visibility:** If any step fails, the pipeline exits non-zero with the step name and elapsed time printed. Regeneration errors surface per-page with structured `{ error, details }` shape.
+- **Degradation path:** Without `ANTHROPIC_API_KEY`, the regenerate step logs a skip/warning per page and the pipeline continues — this is the key graceful-degradation signal verified by this task.
+
 ## Expected Output
 
 - `scripts/update.mjs` — potentially with minor fixes discovered during real pipeline run (or unchanged if T01's code works perfectly)
