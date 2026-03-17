@@ -240,3 +240,263 @@ nav.sidebar a {
   outline: 2px solid #0d6e0d;
   outline-offset: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Reference Cards, Grid, Filter Bar, Tool List
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Reference Grid ───────────────────────────────────── */
+.ref-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+/* ─── Reference Card (Dark) ────────────────────────────── */
+:root[data-theme='dark'] .ref-card {
+  border: 1px solid #1a2e1a;
+  background: #0d120d;
+  margin-bottom: 0.5rem;
+  border-radius: 2px;
+  transition: border-color 0.2s ease;
+}
+:root[data-theme='dark'] .ref-card[open] {
+  border-color: #39ff1440;
+}
+:root[data-theme='dark'] .ref-card summary {
+  cursor: pointer;
+  padding: 0.6rem 0.85rem;
+  font-family: var(--sl-font-mono);
+  color: #39ff14;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  user-select: none;
+}
+:root[data-theme='dark'] .ref-card summary::-webkit-details-marker {
+  display: none;
+}
+:root[data-theme='dark'] .ref-card summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform 0.15s ease;
+  color: #4a6a4a;
+  font-size: 0.8em;
+  flex-shrink: 0;
+}
+:root[data-theme='dark'] .ref-card[open] summary::before {
+  transform: rotate(90deg);
+  color: #39ff14;
+}
+:root[data-theme='dark'] .ref-card summary:hover {
+  background: #0f1a0f;
+}
+:root[data-theme='dark'] .ref-card .subtitle {
+  color: #b4c8b4;
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 0 0.85rem 0.5rem;
+  line-height: 1.4;
+}
+:root[data-theme='dark'] .ref-card .detail-content {
+  padding: 0.6rem 0.85rem;
+  border-top: 1px dashed #1a2e1a;
+  color: #b4c8b4;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+:root[data-theme='dark'] .ref-card .badge {
+  display: inline-block;
+  background: #39ff1420;
+  color: #39ff14;
+  font-size: 0.75rem;
+  padding: 0.1em 0.45em;
+  border-radius: 2px;
+  font-family: var(--sl-font-mono);
+  font-weight: 500;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ─── Filter Bar (Dark) ────────────────────────────────── */
+:root[data-theme='dark'] .filter-bar {
+  display: flex;
+  flex-direction: row;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+:root[data-theme='dark'] .filter-bar button {
+  background: #141e14;
+  border: 1px solid #1a2e1a;
+  color: #7a9a7a;
+  padding: 0.3rem 0.65rem;
+  font-family: var(--sl-font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+:root[data-theme='dark'] .filter-bar button[aria-pressed='true'] {
+  background: #39ff1420;
+  color: #39ff14;
+  border-color: #39ff14;
+}
+:root[data-theme='dark'] .filter-bar button:hover {
+  color: #b8ffb0;
+  background: #1a2a1a;
+}
+
+/* ─── Tool List (Dark) ─────────────────────────────────── */
+:root[data-theme='dark'] .tool-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+:root[data-theme='dark'] .tool-list li {
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed #1a2e1a40;
+  font-size: 0.85rem;
+  color: #b4c8b4;
+}
+:root[data-theme='dark'] .tool-list li:last-child {
+  border-bottom: none;
+}
+:root[data-theme='dark'] .tool-list code {
+  color: #39ff14;
+  font-weight: 600;
+  font-size: 0.85em;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* ─── Hidden State (Filter) ────────────────────────────── */
+.ref-card.hidden {
+  display: none;
+}
+
+/* ─── Reference Card (Light) ───────────────────────────── */
+:root[data-theme='light'] .ref-card {
+  border: 1px solid #c4d8c4;
+  background: #f0f6f0;
+  margin-bottom: 0.5rem;
+  border-radius: 2px;
+  transition: border-color 0.2s ease;
+}
+:root[data-theme='light'] .ref-card[open] {
+  border-color: #0d6e0d60;
+}
+:root[data-theme='light'] .ref-card summary {
+  cursor: pointer;
+  padding: 0.6rem 0.85rem;
+  font-family: var(--sl-font-mono);
+  color: #0d6e0d;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  user-select: none;
+}
+:root[data-theme='light'] .ref-card summary::-webkit-details-marker {
+  display: none;
+}
+:root[data-theme='light'] .ref-card summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform 0.15s ease;
+  color: #8aaa8a;
+  font-size: 0.8em;
+  flex-shrink: 0;
+}
+:root[data-theme='light'] .ref-card[open] summary::before {
+  transform: rotate(90deg);
+  color: #0d6e0d;
+}
+:root[data-theme='light'] .ref-card summary:hover {
+  background: #e8f0e8;
+}
+:root[data-theme='light'] .ref-card .subtitle {
+  color: #3a5a3a;
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 0 0.85rem 0.5rem;
+  line-height: 1.4;
+}
+:root[data-theme='light'] .ref-card .detail-content {
+  padding: 0.6rem 0.85rem;
+  border-top: 1px dashed #c4d8c4;
+  color: #3a5a3a;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+:root[data-theme='light'] .ref-card .badge {
+  display: inline-block;
+  background: #0d6e0d18;
+  color: #0d6e0d;
+  font-size: 0.75rem;
+  padding: 0.1em 0.45em;
+  border-radius: 2px;
+  font-family: var(--sl-font-mono);
+  font-weight: 500;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ─── Filter Bar (Light) ───────────────────────────────── */
+:root[data-theme='light'] .filter-bar {
+  display: flex;
+  flex-direction: row;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+:root[data-theme='light'] .filter-bar button {
+  background: #e8f0e8;
+  border: 1px solid #c4d8c4;
+  color: #5a7a5a;
+  padding: 0.3rem 0.65rem;
+  font-family: var(--sl-font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+:root[data-theme='light'] .filter-bar button[aria-pressed='true'] {
+  background: #0d6e0d18;
+  color: #0d6e0d;
+  border-color: #0d6e0d;
+}
+:root[data-theme='light'] .filter-bar button:hover {
+  color: #063806;
+  background: #d8e8d8;
+}
+
+/* ─── Tool List (Light) ────────────────────────────────── */
+:root[data-theme='light'] .tool-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+:root[data-theme='light'] .tool-list li {
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed #c4d8c440;
+  font-size: 0.85rem;
+  color: #3a5a3a;
+}
+:root[data-theme='light'] .tool-list li:last-child {
+  border-bottom: none;
+}
+:root[data-theme='light'] .tool-list code {
+  color: #0d6e0d;
+  font-weight: 600;
+  font-size: 0.85em;
+  background: none;
+  border: none;
+  padding: 0;
+}

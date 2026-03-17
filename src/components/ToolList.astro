@@ -1,0 +1,17 @@
+---
+interface Props {
+  tools: { name: string; description: string }[];
+}
+
+const { tools } = Astro.props;
+---
+
+{tools && tools.length > 0 && (
+  <ul class="tool-list">
+    {tools.map((tool) => (
+      <li>
+        <code>{tool.name}</code> — {tool.description}
+      </li>
+    ))}
+  </ul>
+)}

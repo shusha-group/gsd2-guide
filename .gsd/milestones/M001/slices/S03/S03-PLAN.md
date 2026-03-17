@@ -38,6 +38,16 @@
 - `grep -c 'scout\|researcher\|worker\|javascript-pro\|typescript-pro' dist/reference/agents/index.html` returns 5
 - `grep 'Quick Reference' dist/index.html` succeeds (hero links to reference)
 - Pagefind search index reports 137+ pages
+- Build log contains no `[ERROR]` or `[WARN]` lines related to reference components or JSON imports (failure-path check)
+
+## Observability / Diagnostics
+
+- **Build output**: `npm run build` logs page count and Pagefind index size — verify 137+ pages and 6 reference HTML files in `dist/reference/`.
+- **Filter JS runtime**: Category filter buttons toggle `aria-pressed` and add/remove `.hidden` class on `.ref-card` elements. Inspect via browser DevTools: `document.querySelectorAll('.ref-card.hidden').length` should change when a filter is active.
+- **Component render verification**: Each reference page's HTML output contains `<details` and `data-category` attributes — greppable in `dist/` to confirm server-side rendering worked.
+- **Failure visibility**: If a JSON import path is wrong, Astro build fails with a clear module-not-found error pointing to the exact MDX file and import line. If a component prop is misused, Astro logs a template compilation error with file and line number.
+- **Empty-state handling**: Extensions with 0 tools render a fallback message instead of an empty `<ul>`. Verify by grepping for "tool-list" in the extension page HTML — count should match extensions that actually have tools.
+- **Redaction**: No secrets or user data involved in this slice. All content is static reference data from public GSD CLI introspection.
 
 ## Integration Closure
 
@@ -47,7 +57,7 @@
 
 ## Tasks
 
-- [ ] **T01: Build reference card components and terminal-styled CSS** `est:35m`
+- [x] **T01: Build reference card components and terminal-styled CSS** `est:35m`
   - Why: All 5 reference pages depend on shared card components. This unblocks everything.
   - Files: `src/components/ReferenceCard.astro`, `src/components/ReferenceGrid.astro`, `src/components/ToolList.astro`, `src/styles/terminal.css`
   - Do: Create ReferenceCard (details/summary, props: title/subtitle/category/badge), ReferenceGrid (CSS grid wrapper with data-category filter bar + vanilla JS script), ToolList (ul with tool name in mono + description). Add `.ref-card`, `.ref-grid`, `.filter-bar`, `details`/`summary` styles to terminal.css using existing theme variables (#39ff14 accent, #0a0e0a backgrounds, green-tinted borders). No JS framework dependencies — filter uses vanilla JS in an Astro `<script>` tag.

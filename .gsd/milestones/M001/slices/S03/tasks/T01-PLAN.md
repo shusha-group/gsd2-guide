@@ -72,6 +72,13 @@ Create the three Astro components that all reference pages depend on: ReferenceC
 - S02 design patterns: phosphor green #39FF14 accent, near-black #0a0e0a bg, JetBrains Mono for headings/code, Outfit for body, green-tinted gray scale
 - Data shape knowledge: commands have `{command, description, category}`, skills have `{name, description, path, objective?, arguments?, detection?, parentSkill?}`, extensions have `{name, description, tools: [{name, description}]}`, agents have `{name, description, summary, model?, memory?, tools?}`
 
+## Observability Impact
+
+- **Build-time verification**: New `.astro` component files are validated by the Astro compiler during `npm run build`. Any prop type mismatch, broken template syntax, or import error produces a build failure with file/line context.
+- **CSS rule presence**: `grep -c 'ref-card\|ref-grid\|filter-bar\|tool-list' src/styles/terminal.css` returns ≥12, confirming all rule blocks exist. A future agent can verify the CSS is loaded by inspecting computed styles in the browser.
+- **Filter JS inspectability**: The vanilla JS filter script in ReferenceGrid uses `aria-pressed` on buttons and `.hidden` class toggling on cards. Both are observable via DevTools accessibility tree and `document.querySelectorAll('.ref-card:not(.hidden)').length`.
+- **Failure state**: If components are imported but data props are wrong shape, Astro renders empty slots or missing text — the built HTML will have empty `<details>` blocks, detectable by `grep -c '<details' dist/...` returning fewer than expected.
+
 ## Expected Output
 
 - `src/components/ReferenceCard.astro` — Expandable card with details/summary, data-category, badge support

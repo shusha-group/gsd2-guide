@@ -1,0 +1,21 @@
+---
+interface Props {
+  title: string;
+  subtitle?: string;
+  category?: string;
+  badge?: string;
+}
+
+const { title, subtitle, category, badge } = Astro.props;
+---
+
+<details class="ref-card" data-category={category}>
+  <summary>
+    <span class="ref-card-title">{title}</span>
+    {badge && <span class="badge">{badge}</span>}
+  </summary>
+  {subtitle && <p class="subtitle">{subtitle}</p>}
+  <div class="detail-content">
+    <slot />
+  </div>
+</details>

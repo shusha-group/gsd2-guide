@@ -1,0 +1,57 @@
+---
+interface Props {
+  categories?: string[];
+}
+
+const { categories } = Astro.props;
+---
+
+<div class="ref-grid-container">
+  {categories && categories.length > 0 && (
+    <div class="filter-bar" role="toolbar" aria-label="Filter by category">
+      <button data-filter="all" aria-pressed="true">All</button>
+      {categories.map((cat) => (
+        <button data-filter={cat} aria-pressed="false">{cat}</button>
+      ))}
+    </div>
+  )}
+  <div class="ref-grid">
+    <slot />
+  </div>
+</div>
+
+<script>
+  function initFilter() {
+    const bars = document.querySelectorAll('.filter-bar');
+    bars.forEach((bar) => {
+      const buttons = bar.querySelectorAll('button[data-filter]');
+      const grid = bar.closest('.ref-grid-container')?.querySelector('.ref-grid');
+      if (!grid) return;
+
+      const cards = grid.querySelectorAll('.ref-card');
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const filter = btn.getAttribute('data-filter');
+
+          // Update aria-pressed on all buttons in this bar
+          buttons.forEach((b) => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
+
+          // Show/hide cards
+          cards.forEach((card) => {
+            if (filter === 'all' || card.getAttribute('data-category') === filter) {
+              card.classList.remove('hidden');
+            } else {
+              card.classList.add('hidden');
+            }
+          });
+        });
+      });
+    });
+  }
+
+  // Run on initial load and on Astro page transitions
+  initFilter();
+  document.addEventListener('astro:after-swap', initFilter);
+</script>
