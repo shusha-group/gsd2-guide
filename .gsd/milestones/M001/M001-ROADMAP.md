@@ -61,7 +61,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Quick-reference pages** `risk:medium` `depends:[S01,S02]`
   > After this: Searchable cheat-sheet cards for all GSD commands (20+), skills (7), extensions (14), agents (5), and keyboard shortcuts. Filter by category, expand for detail and examples.
 
-- [ ] **S04: Deep-dive documentation pages** `risk:medium` `depends:[S01,S02]`
+- [x] **S04: Deep-dive documentation pages** `risk:medium` `depends:[S01,S02]`
   > After this: All 130+ doc files from the GitHub repo rendered as navigable sections — Getting Started, Auto Mode, Architecture, Configuration, Git Strategy, Skills, Extending Pi, Building Agents, TUI/UI, Troubleshooting, and more.
 
 - [ ] **S05: Changelog & release tracking** `risk:low` `depends:[S02]`
