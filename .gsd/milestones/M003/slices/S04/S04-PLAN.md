@@ -26,6 +26,7 @@
 - `npm run update` completes without `ANTHROPIC_API_KEY` — exit code 0, regeneration skipped message visible, build + check-links pass
 - Pipeline output includes step timings for all 7 steps including `regenerate` and `manage commands`
 - Pipeline output includes regeneration summary section (even when all pages skipped)
+- Pipeline exits non-zero naming the failed step when any step fails; regeneration errors are logged per-page with structured `{ error, details }` shape visible in stdout
 
 ## Observability / Diagnostics
 
@@ -42,7 +43,7 @@
 
 ## Tasks
 
-- [ ] **T01: Wire regeneration and command handling into update pipeline with integration test** `est:30m`
+- [x] **T01: Wire regeneration and command handling into update pipeline with integration test** `est:30m`
   - Why: This is the core integration — S01/S02/S03 modules are proven but disconnected from the main pipeline. This task wires them in, makes the pipeline async, and adds cost/timing reporting. Delivers R042, R043, R045.
   - Files: `scripts/update.mjs`, `tests/update-pipeline.test.mjs`
   - Do: (1) Add imports for `regenerateStalePages` from S02 and `detectNewAndRemovedCommands`/`createNewPages`/`removePages` from S03. (2) Add `regenerate` async fn step after `diff report` that calls `regenerateStalePages()` and logs per-page results + cost. (3) Add `manage commands` async fn step that calls `detectNewAndRemovedCommands()` and conditionally calls `createNewPages()`/`removePages()`. (4) Make the pipeline loop async (top-level await — the file is already ESM). (5) Add a `formatCost()` helper (duplicate the 4-line function from regenerate-page.mjs CLI section). (6) Add regeneration summary to the pipeline output section. (7) Write `tests/update-pipeline.test.mjs` with tests covering: regeneration step called correctly, manage-commands step runs detect+create+remove in order, no-API-key path logs warning and continues, cost/timing summary printed for successful regenerations, step ordering is correct.

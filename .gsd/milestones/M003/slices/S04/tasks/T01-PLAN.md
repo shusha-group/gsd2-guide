@@ -102,6 +102,13 @@ The pipeline currently has 5 steps (npm update → extract → diff report → b
 - `scripts/lib/manage-pages.mjs` — exports `detectNewAndRemovedCommands(options)` returning `{ newCommands: string[], removedCommands: string[] }`, `createNewPages(slugs, options)` returning `{ results, created, skipped, failed }`, `removePages(slugs, options)` returning `{ results, removed, failed }`.
 - `tests/regenerate-page.test.mjs` — reference for test conventions (node:test, node:assert/strict, mock client pattern).
 
+## Observability Impact
+
+- **New log blocks:** `[update] Step: regenerate` and `[update] Step: manage commands` emit per-page results (✓/⊘/✗), token counts, and cost estimates to stdout during pipeline runs.
+- **Regeneration summary section:** Pipeline summary now includes regeneration cost/timing block — shows pages regenerated/skipped/failed, total tokens, and dollar cost estimate. When skipped, shows the reason (e.g. "no API key", "no stale pages").
+- **Failure state:** Failed regeneration/manage-commands steps log structured errors (`  ✗ Error: <message>`) but do NOT abort the pipeline — build and check-links still run. Pipeline-level failures (execSync) still exit non-zero naming the failed step.
+- **Inspection:** Import `{ steps, formatCost, runRegenerate, runManageCommands }` from `update.mjs` for programmatic inspection. `content/generated/stale-pages.json` remains the boundary contract.
+
 ## Expected Output
 
 - `scripts/update.mjs` — modified with 2 new imports, 2 new async step functions, async pipeline loop, `formatCost` helper, regeneration summary in output, `isDirectRun` guard for main execution, exported step functions for testing
