@@ -46,43 +46,43 @@
   --sl-color-text-link: #39ff14;
 }
 
-/* ─── Light Mode (Functional) ──────────────────────────── */
+/* ─── Light Mode — Deep Forest ─────────────────────────── */
 :root[data-theme='light'] {
-  /* Backgrounds */
-  --sl-color-bg: #f4f8f4;
-  --sl-color-bg-nav: #e8f0e8;
-  --sl-color-bg-sidebar: #eaf2ea;
-  --sl-color-bg-inline-code: #dce8dc;
+  /* Backgrounds — warm cream with barely-there green tint */
+  --sl-color-bg: #fafcfa;
+  --sl-color-bg-nav: #f2f7f2;
+  --sl-color-bg-sidebar: #f4f8f4;
+  --sl-color-bg-inline-code: #eaf2ea;
 
-  /* Text */
-  --sl-color-text: #1a2e1a;
-  --sl-color-text-accent: #0d6e0d;
+  /* Text — near-black green for max contrast */
+  --sl-color-text: #1b2d1b;
+  --sl-color-text-accent: #116611;
 
-  /* Accent range — muted green */
-  --sl-color-accent-low: #d0f0d0;
-  --sl-color-accent: #0d6e0d;
-  --sl-color-accent-high: #063806;
+  /* Accent range — deep forest green */
+  --sl-color-accent-low: #e6f2e6;
+  --sl-color-accent: #116611;
+  --sl-color-accent-high: #0a3d0a;
 
   /* Hairlines */
-  --sl-color-hairline: #c4d8c4;
-  --sl-color-hairline-light: #d8e8d8;
-  --sl-color-hairline-shade: #a8c0a8;
+  --sl-color-hairline: #d0ddd0;
+  --sl-color-hairline-light: #dde8dd;
+  --sl-color-hairline-shade: #b8ccb8;
 
-  /* Gray scale */
-  --sl-color-gray-1: #1a2e1a;
-  --sl-color-gray-2: #3a5a3a;
-  --sl-color-gray-3: #5a7a5a;
-  --sl-color-gray-4: #8aaa8a;
-  --sl-color-gray-5: #c4d8c4;
-  --sl-color-gray-6: #e0ece0;
-  --sl-color-gray-7: #f0f6f0;
+  /* Gray scale — cool neutrals with green undertone */
+  --sl-color-gray-1: #1b2d1b;
+  --sl-color-gray-2: #384838;
+  --sl-color-gray-3: #5a6e5a;
+  --sl-color-gray-4: #8a9e8a;
+  --sl-color-gray-5: #c0d0c0;
+  --sl-color-gray-6: #e2ece2;
+  --sl-color-gray-7: #f2f7f2;
 
-  /* Anchors */
+  /* Anchors — high contrast */
   --sl-color-white: #ffffff;
   --sl-color-black: #0a140a;
 
   /* Links */
-  --sl-color-text-link: #0d6e0d;
+  --sl-color-text-link: #0e580e;
 }
 
 /* ─── Typography (Both Modes) ──────────────────────────── */
@@ -119,13 +119,13 @@
 }
 
 :root[data-theme='light'] a:not([class]) {
-  color: #0d6e0d;
+  color: #0e580e;
   text-decoration: none;
-  border-bottom: 1px solid #0d6e0d40;
+  border-bottom: 1px solid #0e580e40;
   transition: border-color 0.15s ease;
 }
 :root[data-theme='light'] a:not([class]):hover {
-  border-bottom-color: #0d6e0d;
+  border-bottom-color: #0e580e;
 }
 
 /* ─── Badge / Inline Code ──────────────────────────────── */
@@ -139,10 +139,48 @@
 }
 
 :root[data-theme='light'] :not(pre) > code {
-  background: #dce8dc;
-  border: 1px solid #c4d8c4;
-  color: #0a5a0a;
+  background: #e6f0e6;
+  border: 1px solid #c8d8c8;
+  color: #0a4a0a;
   border-radius: 2px;
   padding: 0.1em 0.35em;
   font-size: 0.875em;
+}
+
+/* ─── Light Mode: Page Title Banner Fix ────────────────── */
+/* Starlight uses --sl-color-white for the page title text
+   in the hero/banner area. Override to ensure readability. */
+:root[data-theme='light'] .content-panel h1 {
+  color: #0a3d0a !important;
+}
+:root[data-theme='light'] header.header {
+  background: #f2f7f2;
+  border-bottom: 1px solid #d0ddd0;
+}
+
+/* ─── Light Mode: Sidebar Group Labels ─────────────────── */
+:root[data-theme='light'] nav.sidebar .top-level > li > details > summary,
+:root[data-theme='light'] nav.sidebar .top-level > li > a.large {
+  color: #1b2d1b;
+  font-weight: 700;
+}
+:root[data-theme='light'] nav.sidebar a {
+  color: #384838;
+}
+:root[data-theme='light'] nav.sidebar a:hover:not([aria-current='page']) {
+  color: #0a3d0a;
+  background: #e6f2e6;
+}
+:root[data-theme='light'] nav.sidebar a[aria-current='page'] {
+  background: #e0f0e0;
+  border-left: 2px solid #116611;
+  padding-left: calc(0.5rem - 2px);
+  color: #116611;
+  font-weight: 600;
+}
+
+/* ─── Light Mode: Right Sidebar (TOC) ──────────────────── */
+:root[data-theme='light'] .right-sidebar-panel h2,
+:root[data-theme='light'] starlight-toc h2 {
+  color: #1b2d1b !important;
 }
