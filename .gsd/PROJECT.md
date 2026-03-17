@@ -10,7 +10,7 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 ## Current State
 
-S01–S05 complete. The site builds 134 HTML pages: 5 reference pages with 76 cheat-sheet cards (S03), 125 deep-dive doc pages from the GitHub repo (S04), a changelog page with all 48 GitHub releases (S05), plus the landing page, 404 page, and search page. All 125 doc pages have internal links rewritten from `.md` format to Starlight `/page/` routes. Sidebar is organized into 10 groups plus a top-level Changelog entry. Landing page has Getting Started hero CTA, deep-dive LinkCards, and a Changelog LinkCard. Header version badge shows real version (v2.22.0) from releases.json, linked to changelog. Pagefind indexes all 134 pages. Next: S06 (update pipeline & deployment) — the final slice.
+All 6 slices (S01–S06) complete. The site builds 135 HTML pages: 5 reference pages with 76 cheat-sheet cards (S03), 125 deep-dive doc pages from the GitHub repo (S04), a changelog page with all 49 GitHub releases (S05), plus the landing page, 404 page, and search page. All 125 doc pages have internal links rewritten from `.md` format to Starlight `/page/` routes. Sidebar is organized into 10 groups plus a top-level Changelog entry. Landing page has Getting Started hero CTA, deep-dive LinkCards, and a Changelog LinkCard. Header version badge shows real version from releases.json, linked to changelog. Pagefind indexes all 135 pages. `npm run update` runs the full pipeline (npm update → extract → build → check-links) in ~6.6s. `scripts/check-links.mjs` validates 17975 internal links. `.github/workflows/deploy.yml` deploys to GitHub Pages on push to main. Ready to go live — push to GitHub and enable Pages.
 
 ## Architecture / Key Patterns
 
@@ -28,4 +28,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 ## Milestone Sequence
 
-- [ ] M001: GSD 2 Documentation Site — Build the complete doc site with content extraction, design, all content pages, and one-command update pipeline
+- [x] M001: GSD 2 Documentation Site — Build the complete doc site with content extraction, design, all content pages, and one-command update pipeline

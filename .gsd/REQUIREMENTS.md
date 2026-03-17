@@ -2,11 +2,9 @@
 
 This file is the explicit capability and coverage contract for the project.
 
-Use it to track what is actively in scope, what has been validated by completed work, what is intentionally deferred, and what is explicitly out of scope.
-
 ## Active
 
-### R001 — Content extraction from installed npm package
+### R001 — A build script extracts documentation-worthy content from the globally installed `gsd-pi` npm package — prompts, templates, skills, agent definitions, and extension metadata.
 - Class: core-capability
 - Status: active
 - Description: A build script extracts documentation-worthy content from the globally installed `gsd-pi` npm package — prompts, templates, skills, agent definitions, and extension metadata.
@@ -17,7 +15,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Must handle the exact file structure under `~/.gsd/agent/` and the npm package's `dist/resources/`
 
-### R002 — Content extraction from GitHub repo docs/
+### R002 — The build pipeline pulls markdown documentation from the `gsd-build/gsd-2` GitHub repository's `docs/` directory, README, and release notes via the GitHub API.
 - Class: core-capability
 - Status: active
 - Description: The build pipeline pulls markdown documentation from the `gsd-build/gsd-2` GitHub repository's `docs/` directory, README, and release notes via the GitHub API.
@@ -28,7 +26,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Uses GitHub API. The `docs/` directory has subdirectories: building-coding-agents, context-and-hooks, extending-pi, pi-ui-tui, proposals, what-is-pi
 
-### R003 — Quick-reference cheat sheets
+### R003 — Searchable, filterable cheat-sheet cards for all GSD commands, skills, tools, extensions, keyboard shortcuts, and agents. Each card shows a one-liner and expands for detail and examples.
 - Class: primary-user-loop
 - Status: active
 - Description: Searchable, filterable cheat-sheet cards for all GSD commands, skills, tools, extensions, keyboard shortcuts, and agents. Each card shows a one-liner and expands for detail and examples.
@@ -39,7 +37,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Content sourced from extraction pipeline (R001, R002). Cheat-sheet style, not interactive playground.
 
-### R004 — Deep-dive narrative documentation
+### R004 — Full narrative documentation pages covering getting started, auto mode, configuration, architecture, git strategy, skills, troubleshooting, extending pi, building coding agents, TUI/UI, and more.
 - Class: core-capability
 - Status: active
 - Description: Full narrative documentation pages covering getting started, auto mode, configuration, architecture, git strategy, skills, troubleshooting, extending pi, building coding agents, TUI/UI, and more.
@@ -50,18 +48,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Mirrors the GitHub repo's docs/ structure, organized into navigable sections
 
-### R005 — Changelog from GitHub releases
-- Class: continuity
-- Status: validated
-- Description: A browsable changelog page aggregating all GitHub release notes, showing what changed in each version with Added/Fixed/Changed sections.
-- Why it matters: With 6+ releases/day, users need to know what changed. The changelog is how they find out if a bug was fixed or a feature was added.
-- Source: user
-- Primary owning slice: M001/S05
-- Supporting slices: none
-- Validation: S05 builds changelog page at /changelog/ with all 48 GitHub releases — expand/collapse, dates, GitHub links, rendered markdown bodies. Verified by grep counts on dist/ output.
-- Notes: Pulls from GitHub API `gh release list`. Shows current version prominently (R010).
-
-### R006 — Terminal-native dark design with visual aids
+### R006 — A custom dark-mode-first design with terminal-native aesthetic (tight typography, code-heavy, developer-focused) complemented by diagrams, illustrations, and visual aids for vibe-coders and non-technical users.
 - Class: differentiator
 - Status: active
 - Description: A custom dark-mode-first design with terminal-native aesthetic (tight typography, code-heavy, developer-focused) complemented by diagrams, illustrations, and visual aids for vibe-coders and non-technical users.
@@ -72,29 +59,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Uses the frontend-design skill for high design quality. Dark foundation with Mermaid diagram support and custom illustrations. "Craft feel" per user's emphasis.
 
-### R007 — One-command update pipeline
-- Class: operability
-- Status: active
-- Description: A single command that updates the npm package to latest, diffs content against the last build, regenerates only changed pages, builds the site, and deploys to GitHub Pages.
-- Why it matters: The user runs this multiple times a day. If it's more than one command or takes too long, it won't get used.
-- Source: user
-- Primary owning slice: M001/S06
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Must be fast. Incremental rebuild is part of this (R011).
-
-### R008 — GitHub Pages deployment
-- Class: launchability
-- Status: active
-- Description: The built site deploys to GitHub Pages via git push. No server infrastructure needed.
-- Why it matters: Zero-ops hosting. Push and it's live.
-- Source: user
-- Primary owning slice: M001/S06
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Uses Astro's official GitHub Pages deployment workflow
-
-### R009 — Built-in full-text search
+### R009 — Full-text search across all documentation content, powered by Starlight's built-in Pagefind integration.
 - Class: primary-user-loop
 - Status: active
 - Description: Full-text search across all documentation content, powered by Starlight's built-in Pagefind integration.
@@ -105,29 +70,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Pagefind is built into Starlight and works at build time. No external search service needed.
 
-### R010 — Current version prominently displayed
-- Class: continuity
-- Status: validated
-- Description: The current GSD version number is visible in the site header or footer, updated on each build.
-- Why it matters: Developers need to know which version the docs reflect, especially with multiple releases per day.
-- Source: user
-- Primary owning slice: M001/S05
-- Supporting slices: M001/S06
-- Validation: S05 wires Header.astro to import releases.json and display releases[0].tag_name (v2.22.0) as a clickable badge. Verified: grep confirms version present and v0.0.0 placeholder eliminated.
-- Notes: Extracted from package.json or GitHub latest release tag
-
-### R011 — Incremental rebuild
-- Class: operability
-- Status: active
-- Description: The build pipeline detects what content changed since the last build and only regenerates affected pages, not the entire site.
-- Why it matters: Full rebuilds of 130+ pages on every update would be slow and wasteful. Multiple-times-a-day updates need to be fast.
-- Source: user
-- Primary owning slice: M001/S06
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Content diffing based on file hashes between versions
-
-### R012 — Semantic HTML for AI consumption
+### R012 — Well-structured HTML with proper headings, semantic markup, and a sitemap so AI tools can parse and reference the content.
 - Class: quality-attribute
 - Status: active
 - Description: Well-structured HTML with proper headings, semantic markup, and a sitemap so AI tools can parse and reference the content.
@@ -138,7 +81,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Starlight generates semantic HTML by default. Sitemap is built-in.
 
-### R013 — Diagram and illustration support
+### R013 — Support for Mermaid diagrams and potentially custom illustrations in documentation pages, rendered as SVG.
 - Class: differentiator
 - Status: active
 - Description: Support for Mermaid diagrams and potentially custom illustrations in documentation pages, rendered as SVG.
@@ -149,7 +92,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Mermaid integration via Astro plugin. Custom illustrations as needed per section.
 
-### R014 — Skill documentation
+### R014 — Documentation pages for all bundled skills (frontend-design, swiftui, debug-like-expert, github-workflows, lint, review, test) including their capabilities, triggers, reference files, and workflows.
 - Class: core-capability
 - Status: active
 - Description: Documentation pages for all bundled skills (frontend-design, swiftui, debug-like-expert, github-workflows, lint, review, test) including their capabilities, triggers, reference files, and workflows.
@@ -160,7 +103,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Content extracted from skill SKILL.md files and reference docs
 
-### R015 — Extension documentation
+### R015 — Documentation pages for all 14 bundled extensions, showing what each provides, how to use it, and configuration options.
 - Class: core-capability
 - Status: active
 - Description: Documentation pages for all 14 bundled extensions, showing what each provides, how to use it, and configuration options.
@@ -171,7 +114,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Extensions: GSD, Browser Tools, Search the Web, Google Search, Context7, Background Shell, Subagent, Mac Tools, MCPorter, Voice, Slash Commands, LSP, Ask User Questions, Secure Env Collect
 
-### R016 — Agent documentation
+### R016 — Documentation pages for the 3 bundled agents (scout, researcher, worker) plus the 2 specialized agents (javascript-pro, typescript-pro), showing their roles and when they're used.
 - Class: core-capability
 - Status: active
 - Description: Documentation pages for the 3 bundled agents (scout, researcher, worker) plus the 2 specialized agents (javascript-pro, typescript-pro), showing their roles and when they're used.
@@ -182,7 +125,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Content extracted from agent .md files
 
-### R017 — Architecture documentation
+### R017 — Architecture overview pages covering the system design, dispatch pipeline, state machine, context engineering, and how GSD's components fit together.
 - Class: core-capability
 - Status: active
 - Description: Architecture overview pages covering the system design, dispatch pipeline, state machine, context engineering, and how GSD's components fit together.
@@ -193,7 +136,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Sourced from docs/architecture.md and the building-coding-agents essay series
 
-### R018 — Content transformation pipeline
+### R018 — Automated transformation of internal artifacts (prompt templates, agent instructions, skill files) into user-facing documentation. Not raw dumps — meaningful extraction of capabilities, behaviors, and usage patterns.
 - Class: core-capability
 - Status: active
 - Description: Automated transformation of internal artifacts (prompt templates, agent instructions, skill files) into user-facing documentation. Not raw dumps — meaningful extraction of capabilities, behaviors, and usage patterns.
@@ -204,7 +147,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: This is the hardest technical challenge. Some artifacts map cleanly (skill files describe capabilities). Others (prompt templates) need careful curation.
 
-### R019 — Troubleshooting / FAQ section
+### R019 — A prominent troubleshooting section covering common issues, the `/gsd doctor` command, and recovery procedures.
 - Class: failure-visibility
 - Status: active
 - Description: A prominent troubleshooting section covering common issues, the `/gsd doctor` command, and recovery procedures.
@@ -215,7 +158,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: GSD already has docs/troubleshooting.md. Surface it prominently.
 
-### R020 — Getting started / first-run guide
+### R020 — A clear getting-started page as the primary entry point, covering install, first run, provider setup, and basic usage.
 - Class: launchability
 - Status: active
 - Description: A clear getting-started page as the primary entry point, covering install, first run, provider setup, and basic usage.
@@ -226,20 +169,77 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: GSD has docs/getting-started.md. This is the landing page entry point.
 
-### R021 — Broken link detection in build pipeline
+## Validated
+
+### R005 — A browsable changelog page aggregating all GitHub release notes, showing what changed in each version with Added/Fixed/Changed sections.
+- Class: continuity
+- Status: validated
+- Description: A browsable changelog page aggregating all GitHub release notes, showing what changed in each version with Added/Fixed/Changed sections.
+- Why it matters: With 6+ releases/day, users need to know what changed. The changelog is how they find out if a bug was fixed or a feature was added.
+- Source: user
+- Primary owning slice: M001/S05
+- Supporting slices: none
+- Validation: S05 builds changelog page at /changelog/ with all 48 GitHub releases — expand/collapse, dates, GitHub links, rendered markdown bodies. Verified by grep counts on dist/ output.
+- Notes: Pulls from GitHub API `gh release list`. Shows current version prominently (R010).
+
+### R007 — A single command that updates the npm package to latest, diffs content against the last build, regenerates only changed pages, builds the site, and deploys to GitHub Pages.
+- Class: operability
+- Status: validated
+- Description: A single command that updates the npm package to latest, diffs content against the last build, regenerates only changed pages, builds the site, and deploys to GitHub Pages.
+- Why it matters: The user runs this multiple times a day. If it's more than one command or takes too long, it won't get used.
+- Source: user
+- Primary owning slice: M001/S06
+- Supporting slices: none
+- Validation: S06 builds `scripts/update.mjs` — `npm run update` chains npm update → extract → build (with prebuild lifecycle hook) → check-links in one command. Reports per-step timing, manifest diff (added/changed/removed counts), page count (135), and link check result. Exits non-zero with failed step name on failure. Full pipeline completes in ~6.6s.
+- Notes: Must be fast. Incremental rebuild is part of this (R011).
+
+### R008 — The built site deploys to GitHub Pages via git push. No server infrastructure needed.
+- Class: launchability
+- Status: validated
+- Description: The built site deploys to GitHub Pages via git push. No server infrastructure needed.
+- Why it matters: Zero-ops hosting. Push and it's live.
+- Source: user
+- Primary owning slice: M001/S06
+- Supporting slices: none
+- Validation: S06 creates `.github/workflows/deploy.yml` — triggers on push to main + workflow_dispatch, uses withastro/action@v5 (extract + build + check-links), deploys via actions/deploy-pages@v4 with pages:write + id-token:write permissions. Concurrency group prevents parallel deploys. Ready to go live when repo is pushed to GitHub with Pages enabled.
+- Notes: Uses Astro's official GitHub Pages deployment workflow
+
+### R010 — The current GSD version number is visible in the site header or footer, updated on each build.
+- Class: continuity
+- Status: validated
+- Description: The current GSD version number is visible in the site header or footer, updated on each build.
+- Why it matters: Developers need to know which version the docs reflect, especially with multiple releases per day.
+- Source: user
+- Primary owning slice: M001/S05
+- Supporting slices: M001/S06
+- Validation: S05 wires Header.astro to import releases.json and display releases[0].tag_name (v2.22.0) as a clickable badge. Verified: grep confirms version present and v0.0.0 placeholder eliminated.
+- Notes: Extracted from package.json or GitHub latest release tag
+
+### R011 — The build pipeline detects what content changed since the last build and only regenerates affected pages, not the entire site.
+- Class: operability
+- Status: validated
+- Description: The build pipeline detects what content changed since the last build and only regenerates affected pages, not the entire site.
+- Why it matters: Full rebuilds of 130+ pages on every update would be slow and wasteful. Multiple-times-a-day updates need to be fast.
+- Source: user
+- Primary owning slice: M001/S06
+- Supporting slices: none
+- Validation: S01 manifest tracks 1023 files with SHA hashes. S06 update script captures extract output and reports manifest diff summary (+N added, ~N changed, -N removed). Astro's content collections handle page-level rebuild. The manifest diff enables knowing what changed; Astro handles incremental static generation internally.
+- Notes: Content diffing based on file hashes between versions
+
+### R021 — The build pipeline checks for broken internal links between doc pages and reports them before deployment.
 - Class: quality-attribute
-- Status: active
+- Status: validated
 - Description: The build pipeline checks for broken internal links between doc pages and reports them before deployment.
 - Why it matters: With 130+ frequently changing doc files, broken links are inevitable without automated detection.
 - Source: research
 - Primary owning slice: M001/S06
 - Supporting slices: none
-- Validation: unmapped
+- Validation: S06 builds `scripts/check-links.mjs` — scans all dist/ HTML files, checks 17975 internal `<a>` links against filesystem after stripping /gsd2-guide/ base path. Exits 0 with count on success, exits 1 with per-link broken report on failure. Integrated into both `npm run update` pipeline and GitHub Actions workflow.
 - Notes: Build-time check, not runtime
 
 ## Deferred
 
-### R022 — Per-version doc snapshots
+### R022 — Ability to view documentation as it was at any specific version.
 - Class: continuity
 - Status: deferred
 - Description: Ability to view documentation as it was at any specific version.
@@ -250,7 +250,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Deferred due to extreme release velocity making per-version snapshots impractical. Latest + changelog covers the need.
 
-### R023 — Interactive command playground
+### R023 — Interactive simulation where users type commands and see simulated output.
 - Class: differentiator
 - Status: deferred
 - Description: Interactive simulation where users type commands and see simulated output.
@@ -261,7 +261,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 - Validation: unmapped
 - Notes: Cheat-sheet style chosen instead. Could revisit later.
 
-### R024 — CI/CD auto-trigger on release
+### R024 — GitHub Action that auto-triggers doc rebuild on every new gsd-pi release.
 - Class: operability
 - Status: deferred
 - Description: GitHub Action that auto-triggers doc rebuild on every new gsd-pi release.
@@ -274,7 +274,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 
 ## Out of Scope
 
-### R025 — Internationalization / translations
+### R025 — Multi-language documentation support.
 - Class: constraint
 - Status: out-of-scope
 - Description: Multi-language documentation support.
@@ -293,13 +293,13 @@ Use it to track what is actively in scope, what has been validated by completed 
 | R002 | core-capability | active | M001/S01 | M001/S04, M001/S05 | unmapped |
 | R003 | primary-user-loop | active | M001/S03 | none | unmapped |
 | R004 | core-capability | active | M001/S04 | none | unmapped |
-| R005 | continuity | validated | M001/S05 | none | S05: 48 releases with expand/collapse, dates, links, rendered bodies |
+| R005 | continuity | validated | M001/S05 | none | S05 builds changelog page at /changelog/ with all 48 GitHub releases — expand/collapse, dates, GitHub links, rendered markdown bodies. Verified by grep counts on dist/ output. |
 | R006 | differentiator | active | M001/S02 | M001/S03, M001/S04 | unmapped |
-| R007 | operability | active | M001/S06 | none | unmapped |
-| R008 | launchability | active | M001/S06 | none | unmapped |
+| R007 | operability | validated | M001/S06 | none | S06 builds `scripts/update.mjs` — `npm run update` chains npm update → extract → build (with prebuild lifecycle hook) → check-links in one command. Reports per-step timing, manifest diff (added/changed/removed counts), page count (135), and link check result. Exits non-zero with failed step name on failure. Full pipeline completes in ~6.6s. |
+| R008 | launchability | validated | M001/S06 | none | S06 creates `.github/workflows/deploy.yml` — triggers on push to main + workflow_dispatch, uses withastro/action@v5 (extract + build + check-links), deploys via actions/deploy-pages@v4 with pages:write + id-token:write permissions. Concurrency group prevents parallel deploys. Ready to go live when repo is pushed to GitHub with Pages enabled. |
 | R009 | primary-user-loop | active | M001/S02 | none | unmapped |
-| R010 | continuity | validated | M001/S05 | M001/S06 | S05: v2.22.0 in header badge, v0.0.0 eliminated |
-| R011 | operability | active | M001/S06 | none | unmapped |
+| R010 | continuity | validated | M001/S05 | M001/S06 | S05 wires Header.astro to import releases.json and display releases[0].tag_name (v2.22.0) as a clickable badge. Verified: grep confirms version present and v0.0.0 placeholder eliminated. |
+| R011 | operability | validated | M001/S06 | none | S01 manifest tracks 1023 files with SHA hashes. S06 update script captures extract output and reports manifest diff summary (+N added, ~N changed, -N removed). Astro's content collections handle page-level rebuild. The manifest diff enables knowing what changed; Astro handles incremental static generation internally. |
 | R012 | quality-attribute | active | M001/S02 | none | unmapped |
 | R013 | differentiator | active | M001/S02 | M001/S04 | unmapped |
 | R014 | core-capability | active | M001/S03 | none | unmapped |
@@ -309,7 +309,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 | R018 | core-capability | active | M001/S01 | M001/S03 | unmapped |
 | R019 | failure-visibility | active | M001/S04 | none | unmapped |
 | R020 | launchability | active | M001/S04 | none | unmapped |
-| R021 | quality-attribute | active | M001/S06 | none | unmapped |
+| R021 | quality-attribute | validated | M001/S06 | none | S06 builds `scripts/check-links.mjs` — scans all dist/ HTML files, checks 17975 internal `<a>` links against filesystem after stripping /gsd2-guide/ base path. Exits 0 with count on success, exits 1 with per-link broken report on failure. Integrated into both `npm run update` pipeline and GitHub Actions workflow. |
 | R022 | continuity | deferred | none | none | unmapped |
 | R023 | differentiator | deferred | none | none | unmapped |
 | R024 | operability | deferred | none | none | unmapped |
@@ -317,8 +317,7 @@ Use it to track what is actively in scope, what has been validated by completed 
 
 ## Coverage Summary
 
-- Active requirements: 19
-- Mapped to slices: 21
-- Validated: 2
+- Active requirements: 15
+- Mapped to slices: 15
+- Validated: 6 (R005, R007, R008, R010, R011, R021)
 - Unmapped active requirements: 0
-tive requirements: 0

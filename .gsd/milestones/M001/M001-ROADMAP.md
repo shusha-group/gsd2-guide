@@ -67,7 +67,7 @@ This milestone is complete only when all are true:
 - [x] **S05: Changelog & release tracking** `risk:low` `depends:[S02]`
   > After this: Browsable release history page showing all 48+ GitHub releases. Current version number displayed in the site header. Each release shows Added/Fixed/Changed sections.
 
-- [ ] **S06: Update pipeline & GitHub Pages deployment** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
+- [x] **S06: Update pipeline & GitHub Pages deployment** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
   > After this: One command updates npm package, diffs content against last build, regenerates changed pages, builds the site, runs broken link detection, and deploys to GitHub Pages. Site is live.
 
 ## Boundary Map
