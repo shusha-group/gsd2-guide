@@ -10,11 +10,9 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 ## Current State
 
-**M001 complete.** The documentation site is fully built and ready for deployment. 135 HTML pages: 92 quick-reference cards across 5 pages (58 commands, 8 skills, 17 extensions, 5 agents, 4 shortcuts), 125 deep-dive documentation pages from the GitHub repo, a changelog with all 49 GitHub releases, plus landing page, 404, and search. Terminal-native dark design with phosphor green (#39FF14) on near-black, JetBrains Mono + Outfit fonts, Mermaid diagram support, and Pagefind search indexing all content.
+**M001 complete.** The documentation site is fully built with 135 HTML pages, terminal-native dark design, content extraction pipeline, quick-reference cards, browsable changelog, Pagefind search, broken link checker, and GitHub Pages deployment workflow. The one-command update pipeline (`npm run update`) completes in ~6 seconds.
 
-The one-command update pipeline (`npm run update`) chains npm update → extract → build → check-links in ~6 seconds. The broken link checker validates 17975 internal links. The GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys to GitHub Pages on push to main.
-
-**Next step:** Push repo to GitHub and enable Pages in repository settings to go live.
+**M002 in progress.** Refocusing the site from generic pi/agent content to GSD-specific user guide content. Removing 101 pages of pi/agent/extension development docs. Adding end-to-end walkthrough, per-command deep-dives, and workflow recipes — all authored content with Mermaid diagrams, directory trees, and annotated terminal examples.
 
 ## Architecture / Key Patterns
 
@@ -24,7 +22,7 @@ The one-command update pipeline (`npm run update`) chains npm update → extract
 - **Terminal-native dark design** — Phosphor green (#39FF14) on near-black (#0a0e0a), JetBrains Mono + Outfit Variable fonts, two-layer CSS (custom.css for variables + terminal.css for effects)
 - **Quick-reference cards** — 3 reusable Astro components (ReferenceCard, ReferenceGrid, ToolList) with native details/summary and vanilla JS category filtering
 - **Mermaid diagrams** — @pasqal-io/starlight-client-mermaid renders triple-backtick mermaid fences as SVGs
-- **Incremental rebuild** — SHA-based manifest diff tracking (1023 files) reports added/changed/removed content between builds
+- **Incremental rebuild** — SHA-based manifest diff tracking (1025 files) reports added/changed/removed content between builds
 - **Broken link detection** — `scripts/check-links.mjs` validates all internal `<a>` links against dist/ filesystem
 - **GitHub Pages** — Static hosting via git push, site/base configured for `gsd-build.github.io/gsd2-guide`
 
@@ -32,8 +30,7 @@ The one-command update pipeline (`npm run update`) chains npm update → extract
 
 See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement status, and coverage mapping.
 
-All 21 M001 requirements validated. 3 requirements deferred (R022 per-version snapshots, R023 interactive playground, R024 auto-trigger). 1 out of scope (R025 multi-language).
-
 ## Milestone Sequence
 
 - [x] M001: GSD 2 Documentation Site — 135-page documentation site with content extraction pipeline, terminal-native dark design, 92 quick-reference cards, 125 deep-dive docs, browsable changelog, Pagefind search, and one-command update pipeline deploying to GitHub Pages in ~6 seconds.
+- [ ] M002: GSD User Guide — Remove generic pi/agent content, add end-to-end walkthrough with real project example, per-command deep-dive pages for all ~25 GSD commands, and core workflow recipes. Authored content with Mermaid diagrams and annotated terminal examples.
