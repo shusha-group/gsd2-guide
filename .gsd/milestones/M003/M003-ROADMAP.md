@@ -54,7 +54,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Source Diff and Page Mapping** `risk:high` `depends:[]`
+- [x] **S01: Source Diff and Page Mapping** `risk:high` `depends:[]`
   > After this: Running a script shows which gsd-pi source files changed between the current and previous version, and which doc pages are affected. All 42 authored pages have explicit source mappings. No regeneration yet — detection only.
 - [ ] **S02: LLM Page Regeneration** `risk:high` `depends:[S01]`
   > After this: Running the regeneration script with an API key regenerates flagged pages via Claude API. Output quality verified against M02 originals for 3+ command pages. Token usage and cost reported.
