@@ -1,12 +1,12 @@
 # GSD State
 
-**Active Milestone:** M001: GSD 2 Documentation Site
-**Active Slice:** S01: Commands quick-reference with extraction pipeline and custom design
-**Phase:** executing
-**Requirements Status:** 0 active · 21 validated · 3 deferred · 1 out of scope
+**Active Milestone:** None
+**Phase:** idle
+**Last activity:** 2026-03-17
 
 ## Milestone Registry
-- 🔄 **M001:** GSD 2 Documentation Site
+- ✅ **M001:** GSD 2 Documentation Site
+- 📋 **M002:** GSD User Documentation Overhaul (queued)
 
 ## Recent Decisions
 - None recorded
@@ -14,5 +14,8 @@
 ## Blockers
 - None
 
-## Next Action
-Execute T01: Astro/Starlight project scaffold with terminal-native dark theme in slice S01.
+## Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|---|---|---|---|
+| 1 | Fix homepage "Explore the Documentation" — replace non-clickable Cards with LinkCards | 2026-03-17 | b7f1a76 | [1-the-explore-documentation-right-at-the-t](./quick/1-the-explore-documentation-right-at-the-t/) |
