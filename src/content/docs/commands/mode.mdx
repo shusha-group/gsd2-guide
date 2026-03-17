@@ -1,0 +1,91 @@
+---
+title: "/gsd mode"
+description: "Switch between solo and team workflow modes — sets coordinated defaults for git behavior, milestone IDs, and documentation level."
+---
+
+## What It Does
+
+`/gsd mode` is a quick toggle between solo and team workflow modes. Each mode sets coordinated defaults for several preferences at once, saving you from configuring them individually. It's a shortcut for the Workflow Mode category in `/gsd prefs`.
+
+Solo mode is optimized for individual developers — it auto-pushes, uses simple sequential milestone IDs, and keeps documentation lightweight. Team mode is designed for shared repositories — it uses unique milestone IDs to avoid collisions, pushes branches for review, and enables pre-merge checks.
+
+## Usage
+
+```
+/gsd mode                # Toggle mode (opens selection prompt)
+/gsd mode solo           # Switch to solo mode directly
+/gsd mode team           # Switch to team mode directly
+```
+
+## How It Works
+
+The command presents a selection prompt with three options:
+
+1. **Solo** — Personal projects, single developer
+2. **Team** — Shared repos, multiple contributors
+3. **Manual** — No mode defaults, configure everything individually
+
+When you select a mode, it writes the coordinated defaults to your preferences file and reloads extensions so changes take effect immediately.
+
+### Mode Comparison
+
+| Setting | Solo | Team |
+|---------|------|------|
+| `auto_push` | `true` — pushes after each commit | `false` — commits stay local |
+| `push_branches` | `false` — no feature branches pushed | `true` — milestone branches pushed for review |
+| `pre_merge_check` | `false` — merge without CI gate | `true` — wait for CI before merging |
+| `merge_strategy` | `squash` | `squash` |
+| `isolation` | `worktree` | `worktree` |
+| `commit_docs` | `true` | `true` |
+| `unique_milestone_ids` | `false` — simple `M001`, `M002` | `true` — `M001-eh88as`, `M002-k4m9xz` (prevents ID collisions across branches) |
+
+### Unique Milestone IDs
+
+In solo mode, milestone IDs are simple sequential numbers: `M001`, `M002`, `M003`. This is clean and easy to reference.
+
+In team mode, milestone IDs include a random 6-character suffix: `M001-eh88as`. This prevents collisions when multiple contributors queue milestones on different branches — two developers creating "M003" independently would get `M003-abc123` and `M003-def456` instead of conflicting.
+
+The unique ID format affects directory names (`.gsd/milestones/M001-eh88as/`), branch names (`milestone/M001-eh88as`), and all references in state files.
+
+## What Files It Touches
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `~/.gsd/preferences.md` | Current global preferences |
+| `.gsd/preferences.md` | Current project preferences |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `~/.gsd/preferences.md` or `.gsd/preferences.md` | Updated mode and coordinated defaults |
+
+## Examples
+
+Switching to team mode:
+
+```
+> /gsd mode
+
+Workflow mode (current: solo):
+  ❯ solo — auto-push, squash, simple IDs (personal projects)
+    team — unique IDs, push branches, pre-merge checks (shared repos)
+    (none) — configure everything manually
+    (keep current)
+
+  → team
+
+Mode: team — defaults: auto_push=false, push_branches=true,
+  pre_merge_check=true, merge_strategy=squash, isolation=worktree,
+  commit_docs=true, unique_milestone_ids=true
+
+Saved global preferences to ~/.gsd/preferences.md
+```
+
+## Related Commands
+
+- [`/gsd prefs`](../prefs/) — Full preference wizard (mode is one category)
+- [`/gsd config`](../config/) — Configure tool API keys
+- [`/gsd doctor`](../doctor/) — Validates preference file structure

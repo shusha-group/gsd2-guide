@@ -84,6 +84,15 @@ Links between command pages use relative `../sibling/` format: `[text](../siblin
 - All 6 new pages appear in `dist/commands/*/index.html`
 - `grep "'/commands/" astro.config.mjs | wc -l` → 22
 
+## Observability Impact
+
+- **Page count delta**: `npm run build` should produce ~48 pages (42 from T01 + 6 new). Verifiable via build output.
+- **Sidebar entry count**: `grep "'/commands/" astro.config.mjs | wc -l` → 22 (16 from T01 + 6 new).
+- **MDX file count**: `ls src/content/docs/commands/*.mdx | wc -l` → 21 (15 from T01 + 6 new).
+- **Link integrity**: `node scripts/check-links.mjs` validates all cross-links including 6 new pages — 0 broken links confirms wiring.
+- **Landing page coverage**: `grep -c 'doctor/\|forensics/\|prefs/\|mode/\|skill-health/\|config/' content/generated/docs/commands.md` → 6.
+- **Failure visibility**: A broken Mermaid diagram in any of the 4 diagram-bearing pages (doctor, forensics, prefs, config) will surface as a build error pointing to the specific file and line — Mermaid syntax errors are not silent.
+
 ## Inputs
 
 - `src/content/docs/commands/queue.mdx` (or any T01 page) — Verify the template is being followed consistently

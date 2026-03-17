@@ -48,7 +48,7 @@
   - Verify: `npm run build` succeeds with ~42 pages, `node scripts/check-links.mjs` passes, `ls src/content/docs/commands/*.mdx | wc -l` → 15
   - Done when: 6 new pages exist, all reachable via sidebar, all linked from commands landing page, build and link check pass
 
-- [ ] **T02: Author diagnostics and config command deep-dives** `est:50m`
+- [x] **T02: Author diagnostics and config command deep-dives** `est:50m`
   - Why: Covers the 6 configuration and health-check commands — doctor and forensics are the most complex commands in GSD with rich internal mechanics needing detailed Mermaid diagrams.
   - Files: `src/content/docs/commands/doctor.mdx`, `src/content/docs/commands/forensics.mdx`, `src/content/docs/commands/prefs.mdx`, `src/content/docs/commands/mode.mdx`, `src/content/docs/commands/skill-health.mdx`, `src/content/docs/commands/config.mdx`, `astro.config.mjs`, `content/generated/docs/commands.md`
   - Do: Create 6 MDX pages. Doctor needs a multi-mode Mermaid diagram (doctor/fix/heal paths) and an issue codes reference. Forensics needs an anomaly detection pipeline diagram. Prefs needs the category/wizard flow. Skill-health and config are medium complexity — data-flow pattern for display commands, interactive flow for config. Mode is simple (toggle + coordinated defaults). Study source in `commands.ts`, `doctor.ts`, `forensics.ts`, `skill-telemetry.ts`. Add 6 sidebar entries and 6 landing page links.

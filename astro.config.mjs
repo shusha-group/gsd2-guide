@@ -46,6 +46,12 @@ export default defineConfig({
             { label: '/gsd triage', link: '/commands/triage/' },
             { label: '/gsd knowledge', link: '/commands/knowledge/' },
             { label: '/gsd cleanup', link: '/commands/cleanup/' },
+            { label: '/gsd doctor', link: '/commands/doctor/' },
+            { label: '/gsd forensics', link: '/commands/forensics/' },
+            { label: '/gsd prefs', link: '/commands/prefs/' },
+            { label: '/gsd mode', link: '/commands/mode/' },
+            { label: '/gsd skill-health', link: '/commands/skill-health/' },
+            { label: '/gsd config', link: '/commands/config/' },
           ],
         },
         {
