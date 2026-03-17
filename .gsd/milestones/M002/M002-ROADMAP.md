@@ -55,7 +55,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Command deep-dives — session and execution commands** `risk:medium` `depends:[S01]`
   > After this: Every session and execution command has its own deep-dive page — `/gsd`, `/gsd auto`, `/gsd stop`, `/gsd pause`, `/gsd next`, `/gsd quick`, `/gsd discuss`, `/gsd status`, `/gsd visualize`. Each page shows what the command does, how it works internally, what files it reads/writes, Mermaid flow diagrams, and terminal examples. Reachable via sidebar and search.
 
-- [ ] **S03: Command deep-dives — planning, maintenance, and utility commands** `risk:medium` `depends:[S01]`
+- [x] **S03: Command deep-dives — planning, maintenance, and utility commands** `risk:medium` `depends:[S01]`
   > After this: All remaining GSD commands have deep-dive pages — `/gsd queue`, `/gsd steer`, `/gsd doctor`, `/gsd forensics`, `/gsd capture`, `/gsd triage`, `/gsd prefs`, `/gsd mode`, `/gsd knowledge`, `/gsd cleanup`, `/gsd hooks`, `/gsd run-hook`, `/gsd skill-health`, `/gsd migrate`, `/gsd config`, keyboard shortcuts, CLI flags, and headless mode. Full command coverage.
 
 - [ ] **S04: Core workflow recipes** `risk:low` `depends:[S01]`
