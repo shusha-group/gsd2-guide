@@ -30,6 +30,20 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
   <LinkCard title="Agents" description="5 specialized agents with roles and capabilities — scout, researcher, worker, and language-specific pros for delegated tasks." href="/gsd2-guide/reference/agents/" />
 </CardGrid>
 
+## How GSD Works
+
+```mermaid
+graph LR
+  A[Plan] --> B[Execute]
+  B --> C[Verify]
+  C --> D[Ship]
+  D -->|Next slice| A
+  style A fill:#0f2b0f,stroke:#39ff14,color:#e8f4e8
+  style B fill:#0f2b0f,stroke:#39ff14,color:#e8f4e8
+  style C fill:#0f2b0f,stroke:#39ff14,color:#e8f4e8
+  style D fill:#0f2b0f,stroke:#39ff14,color:#e8f4e8
+```
+
 ## Deep-Dive Guides
 
 <CardGrid>

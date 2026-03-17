@@ -45,6 +45,15 @@ Initialize the Astro + Starlight project with all foundational configuration: cu
 - Frontend-design skill for design quality guidance
 - D001 (Astro + Starlight), D006 (terminal-native dark with visual aids) from DECISIONS.md
 
+## Observability Impact
+
+- **Dev server startup**: `npm run dev` logs confirm Astro starts on localhost with 0 errors — verifiable by checking process stdout
+- **Theme rendering**: Browser inspection of CSS custom properties (`--sl-color-bg`, `--sl-color-accent`) confirms theme override vs Starlight defaults
+- **Mermaid integration**: Index page contains `<svg>` element from mermaid code block — absence indicates plugin misconfiguration
+- **Sidebar structure**: DOM contains navigation groups (Reference, Guides, Advanced, Changelog) — inspectable via browser accessibility tree
+- **Sitemap**: `dist/sitemap-index.xml` exists after build — confirms sitemap integration is active
+- **Failure signals**: Astro build errors surface as non-zero exit codes with file/line references in stderr
+
 ## Expected Output
 
 - `package.json` — Astro project with all dependencies
