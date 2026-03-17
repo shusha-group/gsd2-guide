@@ -452,29 +452,8 @@ describe("removeFromPageMap", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Mock Anthropic client that returns valid frontmatter MDX content.
- * Tracks calls for assertion purposes.
+ * Mock client is no longer needed — createNewPages is scaffold-only.
  */
-function makeMockClient(responseText) {
-  const calls = [];
-  const text =
-    responseText ||
-    `---\ntitle: "/gsd fake-test"\ndescription: "A fake test command"\n---\n\n## What It Does\n\nThis is a test page.\n`;
-  return {
-    calls,
-    messages: {
-      create: async (args) => {
-        calls.push(args);
-        return {
-          content: [{ text }],
-          model: "claude-sonnet-4-5-20250929",
-          stop_reason: "end_turn",
-          usage: { input_tokens: 100, output_tokens: 200 },
-        };
-      },
-    },
-  };
-}
 
 // ─── createNewPages tests ────────────────────────────────────────────────────
 
@@ -489,8 +468,6 @@ describe("createNewPages", () => {
   let manifestPath;
   /** @type {string} */
   let commandsDir;
-  /** @type {string} */
-  let createdPagePath;
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-create-"));
@@ -503,45 +480,26 @@ describe("createNewPages", () => {
     fs.writeFileSync(mapPath, JSON.stringify(makePageMap(), null, 2));
     fs.writeFileSync(manifestPath, JSON.stringify(makeManifest()));
     fs.mkdirSync(commandsDir);
-
-    // Track the page file that regeneratePage writes to real project dir
-    createdPagePath = path.join(
-      ROOT,
-      "src/content/docs/commands/fake-test-t02.mdx"
-    );
   });
 
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    // Clean up any page file written to real project dir
-    try {
-      fs.unlinkSync(createdPagePath);
-    } catch {
-      // May not exist if test didn't get that far
-    }
   });
 
-  it("creates a page, updates sidebar and map with mock client", async () => {
-    const mockClient = makeMockClient();
-    const result = await createNewPages(["fake-test-t02"], {
-      client: mockClient,
+  it("creates a scaffold page, updates sidebar and map", () => {
+    const result = createNewPages(["fake-test-t02"], {
       configPath,
       mapPath,
       manifestPath,
+      commandsDir,
     });
 
     assert.equal(result.created, 1);
-    assert.equal(result.skipped, 0);
     assert.equal(result.failed, 0);
     assert.equal(result.results.length, 1);
 
     const entry = result.results[0];
     assert.equal(entry.slug, "fake-test-t02");
-
-    // Regeneration succeeded
-    assert.ok(entry.regeneration.pagePath, "Should have pagePath");
-    assert.equal(entry.regeneration.inputTokens, 100);
-    assert.equal(entry.regeneration.outputTokens, 200);
 
     // Sidebar was updated
     assert.ok(entry.sidebar?.added, "Sidebar entry should be added");
@@ -559,35 +517,28 @@ describe("createNewPages", () => {
       "Map should contain the new page key"
     );
 
-    // Page file was created by regeneratePage
-    assert.ok(
-      fs.existsSync(createdPagePath),
-      "Page .mdx file should exist on disk"
-    );
+    // Scaffold file was created
+    const pagePath = path.join(commandsDir, "fake-test-t02.mdx");
+    assert.ok(fs.existsSync(pagePath), "Scaffold .mdx file should exist");
 
-    // Mock client was called exactly once
-    assert.equal(mockClient.calls.length, 1);
-    assert.ok(
-      mockClient.calls[0].messages[0].content.includes("commands/fake-test-t02.mdx"),
-      "Mock client should receive the correct pagePath in the prompt"
-    );
+    const content = fs.readFileSync(pagePath, "utf-8");
+    assert.ok(content.startsWith("---\n"), "Should have frontmatter");
+    assert.ok(content.includes("/gsd fake-test-t02"), "Should have command title");
+    assert.ok(content.includes("scaffold"), "Should indicate scaffold status");
   });
 
-  it("skips sidebar/map changes in dryRun mode", async () => {
-    const mockClient = makeMockClient();
-    const result = await createNewPages(["fake-test-t02"], {
-      client: mockClient,
+  it("skips all writes in dryRun mode", () => {
+    const result = createNewPages(["fake-test-t02"], {
       dryRun: true,
       configPath,
       mapPath,
       manifestPath,
+      commandsDir,
     });
 
-    // dryRun still calls regeneratePage (which also uses dryRun)
     assert.equal(result.created, 1);
-    assert.equal(result.results[0].regeneration.pagePath, "commands/fake-test-t02.mdx");
 
-    // But sidebar and map should NOT be updated
+    // No sidebar/map updates in dryRun
     assert.equal(result.results[0].sidebar, null, "Sidebar should not be updated in dryRun");
     assert.equal(result.results[0].map, null, "Map should not be updated in dryRun");
 
@@ -598,90 +549,42 @@ describe("createNewPages", () => {
       "Sidebar should NOT contain the command in dryRun"
     );
 
-    // Map file should be unchanged
-    const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    // No scaffold file written
     assert.ok(
-      !("commands/fake-test-t02.mdx" in map),
-      "Map should NOT contain the page in dryRun"
+      !fs.existsSync(path.join(commandsDir, "fake-test-t02.mdx")),
+      "Scaffold file should NOT exist in dryRun"
     );
   });
 
-  it("returns skip result when no API key and no client", async () => {
-    // Temporarily unset ANTHROPIC_API_KEY
-    const origKey = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
-
-    try {
-      const result = await createNewPages(["fake-test-t02"], {
-        // No client provided — triggers API key check
+  it("processes multiple new commands", () => {
+    const result = createNewPages(
+      ["fake-test-t02", "fake-test-t02b"],
+      {
         configPath,
         mapPath,
         manifestPath,
-      });
-
-      assert.equal(result.skipped, 1);
-      assert.equal(result.created, 0);
-      assert.equal(result.failed, 0);
-
-      const entry = result.results[0];
-      assert.ok(entry.regeneration.skipped, "Should be skipped");
-      assert.equal(entry.regeneration.reason, "no API key");
-
-      // Sidebar and map should NOT be updated
-      assert.equal(entry.sidebar, null);
-      assert.equal(entry.map, null);
-    } finally {
-      // Restore API key
-      if (origKey !== undefined) {
-        process.env.ANTHROPIC_API_KEY = origKey;
+        commandsDir,
       }
-    }
-  });
-
-  it("processes multiple new commands", async () => {
-    const mockClient = makeMockClient();
-
-    // Clean up both files after
-    const page2Path = path.join(
-      ROOT,
-      "src/content/docs/commands/fake-test-t02b.mdx"
     );
 
-    try {
-      const result = await createNewPages(
-        ["fake-test-t02", "fake-test-t02b"],
-        {
-          client: mockClient,
-          configPath,
-          mapPath,
-          manifestPath,
-        }
-      );
+    assert.equal(result.created, 2);
+    assert.equal(result.results.length, 2);
+    assert.equal(result.results[0].slug, "fake-test-t02");
+    assert.equal(result.results[1].slug, "fake-test-t02b");
 
-      assert.equal(result.created, 2);
-      assert.equal(result.results.length, 2);
-      assert.equal(result.results[0].slug, "fake-test-t02");
-      assert.equal(result.results[1].slug, "fake-test-t02b");
+    // Both sidebar entries added
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(sidebarContent.includes("/commands/fake-test-t02/"));
+    assert.ok(sidebarContent.includes("/commands/fake-test-t02b/"));
 
-      // Both sidebar entries added
-      const sidebarContent = fs.readFileSync(configPath, "utf-8");
-      assert.ok(sidebarContent.includes("/commands/fake-test-t02/"));
-      assert.ok(sidebarContent.includes("/commands/fake-test-t02b/"));
+    // Both map entries added
+    const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    assert.ok("commands/fake-test-t02.mdx" in map);
+    assert.ok("commands/fake-test-t02b.mdx" in map);
 
-      // Both map entries added
-      const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
-      assert.ok("commands/fake-test-t02.mdx" in map);
-      assert.ok("commands/fake-test-t02b.mdx" in map);
-
-      // Mock client called twice
-      assert.equal(mockClient.calls.length, 2);
-    } finally {
-      try {
-        fs.unlinkSync(page2Path);
-      } catch {
-        // May not exist
-      }
-    }
+    // Both scaffold files created
+    assert.ok(fs.existsSync(path.join(commandsDir, "fake-test-t02.mdx")));
+    assert.ok(fs.existsSync(path.join(commandsDir, "fake-test-t02b.mdx")));
   });
 });
 
@@ -815,8 +718,6 @@ describe("Full round-trip: detect → create → remove", () => {
   let mapPath;
   /** @type {string} */
   let manifestPath;
-  /** @type {string} */
-  let createdPagePath;
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-roundtrip-"));
@@ -850,23 +751,13 @@ describe("Full round-trip: detect → create → remove", () => {
     fs.writeFileSync(configPath, makeAstroConfig());
     fs.writeFileSync(mapPath, JSON.stringify(makePageMap(), null, 2));
     fs.writeFileSync(manifestPath, JSON.stringify(makeManifest()));
-
-    createdPagePath = path.join(
-      ROOT,
-      "src/content/docs/commands/roundtrip-test.mdx"
-    );
   });
 
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    try {
-      fs.unlinkSync(createdPagePath);
-    } catch {
-      // May not exist
-    }
   });
 
-  it("detects new → creates page → detects removed → removes page", async () => {
+  it("detects new → creates page → detects removed → removes page", () => {
     // Step 1: Detect new command
     const detect1 = detectNewAndRemovedCommands({
       commandsPath: commandsJsonPath,
@@ -878,21 +769,18 @@ describe("Full round-trip: detect → create → remove", () => {
     );
     assert.deepEqual(detect1.removedCommands, []);
 
-    // Step 2: Create the new page with mock client
-    const mockClient = makeMockClient(
-      `---\ntitle: "/gsd roundtrip-test"\ndescription: "Round-trip test"\n---\n\n## What It Does\n\nTest.\n`
-    );
-    const createResult = await createNewPages(["roundtrip-test"], {
-      client: mockClient,
+    // Step 2: Create the new page as scaffold
+    const createResult = createNewPages(["roundtrip-test"], {
       configPath,
       mapPath,
       manifestPath,
+      commandsDir,
     });
 
     assert.equal(createResult.created, 1);
     assert.ok(
-      fs.existsSync(createdPagePath),
-      "Page file should exist after creation"
+      fs.existsSync(path.join(commandsDir, "roundtrip-test.mdx")),
+      "Scaffold file should exist after creation"
     );
 
     // Verify sidebar was updated
@@ -902,12 +790,6 @@ describe("Full round-trip: detect → create → remove", () => {
     // Verify map was updated
     let map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
     assert.ok("commands/roundtrip-test.mdx" in map);
-
-    // Add the page file to the temp commandsDir so detection sees it
-    fs.writeFileSync(
-      path.join(commandsDir, "roundtrip-test.mdx"),
-      fs.readFileSync(createdPagePath, "utf-8")
-    );
 
     // Step 3: Verify detection now shows no new/removed
     const detect2 = detectNewAndRemovedCommands({

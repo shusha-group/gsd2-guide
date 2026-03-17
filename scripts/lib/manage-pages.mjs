@@ -1,6 +1,10 @@
 /**
- * manage-pages.mjs — Detect new/removed commands and manipulate sidebar entries
- * and page-source-map entries. Orchestrate page creation and removal.
+ * manage-pages.mjs — Detect new/removed commands and manipulate sidebar entries,
+ * page-source-map entries, and scaffold page files.
+ *
+ * New command pages are created as scaffolds (stub MDX with frontmatter).
+ * Actual content regeneration is handled externally — stale-pages.json is the
+ * handoff contract.
  *
  * Exports:
  *   detectNewAndRemovedCommands(options?)
@@ -20,7 +24,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { regeneratePage } from "./regenerate-page.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -262,109 +265,65 @@ export function removeFromPageMap(slug, options = {}) {
 // ─── Orchestration: createNewPages ───────────────────────────────────────────
 
 /**
- * Compute source files for a command slug using the algorithmic fallback.
- * Same logic as addToPageMap deps: shared deps + slug.ts + prompts/slug.md.
+ * Create scaffold documentation pages for the given command slugs.
  *
- * @param {string} slug
- * @param {object} [options]
- * @param {string} [options.manifestPath]
- * @returns {string[]} source file paths
- */
-function computeSourceFiles(slug, options = {}) {
-  const manifestPath =
-    options.manifestPath ||
-    path.join(ROOT, "content/generated/manifest.json");
-
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-  const manifestFiles = new Set(Object.keys(manifest.files));
-
-  const deps = [...SHARED_COMMAND_DEPS];
-
-  const tsPath = `${GSD}/${slug}.ts`;
-  if (manifestFiles.has(tsPath)) {
-    deps.push(tsPath);
-  }
-
-  const promptPath = `${GSD}/prompts/${slug}.md`;
-  if (manifestFiles.has(promptPath)) {
-    deps.push(promptPath);
-  }
-
-  return deps;
-}
-
-/**
- * Create new documentation pages for the given command slugs.
- *
- * For each slug: regenerate the page via LLM, then add sidebar entry and
- * page-source-map entry. Only adds sidebar/map when regeneration succeeds.
+ * For each slug: write a stub MDX file with frontmatter, add sidebar entry,
+ * and add page-source-map entry. No LLM regeneration — stale-pages.json
+ * serves as the handoff contract for external regeneration.
  *
  * @param {string[]} newCommands - Array of command slugs to create pages for
  * @param {object} [options]
- * @param {object} [options.client]       - Mock Anthropic client (DI for testing)
  * @param {boolean} [options.dryRun]      - If true, don't write files
  * @param {string} [options.configPath]   - Path to astro.config.mjs
  * @param {string} [options.mapPath]      - Path to page-source-map.json
  * @param {string} [options.manifestPath] - Path to manifest.json
  * @param {string} [options.commandsDir]  - Path to commands/ .mdx directory
- * @param {string} [options.pkgPath]      - Override gsd-pi package path
- * @param {string} [options.model]        - Claude model identifier
- * @param {number} [options.maxTokens]    - Max output tokens
- * @returns {Promise<{ results: Array, created: number, skipped: number, failed: number }>}
+ * @returns {{ results: Array, created: number, failed: number }}
  */
-export async function createNewPages(newCommands, options = {}) {
+export function createNewPages(newCommands, options = {}) {
+  const commandsDir =
+    options.commandsDir ||
+    path.join(ROOT, "src", "content", "docs", "commands");
+
   const results = [];
   let created = 0;
-  let skipped = 0;
   let failed = 0;
 
   for (const slug of newCommands) {
-    const entry = { slug, regeneration: null, sidebar: null, map: null };
+    const entry = { slug, sidebar: null, map: null };
 
     try {
-      // 1. Compute source files
-      const sourceFiles = computeSourceFiles(slug, {
-        manifestPath: options.manifestPath,
-      });
-
-      // 2. Regenerate the page
+      const label = slug === "gsd" ? "/gsd" : `/gsd ${slug}`;
       const pagePath = `commands/${slug}.mdx`;
-      const regeneration = await regeneratePage(pagePath, sourceFiles, {
-        client: options.client,
-        dryRun: options.dryRun,
-        pkgPath: options.pkgPath,
-        model: options.model,
-        maxTokens: options.maxTokens,
-      });
-      entry.regeneration = regeneration;
+      const fullPath = path.join(commandsDir, `${slug}.mdx`);
 
-      // 3. Only update sidebar/map if regeneration succeeded
-      if (regeneration.skipped) {
-        skipped++;
-      } else if (regeneration.error) {
-        failed++;
-      } else {
-        // Success — update sidebar and map (unless dry run)
-        if (!options.dryRun) {
-          entry.sidebar = addSidebarEntry(slug, {
-            configPath: options.configPath,
-          });
-          entry.map = addToPageMap(slug, {
-            mapPath: options.mapPath,
-            manifestPath: options.manifestPath,
-          });
-        }
-        created++;
+      if (!options.dryRun) {
+        // Write scaffold MDX
+        const scaffold = `---\ntitle: "${label}"\ndescription: "Documentation for ${label}"\n---\n\n:::caution\nThis page is a scaffold — content has not been generated yet.\n:::\n`;
+        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+        fs.writeFileSync(fullPath, scaffold);
+
+        // Update sidebar and map
+        entry.sidebar = addSidebarEntry(slug, {
+          configPath: options.configPath,
+        });
+        entry.map = addToPageMap(slug, {
+          mapPath: options.mapPath,
+          manifestPath: options.manifestPath,
+        });
       }
+
+      created++;
     } catch (err) {
-      entry.regeneration = { error: "unexpected error", details: err.message };
+      console.error(`[createNewPages] Error creating ${slug}: ${err.message}`);
+      entry.error = err.message;
       failed++;
     }
 
     results.push(entry);
   }
 
-  return { results, created, skipped, failed };
+  return { results, created, failed };
 }
 
 // ─── Orchestration: removePages ──────────────────────────────────────────────
@@ -468,19 +427,17 @@ if (isDirectRun) {
   // Create new pages
   if (detection.newCommands.length > 0) {
     console.log(`Creating ${detection.newCommands.length} new page(s)...`);
-    const createResult = await createNewPages(detection.newCommands, {
+    const createResult = createNewPages(detection.newCommands, {
       dryRun: dryRunMode,
     });
     for (const r of createResult.results) {
-      if (r.regeneration?.skipped) {
-        console.log(`  ⊘ ${r.slug}: skipped — ${r.regeneration.reason}`);
-      } else if (r.regeneration?.error) {
-        console.log(`  ✗ ${r.slug}: ${r.regeneration.error}`);
+      if (r.error) {
+        console.log(`  ✗ ${r.slug}: ${r.error}`);
       } else {
-        console.log(`  ✓ ${r.slug}: page created, sidebar updated, map updated`);
+        console.log(`  ✓ ${r.slug}: scaffold created, sidebar updated, map updated`);
       }
     }
-    console.log(`  Summary: ${createResult.created} created, ${createResult.skipped} skipped, ${createResult.failed} failed\n`);
+    console.log(`  Summary: ${createResult.created} created, ${createResult.failed} failed\n`);
   }
 
   // Remove old pages
