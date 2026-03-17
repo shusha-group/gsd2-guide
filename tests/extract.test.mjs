@@ -9,6 +9,7 @@ import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { extractLocal, resolvePackagePath } from "../scripts/lib/extract-local.mjs";
 
 const OUTPUT_DIR = path.join(process.cwd(), "content", "generated");
@@ -292,5 +293,111 @@ describe("manifest", () => {
 
   it("manifest has version field", () => {
     assert.ok(manifest.version !== undefined, "manifest missing version");
+  });
+});
+
+// ── Commands ───────────────────────────────────────────────────────────────
+
+describe("commands extraction", () => {
+  let commands;
+
+  before(() => {
+    const content = fs.readFileSync(path.join(OUTPUT_DIR, "commands.json"), "utf8");
+    commands = JSON.parse(content);
+  });
+
+  it("commands.json exists and has entries", () => {
+    assert.ok(Array.isArray(commands), "commands.json is not an array");
+    assert.ok(commands.length > 0, "commands.json is empty");
+  });
+
+  it("each command has command, description, and category fields", () => {
+    for (const cmd of commands) {
+      assert.ok(cmd.command, `Command missing command field: ${JSON.stringify(cmd)}`);
+      assert.ok(cmd.description, `Command "${cmd.command}" missing description`);
+      assert.ok(cmd.category, `Command "${cmd.command}" missing category`);
+    }
+  });
+
+  it("commands span multiple categories", () => {
+    const categories = new Set(commands.map((c) => c.category));
+    assert.ok(
+      categories.size >= 3,
+      `Expected ≥3 categories, got ${categories.size}: ${[...categories].join(", ")}`
+    );
+    // Verify some expected categories
+    const expected = ["Session Commands", "CLI Flags"];
+    for (const cat of expected) {
+      assert.ok(categories.has(cat), `Missing expected category: ${cat}`);
+    }
+  });
+
+  it("includes slash commands and CLI flags", () => {
+    const slashCmds = commands.filter((c) => c.command.startsWith("/"));
+    assert.ok(slashCmds.length >= 1, "Expected at least one slash command");
+
+    const flags = commands.filter(
+      (c) => c.command.startsWith("gsd --") || c.command.startsWith("gsd config")
+    );
+    assert.ok(flags.length >= 1, "Expected at least one CLI flag command");
+  });
+
+  it("includes keyboard shortcuts", () => {
+    const shortcuts = commands.filter((c) => c.category === "Keyboard Shortcuts");
+    assert.ok(shortcuts.length >= 1, "Expected at least one keyboard shortcut");
+  });
+});
+
+// ── End-to-end ─────────────────────────────────────────────────────────────
+
+describe("end-to-end orchestrator", () => {
+  it("node scripts/extract.mjs exits with code 0", () => {
+    const result = execSync("node scripts/extract.mjs", {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    assert.ok(result.includes("[orchestrator]"), "Output should include orchestrator prefix");
+    assert.ok(result.includes("Done in"), "Output should include completion message");
+  });
+
+  it("all 8 output artifacts are present", () => {
+    const expected = [
+      "skills.json",
+      "agents.json",
+      "extensions.json",
+      "commands.json",
+      "releases.json",
+      "manifest.json",
+      "readme.md",
+    ];
+    for (const file of expected) {
+      const filePath = path.join(OUTPUT_DIR, file);
+      assert.ok(fs.existsSync(filePath), `Missing output file: ${file}`);
+    }
+    // docs/ directory with content
+    const docsDir = path.join(OUTPUT_DIR, "docs");
+    assert.ok(fs.existsSync(docsDir) && fs.statSync(docsDir).isDirectory(), "docs/ directory missing");
+  });
+
+  it("all JSON files are valid JSON", () => {
+    const jsonFiles = ["skills.json", "agents.json", "extensions.json", "commands.json", "releases.json", "manifest.json"];
+    for (const file of jsonFiles) {
+      const content = fs.readFileSync(path.join(OUTPUT_DIR, file), "utf8");
+      assert.doesNotThrow(() => JSON.parse(content), `${file} is not valid JSON`);
+    }
+  });
+
+  it("second run is idempotent (manifest diff shows 0 changes)", () => {
+    // Run extraction again
+    const output = execSync("node scripts/extract.mjs", {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    // Manifest should show no changes
+    assert.ok(output.includes("0 added, 0 changed, 0 removed"), "Second run should show no manifest changes");
+    // Should show cache hit
+    assert.ok(output.includes("Cache hit"), "Second run should show cache hit for tarball");
   });
 });

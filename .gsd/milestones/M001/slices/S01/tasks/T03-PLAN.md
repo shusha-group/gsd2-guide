@@ -90,3 +90,10 @@ Commands are extracted from the markdown files downloaded in T02 — specificall
 - Updated `tests/extract.test.mjs` — command assertions + end-to-end assertions
 - Updated `package.json` — `"extract"` script added
 - Complete `content/generated/` directory with all 8 output artifacts
+
+## Observability Impact
+
+- **New signals:** `[commands]` phase prefix with extracted count; `[orchestrator]` prefix with total files and elapsed time in final summary
+- **Inspection surface:** `node scripts/extract.mjs --dry-run` shows what would happen without writing; `jq '.[] | .category' content/generated/commands.json | sort -u` lists extracted command categories
+- **Failure visibility:** Orchestrator wraps each phase in try/catch — errors include phase name and original error message; exit code 1 on any failure
+- **Diagnostics:** `node scripts/extract.mjs --help` prints usage; `npm run extract` is the single-command entry point

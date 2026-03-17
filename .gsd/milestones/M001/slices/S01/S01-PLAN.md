@@ -67,7 +67,7 @@
   - Verify: `node --test tests/extract.test.mjs` — docs ≥100 .md files, releases ≥48, manifest has entries with SHA hashes, README exists
   - Done when: All GitHub content is extracted to `content/generated/`, manifest tracks file hashes, and cached tarball is reused on second run
 
-- [ ] **T03: Wire extraction orchestrator and extract commands** `est:45m`
+- [x] **T03: Wire extraction orchestrator and extract commands** `est:45m`
   - Why: Creates the single entry point `extract.mjs` that runs all extraction phases, adds command extraction from downloaded docs, and proves the complete pipeline works end-to-end.
   - Files: `scripts/extract.mjs`, `scripts/lib/extract-commands.mjs`, `tests/extract.test.mjs`
   - Do: Write `extract.mjs` as the orchestrator that runs local extraction and GitHub extraction in parallel (using `Promise.all`), then runs command extraction (depends on docs being downloaded). Parse commands from `content/generated/docs/` command tables (consistent `| Command | Description |` markdown table format). Accept `--pkg-path` flag for npm package path override. Add `--dry-run` flag. Log phase progress with `[local]`, `[github-docs]`, `[releases]`, `[commands]` prefixes and counts. Add `"extract"` script to package.json. Run full end-to-end verification: all output files present, all counts correct, all structures valid.
