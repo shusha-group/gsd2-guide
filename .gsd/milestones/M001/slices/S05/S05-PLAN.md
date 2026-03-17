@@ -46,7 +46,7 @@
   - Verify: `npm run build` succeeds. `grep -o '<details' dist/changelog/index.html | wc -l` returns 48. `grep 'v2.22.0' dist/changelog/index.html` finds latest version. `grep 'v0.2.9' dist/changelog/index.html` finds oldest version.
   - Done when: Changelog page renders all 48 releases with expand/collapse, dates, GitHub links, and rendered markdown body content.
 
-- [ ] **T02: Wire header version badge and add changelog navigation links** `est:15m`
+- [x] **T02: Wire header version badge and add changelog navigation links** `est:15m`
   - Why: Delivers R010 (version in header) and completes navigation — sidebar entry and home page link to changelog.
   - Files: `src/components/Header.astro`, `astro.config.mjs`, `src/content/docs/index.mdx`
   - Do: Update Header.astro to import `releases.json` and display `releases[0].tag_name` instead of hardcoded "v0.0.0". Add `{ label: 'Changelog', link: '/changelog/' }` to the sidebar in astro.config.mjs (as a top-level entry after Home). Add a Changelog LinkCard to the home page index.mdx.

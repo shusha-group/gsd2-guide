@@ -19,6 +19,7 @@ export default defineConfig({
       },
       sidebar: [
         { label: 'Home', link: '/' },
+        { label: 'Changelog', link: '/changelog/' },
         {
           label: 'Quick Reference',
           items: [

@@ -1,13 +1,16 @@
 ---
 import type { Props } from '@astrojs/starlight/props';
 import Default from '@astrojs/starlight/components/Header.astro';
+import releases from '../../content/generated/releases.json';
+
+const version = releases[0]?.tag_name ?? 'v0.0.0';
 ---
 
 <div class="header-wrapper">
   <Default {...Astro.props}><slot /></Default>
-  <div class="version-badge">
-    <span>v0.0.0</span>
-  </div>
+  <a class="version-badge" href="/gsd2-guide/changelog/">
+    <span>{version}</span>
+  </a>
 </div>
 
 <style>
@@ -33,7 +36,12 @@ import Default from '@astrojs/starlight/components/Header.astro';
     border: 1px solid var(--sl-color-accent, #39ff14);
     border-radius: 3px;
     opacity: 0.85;
-    pointer-events: none;
-    user-select: none;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+  }
+
+  .version-badge:hover {
+    opacity: 1;
+    text-decoration: none;
   }
 </style>

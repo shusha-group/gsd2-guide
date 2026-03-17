@@ -54,3 +54,10 @@ Replace the hardcoded "v0.0.0" placeholder in the site Header with the real late
 - `astro.config.mjs` — sidebar has Changelog entry
 - `src/content/docs/index.mdx` — includes a Changelog link card
 - Build output: version badge shows "v2.22.0", no "v0.0.0" remnants, changelog links present
+
+## Observability Impact
+
+- **Version badge signal:** After this task, `grep 'v2.22.0' dist/index.html` confirms the header reads live release data. If absent, the Header.astro import path or releases.json structure is broken — check the Astro build log for import errors.
+- **Changelog navigation:** `grep -i 'changelog' dist/index.html` confirms both the sidebar entry and the home-page LinkCard resolved. Absence means the sidebar config or index.mdx edit didn't take effect.
+- **Placeholder elimination:** `grep -c 'v0.0.0' dist/index.html` returning 0 proves no hardcoded fallback leaked into the build. A non-zero result means the Header.astro edit was incomplete or the import returned undefined.
+- **Failure mode:** A broken import path to releases.json will cause `npm run build` to fail with a clear Astro module-not-found error, not a silent fallback.
