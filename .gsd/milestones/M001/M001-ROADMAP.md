@@ -58,7 +58,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Astro site scaffold with custom design** `risk:high` `depends:[]`
   > After this: A running Astro/Starlight dev server with terminal-native dark design, custom components, Mermaid diagram support, Pagefind search, and semantic HTML. Placeholder content pages demonstrate all component variants.
 
-- [ ] **S03: Quick-reference pages** `risk:medium` `depends:[S01,S02]`
+- [x] **S03: Quick-reference pages** `risk:medium` `depends:[S01,S02]`
   > After this: Searchable cheat-sheet cards for all GSD commands (20+), skills (7), extensions (14), agents (5), and keyboard shortcuts. Filter by category, expand for detail and examples.
 
 - [ ] **S04: Deep-dive documentation pages** `risk:medium` `depends:[S01,S02]`

@@ -10,7 +10,7 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 ## Current State
 
-S01 (Content extraction pipeline) and S02 (Astro site scaffold with custom design) complete. The site builds 131 HTML pages with a phosphor-green terminal-native dark theme, Mermaid diagram support, Pagefind search, and 126 S01 docs flowing through the prebuild pipeline. `npm run build` produces a complete `dist/` with sitemap and search index. Next: S03 (quick-reference pages), S04 (deep-dive docs), or S05 (changelog) — all unblocked.
+S01 (content extraction), S02 (site scaffold + design), and S03 (quick-reference pages) complete. The site builds 137 HTML pages including 5 reference pages with 76 expandable cheat-sheet cards (42 commands, 8 skills, 17 extensions, 5 agents, 4 shortcuts). Cards use native <details>/<summary> for zero-JS expand/collapse with vanilla JS category filtering. Reference section is integrated into sidebar navigation and hero CTA. Pagefind indexes all 137 pages. Next: S04 (deep-dive docs) and S05 (changelog) — both unblocked and can run in parallel.
 
 ## Architecture / Key Patterns
 
