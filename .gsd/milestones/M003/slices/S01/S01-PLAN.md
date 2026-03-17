@@ -40,7 +40,7 @@
 
 ## Tasks
 
-- [ ] **T01: Build page-source-map generator with tests** `est:1h`
+- [x] **T01: Build page-source-map generator with tests** `est:1h`
   - Why: Core data structure — maps all 42 authored doc pages to their gsd-pi source file dependencies. Required by R036 (mapping manifest) and R046 (all pages covered). This must exist before diff/staleness logic can be built.
   - Files: `scripts/lib/build-page-map.mjs`, `content/generated/page-source-map.json`, `tests/page-map.test.mjs`
   - Do: Create `build-page-map.mjs` that encodes the mapping rules from the research doc (27 command pages algorithmically, 15 non-command pages via static lookup). Write the map to `content/generated/page-source-map.json`. Add comprehensive test file using `node:test`. All source paths must use repo-relative format matching `manifest.json` (e.g., `src/resources/extensions/gsd/auto.ts`).

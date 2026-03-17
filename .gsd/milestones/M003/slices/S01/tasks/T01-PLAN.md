@@ -107,6 +107,13 @@ The script reads the current `content/generated/manifest.json` to validate that 
 - Research doc S01-RESEARCH.md — contains the complete page-to-source mapping rules (inlined in steps above).
 - Authored page list: 27 command pages in `src/content/docs/commands/`, 6 recipes in `src/content/docs/recipes/`, 1 walkthrough in `src/content/docs/user-guide/`, 6 reference pages in `src/content/docs/reference/`, `changelog.mdx`, `index.mdx`.
 
+## Observability Impact
+
+- **New artifact**: `content/generated/page-source-map.json` — human-readable JSON mapping all 42 authored pages to their source file dependencies. Inspect with `cat` or `jq`.
+- **Console output**: `build-page-map.mjs` logs validation results — count of pages mapped, any missing source paths, and an error if >50% of paths are invalid.
+- **Failure visibility**: Warnings logged to stderr for each source path not found in manifest. If >50% missing, an explicit error message suggests repo restructure.
+- **Downstream diagnostic**: Tests in `tests/page-map.test.mjs` validate map completeness and cross-reference all source paths against manifest.
+
 ## Expected Output
 
 - `scripts/lib/build-page-map.mjs` — new ESM module exporting `buildPageSourceMap()` and runnable as CLI
