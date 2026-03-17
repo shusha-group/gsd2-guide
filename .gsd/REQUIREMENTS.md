@@ -2,30 +2,6 @@
 
 This file is the explicit capability and coverage contract for the project.
 
-## Active
-
-### R028 — Core workflow recipe pages — fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows commands, artifacts, and expected outcomes.
-- Class: primary-user-loop
-- Status: active
-- Description: Core workflow recipe pages — fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows commands, artifacts, and expected outcomes.
-- Why it matters: Users need to know how to do common things beyond the initial walkthrough. These are the "I know the basics, now how do I do X?" answers.
-- Source: user
-- Primary owning slice: M002/S04
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Core recipes only. Advanced patterns (parallel orchestration, headless/CI, custom hooks) deferred to later milestone.
-
-### R031 — Visual documentation approach — Mermaid flowcharts for command dispatch/logic, ASCII directory trees showing `.gsd/` state at each phase, annotated terminal output examples.
-- Class: differentiator
-- Status: active
-- Description: Visual documentation approach — Mermaid flowcharts for command dispatch/logic, ASCII directory trees showing `.gsd/` state at each phase, annotated terminal output examples.
-- Why it matters: Visuals make complex workflows comprehensible. Diagrams show what prose can't — the flow of data through the system, the state of files at each step.
-- Source: user
-- Primary owning slice: M002/S01
-- Supporting slices: M002/S02, M002/S03, M002/S04
-- Validation: S01 walkthrough established the pattern (2 Mermaid flowcharts, 4 directory trees, annotated terminal blocks). S02 applied it to 9 command deep-dives. S03 extends to 18 more pages with Mermaid diagrams for 11 commands (doctor, forensics, prefs, skill-health, config, queue, steer, triage, run-hook, migrate, headless) using dark terminal theme (fill:#1a3a1a, stroke:#39ff14). S04 will complete coverage for recipes.
-- Notes: Mermaid support already configured from M001.
-
 ## Validated
 
 ### R001 — A build script extracts documentation-worthy content from the globally installed `gsd-pi` npm package — prompts, templates, skills, agent definitions, and extension metadata.
@@ -281,6 +257,17 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: 27 command deep-dive MDX pages in src/content/docs/commands/ covering all GSD commands. S02 delivered 9 session/execution commands; S03 delivered 18 planning/maintenance/utility/reference pages (queue, steer, capture, triage, knowledge, cleanup, doctor, forensics, prefs, mode, skill-health, config, hooks, run-hook, migrate, keyboard-shortcuts, cli-flags, headless). 54 pages built, 2880 links verified, 0 broken. All pages reachable via sidebar (28 entries) and indexed by Pagefind.
 - Notes: Not prompt dumps — authored explanations with examples and visuals. Content created by studying GSD source (commands.ts, prompts/, auto-dispatch.ts, etc.).
 
+### R028 — Core workflow recipe pages — fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows commands, artifacts, and expected outcomes.
+- Class: primary-user-loop
+- Status: validated
+- Description: Core workflow recipe pages — fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows commands, artifacts, and expected outcomes.
+- Why it matters: Users need to know how to do common things beyond the initial walkthrough. These are the "I know the basics, now how do I do X?" answers.
+- Source: user
+- Primary owning slice: M002/S04
+- Supporting slices: none
+- Validation: 6 recipe pages (fix-a-bug, small-change, new-milestone, uat-failures, error-recovery, working-in-teams) in dist/recipes/*/index.html. Each has numbered steps, terminal examples, .gsd/ directory trees, Mermaid flowcharts, and expected outcomes. All navigable via sidebar, indexed by Pagefind. Build passes, 3558 links verified.
+- Notes: Core recipes only. Advanced patterns (parallel orchestration, headless/CI, custom hooks) deferred to later milestone.
+
 ### R029 — Remove all generic pi/agent content (What Is Pi, Building Coding Agents, Context and Hooks, Extending Pi, Pi UI/TUI, Proposals — 101 pages) and refocus sidebar to GSD-only content.
 - Class: constraint
 - Status: validated
@@ -302,6 +289,17 @@ This file is the explicit capability and coverage contract for the project.
 - Supporting slices: M002/S03
 - Validation: All 27 command pages show lifecycle documentation — triggers, files read/written, internal mechanics (with Mermaid diagrams for complex commands), and annotated terminal examples. S02 covered 9 session/execution commands; S03 completed the remaining 18 with Mermaid diagrams for doctor, forensics, prefs, skill-health, config, queue, steer, triage, run-hook, migrate, and headless. Simpler commands use prose + tables where Mermaid adds no value.
 - Notes: Study GSD source for accuracy but write for humans — explanations, not code dumps.
+
+### R031 — Visual documentation approach — Mermaid flowcharts for command dispatch/logic, ASCII directory trees showing `.gsd/` state at each phase, annotated terminal output examples.
+- Class: differentiator
+- Status: validated
+- Description: Visual documentation approach — Mermaid flowcharts for command dispatch/logic, ASCII directory trees showing `.gsd/` state at each phase, annotated terminal output examples.
+- Why it matters: Visuals make complex workflows comprehensible. Diagrams show what prose can't — the flow of data through the system, the state of files at each step.
+- Source: user
+- Primary owning slice: M002/S01
+- Supporting slices: M002/S02, M002/S03, M002/S04
+- Validation: Visual approach applied across all M002 content: S01 walkthrough (2 Mermaid diagrams, 4 directory trees), S02 (9 command pages with flow diagrams), S03 (18 pages with 11 Mermaid diagrams), S04 (6 recipe pages with 6 Mermaid flowcharts, directory trees, terminal output). Comprehensive coverage of all authored content.
+- Notes: Mermaid support already configured from M001.
 
 ### R032 — Existing GSD-relevant guide pages (getting-started, auto-mode, configuration, git-strategy, troubleshooting, etc.) remain accessible but reorganized under the GSD-focused sidebar.
 - Class: continuity
@@ -404,16 +402,16 @@ This file is the explicit capability and coverage contract for the project.
 | R025 | constraint | out-of-scope | none | none | n/a |
 | R026 | primary-user-loop | validated | M002/S01 | none | 467-line walkthrough at /user-guide/developing-with-gsd/ follows a Cookmate recipe app through all GSD phases: discuss, research, plan, execute, verify, summarize, complete. Includes 2 Mermaid diagrams (lifecycle flowchart, auto-mode dispatch state machine), 4 ASCII directory trees showing .gsd/ state at discussion, planning, mid-execution, and completion phases, and annotated terminal output examples. Build passes, 720 links checked, 0 broken. |
 | R027 | core-capability | validated | M002/S02 | M002/S03 | 27 command deep-dive MDX pages in src/content/docs/commands/ covering all GSD commands. S02 delivered 9 session/execution commands; S03 delivered 18 planning/maintenance/utility/reference pages (queue, steer, capture, triage, knowledge, cleanup, doctor, forensics, prefs, mode, skill-health, config, hooks, run-hook, migrate, keyboard-shortcuts, cli-flags, headless). 54 pages built, 2880 links verified, 0 broken. All pages reachable via sidebar (28 entries) and indexed by Pagefind. |
-| R028 | primary-user-loop | active | M002/S04 | none | unmapped |
+| R028 | primary-user-loop | validated | M002/S04 | none | 6 recipe pages (fix-a-bug, small-change, new-milestone, uat-failures, error-recovery, working-in-teams) in dist/recipes/*/index.html. Each has numbered steps, terminal examples, .gsd/ directory trees, Mermaid flowcharts, and expected outcomes. All navigable via sidebar, indexed by Pagefind. Build passes, 3558 links verified. |
 | R029 | constraint | validated | M002/S01 | none | 109 pi/agent files excluded from prebuild pipeline via EXCLUDED_DIRS/EXCLUDED_ROOT_FILES sets. Sidebar in astro.config.mjs has zero pi/agent entries. grep confirms no pi/agent content references in src/content/docs/. Build succeeds with 27 GSD-focused pages. 720 internal links checked, 0 broken. |
 | R030 | core-capability | validated | M002/S02 | M002/S03 | All 27 command pages show lifecycle documentation — triggers, files read/written, internal mechanics (with Mermaid diagrams for complex commands), and annotated terminal examples. S02 covered 9 session/execution commands; S03 completed the remaining 18 with Mermaid diagrams for doctor, forensics, prefs, skill-health, config, queue, steer, triage, run-hook, migrate, and headless. Simpler commands use prose + tables where Mermaid adds no value. |
-| R031 | differentiator | active | M002/S01 | M002/S02, M002/S03, M002/S04 | S01 walkthrough established the pattern (2 Mermaid flowcharts, 4 directory trees, annotated terminal blocks). S02 applied it to 9 command deep-dives. S03 extends to 18 more pages with Mermaid diagrams for 11 commands (doctor, forensics, prefs, skill-health, config, queue, steer, triage, run-hook, migrate, headless) using dark terminal theme (fill:#1a3a1a, stroke:#39ff14). S04 will complete coverage for recipes. |
+| R031 | differentiator | validated | M002/S01 | M002/S02, M002/S03, M002/S04 | Visual approach applied across all M002 content: S01 walkthrough (2 Mermaid diagrams, 4 directory trees), S02 (9 command pages with flow diagrams), S03 (18 pages with 11 Mermaid diagrams), S04 (6 recipe pages with 6 Mermaid flowcharts, directory trees, terminal output). Comprehensive coverage of all authored content. |
 | R032 | continuity | validated | M002/S01 | none | All existing GSD guide pages remain accessible under reorganized 5-section sidebar (User Guide, Commands, Recipes, Reference, Guides). 720 internal links checked, 0 broken. All 17 remaining GSD pages build and render correctly. |
 | R033 | core-capability | deferred | none | none | unmapped |
 
 ## Coverage Summary
 
-- Active requirements: 2
-- Mapped to slices: 2
-- Validated: 26 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R029, R030, R032)
+- Active requirements: 0
+- Mapped to slices: 0
+- Validated: 28 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032)
 - Unmapped active requirements: 0

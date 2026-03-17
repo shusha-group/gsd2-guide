@@ -58,7 +58,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Command deep-dives — planning, maintenance, and utility commands** `risk:medium` `depends:[S01]`
   > After this: All remaining GSD commands have deep-dive pages — `/gsd queue`, `/gsd steer`, `/gsd doctor`, `/gsd forensics`, `/gsd capture`, `/gsd triage`, `/gsd prefs`, `/gsd mode`, `/gsd knowledge`, `/gsd cleanup`, `/gsd hooks`, `/gsd run-hook`, `/gsd skill-health`, `/gsd migrate`, `/gsd config`, keyboard shortcuts, CLI flags, and headless mode. Full command coverage.
 
-- [ ] **S04: Core workflow recipes** `risk:low` `depends:[S01]`
+- [x] **S04: Core workflow recipes** `risk:low` `depends:[S01]`
   > After this: A "Recipes" sidebar section with 6 step-by-step guides: fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows the exact commands, the `.gsd/` artifacts produced, and the expected outcomes.
 
 ## Boundary Map
