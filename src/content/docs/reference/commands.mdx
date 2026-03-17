@@ -9,6 +9,17 @@ import ReferenceGrid from '../../../../src/components/ReferenceGrid.astro';
 
 export const categories = [...new Set(commands.map(c => c.category))];
 
+export const commandSlugs = {
+  '/gsd': 'gsd', '/gsd auto': 'auto', '/gsd stop': 'stop', '/gsd pause': 'pause',
+  '/gsd next': 'next', '/gsd quick': 'quick', '/gsd discuss': 'discuss',
+  '/gsd status': 'status', '/gsd visualize': 'visualize', '/gsd queue': 'queue',
+  '/gsd steer': 'steer', '/gsd capture': 'capture', '/gsd triage': 'triage',
+  '/gsd knowledge': 'knowledge', '/gsd cleanup': 'cleanup', '/gsd doctor': 'doctor',
+  '/gsd forensics': 'forensics', '/gsd prefs': 'prefs', '/gsd mode': 'mode',
+  '/gsd skill-health': 'skill-health', '/gsd config': 'config', '/gsd hooks': 'hooks',
+  '/gsd run-hook': 'run-hook', '/gsd migrate': 'migrate',
+};
+
 42 commands across 7 categories. Click any card to expand for details. Use the filter bar to narrow by category.
 
 <ReferenceGrid categories={categories}>
@@ -16,7 +27,12 @@ export const categories = [...new Set(commands.map(c => c.category))];
     <>
       <h2 class="category-heading" data-category={cat}>{cat}</h2>
       {commands.filter(cmd => cmd.category === cat).map((cmd) => (
-        <ReferenceCard title={cmd.command} subtitle={cmd.description} category={cmd.category} />
+        <ReferenceCard
+          title={cmd.command}
+          subtitle={cmd.description}
+          category={cmd.category}
+          href={commandSlugs[cmd.command] ? `/gsd2-guide/commands/${commandSlugs[cmd.command]}/` : undefined}
+        />
       ))}
     </>
   ))}

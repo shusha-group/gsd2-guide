@@ -339,6 +339,21 @@ nav.sidebar a {
   padding: 0 0.85rem 0.5rem;
   line-height: 1.4;
 }
+:root[data-theme='dark'] .ref-card .deep-dive-link {
+  margin: 0;
+  padding: 0.25rem 0.85rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: var(--sl-font-mono);
+}
+:root[data-theme='dark'] .ref-card .deep-dive-link a {
+  color: #39ff14;
+  text-decoration: none;
+  border-bottom: 1px dashed #39ff1440;
+}
+:root[data-theme='dark'] .ref-card .deep-dive-link a:hover {
+  border-bottom-color: #39ff14;
+  text-shadow: 0 0 6px #39ff1440;
+}
 :root[data-theme='dark'] .ref-card .detail-content {
   padding: 0.6rem 0.85rem;
   border-top: 1px dashed #1a2e1a;
@@ -465,6 +480,20 @@ nav.sidebar a {
   margin: 0;
   padding: 0 0.85rem 0.5rem;
   line-height: 1.4;
+}
+:root[data-theme='light'] .ref-card .deep-dive-link {
+  margin: 0;
+  padding: 0.25rem 0.85rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: var(--sl-font-mono);
+}
+:root[data-theme='light'] .ref-card .deep-dive-link a {
+  color: #0e580e;
+  text-decoration: none;
+  border-bottom: 1px dashed #0e580e40;
+}
+:root[data-theme='light'] .ref-card .deep-dive-link a:hover {
+  border-bottom-color: #0e580e;
 }
 :root[data-theme='light'] .ref-card .detail-content {
   padding: 0.6rem 0.85rem;

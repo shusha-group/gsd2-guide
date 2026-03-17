@@ -4,9 +4,10 @@ interface Props {
   subtitle?: string;
   category?: string;
   badge?: string;
+  href?: string;
 }
 
-const { title, subtitle, category, badge } = Astro.props;
+const { title, subtitle, category, badge, href } = Astro.props;
 ---
 
 <details class="ref-card" data-category={category}>
@@ -15,6 +16,11 @@ const { title, subtitle, category, badge } = Astro.props;
     {badge && <span class="badge">{badge}</span>}
   </summary>
   {subtitle && <p class="subtitle">{subtitle}</p>}
+  {href && (
+    <p class="deep-dive-link">
+      <a href={href}>View full deep-dive →</a>
+    </p>
+  )}
   <div class="detail-content">
     <slot />
   </div>

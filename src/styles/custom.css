@@ -160,7 +160,8 @@
 
 /* ─── Light Mode: Sidebar Group Labels ─────────────────── */
 :root[data-theme='light'] nav.sidebar .top-level > li > details > summary,
-:root[data-theme='light'] nav.sidebar .top-level > li > a.large {
+:root[data-theme='light'] nav.sidebar .top-level > li > a.large,
+:root[data-theme='light'] nav.sidebar .large {
   color: #1b2d1b;
   font-weight: 700;
 }
