@@ -1,8 +1,8 @@
 # GSD State
 
 **Active Milestone:** M001: GSD 2 Documentation Site
-**Active Slice:** S03: Quick-reference pages
-**Phase:** executing
+**Active Slice:** S04: Deep-dive documentation pages
+**Phase:** planning
 **Requirements Status:** 21 active · 0 validated · 3 deferred · 1 out of scope
 
 ## Milestone Registry
@@ -15,4 +15,4 @@
 - None
 
 ## Next Action
-Execute T01 of slice S03 (Build reference card components and terminal-styled CSS).
+Plan slice S04 (Deep-dive documentation pages).
