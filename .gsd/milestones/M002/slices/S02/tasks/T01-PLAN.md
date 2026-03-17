@@ -84,6 +84,13 @@ Content is authored from source-code understanding, not prompt dumps (D029). Use
 - `grep -l 'mermaid' src/content/docs/commands/auto.mdx src/content/docs/commands/stop.mdx src/content/docs/commands/pause.mdx | wc -l` returns 3
 - `grep "'/commands/auto/'" astro.config.mjs` returns a match
 
+## Observability Impact
+
+- **Build page count** — After T01, `npm run build` page count should increase by 3 (from 27 to 30). If count doesn't increase, the new pages aren't being picked up — check file paths and content collection config.
+- **Sidebar navigation** — 3 new sidebar entries appear under Commands. If links 404, check that `link:` values match the file paths exactly (trailing slash required).
+- **Mermaid rendering** — Each page has at least one fenced `mermaid` code block. If diagrams don't render, check that `@pasqal-io/starlight-client-mermaid` plugin is active in `astro.config.mjs`.
+- **Cross-link integrity** — Internal `../sibling/` links between the 3 command pages. Broken links are caught by `node scripts/check-links.mjs` in the slice verification step.
+
 ## Inputs
 
 - `src/content/docs/user-guide/developing-with-gsd.mdx` — reference for MDX authoring pattern, Mermaid theme, prose voice

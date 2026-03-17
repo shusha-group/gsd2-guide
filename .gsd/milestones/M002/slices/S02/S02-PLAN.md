@@ -23,10 +23,11 @@
 - Sidebar in `astro.config.mjs` has 10 entries under Commands (9 new + 1 existing reference)
 - Built site has 9 new HTML pages: `ls dist/commands/*/index.html | wc -l` returns at least 9
 - Build output page count increases from 27 to 36
+- **Diagnostic check:** A `.mdx` file with missing `title` frontmatter causes a build failure with an error message naming the file — confirming the failure surface is observable
 
 ## Tasks
 
-- [ ] **T01: Author /gsd auto, /gsd stop, /gsd pause deep-dive pages** `est:45m`
+- [x] **T01: Author /gsd auto, /gsd stop, /gsd pause deep-dive pages** `est:45m`
   - Why: `/gsd auto` is the most complex command and establishes the page template. `/gsd stop` and `/gsd pause` are its lifecycle counterparts — starting with these three covers the core auto-mode lifecycle and locks down the content pattern for remaining pages.
   - Files: `src/content/docs/commands/auto.mdx`, `src/content/docs/commands/stop.mdx`, `src/content/docs/commands/pause.mdx`, `astro.config.mjs`
   - Do: Create `src/content/docs/commands/` directory. Author 3 MDX files following the walkthrough's content pattern. Each page has: What It Does (one-paragraph summary), Usage (syntax, flags, aliases), How It Works (internal mechanics with Mermaid flow diagram), What Files It Touches (reads/writes), Examples (annotated terminal output), Related Commands (cross-links). `/gsd auto` gets the fullest treatment — dispatch loop diagram, worktree setup, crash recovery, unit lifecycle. `/gsd stop` covers teardown, lock clearing, cost summary. `/gsd pause` covers state preservation and resume path. Add 3 sidebar entries to `astro.config.mjs` under the Commands section. Use Cookmate as the example project. Mermaid diagrams use inline `style` directives with `fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8`.
@@ -46,6 +47,14 @@
   - Do: Update the commands reference page to add "→ Deep dive" links next to each command that now has a dedicated page. Keep the table format but add a third column or inline links to the 9 deep-dive pages. Ensure all internal links use `../commands/auto/` format (from the commands.md page, deep-dives are siblings in the URL structure, but since commands.md renders at `/commands/` and deep-dives at `/commands/auto/`, the link format is `auto/` from commands.md's perspective — verify with check-links). Run full build and verification suite.
   - Verify: `npm run build` exits 0, `node scripts/check-links.mjs` exits 0, build output shows 36 pages, Pagefind indexes all new pages, `ls dist/commands/*/index.html | wc -l` returns at least 9
   - Done when: Commands landing page links to all 9 deep-dives, build succeeds, link check passes, page count is 36
+
+## Observability / Diagnostics
+
+- **Build output page count** — `npm run build` output shows total pages generated. Expect increase from 27 to 36 when all 9 pages are added. A count mismatch signals missing or broken pages.
+- **Link checker exit code** — `node scripts/check-links.mjs` validates all sidebar entries resolve to built pages and all internal `../sibling/` cross-links are valid. Non-zero exit = broken navigation.
+- **Mermaid block presence** — `grep -l 'mermaid' src/content/docs/commands/*.mdx | wc -l` confirms diagram coverage. A count < 9 means a page is missing its flow diagram.
+- **Sidebar entry audit** — `grep "'/commands/" astro.config.mjs | wc -l` counts sidebar entries. Expected: 10 (1 existing reference + 9 deep-dives).
+- **Failure path: missing frontmatter** — Astro build fails with explicit error if any MDX file lacks required `title` frontmatter. Error message includes the file path.
 
 ## Files Likely Touched
 

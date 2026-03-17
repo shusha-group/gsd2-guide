@@ -31,6 +31,9 @@ export default defineConfig({
           label: 'Commands',
           items: [
             { label: 'Commands Reference', link: '/commands/' },
+            { label: '/gsd auto', link: '/commands/auto/' },
+            { label: '/gsd stop', link: '/commands/stop/' },
+            { label: '/gsd pause', link: '/commands/pause/' },
           ],
         },
         {
