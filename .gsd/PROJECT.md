@@ -10,7 +10,7 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 ## Current State
 
-Empty project. Repo initialized at `gsd2-guide`. The GSD 2 source (`gsd-pi` v2.22.0) is installed globally with ~132 doc files in the GitHub repo, 29 prompt templates, 18 artifact templates, 34 skill files, 5 agent definitions, and 48 GitHub releases.
+S01 (Content extraction pipeline) complete. `npm run extract` produces 1,238 structured content items from the gsd-pi npm package and GitHub repo — 8 skills, 5 agents, 17 extensions, 42 commands, 48 releases, 126 docs, README, and a 991-file manifest with SHA hashes. 39/39 tests pass. Next: S02 (Astro site scaffold with custom design).
 
 ## Architecture / Key Patterns
 

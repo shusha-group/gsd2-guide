@@ -52,7 +52,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Content extraction pipeline** `risk:high` `depends:[]`
+- [x] **S01: Content extraction pipeline** `risk:high` `depends:[]`
   > After this: Running the extraction script produces structured markdown from the installed npm package (skills, prompts, templates, agents) and GitHub repo (docs/, README, releases). Content manifest with hashes for diff tracking.
 
 - [ ] **S02: Astro site scaffold with custom design** `risk:high` `depends:[]`
