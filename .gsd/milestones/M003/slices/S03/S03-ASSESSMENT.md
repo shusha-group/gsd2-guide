@@ -1,39 +1,46 @@
-# S03 Post-Slice Assessment
+# S03 Roadmap Assessment
 
-**Verdict: Roadmap confirmed — no changes needed.**
+**Verdict: No changes needed.**
 
 ## What S03 Delivered
 
-`manage-pages.mjs` with 7 exports (detectNewAndRemovedCommands, createNewPages, removePages, addSidebarEntry, removeSidebarEntry, addToPageMap, removeFromPageMap), 31 tests, CLI entry point. R040/R041/R044 validated. Boundary contract to S04 matches exactly.
+`manage-pages.mjs` with 7 exports matching the S03→S04 boundary contract exactly. 31/31 tests. R040/R041/R044 validated. CLI entry point with detect-only, --execute, and --dry-run modes.
 
 ## Success Criteria Coverage
 
-All 7 success criteria have S04 as their remaining owner (or are already done via S01). No gaps.
+All 7 success criteria map to S04 (the sole remaining slice). No orphaned criteria.
 
 | Criterion | Owner |
 |-----------|-------|
-| Detect changed files and report stale pages | S04 |
-| Regenerate stale pages via Claude API | S04 |
-| New commands get pages + sidebar entries | S04 |
-| Removed commands lose pages + sidebar entries | S04 |
-| All 42 pages have source mappings | ✅ S01 |
-| Fast path when no changes | S04 |
+| `npm run update` detects changes and reports stale pages | S04 |
+| Stale pages regenerated via Claude API | S04 |
+| New commands get pages + sidebar entries | S04 (via S03's createNewPages) |
+| Removed commands lose pages + sidebar entries | S04 (via S03's removePages) |
+| All 42 pages have source mappings | ✅ S01 (done) |
+| No-change fast path skips regeneration | S04 |
 | Graceful degradation without API key | S04 |
 
 ## Boundary Contracts
 
-- **S03→S04**: Confirmed. `createNewPages(newCommands, { client, dryRun })` and `removePages(removedCommands, {})` are the integration points. S04 imports and calls them directly in `update.mjs`.
-- **S02→S04**: Confirmed in S02. `regeneratePage(pagePath, sourceFiles, options)` ready for pipeline use.
-- **S01→S04**: Confirmed. `diff-sources.mjs`, `stale-pages.json`, `page-source-map.json` all stable.
+S03→S04 boundary is accurate. Exports match the roadmap specification:
+- `detectNewAndRemovedCommands(options?)` → `{ newCommands[], removedCommands[] }`
+- `createNewPages(newCommands, options?)` → `{ results[], created, skipped, failed }`
+- `removePages(removedCommands, options?)` → `{ results[], removed, failed }`
+
+Options accept `client` (Anthropic SDK instance), `dryRun`, and path overrides — S04 passes these from the pipeline context.
 
 ## Requirement Coverage
 
-Active requirements R034–R046 remain covered. R040/R041/R044 validated by S03. Remaining active requirements (R034/R035/R036/R037/R038/R039/R042/R043/R045/R046) are covered by S04 pipeline integration. No requirements invalidated, surfaced, or re-scoped.
+- **Validated by S03:** R040, R041, R044
+- **Remaining active:** R034-R039, R042, R043, R045, R046 — all map to S04
+- **No gaps:** Every active requirement has a remaining owning slice
 
-## Risk Status
+## Known Limitations (non-blocking)
 
-- **Claude API output quality** — ✅ Retired in S02 (byte-identical output for 3 pages)
-- **Source-to-page mapping completeness** — ✅ Retired in S01 (42 pages, 485 deps, 9 tests)
-- **Token cost and latency** — ✅ Retired in S02 (measured and reported)
+- `config` and `pause` detected as orphaned pages — correct behavior, may need NON_COMMAND_PAGES additions
+- Cross-reference cleanup for removed commands not implemented — deferred enhancement
+- Sidebar manipulation is string-based — fragile if astro.config.mjs structure changes significantly
 
-No new risks emerged from S03. S04 is low-risk integration work with all upstream modules tested and boundary contracts verified.
+## Risks
+
+No new risks emerged. S04 is low-risk integration work with all components already built and tested.

@@ -21,7 +21,7 @@
 ## Proof Strategy
 
 - **Claude API output quality** → retire in S02 by regenerating 3 command deep-dive pages via API and comparing quality against existing M002 output. If quality is unacceptable, the slice surfaces this before the full pipeline is built.
-- **Source-to-page mapping completeness** → ✅ retired in S01. All 42 pages mapped to 485 source deps. 9/9 unit tests pass. All source paths validated against manifest. Known limitation: no transitive dependency tracking (acceptable tradeoff).
+- **Source-to-page mapping completeness** → retire in S01 by building the mapping for all 42 pages and verifying it against the actual source files each page references. Manual review of 5 cross-cutting pages (recipes, walkthrough).
 - **Token cost and latency** → retire in S02 by measuring actual token usage and latency for a representative regeneration run (3-5 pages), extrapolating to worst case.
 
 ## Verification Classes
@@ -54,13 +54,13 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [x] **S01: Source Diff and Page Mapping** `risk:high` `depends:[]`
+- [ ] **S01: Source Diff and Page Mapping** `risk:high` `depends:[]`
   > After this: Running a script shows which gsd-pi source files changed between the current and previous version, and which doc pages are affected. All 42 authored pages have explicit source mappings. No regeneration yet — detection only.
-- [x] **S02: LLM Page Regeneration** `risk:high` `depends:[S01]`
+- [ ] **S02: LLM Page Regeneration** `risk:high` `depends:[S01]`
   > After this: Running the regeneration script with an API key regenerates flagged pages via Claude API. Output quality verified against M02 originals for 3+ command pages. Token usage and cost reported.
 - [x] **S03: New/Removed Command Handling** `risk:medium` `depends:[S01]`
   > After this: Adding a fake command to the source triggers page generation and sidebar entry. Removing one triggers cleanup. Both paths verified.
-- [x] **S04: Pipeline Integration and Polish** `risk:low` `depends:[S01,S02,S03]`
+- [ ] **S04: Pipeline Integration and Polish** `risk:low` `depends:[S01,S02,S03]`
   > After this: `npm run update` runs the complete pipeline end-to-end — update, extract, diff, regenerate, build, check-links. Graceful degradation without API key. Cost/timing reporting. All success criteria met.
 
 ## Boundary Map
@@ -68,11 +68,9 @@ This milestone is complete only when all are true:
 ### S01 → S02
 
 Produces:
-- `content/generated/page-source-map.json` — manifest mapping each doc page path (content-relative keys like `commands/auto.mdx`) to its source file dependencies (repo-relative paths matching manifest.json like `src/resources/extensions/gsd/auto.ts`)
-- `content/generated/stale-pages.json` — boundary contract with `{ changedFiles[], addedFiles[], removedFiles[], stalePages[], reasons: { page: [files] }, timestamp }` (or `{ firstRun: true, stalePages: [], timestamp }` for initial runs). S02 consumes `stalePages` and `reasons`.
-- `content/generated/previous-manifest.json` — snapshot of manifest.json saved before each extraction for diffing
-- `scripts/lib/diff-sources.mjs` — ESM module exporting `detectChanges(prevManifest, currManifest)` which returns `{ changedFiles: string[], addedFiles: string[], removedFiles: string[] }` and `resolveStalePages(changes, pageSourceMap)` which returns `{ stalePages: string[], reasons: Record<string, string[]> }`. Note: manifest `.files` is `Record<string, string>` (path→sha), not an array.
-- `scripts/lib/build-page-map.mjs` — ESM module exporting `buildPageSourceMap()` which generates page-source-map.json
+- `content/generated/source-snapshot/` — directory containing the gsd-pi package source files used as the diffing baseline
+- `content/generated/page-source-map.json` — manifest mapping each doc page path to its source file dependencies (array of relative paths into the gsd-pi package)
+- `scripts/diff-sources.mjs` — module exporting `detectChanges()` which returns `{ changedFiles: string[], addedFiles: string[], removedFiles: string[] }` and `resolveStalePages(changes, pageMap)` which returns `{ stalePages: string[], reason: Map<string, string[]> }`
 
 Consumes:
 - nothing (first slice)
@@ -81,7 +79,6 @@ Consumes:
 
 Produces:
 - `content/generated/page-source-map.json` — the same mapping, which S03 uses to detect new commands without existing pages and existing pages without source commands
-- `content/generated/stale-pages.json` — S03 consumes `addedFiles` and `removedFiles` arrays to detect new/removed commands
 
 Consumes:
 - nothing (first slice)
@@ -89,27 +86,24 @@ Consumes:
 ### S02 → S04
 
 Produces:
-- `scripts/lib/regenerate-page.mjs` — module exporting `regeneratePage(pagePath, sourceFiles, options)` which calls Claude API and writes updated MDX content
+- `scripts/regenerate-page.mjs` — module exporting `regeneratePage(pagePath, sourceFiles, options)` which calls Claude API and writes updated MDX content
 - Proven prompt template and quality baseline for page regeneration
 
 Consumes:
-- S01's `stale-pages.json` (`stalePages` array and `reasons` object)
-- S01's `page-source-map.json` for resolving source files per page
-- S01's `scripts/lib/diff-sources.mjs` exports
+- S01's diff detection and staleness resolution
 
 ### S03 → S04
 
 Produces:
-- `scripts/lib/manage-pages.mjs` — module exporting `createNewPages(newCommands)` and `removePages(removedCommands)` which handle page creation/removal and sidebar updates
+- `scripts/manage-pages.mjs` — module exporting `createNewPages(newCommands)` and `removePages(removedCommands)` which handle page creation/removal and sidebar updates
 
 Consumes:
-- S01's `stale-pages.json` (`addedFiles` and `removedFiles` arrays)
-- S01's `page-source-map.json` for mapping commands to pages
+- S01's page-source-map.json and diff detection
 
 ### S04 (integration)
 
 Consumes:
-- S01's diff detection (`scripts/lib/diff-sources.mjs`), page mapping (`page-source-map.json`), and boundary contract (`stale-pages.json`)
-- S02's page regeneration (`scripts/lib/regenerate-page.mjs`)
-- S03's page creation/removal (`scripts/lib/manage-pages.mjs`)
-- Existing `scripts/update.mjs` pipeline (already has diff-report step wired in from S01)
+- S01's diff detection and page mapping
+- S02's page regeneration
+- S03's page creation/removal
+- Existing `scripts/update.mjs` pipeline
