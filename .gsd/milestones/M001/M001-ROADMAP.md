@@ -55,7 +55,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Content extraction pipeline** `risk:high` `depends:[]`
   > After this: Running the extraction script produces structured markdown from the installed npm package (skills, prompts, templates, agents) and GitHub repo (docs/, README, releases). Content manifest with hashes for diff tracking.
 
-- [ ] **S02: Astro site scaffold with custom design** `risk:high` `depends:[]`
+- [x] **S02: Astro site scaffold with custom design** `risk:high` `depends:[]`
   > After this: A running Astro/Starlight dev server with terminal-native dark design, custom components, Mermaid diagram support, Pagefind search, and semantic HTML. Placeholder content pages demonstrate all component variants.
 
 - [ ] **S03: Quick-reference pages** `risk:medium` `depends:[S01,S02]`

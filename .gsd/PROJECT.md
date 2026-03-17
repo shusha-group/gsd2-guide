@@ -10,16 +10,17 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 ## Current State
 
-S01 (Content extraction pipeline) complete. `npm run extract` produces 1,238 structured content items from the gsd-pi npm package and GitHub repo — 8 skills, 5 agents, 17 extensions, 42 commands, 48 releases, 126 docs, README, and a 991-file manifest with SHA hashes. 39/39 tests pass. Next: S02 (Astro site scaffold with custom design).
+S01 (Content extraction pipeline) and S02 (Astro site scaffold with custom design) complete. The site builds 131 HTML pages with a phosphor-green terminal-native dark theme, Mermaid diagram support, Pagefind search, and 126 S01 docs flowing through the prebuild pipeline. `npm run build` produces a complete `dist/` with sitemap and search index. Next: S03 (quick-reference pages), S04 (deep-dive docs), or S05 (changelog) — all unblocked.
 
 ## Architecture / Key Patterns
 
-- **Astro + Starlight** — Static site generator purpose-built for documentation, zero client JS by default, Pagefind search
+- **Astro 6 + Starlight 0.38** — Static site generator purpose-built for documentation, zero client JS by default, Pagefind search
 - **Content extraction pipeline** — Node.js script that reads the installed `gsd-pi` npm package + GitHub API for repo docs/releases
+- **Prebuild content bridge** — `scripts/prebuild.mjs` copies S01 extracted docs into Starlight's content directory with YAML frontmatter injection, tracked via `.generated-manifest.json`
+- **Terminal-native dark design** — Phosphor green (#39FF14) on near-black (#0a0e0a), JetBrains Mono + Outfit Variable fonts, CSS split into custom.css (variables) + terminal.css (effects)
+- **Mermaid diagrams** — @pasqal-io/starlight-client-mermaid renders triple-backtick mermaid fences as SVGs
 - **Incremental rebuild** — Diff-based detection of changed content between npm versions
-- **GitHub Pages** — Static hosting via git push, no server needed
-- **Terminal-native dark design** — Custom Starlight theme with Mermaid diagram support and visual aids for vibe-coders
-- **Frontend design skill** — Leveraged for high design quality across the site
+- **GitHub Pages** — Static hosting via git push, site/base configured for `gsd-build.github.io/gsd2-guide`
 
 ## Capability Contract
 
