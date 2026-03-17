@@ -69,6 +69,15 @@ Wire the diff detection and staleness resolver into `scripts/update.mjs` so that
 - `content/generated/manifest.json` — current manifest (existing, refreshed by extract)
 - `content/generated/previous-manifest.json` — from T02's extract.mjs modification
 
+## Observability Impact
+
+- **New signal:** `[update] Step: diff report` appears in pipeline output between extract and build — shows changed file count, stale page count, and per-page reasons
+- **New artifact:** `content/generated/stale-pages.json` — boundary contract consumed by S02/S03/S04; inspect with `cat content/generated/stale-pages.json | python3 -m json.tool`
+- **Fast-path visibility:** When nothing changed, output shows `✓ No stale pages — skipping regeneration` — confirms diff system is active
+- **First-run visibility:** When no previous manifest exists, output shows `ℹ First run — no previous manifest for diff`
+- **Failure state:** If `page-source-map.json` is missing, diff step logs a warning and writes a firstRun-style stale-pages.json — pipeline continues without blocking build
+- **Inspection:** `stale-pages.json` includes timestamp, changedFiles, stalePages, and reasons object for post-hoc debugging
+
 ## Expected Output
 
 - `scripts/update.mjs` — modified with diff reporting step between extract and build

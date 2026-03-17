@@ -6,38 +6,37 @@ title: "Commands Reference"
 
 | Command | Description |
 |---------|-------------|
-| [`/gsd`](gsd/) | Step mode — execute one unit at a time, pause between each |
-| [`/gsd next`](next/) | Explicit step mode (same as `/gsd`) |
-| [`/gsd auto`](auto/) | Autonomous mode — research, plan, execute, commit, repeat |
-| [`/gsd quick`](quick/) | Execute a quick task with GSD guarantees (atomic commits, state tracking) without full planning overhead |
-| [`/gsd stop`](stop/) | Stop auto mode gracefully |
-| [`/gsd pause`](pause/) | Pause auto mode (preserves conversation context) |
-| [`/gsd steer`](steer/) | Hard-steer plan documents during execution |
-| [`/gsd discuss`](discuss/) | Discuss architecture and decisions (works alongside auto mode) |
-| [`/gsd status`](status/) | Progress dashboard |
-| [`/gsd queue`](queue/) | Queue and reorder future milestones (safe during auto mode) |
-| [`/gsd capture`](capture/) | Fire-and-forget thought capture (works during auto mode) |
-| [`/gsd triage`](triage/) | Manually trigger triage of pending captures |
-| [`/gsd forensics`](forensics/) | Post-mortem investigation of auto-mode failures — structured root-cause analysis with log inspection |
-| [`/gsd cleanup`](cleanup/) | Clean up GSD state files and stale worktrees |
-| [`/gsd visualize`](visualize/) | Open workflow visualizer (progress, deps, metrics, timeline) |
-| [`/gsd knowledge`](knowledge/) | Add persistent project knowledge (rule, pattern, or lesson) |
+| `/gsd` | Step mode — execute one unit at a time, pause between each |
+| `/gsd next` | Explicit step mode (same as `/gsd`) |
+| `/gsd auto` | Autonomous mode — research, plan, execute, commit, repeat |
+| `/gsd quick` | Execute a quick task with GSD guarantees (atomic commits, state tracking) without full planning overhead |
+| `/gsd stop` | Stop auto mode gracefully |
+| `/gsd steer` | Hard-steer plan documents during execution |
+| `/gsd discuss` | Discuss architecture and decisions (works alongside auto mode) |
+| `/gsd status` | Progress dashboard |
+| `/gsd queue` | Queue and reorder future milestones (safe during auto mode) |
+| `/gsd capture` | Fire-and-forget thought capture (works during auto mode) |
+| `/gsd triage` | Manually trigger triage of pending captures |
+| `/gsd forensics` | Post-mortem investigation of auto-mode failures — structured root-cause analysis with log inspection |
+| `/gsd cleanup` | Clean up GSD state files and stale worktrees |
+| `/gsd visualize` | Open workflow visualizer (progress, deps, metrics, timeline) |
+| `/gsd knowledge` | Add persistent project knowledge (rule, pattern, or lesson) |
 | `/gsd help` | Categorized command reference with descriptions for all GSD subcommands |
 
 ## Configuration & Diagnostics
 
 | Command | Description |
 |---------|-------------|
-| [`/gsd prefs`](prefs/) | Model selection, timeouts, budget ceiling |
-| [`/gsd mode`](mode/) | Switch workflow mode (solo/team) with coordinated defaults for milestone IDs, git commit behavior, and documentation |
-| [`/gsd doctor`](doctor/) | Runtime health checks (7 checks) with auto-fix for common state corruption issues |
-| [`/gsd skill-health`](skill-health/) | Skill lifecycle dashboard — usage stats, success rates, token trends, staleness warnings |
-| [`/gsd skill-health <name>`](skill-health/) | Detailed view for a single skill |
-| [`/gsd skill-health --declining`](skill-health/) | Show only skills flagged for declining performance |
-| [`/gsd skill-health --stale N`](skill-health/) | Show skills unused for N+ days |
-| [`/gsd hooks`](hooks/) | Show configured post-unit and pre-dispatch hooks |
-| [`/gsd run-hook`](run-hook/) | Manually trigger a specific hook |
-| [`/gsd migrate`](migrate/) | Migrate a v1 `.planning` directory to `.gsd` format |
+| `/gsd prefs` | Model selection, timeouts, budget ceiling |
+| `/gsd mode` | Switch workflow mode (solo/team) with coordinated defaults for milestone IDs, git commit behavior, and documentation |
+| `/gsd doctor` | Runtime health checks (7 checks) with auto-fix for common state corruption issues |
+| `/gsd skill-health` | Skill lifecycle dashboard — usage stats, success rates, token trends, staleness warnings |
+| `/gsd skill-health <name>` | Detailed view for a single skill |
+| `/gsd skill-health --declining` | Show only skills flagged for declining performance |
+| `/gsd skill-health --stale N` | Show skills unused for N+ days |
+| `/gsd hooks` | Show configured post-unit and pre-dispatch hooks |
+| `/gsd run-hook` | Manually trigger a specific hook |
+| `/gsd migrate` | Migrate a v1 `.planning` directory to `.gsd` format |
 
 ## Parallel Orchestration
 
@@ -70,7 +69,7 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 | `/thinking` | Toggle thinking level during sessions |
 | `/voice` | Toggle real-time speech-to-text (macOS, Linux) |
 
-## [Keyboard Shortcuts](keyboard-shortcuts/)
+## Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
@@ -81,7 +80,7 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 
 > **Note:** In terminals without Kitty keyboard protocol support (macOS Terminal.app, JetBrains IDEs), slash-command fallbacks are shown instead of `Ctrl+Alt` shortcuts.
 
-## [CLI Flags](cli-flags/)
+## CLI Flags
 
 | Flag | Description |
 |------|-------------|
@@ -93,10 +92,10 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 | `gsd --list-models [search]` | List available models and exit |
 | `gsd sessions` | Interactive session picker — list all saved sessions for the current directory and choose one to resume |
 | `gsd --debug` | Enable structured JSONL diagnostic logging for troubleshooting dispatch and state issues |
-| [`gsd config`](config/) | Re-run the setup wizard (LLM provider + tool keys) |
+| `gsd config` | Re-run the setup wizard (LLM provider + tool keys) |
 | `gsd update` | Update GSD to the latest version |
 
-## [Headless Mode](headless/)
+## Headless Mode
 
 `gsd headless` runs `/gsd` commands without a TUI — designed for CI, cron jobs, and scripted automation. It spawns a child process in RPC mode, auto-responds to interactive prompts, detects completion, and exits with meaningful exit codes.
 
@@ -137,4 +136,3 @@ gsd --mode mcp
 ```
 
 The server registers all tools from the agent session and maps MCP `tools/list` and `tools/call` requests to GSD tool definitions. It runs until the transport closes.
-s.

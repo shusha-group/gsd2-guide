@@ -54,7 +54,7 @@
   - Verify: `node --test tests/diff-sources.test.mjs` passes all scenarios
   - Done when: Both functions exported and tested, extract.mjs saves previous manifest, first-run handled gracefully
 
-- [ ] **T03: Wire diff reporting into update pipeline and run integration verification** `est:30m`
+- [x] **T03: Wire diff reporting into update pipeline and run integration verification** `est:30m`
   - Why: Makes the detection visible — `npm run update` reports stale pages after extraction. Closes the integration loop so S02/S03/S04 can consume the diff output. Validates the full chain end-to-end.
   - Files: `scripts/update.mjs`, `scripts/lib/diff-sources.mjs`
   - Do: After the extract step in `update.mjs`, load previous-manifest and current manifest, run `detectChanges()` + `resolveStalePages()`, log a summary (changed files count, stale pages list with reasons). If no previous manifest exists, log "First run — all pages considered fresh" and continue. Add a `--diff-only` flag or export the diff step so it can be called independently.

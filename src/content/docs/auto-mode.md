@@ -14,6 +14,8 @@ Each slice flows through phases automatically:
 
 ```
 Research → Plan → Execute (per task) → Complete → Reassess Roadmap → Next Slice
+                                                                      ↓ (all slices done)
+                                                              Validate Milestone → Complete Milestone
 ```
 
 - **Research** — scouts the codebase and relevant docs
@@ -21,6 +23,7 @@ Research → Plan → Execute (per task) → Complete → Reassess Roadmap → N
 - **Execute** — runs each task in a fresh context window
 - **Complete** — writes summary, UAT script, marks roadmap, commits
 - **Reassess** — checks if the roadmap still makes sense
+- **Validate Milestone** — reconciliation gate after all slices complete; compares roadmap success criteria against actual results, catches gaps before sealing the milestone
 
 ## Key Properties
 

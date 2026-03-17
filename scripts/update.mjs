@@ -15,15 +15,85 @@
  */
 
 import { execSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { detectChanges, resolveStalePages } from './lib/diff-sources.mjs';
 
 const DIST_DIR = 'dist';
+const GENERATED_DIR = join('content', 'generated');
+
+// ── Diff report step (runs between extract and build) ───────────────
+function runDiffReport() {
+  const prevPath = join(GENERATED_DIR, 'previous-manifest.json');
+  const currPath = join(GENERATED_DIR, 'manifest.json');
+  const mapPath = join(GENERATED_DIR, 'page-source-map.json');
+  const stalePath = join(GENERATED_DIR, 'stale-pages.json');
+
+  // First-run: no previous manifest
+  if (!existsSync(prevPath)) {
+    console.log('  ℹ First run — no previous manifest for diff. All pages considered fresh.');
+    writeFileSync(stalePath, JSON.stringify({
+      firstRun: true,
+      stalePages: [],
+      timestamp: new Date().toISOString(),
+    }, null, 2));
+    return;
+  }
+
+  // Missing page-source-map — warn but don't block
+  if (!existsSync(mapPath)) {
+    console.log('  ⚠ page-source-map.json not found — skipping diff report');
+    writeFileSync(stalePath, JSON.stringify({
+      firstRun: true,
+      stalePages: [],
+      timestamp: new Date().toISOString(),
+    }, null, 2));
+    return;
+  }
+
+  const previousManifest = JSON.parse(readFileSync(prevPath, 'utf8'));
+  const currentManifest = JSON.parse(readFileSync(currPath, 'utf8'));
+  const pageSourceMap = JSON.parse(readFileSync(mapPath, 'utf8'));
+
+  const changes = detectChanges(previousManifest, currentManifest);
+  const { stalePages, reasons } = resolveStalePages(changes, pageSourceMap);
+
+  // Log summary
+  console.log(`  Source diff: ${changes.changedFiles.length} changed, ${changes.addedFiles.length} added, ${changes.removedFiles.length} removed`);
+  console.log(`  Stale pages: ${stalePages.length}`);
+
+  if (stalePages.length === 0) {
+    console.log('  ✓ No stale pages — skipping regeneration');
+  } else {
+    for (const page of stalePages) {
+      const triggers = reasons.get(page) || [];
+      const fileNames = triggers.map(f => f.split('/').pop());
+      console.log(`    - ${page} (${fileNames.join(', ')} changed)`);
+    }
+  }
+
+  // Convert reasons Map to plain object for JSON serialization
+  const reasonsObj = {};
+  for (const [page, triggers] of reasons.entries()) {
+    reasonsObj[page] = triggers;
+  }
+
+  // Write boundary contract for S02/S03/S04
+  writeFileSync(stalePath, JSON.stringify({
+    changedFiles: changes.changedFiles,
+    addedFiles: changes.addedFiles,
+    removedFiles: changes.removedFiles,
+    stalePages,
+    reasons: reasonsObj,
+    timestamp: new Date().toISOString(),
+  }, null, 2));
+}
 
 // ── Pipeline steps ──────────────────────────────────────────────────
 const steps = [
   { name: 'npm update', cmd: 'npm update gsd-pi', capture: false },
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
+  { name: 'diff report', fn: runDiffReport },
   { name: 'build',      cmd: 'npm run build', capture: false },
   { name: 'check-links', cmd: 'node scripts/check-links.mjs', capture: false },
 ];
@@ -68,7 +138,10 @@ for (const step of steps) {
   const stepStart = Date.now();
 
   try {
-    if (step.capture) {
+    if (step.fn) {
+      // In-process function step (e.g., diff report)
+      step.fn();
+    } else if (step.capture) {
       // Capture stdout to parse manifest diff, pipe stderr through
       const output = execSync(step.cmd, {
         encoding: 'utf-8',
