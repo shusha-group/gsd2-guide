@@ -128,6 +128,14 @@ gsd --continue    # or gsd -c
 
 Resumes the most recent session for the current directory.
 
+To browse and pick from all saved sessions:
+
+```bash
+gsd sessions
+```
+
+Shows each session's date, message count, and first-message preview so you can choose which one to resume.
+
 ## Next Steps
 
 - [Auto Mode](../auto-mode/) — deep dive into autonomous execution

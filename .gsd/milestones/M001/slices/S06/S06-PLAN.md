@@ -34,6 +34,7 @@
 - `find dist/ -name "*.html" | wc -l` returns 134+ after pipeline run
 - Link checker reports 0 broken internal page links
 - Link checker exits 1 and prints structured broken-link report when a broken link exists (inject a bad href to test, then revert)
+- Update script exits non-zero and names the failed step when a pipeline step fails (diagnostic: output includes `[update] ❌ Step "..." failed` with elapsed time up to failure)
 
 ## Observability / Diagnostics
 
@@ -57,7 +58,7 @@
   - Verify: `npm run build && npm run check-links` exits 0 and reports 18000+ links checked with 0 broken
   - Done when: Link checker exits 0 on current dist/ with count of links checked reported to stdout
 
-- [ ] **T02: Build one-command update pipeline script** `est:25m`
+- [x] **T02: Build one-command update pipeline script** `est:25m`
   - Why: R007 requires a single command for the full update cycle. R011 requires content diff reporting. This script composes all existing pieces into the one-command pipeline.
   - Files: `scripts/update.mjs`, `package.json`
   - Do: Create a Node.js ESM script that chains steps sequentially using child_process.execSync or spawn: (1) `npm update gsd-pi` to pull latest, (2) `node scripts/extract.mjs` to re-extract content — capture its output to parse manifest diff, (3) `npm run build` which triggers prebuild automatically via npm lifecycle hook then runs astro build, (4) `node scripts/check-links.mjs` to validate. IMPORTANT: do NOT call prebuild explicitly — it runs automatically as part of `npm run build`. Report: elapsed time per step, total elapsed time, manifest diff summary (added/changed/removed counts from extract output), link check results. Exit non-zero immediately if any step fails, reporting which step failed. Add `"update": "node scripts/update.mjs"` to package.json.
