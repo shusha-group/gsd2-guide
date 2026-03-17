@@ -39,7 +39,7 @@ GSD auto-selects a default model after login. Switch later with:
 /model
 ```
 
-Or configure per-phase models in preferences — see [Configuration](./configuration.md).
+Or configure per-phase models in preferences — see [Configuration](../configuration/).
 
 ## Two Ways to Work
 
@@ -62,7 +62,7 @@ Type `/gsd auto` and walk away. GSD autonomously researches, plans, executes, ve
 /gsd auto
 ```
 
-See [Auto Mode](./auto-mode.md) for full details.
+See [Auto Mode](../auto-mode/) for full details.
 
 ## Two Terminals, One Project
 
@@ -130,6 +130,6 @@ Resumes the most recent session for the current directory.
 
 ## Next Steps
 
-- [Auto Mode](./auto-mode.md) — deep dive into autonomous execution
-- [Configuration](./configuration.md) — model selection, timeouts, budgets
-- [Commands Reference](./commands.md) — all commands and shortcuts
+- [Auto Mode](../auto-mode/) — deep dive into autonomous execution
+- [Configuration](../configuration/) — model selection, timeouts, budgets
+- [Commands Reference](../commands/) — all commands and shortcuts

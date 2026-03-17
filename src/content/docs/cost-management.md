@@ -63,7 +63,7 @@ Projections use per-slice averages from completed work. If the budget ceiling ha
 
 ## Budget Pressure & Model Downgrading
 
-When approaching the budget ceiling, the [complexity router](./token-optimization.md#budget-pressure) automatically downgrades model assignments to cheaper tiers. This is graduated:
+When approaching the budget ceiling, the [complexity router](../token-optimization/#budget-pressure) automatically downgrades model assignments to cheaper tiers. This is graduated:
 
 - **< 50% used** — no adjustment
 - **50-75% used** — standard tasks downgrade to light
@@ -82,7 +82,7 @@ The `token_profile` preference directly affects cost:
 | `balanced` | 10-20% | Default models, skip slice research, standard context |
 | `quality` | 0% (baseline) | Full models, all phases, full context |
 
-See [Token Optimization](./token-optimization.md) for details.
+See [Token Optimization](../token-optimization/) for details.
 
 ## Tips
 
@@ -91,5 +91,5 @@ See [Token Optimization](./token-optimization.md) for details.
 - Switch to `budget` profile for well-understood, repetitive work
 - Use `quality` only when architectural decisions are being made
 - Per-phase model selection lets you use Opus only for planning while keeping execution on Sonnet
-- Enable `dynamic_routing` for automatic model downgrading on simple tasks — see [Dynamic Model Routing](./dynamic-model-routing.md)
+- Enable `dynamic_routing` for automatic model downgrading on simple tasks — see [Dynamic Model Routing](../dynamic-model-routing/)
 - Use `/gsd visualize` → Metrics tab to see where your budget is going

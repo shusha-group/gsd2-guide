@@ -80,6 +80,13 @@ The prebuild script (`scripts/prebuild.mjs`) is the sole transformation point be
 - `grep -r '\.md)' src/content/docs/ --include="*.md" | grep -v 'native/README' | grep -v 'https' | grep -v '^\`' | wc -l` returns 0 or near-0 (only the dead `../native/README.md` link should remain, in the skipped root README)
 - `grep 'agentskills.io' src/content/docs/what-is-pi/09-the-customization-stack.md` still shows the external URL untouched
 
+## Observability Impact
+
+- **Console output enhanced:** Prebuild now logs skipped root README, README→index renames, and final file count. A future agent can inspect `node scripts/prebuild.mjs 2>&1` to see exactly what was processed.
+- **Link rewriting residual check:** `grep -r '\.md)' src/content/docs/ --include="*.md" | grep -v 'native/README' | grep -v 'https'` should return 0 lines after this task. Any non-zero result means a link pattern was missed.
+- **Manifest file:** `src/content/docs/.generated-manifest.json` lists all 125 generated files with paths — allows verification that README→index rename happened and root README was skipped.
+- **Failure visibility:** Per-file errors logged to stderr with filename. Non-zero exit if any file fails. Missing source directory produces a clear error message and exit code 1.
+
 ## Inputs
 
 - `scripts/prebuild.mjs` — existing prebuild script with frontmatter injection logic (read current implementation before modifying)

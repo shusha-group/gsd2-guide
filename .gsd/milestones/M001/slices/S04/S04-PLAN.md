@@ -28,6 +28,16 @@
 - Sidebar contains entries for `getting-started`, `auto-mode`, `architecture`, `troubleshooting` (spot-check built HTML nav)
 - `find dist/building-coding-agents/ -name "index.html" -path "*/building-coding-agents/index.html"` exists (README became index)
 - Internal link spot-checks in built HTML: getting-started links to auto-mode, auto-mode links to git-strategy, configuration links to token-optimization
+- **Failure-path check:** `node scripts/prebuild.mjs` with a missing `content/generated/docs/` directory exits non-zero with descriptive error. With a malformed file, logs filename and error to stderr and continues processing other files.
+
+## Observability / Diagnostics
+
+- **Prebuild console output:** `scripts/prebuild.mjs` logs file count, skipped files, and errors to stdout/stderr. A non-zero exit code means at least one file failed processing.
+- **Generated manifest:** `src/content/docs/.generated-manifest.json` lists every generated file with timestamp — inspect to verify which files were written and when.
+- **Link rewriting residuals:** `grep -r '\.md)' src/content/docs/ --include="*.md" | grep -v 'native/README' | grep -v 'https'` surfaces any internal `.md` links that survived rewriting. Should return 0 lines after T01.
+- **README→index verification:** `find src/content/docs/ -name "README.md"` should return nothing after T01. `find src/content/docs/ -name "index.md"` should return 5 subdirectory index files.
+- **Build failure diagnostics:** `npm run build` stderr contains Astro/Starlight error messages including broken link warnings and missing content collection entries. Inspect stderr for `[ERROR]` or `404` patterns.
+- **Failure-path check:** If prebuild encounters a read/write error on any file, it logs the filename and error message to stderr and increments a skip counter. The final log line distinguishes `N files processed` from `M files skipped due to errors`. Non-zero exit on any error.
 
 ## Integration Closure
 
@@ -37,7 +47,7 @@
 
 ## Tasks
 
-- [ ] **T01: Enhance prebuild with link rewriting and README→index renaming** `est:40m`
+- [x] **T01: Enhance prebuild with link rewriting and README→index renaming** `est:40m`
   - Why: The 126 extracted docs have internal links using `./page.md` format that 404 in Starlight (which uses `/page/` routes). README.md files render as `/readme/` instead of section index pages. The prebuild script is the sole transformation point — all fixes must happen here.
   - Files: `scripts/prebuild.mjs`
   - Do: Add three transformations to prebuild: (1) Rewrite markdown links — `](./file.md)` → `](../file/)`, `](./file.md#section)` → `](../file/#section)`, `](file.md)` → `](../file/)` (bare references), within-subdirectory links `](./NN-page.md)` → `](./NN-page/)`, README.md links `](./subdir/README.md)` → `](../subdir/)`. Must only match markdown link syntax `](...)`, not code blocks. (2) Rename README.md → index.md in subdirectories, inject `sidebar: { order: 0 }` frontmatter so they sort first. Skip root-level README.md to avoid collision with index.mdx. (3) Handle the dead `../native/README.md` link by stripping or leaving as-is.

@@ -20,7 +20,7 @@ mode: team
 
 This is equivalent to manually setting `unique_milestone_ids: true`, `git.push_branches: true`, `git.pre_merge_check: true`, and other team-appropriate defaults. You can still override individual settings — for example, adding `git.auto_push: true` on top of `mode: team` if your team prefers auto-push.
 
-Alternatively, you can configure each setting individually without using a mode (see [Git Strategy](git-strategy.md) for details).
+Alternatively, you can configure each setting individually without using a mode (see [Git Strategy](../git-strategy/) for details).
 
 ### 2. Configure `.gitignore`
 

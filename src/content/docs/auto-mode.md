@@ -41,7 +41,7 @@ The dispatch prompt is carefully constructed with:
 | Roadmap excerpt | Overall direction |
 | Decisions register | Architectural context |
 
-The amount of context inlined is controlled by your [token profile](./token-optimization.md). Budget mode inlines minimal context; quality mode inlines everything.
+The amount of context inlined is controlled by your [token profile](../token-optimization/). Budget mode inlines minimal context; quality mode inlines everything.
 
 ### Git Isolation
 
@@ -51,7 +51,7 @@ GSD isolates milestone work using one of three modes (configured via `git.isolat
 - **`branch`**: Work happens in the project root on a `milestone/<MID>` branch. Useful for submodule-heavy repos where worktrees don't work well.
 - **`none`**: Work happens directly on your current branch. No worktree, no milestone branch. Ideal for hot-reload workflows where file isolation breaks dev tooling.
 
-See [Git Strategy](./git-strategy.md) for details.
+See [Git Strategy](../git-strategy/) for details.
 
 ### Crash Recovery
 
@@ -84,7 +84,7 @@ auto_supervisor:
 
 Every unit's token usage and cost is captured, broken down by phase, slice, and model. The dashboard shows running totals and projections. Budget ceilings can pause auto mode before overspending.
 
-See [Cost Management](./cost-management.md).
+See [Cost Management](../cost-management/).
 
 ### Adaptive Replanning
 
@@ -132,7 +132,7 @@ Hard-steer plan documents during execution without stopping the pipeline. Change
 /gsd capture "add rate limiting to API endpoints"
 ```
 
-Fire-and-forget thought capture. Captures are triaged automatically between tasks. See [Captures & Triage](./captures-triage.md).
+Fire-and-forget thought capture. Captures are triaged automatically between tasks. See [Captures & Triage](../captures-triage/).
 
 ### Visualize
 
@@ -140,7 +140,7 @@ Fire-and-forget thought capture. Captures are triaged automatically between task
 /gsd visualize
 ```
 
-Open the workflow visualizer — interactive tabs for progress, dependencies, metrics, and timeline. See [Workflow Visualizer](./visualizer.md).
+Open the workflow visualizer — interactive tabs for progress, dependencies, metrics, and timeline. See [Workflow Visualizer](../visualizer/).
 
 ## Dashboard
 
@@ -163,8 +163,8 @@ Token profiles can skip certain phases to reduce cost:
 | Slice Research | Skipped | Skipped | Runs |
 | Reassess Roadmap | Skipped | Runs | Runs |
 
-See [Token Optimization](./token-optimization.md) for details.
+See [Token Optimization](../token-optimization/) for details.
 
 ## Dynamic Model Routing
 
-When enabled, auto-mode automatically selects cheaper models for simple units (slice completion, UAT) and reserves expensive models for complex work (replanning, architectural tasks). See [Dynamic Model Routing](./dynamic-model-routing.md).
+When enabled, auto-mode automatically selects cheaper models for simple units (slice completion, UAT) and reserves expensive models for complex work (replanning, architectural tasks). See [Dynamic Model Routing](../dynamic-model-routing/).

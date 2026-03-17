@@ -109,9 +109,61 @@ async function cleanPreviousGenerated() {
 }
 
 /**
- * Process a single markdown file: extract title, inject frontmatter, strip heading.
+ * Rewrite internal markdown links from `.md` format to Starlight-compatible `/page/` format.
+ *
+ * Patterns handled:
+ *   ](./file.md)         → ](../file/)
+ *   ](file.md)           → ](../file/)
+ *   ](./file.md#section) → ](../file/#section)
+ *   ](./dir/README.md)   → ](../dir/)
+ *   ](./README.md)       → ](../)
+ *
+ * Skips fenced code blocks (``` regions) and external links (http/https).
  */
-function processMarkdown(content, filePath) {
+function rewriteLinks(content) {
+  const lines = content.split('\n');
+  let inCodeBlock = false;
+  const linkRegex = /\]\((?!https?:\/\/|#)(\.\/|\.\.\/|)([^)#\s]+?)\.md(#[^)]+)?\)/g;
+
+  return lines.map(line => {
+    // Track fenced code block state
+    if (line.trimStart().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      return line;
+    }
+    if (inCodeBlock) return line;
+
+    return line.replace(linkRegex, (match, prefix, filePath, fragment) => {
+      // Leave ../native/README.md as-is (dead link, content doesn't exist)
+      if (prefix === '../' && filePath.includes('native/README')) {
+        return match;
+      }
+
+      const frag = fragment || '';
+
+      // Handle README.md targets → directory index
+      if (filePath === 'README' || filePath.endsWith('/README')) {
+        // e.g., ./what-is-pi/README.md → ../what-is-pi/
+        // e.g., ./README.md → ../
+        if (filePath === 'README') {
+          return `](../${frag})`;
+        }
+        // e.g., ./subdir/README → ../subdir/
+        const dirPath = filePath.replace(/\/README$/, '');
+        return `](../${dirPath}/${frag})`;
+      }
+
+      // Regular file: ./file.md → ../file/
+      return `](../${filePath}/${frag})`;
+    });
+  }).join('\n');
+}
+
+/**
+ * Process a single markdown file: extract title, inject frontmatter, strip heading, rewrite links.
+ * If isSubdirReadme is true, adds sidebar order: 0 frontmatter for directory index pages.
+ */
+function processMarkdown(content, filePath, isSubdirReadme = false) {
   const trimmed = content.trimStart();
 
   // If file already has frontmatter, just pass it through
@@ -145,7 +197,15 @@ function processMarkdown(content, filePath) {
   }
 
   const escapedTitle = escapeYamlString(title);
-  const frontmatter = `---\ntitle: "${escapedTitle}"\n---\n\n`;
+  let frontmatter;
+  if (isSubdirReadme) {
+    frontmatter = `---\ntitle: "${escapedTitle}"\nsidebar:\n  order: 0\n---\n\n`;
+  } else {
+    frontmatter = `---\ntitle: "${escapedTitle}"\n---\n\n`;
+  }
+
+  // Rewrite internal .md links to Starlight-compatible format
+  body = rewriteLinks(body);
 
   return frontmatter + body;
 }
@@ -176,11 +236,23 @@ async function main() {
 
   for (const sourceFile of sourceFiles) {
     const relPath = relative(SOURCE_DIR, sourceFile);
-    const targetFile = join(TARGET_DIR, relPath);
+
+    // Skip root-level README.md — index.mdx is the hand-authored splash page
+    if (relPath === 'README.md') {
+      console.log(`Skipping root README.md (hand-authored index.mdx exists)`);
+      continue;
+    }
+
+    // Determine if this is a subdirectory README.md → rename to index.md
+    const isSubdirReadme = basename(relPath) === 'README.md' && dirname(relPath) !== '.';
+    const targetRelPath = isSubdirReadme
+      ? join(dirname(relPath), 'index.md')
+      : relPath;
+    const targetFile = join(TARGET_DIR, targetRelPath);
 
     try {
       const content = await readFile(sourceFile, 'utf-8');
-      const result = processMarkdown(content, sourceFile);
+      const result = processMarkdown(content, sourceFile, isSubdirReadme);
 
       // Ensure target directory exists
       await mkdir(dirname(targetFile), { recursive: true });

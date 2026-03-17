@@ -70,7 +70,7 @@ models:
 
 **Phases:** `research`, `planning`, `execution`, `execution_simple`, `completion`, `subagent`
 
-- `execution_simple` — used for tasks classified as "simple" by the [complexity router](./token-optimization.md#complexity-based-task-routing)
+- `execution_simple` — used for tasks classified as "simple" by the [complexity router](../token-optimization/#complexity-based-task-routing)
 - `subagent` — model for delegated subagent tasks (scout, researcher, worker)
 - Provider targeting: use `provider/model` format (e.g., `bedrock/claude-sonnet-4-6`) or the `provider` field in object format
 - Omit a key to use whatever model is currently active
@@ -91,7 +91,7 @@ When a model fails to switch (provider unavailable, rate limited, credits exhaus
 
 ### `token_profile`
 
-Coordinates model selection, phase skipping, and context compression. See [Token Optimization](./token-optimization.md).
+Coordinates model selection, phase skipping, and context compression. See [Token Optimization](../token-optimization/).
 
 Values: `budget`, `balanced` (default), `quality`
 
@@ -367,7 +367,7 @@ For project-specific knowledge (patterns, gotchas, lessons learned), use `.gsd/K
 
 ### `dynamic_routing`
 
-Complexity-based model routing. See [Dynamic Model Routing](./dynamic-model-routing.md).
+Complexity-based model routing. See [Dynamic Model Routing](../dynamic-model-routing/).
 
 ```yaml
 dynamic_routing:
@@ -389,7 +389,7 @@ Show the workflow visualizer automatically after milestone completion:
 auto_visualize: true
 ```
 
-See [Workflow Visualizer](./visualizer.md).
+See [Workflow Visualizer](../visualizer/).
 
 ## Full Example
 

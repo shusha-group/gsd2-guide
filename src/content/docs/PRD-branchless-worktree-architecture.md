@@ -4,7 +4,7 @@ title: "PRD: Branchless Worktree Architecture"
 
 **Author:** Lex Christopherson
 **Date:** 2026-03-15
-**ADR:** [ADR-001-branchless-worktree-architecture.md](./ADR-001-branchless-worktree-architecture.md)
+**ADR:** [ADR-001-branchless-worktree-architecture.md](../ADR-001-branchless-worktree-architecture/)
 **Priority:** Critical — blocks reliable auto-mode operation
 
 ---
