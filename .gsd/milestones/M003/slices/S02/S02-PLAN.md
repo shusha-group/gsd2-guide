@@ -54,7 +54,7 @@
   - Verify: `node --test tests/regenerate-page.test.mjs` — all tests pass. `node -e "import('./scripts/lib/regenerate-page.mjs').then(m => console.log(Object.keys(m)))"` — exports `regeneratePage` and `regenerateStalePages`.
   - Done when: Module exports both functions, CLI entry point works, all unit tests pass with mocked SDK, `@anthropic-ai/sdk` is in devDependencies.
 
-- [ ] **T02: Quality verification — regenerate 3 pages and validate against M02 originals** `est:45m`
+- [x] **T02: Quality verification — regenerate 3 pages and validate against M02 originals** `est:45m`
   - Why: This retires the highest risk in M003 — can the Claude API produce documentation matching M02 quality? Without proving this, the entire milestone's value proposition is unverified. Also measures token usage/cost for S04's reporting requirement.
   - Files: `scripts/lib/regenerate-page.mjs` (may need prompt tuning), `src/content/docs/commands/capture.mdx`, `src/content/docs/commands/doctor.mdx`, `src/content/docs/commands/auto.mdx`
   - Do: Back up the 3 original pages. Run `regeneratePage()` for capture (light — 5 deps), doctor (mid — 7 deps), and auto (heavy — 11 deps). Compare each output against original: verify frontmatter, section structure, Mermaid diagram presence and styling, link format, content depth. Run `npm run build && node scripts/check-links.mjs` with regenerated pages. Record token usage and cost per page. If quality issues found, tune the system prompt and re-run. Restore originals after verification. Write a verification report as a task summary.
