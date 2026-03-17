@@ -1,0 +1,169 @@
+---
+title: "/gsd migrate"
+description: "One-shot migration from a v1 .planning/ directory to .gsd/ format — validates, parses, transforms, previews, and writes the new structure with optional agent review."
+---
+
+## What It Does
+
+`/gsd migrate` converts a legacy `.planning/` directory (from older GSD versions) into the current `.gsd/` format. It runs a 5-stage pipeline — validate, parse, transform, preview, write — with a confirmation step before any files are created. After writing, it optionally dispatches an agent-driven review that audits the output for GSD-2 standards compliance.
+
+This is a one-shot migration command. You run it once to bring a project forward from the old directory structure, then continue working with `/gsd auto` or `/gsd next` as normal.
+
+## Usage
+
+```
+/gsd migrate [path]
+```
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `path` | Path to the directory containing `.planning/` | Current directory (`.`) |
+
+The path can be relative or absolute. If it doesn't end with `.planning`, the command appends it automatically. Tilde expansion (`~/projects/myapp`) is supported.
+
+## How It Works
+
+```mermaid
+flowchart TD
+    Start(["/gsd migrate [path]"]) --> Resolve[Resolve source path]
+    Resolve --> Exists{.planning/<br/>directory exists?}
+    Exists -->|No| NotFound([Error: directory not found])
+    Exists -->|Yes| Validate[Stage 1: Validate]
+    Validate --> Warnings[Show warnings]
+    Warnings --> Fatal{Fatal issues<br/>found?}
+    Fatal -->|Yes| Blocked([Migration blocked])
+    Fatal -->|No| Parse[Stage 2: Parse .planning/]
+    Parse --> Transform[Stage 3: Transform to GSD]
+    Transform --> Preview[Stage 4: Generate preview]
+    Preview --> Confirm{User confirms<br/>write?}
+    Confirm -->|No| Cancel([Migration cancelled])
+    Confirm -->|Yes| Write[Stage 5: Write .gsd/]
+    Write --> Complete[Show file count]
+    Complete --> ReviewOffer{Review<br/>migration?}
+    ReviewOffer -->|Skip| Done([Done])
+    ReviewOffer -->|Review| Agent[Agent audits .gsd/<br/>against GSD-2 standards]
+    Agent --> Done
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Resolve fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Exists fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NotFound fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style Validate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Warnings fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Fatal fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Blocked fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style Parse fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Transform fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Preview fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Confirm fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Cancel fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style Write fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Complete fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ReviewOffer fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Agent fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+```
+
+### Stage 1: Validate
+
+Scans the `.planning/` directory for structural issues. Issues are classified as **warnings** (non-blocking, displayed to user) or **fatals** (block migration). Fatal issues include missing required files or corrupted directory structure. All issues report the specific file path.
+
+### Stage 2: Parse
+
+Reads the `.planning/` directory contents into an in-memory representation — milestones, slices, tasks, requirements, and project metadata. This stage handles the old naming conventions and directory layout.
+
+### Stage 3: Transform
+
+Converts the parsed v1 structure into GSD-2 format:
+
+| v1 (`.planning/`) | GSD-2 (`.gsd/`) |
+|---|---|
+| `.planning/milestones/M001/` | `.gsd/milestones/M001/` |
+| Milestone roadmaps | `M001-ROADMAP.md` |
+| Slice plans | `S01-PLAN.md` |
+| Task plans and summaries | `T01-PLAN.md`, `T01-SUMMARY.md` |
+| Requirements | `REQUIREMENTS.md` |
+| Project metadata | `PROJECT.md`, `STATE.md` |
+| Decisions | `DECISIONS.md` |
+
+### Stage 4: Preview
+
+Generates a summary of what will be written:
+
+- Milestone count
+- Slice count with completion percentage
+- Task count with completion percentage
+- Requirement count with status breakdown (validated, active, deferred)
+- Warning if a `.gsd/` directory already exists (it will be overwritten)
+
+The preview is shown via an interactive confirmation UI. You can proceed or cancel.
+
+### Stage 5: Write
+
+Creates the `.gsd/` directory and writes all transformed files. Reports the total file count on completion.
+
+### Optional Agent Review
+
+After writing, the command offers to dispatch an agent-driven review. The agent audits the migrated output against GSD-2 standards — checking structure, content quality, `deriveState()` round-trip integrity, and requirement statuses. It fixes minor issues in-place and reports PASS/FAIL per category.
+
+## What Files It Touches
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.planning/*` | Entire v1 directory structure — milestones, slices, tasks, requirements |
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.gsd/PROJECT.md` | Project description and milestone sequence |
+| `.gsd/STATE.md` | Current execution state |
+| `.gsd/REQUIREMENTS.md` | Migrated requirements with status |
+| `.gsd/DECISIONS.md` | Migrated decisions |
+| `.gsd/milestones/*/` | Full milestone directory tree with roadmaps, plans, and summaries |
+
+## Examples
+
+Migrating a project in the current directory:
+
+```
+> /gsd migrate
+
+● Migration preview
+  Milestones: 3
+  Slices: 8 (5 done — 62%)
+  Tasks: 24 (18 done — 75%)
+  Requirements: 12 (6 validated, 4 active, 2 deferred)
+
+  ❯ Write .gsd directory
+    Cancel
+
+Writing .gsd directory…
+✓ Migration complete — 47 file(s) written to .gsd/
+
+● Migration written
+  47 files written to .gsd/
+
+  ❯ Review migration
+    Skip review
+```
+
+When `.planning/` doesn't exist:
+
+```
+> /gsd migrate ~/projects/myapp
+
+✖ Directory not found: /Users/you/projects/myapp/.planning
+
+Migration converts a .planning/ directory (from older GSD versions)
+into .gsd/ format.
+If you are starting a new project, use /gsd:new-project instead.
+```
+
+## Related Commands
+
+- [`/gsd`](../gsd/) — Start a new project or continue an existing one
+- [`/gsd auto`](../auto/) — Run auto-mode after migration
+- [`/gsd doctor`](../doctor/) — Check health of the migrated `.gsd/` directory

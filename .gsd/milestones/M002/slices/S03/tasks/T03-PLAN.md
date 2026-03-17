@@ -99,6 +99,15 @@ These pages don't use the standard command template. Instead:
 - No unlinked `/gsd` commands remain in `content/generated/docs/commands.md`
 - Pagefind indexes ~54 pages
 
+## Observability Impact
+
+- **Build page count delta**: `npm run build` should report ~54 pages total (up from ~48 after T02). A count below 52 indicates missing pages.
+- **Sidebar completeness**: `grep "'/commands/" astro.config.mjs | wc -l` must reach 28. Below that means sidebar entries were missed.
+- **Landing page unlinked commands**: `grep -c '^\| \`/gsd' content/generated/docs/commands.md` vs `grep -c '^\| \[' content/generated/docs/commands.md` — any gap means unlinked commands remain.
+- **Mermaid parse errors**: Build failure with `Mermaid parse error` in output pinpoints the file and line — these surface clearly in `npm run build` stderr.
+- **Cross-link breakage**: `node scripts/check-links.mjs` reports broken links with source file and target path — 0 broken links confirms all `../sibling/` references resolve.
+- **Failure inspection**: A future agent debugging this task can check `dist/commands/*/index.html` existence for each of the 6 new pages to identify which specific page failed to build.
+
 ## Inputs
 
 - `src/content/docs/commands/queue.mdx` (or any T01/T02 page) — Reference for standard template

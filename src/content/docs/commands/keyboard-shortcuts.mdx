@@ -1,0 +1,55 @@
+---
+title: "Keyboard Shortcuts"
+description: "Quick-access keyboard shortcuts for GSD — toggle the dashboard, voice transcription, background shells, and pause auto mode without leaving the conversation."
+---
+
+## Overview
+
+GSD registers keyboard shortcuts for frequent actions that benefit from instant access. These work during any active session — whether you're in auto mode, discussing architecture, or watching a build.
+
+All shortcuts use the `Ctrl+Alt` modifier combination, which requires the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable detection.
+
+## Shortcuts
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+Alt+G` | Toggle dashboard | Opens the GSD dashboard overlay showing milestone progress, active slice, and task status. Same view as [`/gsd status`](../status/). Press again to close. |
+| `Ctrl+Alt+V` | Toggle voice | Starts or stops real-time speech-to-text transcription. Requires a microphone and supported OS (macOS, Linux). |
+| `Ctrl+Alt+B` | Background shells | Shows all running background shell processes — dev servers, watchers, builds. Displays process ID, command, status, and uptime. |
+| `Escape` | Pause auto mode | Pauses auto-mode execution after the current unit completes. Preserves the conversation context so you can inspect state or make manual changes before resuming. Same effect as [`/gsd pause`](../pause/). |
+
+## Terminal Compatibility
+
+These shortcuts rely on the **Kitty keyboard protocol**, a modern terminal capability that allows precise detection of modifier key combinations. Terminals that support it include:
+
+- **Kitty** — Full support (protocol originator)
+- **WezTerm** — Full support
+- **Ghostty** — Full support
+- **iTerm2** — Supported in recent versions
+
+### Terminals Without Support
+
+In terminals that don't implement the Kitty protocol, `Ctrl+Alt` key combinations can't be reliably detected. GSD handles this gracefully — **slash-command fallbacks** are shown instead of shortcut hints:
+
+| Instead of | Use |
+|-----------|-----|
+| `Ctrl+Alt+G` | `/gsd status` |
+| `Ctrl+Alt+V` | `/voice` |
+| `Ctrl+Alt+B` | Background shells via the TUI process list |
+| `Escape` | `/gsd pause` |
+
+Known terminals without Kitty protocol support:
+
+- **macOS Terminal.app** — No Kitty protocol support
+- **JetBrains IDE terminals** — Built-in terminals don't support it
+- **Older terminal emulators** — Any terminal predating the protocol
+
+:::note
+GSD auto-detects terminal capabilities at startup. You don't need to configure anything — if your terminal supports the protocol, shortcuts just work. If it doesn't, the fallback commands are always available.
+:::
+
+## Related Commands
+
+- [`/gsd status`](../status/) — Dashboard (same as `Ctrl+Alt+G`)
+- [`/gsd pause`](../pause/) — Pause auto mode (same as `Escape`)
+- [CLI Flags](../cli-flags/) — Command-line flags for starting GSD sessions

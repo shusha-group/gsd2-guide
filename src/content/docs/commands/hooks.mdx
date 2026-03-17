@@ -1,0 +1,91 @@
+---
+title: "/gsd hooks"
+description: "Display configured post-unit and pre-dispatch hooks — see what hooks exist, whether they're enabled, what unit types they target, and how many active cycles are running."
+---
+
+## What It Does
+
+`/gsd hooks` displays a read-only summary of all configured hooks in your project. It shows both **post-unit hooks** (run after a unit completes) and **pre-dispatch hooks** (run before a unit dispatches), along with their enabled/disabled status, target unit types, and active cycle counts.
+
+Hooks are GSD's extensibility mechanism for injecting custom agent work into the auto-mode pipeline. A post-unit hook might run a code review after every task. A pre-dispatch hook might prepend security requirements before every slice plan. `/gsd hooks` lets you see what's configured and whether anything is actively running.
+
+## Usage
+
+```
+/gsd hooks
+```
+
+No arguments — the command reads hook configuration from preferences and displays a formatted summary.
+
+## How It Works
+
+The command calls `getHookStatus()` from the hook engine, which:
+
+1. **Reads post-unit hooks** from `resolvePostUnitHooks()` — these are defined in `.gsd/preferences.md` under `post_unit_hooks`. For each hook, it collects the name, enabled state, target unit types (from the `after` field), and any active cycle counts from the in-memory cycle tracker.
+
+2. **Reads pre-dispatch hooks** from `resolvePreDispatchHooks()` — defined under `pre_dispatch_hooks` in preferences. These have a `before` field listing which unit types they intercept.
+
+3. **Formats the output** via `formatHookStatus()`, grouping post-unit and pre-dispatch hooks separately. If no hooks are configured, it shows a message pointing to the preferences file.
+
+### Hook Types
+
+| Type | When it runs | Configured in | Key fields |
+|------|-------------|---------------|------------|
+| Post-unit | After a unit completes | `post_unit_hooks` in preferences | `name`, `after`, `prompt`, `artifact`, `max_cycles`, `retry_on` |
+| Pre-dispatch | Before a unit dispatches | `pre_dispatch_hooks` in preferences | `name`, `before`, `action` (`modify`, `skip`, `replace`), `prepend`/`append` |
+
+### Display Fields
+
+For each hook, the display shows:
+
+| Field | Description |
+|-------|-------------|
+| Name | The hook identifier (e.g., `code-review`, `security-scan`) |
+| Status | `enabled` or `disabled` — disabled hooks are skipped during dispatch |
+| Targets | Unit types this hook applies to (e.g., `execute-task`, `plan-slice`) |
+| Active cycles | How many trigger+hook pairs are currently in progress (post-unit only) |
+
+## What Files It Touches
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/preferences.md` | Source of hook configuration (`post_unit_hooks`, `pre_dispatch_hooks`) |
+| `.gsd/hook-state.json` | Persisted cycle counts from active or crashed auto-mode sessions |
+
+### Creates / Writes
+
+None — this is a read-only display command.
+
+## Examples
+
+Viewing hooks in a project with a code review hook configured:
+
+```
+> /gsd hooks
+
+Configured Hooks:
+
+Post-Unit Hooks (run after unit completes):
+  code-review [enabled] → after: execute-task
+  lint-check [enabled] → after: execute-task, plan-slice (1 active cycle)
+
+Pre-Dispatch Hooks (run before unit dispatches):
+  security-context [enabled] → before: execute-task
+```
+
+When no hooks are configured:
+
+```
+> /gsd hooks
+
+No hooks configured. Add post_unit_hooks or pre_dispatch_hooks
+to .gsd/preferences.md
+```
+
+## Related Commands
+
+- [`/gsd run-hook`](../run-hook/) — Manually trigger a specific hook
+- [`/gsd prefs`](../prefs/) — Configure hook settings in preferences
+- [`/gsd auto`](../auto/) — Hooks run automatically during auto-mode execution

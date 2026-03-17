@@ -1,0 +1,83 @@
+---
+title: "CLI Flags"
+description: "Command-line flags and entry points for starting and managing GSD sessions — continue previous sessions, override models, run single-shot prompts, and configure providers."
+---
+
+## Overview
+
+GSD is invoked from the command line as `gsd` with optional flags. Most work happens inside the interactive TUI, but flags control how sessions start — which model to use, whether to resume, and whether to run in headless or single-shot mode.
+
+## Session Flags
+
+| Flag | Syntax | Description |
+|------|--------|-------------|
+| *(none)* | `gsd` | Start a new interactive session with the default model and provider |
+| `--continue` | `gsd --continue` or `gsd -c` | Resume the most recent session for the current directory. Restores conversation history, active auto-mode state, and background processes. |
+| `--model` | `gsd --model <id>` | Override the default model for this session. The model ID depends on the provider (e.g., `claude-sonnet-4-20250514`, `gpt-4o`). |
+| `--print` | `gsd --print "msg"` or `gsd -p "msg"` | Single-shot prompt mode — sends one message, prints the response, and exits. No TUI. Useful for scripting. |
+| `--mode` | `gsd --mode <text\|json\|rpc\|mcp>` | Output mode for non-interactive use. `text` is plain output, `json` is structured, `rpc` is for child process communication, `mcp` runs as an [MCP server](https://modelcontextprotocol.io). |
+| `--list-models` | `gsd --list-models [search]` | List available models and exit. Optionally filter by a search term. |
+| `--debug` | `gsd --debug` | Enable structured JSONL diagnostic logging. Writes dispatch events, state transitions, and timing data to `.gsd/activity/`. Useful for troubleshooting auto-mode behavior. |
+
+## Subcommands
+
+| Subcommand | Syntax | Description |
+|------------|--------|-------------|
+| `config` | [`gsd config`](../config/) | Re-run the setup wizard — configure LLM provider, API keys, and tool integrations. |
+| `update` | `gsd update` | Update GSD to the latest version via npm. |
+| `sessions` | `gsd sessions` | Interactive session picker — list all saved sessions for the current directory and choose one to resume. |
+| `headless` | [`gsd headless`](../headless/) | Run GSD commands without a TUI — for CI, cron jobs, and scripted automation. |
+
+## Examples
+
+Start a new session:
+
+```bash
+gsd
+```
+
+Resume the last session:
+
+```bash
+gsd --continue
+```
+
+Use a specific model:
+
+```bash
+gsd --model claude-sonnet-4-20250514
+```
+
+Single-shot prompt (no TUI):
+
+```bash
+gsd --print "What's the current project status?"
+```
+
+List available models:
+
+```bash
+gsd --list-models
+gsd --list-models sonnet
+```
+
+Debug auto-mode dispatch issues:
+
+```bash
+gsd --debug
+# Then inside the session:
+# /gsd auto
+# Check .gsd/activity/ for JSONL logs
+```
+
+Run as an MCP server:
+
+```bash
+gsd --mode mcp
+```
+
+## Related Commands
+
+- [Headless Mode](../headless/) — Run GSD commands without a TUI
+- [`gsd config`](../config/) — Setup wizard for providers and keys
+- [Keyboard Shortcuts](../keyboard-shortcuts/) — In-session shortcut keys

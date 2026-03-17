@@ -55,7 +55,7 @@
   - Verify: `npm run build` succeeds with ~48 pages, `node scripts/check-links.mjs` passes, `ls src/content/docs/commands/*.mdx | wc -l` → 21
   - Done when: 6 new pages exist, doctor and forensics have Mermaid diagrams showing their multi-mode mechanics, all pages reachable via sidebar, build and link check pass
 
-- [ ] **T03: Author utility commands and special topic pages** `est:45m`
+- [x] **T03: Author utility commands and special topic pages** `est:45m`
   - Why: Covers the final 6 pages — 3 utility commands (hooks, run-hook, migrate) and 3 special topic reference pages (keyboard-shortcuts, cli-flags, headless). Completes full command coverage and validates the slice.
   - Files: `src/content/docs/commands/hooks.mdx`, `src/content/docs/commands/run-hook.mdx`, `src/content/docs/commands/migrate.mdx`, `src/content/docs/commands/keyboard-shortcuts.mdx`, `src/content/docs/commands/cli-flags.mdx`, `src/content/docs/commands/headless.mdx`, `astro.config.mjs`, `content/generated/docs/commands.md`
   - Do: Create 6 MDX pages. Hooks is read-only display (prose + table). Run-hook uses a short dispatch flow diagram. Migrate needs a pipeline diagram (validate → parse → transform → preview → write). Special topic pages use reference-table format: keyboard-shortcuts is a table of shortcuts with notes on Kitty protocol; cli-flags is a table of flags with descriptions and examples; headless documents the RPC entry point, exit codes, and flags. Add 6 sidebar entries and ensure all remaining unlinked commands in the landing page now have deep-dive links. Run full slice verification.

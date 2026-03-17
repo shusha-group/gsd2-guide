@@ -52,6 +52,12 @@ export default defineConfig({
             { label: '/gsd mode', link: '/commands/mode/' },
             { label: '/gsd skill-health', link: '/commands/skill-health/' },
             { label: '/gsd config', link: '/commands/config/' },
+            { label: '/gsd hooks', link: '/commands/hooks/' },
+            { label: '/gsd run-hook', link: '/commands/run-hook/' },
+            { label: '/gsd migrate', link: '/commands/migrate/' },
+            { label: 'Keyboard Shortcuts', link: '/commands/keyboard-shortcuts/' },
+            { label: 'CLI Flags', link: '/commands/cli-flags/' },
+            { label: 'Headless Mode', link: '/commands/headless/' },
           ],
         },
         {

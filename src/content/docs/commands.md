@@ -32,12 +32,12 @@ title: "Commands Reference"
 | [`/gsd mode`](mode/) | Switch workflow mode (solo/team) with coordinated defaults for milestone IDs, git commit behavior, and documentation |
 | [`/gsd doctor`](doctor/) | Runtime health checks (7 checks) with auto-fix for common state corruption issues |
 | [`/gsd skill-health`](skill-health/) | Skill lifecycle dashboard — usage stats, success rates, token trends, staleness warnings |
-| `/gsd skill-health <name>` | Detailed view for a single skill |
-| `/gsd skill-health --declining` | Show only skills flagged for declining performance |
-| `/gsd skill-health --stale N` | Show skills unused for N+ days |
-| `/gsd hooks` | Show configured post-unit and pre-dispatch hooks |
-| `/gsd run-hook` | Manually trigger a specific hook |
-| `/gsd migrate` | Migrate a v1 `.planning` directory to `.gsd` format |
+| [`/gsd skill-health <name>`](skill-health/) | Detailed view for a single skill |
+| [`/gsd skill-health --declining`](skill-health/) | Show only skills flagged for declining performance |
+| [`/gsd skill-health --stale N`](skill-health/) | Show skills unused for N+ days |
+| [`/gsd hooks`](hooks/) | Show configured post-unit and pre-dispatch hooks |
+| [`/gsd run-hook`](run-hook/) | Manually trigger a specific hook |
+| [`/gsd migrate`](migrate/) | Migrate a v1 `.planning` directory to `.gsd` format |
 
 ## Parallel Orchestration
 
@@ -70,7 +70,7 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 | `/thinking` | Toggle thinking level during sessions |
 | `/voice` | Toggle real-time speech-to-text (macOS, Linux) |
 
-## Keyboard Shortcuts
+## [Keyboard Shortcuts](keyboard-shortcuts/)
 
 | Shortcut | Action |
 |----------|--------|
@@ -81,7 +81,7 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 
 > **Note:** In terminals without Kitty keyboard protocol support (macOS Terminal.app, JetBrains IDEs), slash-command fallbacks are shown instead of `Ctrl+Alt` shortcuts.
 
-## CLI Flags
+## [CLI Flags](cli-flags/)
 
 | Flag | Description |
 |------|-------------|
@@ -96,7 +96,7 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 | [`gsd config`](config/) | Re-run the setup wizard (LLM provider + tool keys) |
 | `gsd update` | Update GSD to the latest version |
 
-## Headless Mode
+## [Headless Mode](headless/)
 
 `gsd headless` runs `/gsd` commands without a TUI — designed for CI, cron jobs, and scripted automation. It spawns a child process in RPC mode, auto-responds to interactive prompts, detects completion, and exits with meaningful exit codes.
 
