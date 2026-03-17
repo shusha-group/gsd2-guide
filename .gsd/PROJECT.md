@@ -12,7 +12,7 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 **M001 complete.** The documentation site is fully built with 135 HTML pages, terminal-native dark design, content extraction pipeline, quick-reference cards, browsable changelog, Pagefind search, broken link checker, and GitHub Pages deployment workflow. The one-command update pipeline (`npm run update`) completes in ~6 seconds.
 
-**M002 in progress (S01 complete).** Site refocused from generic pi/agent content to GSD-specific user guide. 109 pi/agent files removed from prebuild pipeline, sidebar restructured from 10 sections to 5 GSD-focused sections (User Guide, Commands, Recipes, Reference, Guides). 467-line end-to-end walkthrough authored at /user-guide/developing-with-gsd/ following a Cookmate example project through all GSD phases with Mermaid diagrams and directory trees. 27 pages, 720 links verified. Remaining: per-command deep-dives (S02/S03) and workflow recipes (S04).
+**M002 in progress (S01, S02 complete).** Site refocused from generic pi/agent content to GSD-specific user guide. S01 removed 109 pi/agent files, restructured the sidebar to 5 GSD-focused sections, and authored a 467-line end-to-end walkthrough. S02 added 9 command deep-dive pages for all session/execution commands (auto, stop, pause, gsd, next, quick, discuss, status, visualize) with Mermaid flow diagrams, files-touched tables, and annotated terminal examples. Commands landing page links to all deep-dives. 36 pages, 1278 links verified. Remaining: planning/maintenance/utility command deep-dives (S03) and workflow recipes (S04).
 
 ## Architecture / Key Patterns
 

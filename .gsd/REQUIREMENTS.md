@@ -12,7 +12,7 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S02
 - Supporting slices: M002/S03
-- Validation: unmapped
+- Validation: S02 delivers 9 session/execution command deep-dive pages (auto, stop, pause, gsd, next, quick, discuss, status, visualize) with authored explanations, Mermaid flow diagrams, files-touched tables, and terminal examples. 36 pages built, 1278 links verified. Remaining ~16 commands covered by S03.
 - Notes: Not prompt dumps — authored explanations with examples and visuals. Content created by studying GSD source (commands.ts, prompts/, auto-dispatch.ts, etc.).
 
 ### R028 — Core workflow recipe pages — fix a bug, make a small change without milestone ceremony, start a new milestone on an existing project, handle UAT failures, recover from errors, work in teams. Each recipe shows commands, artifacts, and expected outcomes.
@@ -34,7 +34,7 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S02
 - Supporting slices: M002/S03
-- Validation: unmapped
+- Validation: S02 delivers lifecycle documentation for 9 session/execution commands — each page shows triggers, files read/written, internal mechanics (with Mermaid diagrams), and annotated terminal examples. Remaining commands in S03.
 - Notes: Study GSD source for accuracy but write for humans — explanations, not code dumps.
 
 ### R031 — Visual documentation approach — Mermaid flowcharts for command dispatch/logic, ASCII directory trees showing `.gsd/` state at each phase, annotated terminal output examples.
@@ -45,7 +45,7 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S01
 - Supporting slices: M002/S02, M002/S03, M002/S04
-- Validation: Pattern established in S01 walkthrough: 2 Mermaid flowcharts with dark terminal theme, 4 ASCII directory trees, annotated terminal output blocks. S02/S03/S04 must apply this pattern to per-command deep-dives and recipes for full validation.
+- Validation: S01 walkthrough established the pattern (2 Mermaid flowcharts, 4 directory trees, annotated terminal blocks). S02 applies it to 9 command deep-dive pages — each has at least one Mermaid flow diagram with dark terminal theme (fill:#1a3a1a, stroke:#39ff14). S03/S04 will complete coverage for remaining commands and recipes.
 - Notes: Mermaid support already configured from M001.
 
 ## Validated
@@ -403,11 +403,11 @@ This file is the explicit capability and coverage contract for the project.
 | R024 | operability | deferred | none | none | unmapped |
 | R025 | constraint | out-of-scope | none | none | n/a |
 | R026 | primary-user-loop | validated | M002/S01 | none | 467-line walkthrough at /user-guide/developing-with-gsd/ follows a Cookmate recipe app through all GSD phases: discuss, research, plan, execute, verify, summarize, complete. Includes 2 Mermaid diagrams (lifecycle flowchart, auto-mode dispatch state machine), 4 ASCII directory trees showing .gsd/ state at discussion, planning, mid-execution, and completion phases, and annotated terminal output examples. Build passes, 720 links checked, 0 broken. |
-| R027 | core-capability | active | M002/S02 | M002/S03 | unmapped |
+| R027 | core-capability | active | M002/S02 | M002/S03 | S02 delivers 9 session/execution command deep-dive pages (auto, stop, pause, gsd, next, quick, discuss, status, visualize) with authored explanations, Mermaid flow diagrams, files-touched tables, and terminal examples. 36 pages built, 1278 links verified. Remaining ~16 commands covered by S03. |
 | R028 | primary-user-loop | active | M002/S04 | none | unmapped |
 | R029 | constraint | validated | M002/S01 | none | 109 pi/agent files excluded from prebuild pipeline via EXCLUDED_DIRS/EXCLUDED_ROOT_FILES sets. Sidebar in astro.config.mjs has zero pi/agent entries. grep confirms no pi/agent content references in src/content/docs/. Build succeeds with 27 GSD-focused pages. 720 internal links checked, 0 broken. |
-| R030 | core-capability | active | M002/S02 | M002/S03 | unmapped |
-| R031 | differentiator | active | M002/S01 | M002/S02, M002/S03, M002/S04 | Pattern established in S01 walkthrough: 2 Mermaid flowcharts with dark terminal theme, 4 ASCII directory trees, annotated terminal output blocks. S02/S03/S04 must apply this pattern to per-command deep-dives and recipes for full validation. |
+| R030 | core-capability | active | M002/S02 | M002/S03 | S02 delivers lifecycle documentation for 9 session/execution commands — each page shows triggers, files read/written, internal mechanics (with Mermaid diagrams), and annotated terminal examples. Remaining commands in S03. |
+| R031 | differentiator | active | M002/S01 | M002/S02, M002/S03, M002/S04 | S01 walkthrough established the pattern (2 Mermaid flowcharts, 4 directory trees, annotated terminal blocks). S02 applies it to 9 command deep-dive pages — each has at least one Mermaid flow diagram with dark terminal theme (fill:#1a3a1a, stroke:#39ff14). S03/S04 will complete coverage for remaining commands and recipes. |
 | R032 | continuity | validated | M002/S01 | none | All existing GSD guide pages remain accessible under reorganized 5-section sidebar (User Guide, Commands, Recipes, Reference, Guides). 720 internal links checked, 0 broken. All 17 remaining GSD pages build and render correctly. |
 | R033 | core-capability | deferred | none | none | unmapped |
 

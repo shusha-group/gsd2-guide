@@ -52,7 +52,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Site restructure and end-to-end walkthrough** `risk:high` `depends:[]`
   > After this: The site has a GSD-focused sidebar (pi/agent sections gone), existing GSD guides reorganized, and a "Developing with GSD" walkthrough page that follows a real project through discuss → research → plan → execute → verify → summarize with directory trees, Mermaid diagrams, and annotated terminal output at each phase. Build and link check pass.
 
-- [ ] **S02: Command deep-dives — session and execution commands** `risk:medium` `depends:[S01]`
+- [x] **S02: Command deep-dives — session and execution commands** `risk:medium` `depends:[S01]`
   > After this: Every session and execution command has its own deep-dive page — `/gsd`, `/gsd auto`, `/gsd stop`, `/gsd pause`, `/gsd next`, `/gsd quick`, `/gsd discuss`, `/gsd status`, `/gsd visualize`. Each page shows what the command does, how it works internally, what files it reads/writes, Mermaid flow diagrams, and terminal examples. Reachable via sidebar and search.
 
 - [ ] **S03: Command deep-dives — planning, maintenance, and utility commands** `risk:medium` `depends:[S01]`
