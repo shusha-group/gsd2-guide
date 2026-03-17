@@ -40,21 +40,21 @@
 
 ## Tasks
 
-- [ ] **T01: Astro/Starlight project scaffold with terminal-native dark theme** `est:1h`
+- [x] **T01: Astro/Starlight project scaffold with terminal-native dark theme** `est:1h`
   - Why: Establishes the site foundation — project structure, Starlight config, custom dark theme, Mermaid integration, and dev server. Everything downstream builds on this.
   - Files: `package.json`, `astro.config.mjs`, `src/styles/custom.css`, `src/content/docs/index.mdx`, `tsconfig.json`
   - Do: Initialize Astro project with Starlight template. Configure sidebar structure, Mermaid plugin, sitemap. Create custom CSS with terminal-native dark palette (dark backgrounds, monospace accents, green/cyan terminal colors). Override Starlight's default theme tokens. Add a placeholder index page with a test Mermaid diagram. Use the frontend-design skill for design quality.
   - Verify: `npm run dev` serves the site, placeholder page renders with custom dark theme, Mermaid diagram renders as SVG
   - Done when: Dev server runs, custom dark theme is visually distinct from Starlight defaults, Mermaid works
 
-- [ ] **T02: Content extraction script — commands from npm package and GitHub repo** `est:1h`
+- [x] **T02: Content extraction script — commands from npm package and GitHub repo** `est:1h`
   - Why: Builds the extraction pipeline that transforms raw GSD source artifacts into structured data. Commands are the first and most important content type. Also establishes the manifest pattern for incremental rebuilds.
   - Files: `scripts/extract-content.mjs`, `data/commands.json`, `data/manifest.json`
   - Do: Write a Node.js extraction script that: (1) reads the installed gsd-pi README and the GitHub repo's `docs/commands.md` to extract command tables, (2) parses command names, descriptions, categories (session, config, git, shortcuts), options, and keyboard shortcuts into structured JSON, (3) writes `data/commands.json`, (4) generates `data/manifest.json` with SHA-256 hashes per content file for future diff tracking. Use `gh api` or `@octokit/rest` for GitHub content. Handle rate limits with conditional requests (If-None-Match/ETag).
   - Verify: `node scripts/extract-content.mjs` produces valid `data/commands.json` with 20+ entries and `data/manifest.json` with hashes
   - Done when: Commands JSON has all commands from the reference, each with name/description/category, manifest tracks content hashes
 
-- [ ] **T03: Commands quick-reference page with cheat-sheet cards** `est:1h`
+- [x] **T03: Commands quick-reference page with cheat-sheet cards** `est:1h`
   - Why: The first real content page — proves the full pipeline from extracted data through custom components to rendered page with search.
   - Files: `src/components/CheatSheetCard.astro`, `src/components/FilterBar.astro`, `src/content/docs/reference/commands.mdx`, `src/styles/components.css`
   - Do: Build CheatSheetCard component (expandable, shows name/description/category/shortcut, detail section). Build FilterBar component for category filtering (Session, Config, Git, Shortcuts). Create Commands reference page that imports data from `data/commands.json` and renders cards with client-side filtering. Style components with the terminal-native dark theme. Ensure Pagefind indexes the page content.
