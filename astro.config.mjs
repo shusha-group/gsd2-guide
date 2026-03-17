@@ -21,7 +21,33 @@ export default defineConfig({
         { label: 'Home', link: '/' },
         { label: 'Changelog', link: '/changelog/' },
         {
-          label: 'Quick Reference',
+          label: 'User Guide',
+          items: [
+            { label: 'Getting Started', link: '/getting-started/' },
+            { label: 'Developing with GSD', link: '/user-guide/developing-with-gsd/' },
+          ],
+        },
+        {
+          label: 'Commands',
+          items: [
+            { label: 'Commands Reference', link: '/commands/' },
+          ],
+        },
+        {
+          label: 'Recipes',
+          items: [
+            { label: 'Auto Mode', link: '/auto-mode/' },
+            { label: 'Git Strategy', link: '/git-strategy/' },
+            { label: 'Working in Teams', link: '/working-in-teams/' },
+            { label: 'Cost Management', link: '/cost-management/' },
+            { label: 'Token Optimization', link: '/token-optimization/' },
+            { label: 'Dynamic Model Routing', link: '/dynamic-model-routing/' },
+            { label: 'Captures & Triage', link: '/captures-triage/' },
+            { label: 'Parallel Orchestration', link: '/parallel-orchestration/' },
+          ],
+        },
+        {
+          label: 'Reference',
           items: [
             { label: 'Overview', link: '/reference/' },
             { label: 'Commands', link: '/reference/commands/' },
@@ -34,55 +60,14 @@ export default defineConfig({
         {
           label: 'Guides',
           items: [
-            { label: 'Getting Started', link: '/getting-started/' },
-            { label: 'Auto Mode', link: '/auto-mode/' },
             { label: 'Configuration', link: '/configuration/' },
-            { label: 'Commands Reference', link: '/commands/' },
-            { label: 'Git Strategy', link: '/git-strategy/' },
-            { label: 'Working in Teams', link: '/working-in-teams/' },
-            { label: 'Cost Management', link: '/cost-management/' },
-            { label: 'Token Optimization', link: '/token-optimization/' },
-            { label: 'Dynamic Model Routing', link: '/dynamic-model-routing/' },
-            { label: 'Captures & Triage', link: '/captures-triage/' },
-            { label: 'Workflow Visualizer', link: '/visualizer/' },
+            { label: 'Architecture', link: '/architecture/' },
             { label: 'Skills', link: '/skills/' },
+            { label: 'Workflow Visualizer', link: '/visualizer/' },
             { label: 'Remote Questions', link: '/remote-questions/' },
             { label: 'Migration from v1', link: '/migration/' },
             { label: 'Troubleshooting', link: '/troubleshooting/' },
           ],
-        },
-        {
-          label: 'Architecture',
-          items: [
-            { label: 'Architecture Overview', link: '/architecture/' },
-            { label: 'Agent Knowledge Index', link: '/agent-knowledge-index/' },
-            { label: 'ADR-001: Branchless Worktree Architecture', link: '/adr-001-branchless-worktree-architecture/' },
-            { label: 'PRD: Branchless Worktree Architecture', link: '/prd-branchless-worktree-architecture/' },
-          ],
-        },
-        {
-          label: 'What Is Pi',
-          autogenerate: { directory: 'what-is-pi' },
-        },
-        {
-          label: 'Building Coding Agents',
-          autogenerate: { directory: 'building-coding-agents' },
-        },
-        {
-          label: 'Context and Hooks',
-          autogenerate: { directory: 'context-and-hooks' },
-        },
-        {
-          label: 'Extending Pi',
-          autogenerate: { directory: 'extending-pi' },
-        },
-        {
-          label: 'Pi UI / TUI',
-          autogenerate: { directory: 'pi-ui-tui' },
-        },
-        {
-          label: 'Proposals',
-          autogenerate: { directory: 'proposals' },
         },
       ],
     }),

@@ -36,6 +36,12 @@ Remove 106 pages of pi/agent content from the site by updating the prebuild pipe
 - `node scripts/check-links.mjs` exits 0
 - `find src/content/docs/what-is-pi src/content/docs/building-coding-agents src/content/docs/context-and-hooks src/content/docs/extending-pi src/content/docs/pi-ui-tui src/content/docs/proposals -name '*.md' 2>/dev/null | wc -l` returns 0
 
+## Observability Impact
+
+- **New signal:** `prebuild.mjs` logs each excluded directory/file to stdout (e.g., `Excluding directory: what-is-pi`), making content filtering observable in build output.
+- **Inspection surface:** `.generated-manifest.json` file count drops from ~130 to ~24 after exclusions — a future agent can `cat src/content/docs/.generated-manifest.json | jq .file_count` to verify.
+- **Failure visibility:** Broken links from removed content surface as non-zero exit from `check-links.mjs` with specific file:target pairs in stderr.
+
 ## Inputs
 
 - `scripts/prebuild.mjs` — current content bridge (no exclusions)

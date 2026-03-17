@@ -23,6 +23,25 @@ const TARGET_DIR = 'src/content/docs';
 const MANIFEST_FILE = join(TARGET_DIR, '.generated-manifest.json');
 
 /**
+ * Directories and root files to exclude from the content copy.
+ * These are pi/agent-specific content that doesn't belong in the GSD guide.
+ */
+const EXCLUDED_DIRS = new Set([
+  'what-is-pi',
+  'building-coding-agents',
+  'context-and-hooks',
+  'extending-pi',
+  'pi-ui-tui',
+  'proposals',
+]);
+
+const EXCLUDED_ROOT_FILES = new Set([
+  'agent-knowledge-index.md',
+  'ADR-001-branchless-worktree-architecture.md',
+  'PRD-branchless-worktree-architecture.md',
+]);
+
+/**
  * Convert a kebab-case filename to Title Case.
  * e.g. "getting-started" → "Getting Started"
  */
@@ -231,7 +250,7 @@ async function main() {
 
   const generatedFiles = [];
   let processed = 0;
-  let skipped = 0;
+  let excluded = 0;
   const errors = [];
 
   for (const sourceFile of sourceFiles) {
@@ -240,6 +259,21 @@ async function main() {
     // Skip root-level README.md — index.mdx is the hand-authored splash page
     if (relPath === 'README.md') {
       console.log(`Skipping root README.md (hand-authored index.mdx exists)`);
+      continue;
+    }
+
+    // Skip excluded directories (pi/agent content)
+    const topDir = relPath.split('/')[0];
+    if (EXCLUDED_DIRS.has(topDir)) {
+      console.log(`Excluding (pi/agent directory): ${relPath}`);
+      excluded++;
+      continue;
+    }
+
+    // Skip excluded root files (non-GSD architecture docs)
+    if (!relPath.includes('/') && EXCLUDED_ROOT_FILES.has(relPath)) {
+      console.log(`Excluding (non-GSD root file): ${relPath}`);
+      excluded++;
       continue;
     }
 
@@ -262,7 +296,6 @@ async function main() {
       processed++;
     } catch (err) {
       errors.push({ file: relPath, error: err.message });
-      skipped++;
     }
   }
 
@@ -275,9 +308,9 @@ async function main() {
   }, null, 2), 'utf-8');
 
   // Report
-  console.log(`Prebuild complete: ${processed} files processed`);
-  if (skipped > 0) {
-    console.warn(`  ${skipped} files skipped due to errors:`);
+  console.log(`Prebuild complete: ${processed} files processed, ${excluded} excluded`);
+  if (errors.length > 0) {
+    console.warn(`  ${errors.length} files failed:`);
     for (const { file, error } of errors) {
       console.warn(`    ${file}: ${error}`);
     }
