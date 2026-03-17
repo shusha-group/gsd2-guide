@@ -1,9 +1,9 @@
 # GSD State
 
 **Active Milestone:** M002: GSD User Guide
-**Active Slice:** S03: Command deep-dives — planning, maintenance, and utility commands
+**Active Slice:** S04: Core workflow recipes
 **Phase:** executing
-**Requirements Status:** 4 active · 24 validated · 4 deferred · 1 out of scope
+**Requirements Status:** 2 active · 26 validated · 4 deferred · 1 out of scope
 
 ## Milestone Registry
 - ✅ **M001:** GSD 2 Documentation Site
@@ -16,4 +16,4 @@
 - None
 
 ## Next Action
-Execute T01 — Author planning and queue command deep-dives (queue, steer, capture, triage, knowledge, cleanup).
+Execute T01 of S04 (author fix-a-bug, small-change, new-milestone recipe pages).
