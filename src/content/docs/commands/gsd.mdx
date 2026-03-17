@@ -1,0 +1,168 @@
+---
+title: "/gsd"
+description: "The main entry point — execute one unit at a time in step mode, with the option to continue, stop, or check status after each."
+---
+
+## What It Does
+
+`/gsd` is GSD's primary entry point. It runs in **step mode** — executing one unit of work, then pausing to ask what you'd like to do next. This gives you the same dispatch engine as [`/gsd auto`](../auto/), but with a human decision point between every unit.
+
+If no milestone exists yet, `/gsd` launches the smart entry wizard — a guided conversation that helps you define your first milestone through discussion rather than filling out templates.
+
+Bare `/gsd` is identical to [`/gsd next`](../next/). Both invoke the same code path. The difference is purely about how you think about it: `/gsd` is "start working", `/gsd next` is "give me the next unit."
+
+## Usage
+
+```
+/gsd
+```
+
+No flags. Same as `/gsd next`.
+
+If auto mode was previously [paused](../pause/), `/gsd` resumes in step mode from where you left off.
+
+## How It Works
+
+Under the hood, `/gsd` calls the same `startAuto()` function as [`/gsd auto`](../auto/), but with `step: true`. This means the full initialization sequence runs — stale worktree cleanup, crash recovery, state derivation, worktree setup — but after each unit completes, execution pauses and a step wizard appears.
+
+```mermaid
+flowchart TD
+    Start(["/gsd"]) --> Paused{Paused session?}
+    Paused -->|Yes| Restore[Restore saved state]
+    Paused -->|No| HasMilestone{Milestone exists?}
+    Restore --> Execute
+    HasMilestone -->|No| Wizard[Smart entry wizard]
+    HasMilestone -->|Yes| Init[Initialize step mode]
+    Wizard --> Init
+    Init --> Execute[Execute one unit]
+    Execute --> Commit[Auto-commit changes]
+    Commit --> StepWiz{Step wizard}
+    StepWiz -->|Continue| Execute
+    StepWiz -->|Status| Status[Show dashboard]
+    StepWiz -->|Stop| Done([Session ended])
+    Status --> StepWiz
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Paused fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style HasMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style StepWiz fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Restore fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Wizard fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Init fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Status fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+```
+
+### Smart entry wizard
+
+If no milestone exists (fresh project or first run after `gsd init`), `/gsd` doesn't ask you to fill out a template. Instead, it launches a guided conversation:
+
+1. Asks about the project — what you're building, what exists already, what the first goal is.
+2. Creates a milestone context file from the discussion.
+3. Proceeds to research and planning as the first dispatched units.
+
+This means you can go from zero to a running milestone by just typing `/gsd` and talking.
+
+### The step wizard
+
+After each unit completes and its changes are committed, the step wizard presents three choices:
+
+- **Continue** — dispatch and execute the next unit immediately.
+- **Stop** — end the session (same as [`/gsd stop`](../stop/)).
+- **Status** — open the [progress dashboard](../status/) to review what's been done, then return to the wizard.
+
+This lets you monitor progress at your own pace. If a unit produces unexpected results, you can stop, inspect, and decide whether to continue.
+
+### What counts as a "unit"
+
+A unit is the smallest dispatchable piece of work. Depending on the project phase, a unit might be:
+
+- A **research** pass (codebase exploration, documentation study)
+- A **plan** (slice plan with task breakdown and estimates)
+- A **task execution** (implementing a single task from the plan)
+- A **summary** (compressing completed work for future context)
+- A **roadmap reassessment** (re-evaluating remaining slices after a slice completes)
+
+The dispatch engine [determines the unit type](../auto/#the-dispatch-loop) by reading the current project state from `.gsd/` files.
+
+## What Files It Touches
+
+Same as [`/gsd auto`](../auto/#what-files-it-touches) — the underlying engine is identical. The only behavioral difference is the pause-and-ask between units.
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Current project state |
+| `.gsd/KNOWLEDGE.md` | Accumulated patterns and gotchas |
+| `.gsd/DECISIONS.md` | Architectural decision register |
+| `M*-ROADMAP.md` | Slice ordering and completion status |
+| `S*-PLAN.md` | Task breakdown for the active slice |
+| `T*-SUMMARY.md` | Prior task outcomes |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Updated after each unit |
+| `T*-SUMMARY.md` | Written by task executors |
+| `.gsd/runtime/` | Session metadata, lock files |
+| `.gsd/activity/` | JSONL execution logs |
+
+## Examples
+
+Starting step mode on a Cookmate project:
+
+```
+> /gsd
+
+● Deriving project state...
+  Active milestone: M001 (Core Recipe Platform)
+  Active slice: S02 (Recipe CRUD API)
+  Phase: executing
+  Next unit: T01 (Build recipe model and migrations)
+
+● Dispatching unit: execute T01
+  Type: task-execution
+  Est: 25 minutes
+  ─────────────────────────────────
+
+  ... agent executes T01 ...
+
+  ✓ T01 complete — 3 files changed, 1 migration created
+  ✓ Auto-committed: "T01: Build recipe model and migrations"
+
+● What next?
+  ❯ Continue to next unit (T02: Recipe list endpoint)
+    Check status
+    Stop
+```
+
+First run on a fresh project (smart entry wizard):
+
+```
+> /gsd
+
+● No milestone found. Let's figure out what to build.
+
+  What are you working on?
+> A recipe sharing app called Cookmate — Next.js, Prisma, PostgreSQL.
+
+  What's the first milestone you want to tackle?
+> Get the core recipe CRUD working with auth.
+
+● Created milestone M001: Core Recipe Platform
+  ✓ Context file written
+
+● Dispatching unit: research (codebase exploration)
+  ...
+```
+
+## Related Commands
+
+- [`/gsd auto`](../auto/) — Continuous execution without pausing between units
+- [`/gsd next`](../next/) — Explicit alias (identical behavior, also supports `--dry-run`)
+- [`/gsd status`](../status/) — View progress dashboard
+- [`/gsd stop`](../stop/) — Terminate the session

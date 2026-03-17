@@ -92,6 +92,15 @@ Content rules: authored explanations not prompt dumps (D029), Cookmate as exampl
 - `for f in src/content/docs/commands/*.mdx; do grep -l 'mermaid' "$f"; done | wc -l` returns 9
 - All 9 `dist/commands/*/index.html` files exist
 
+## Observability Impact
+
+- **Build page count** — increases from ~30 to ~36. A count below 36 after this task signals a page failed to render.
+- **Sidebar entry count** — `grep "'/commands/" astro.config.mjs | wc -l` should return 10 (1 reference + 9 deep-dives). Fewer means a sidebar entry was missed.
+- **Mermaid coverage** — `grep -l 'mermaid' src/content/docs/commands/*.mdx | wc -l` should return 9. A count below 9 means a page is missing its flow diagram.
+- **Link checker** — `node scripts/check-links.mjs` validates all internal `../sibling/` cross-links and sidebar→page mappings. Non-zero exit = broken navigation.
+- **Failure surface: missing frontmatter** — Astro build fails with an explicit error naming the file if any MDX file lacks the required `title` field.
+- **Inspection** — A future agent can verify any single page by checking `dist/commands/<name>/index.html` exists and contains rendered Mermaid `<div>` or `<pre>` blocks.
+
 ## Inputs
 
 - `src/content/docs/commands/auto.mdx` — T01's template-setting page, reference for structure, voice, Mermaid style

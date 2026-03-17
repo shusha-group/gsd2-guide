@@ -34,7 +34,7 @@
   - Verify: `npm run build` exits 0, 3 new HTML pages exist in `dist/commands/`, each `.mdx` file has at least one mermaid block
   - Done when: 3 command deep-dive pages build successfully, are reachable via sidebar, and each contains a Mermaid diagram
 
-- [ ] **T02: Author /gsd, /gsd next, /gsd quick, /gsd discuss, /gsd status, /gsd visualize deep-dive pages** `est:45m`
+- [x] **T02: Author /gsd, /gsd next, /gsd quick, /gsd discuss, /gsd status, /gsd visualize deep-dive pages** `est:45m`
   - Why: The remaining 6 commands complete the slice's scope. These follow the template established by T01.
   - Files: `src/content/docs/commands/gsd.mdx`, `src/content/docs/commands/next.mdx`, `src/content/docs/commands/quick.mdx`, `src/content/docs/commands/discuss.mdx`, `src/content/docs/commands/status.mdx`, `src/content/docs/commands/visualize.mdx`, `astro.config.mjs`
   - Do: Author 6 MDX files following T01's established template. `/gsd` and `/gsd next` share mechanics with auto (step mode) — reference auto page, explain the difference. `/gsd quick` is self-contained — branch creation, task dir, no roadmap/slices. `/gsd discuss` covers slice discussion picker and guided discussion flow. `/gsd status` covers TUI dashboard overlay, keyboard shortcut. `/gsd visualize` covers 7-tab visualizer. Add 6 sidebar entries to `astro.config.mjs`. Each page has at least one Mermaid diagram.

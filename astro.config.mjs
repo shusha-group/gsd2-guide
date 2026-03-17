@@ -34,6 +34,12 @@ export default defineConfig({
             { label: '/gsd auto', link: '/commands/auto/' },
             { label: '/gsd stop', link: '/commands/stop/' },
             { label: '/gsd pause', link: '/commands/pause/' },
+            { label: '/gsd', link: '/commands/gsd/' },
+            { label: '/gsd next', link: '/commands/next/' },
+            { label: '/gsd quick', link: '/commands/quick/' },
+            { label: '/gsd discuss', link: '/commands/discuss/' },
+            { label: '/gsd status', link: '/commands/status/' },
+            { label: '/gsd visualize', link: '/commands/visualize/' },
           ],
         },
         {
