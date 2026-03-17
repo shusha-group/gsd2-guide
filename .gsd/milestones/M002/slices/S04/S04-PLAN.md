@@ -23,6 +23,7 @@
 - `ls dist/recipes/*/index.html | wc -l` — returns 6 (all recipes in built output)
 - Each recipe file contains at least one `mermaid` fenced code block
 - Pagefind indexes recipe pages (verify via built output)
+- If build fails on a recipe page, `npm run build 2>&1 | grep -i error` prints the failing file path and line — read that file to diagnose
 
 ## Tasks
 
@@ -40,7 +41,7 @@
   - Verify: All 3 `.mdx` files exist, each has frontmatter with title/description, each contains a mermaid code block
   - Done when: 3 recipe files in `src/content/docs/recipes/`, each with scenario, steps, directory trees, Mermaid diagram, and outcomes
 
-- [ ] **T03: Wire sidebar entries and verify full build** `est:15m`
+- [x] **T03: Wire sidebar entries and verify full build** `est:15m`
   - Why: Recipe pages must be reachable from the sidebar and indexed by search. This task adds the sidebar entries and runs the full verification suite to confirm everything works end-to-end.
   - Files: `astro.config.mjs`
   - Do: Add 6 sidebar entries to the Recipes section in `astro.config.mjs`, positioned before the existing 8 guide entries. Use format `{ label: 'Recipe: <Title>', link: '/recipes/<slug>/' }`. Run `npm run build` and `node scripts/check-links.mjs`. Verify all 6 recipe pages appear in `dist/recipes/*/index.html`. Verify Pagefind indexes them.

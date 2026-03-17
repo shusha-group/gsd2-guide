@@ -58,6 +58,13 @@ Add the 6 new recipe pages to the sidebar in `astro.config.mjs` and run the full
 - 6 recipe MDX files from T01 and T02 in `src/content/docs/recipes/`
 - Current `astro.config.mjs` sidebar structure — Recipes section at ~line 64 with 8 existing entries
 
+## Observability Impact
+
+- **Sidebar entry count:** `grep -c "'/recipes/" astro.config.mjs` is the canonical check for whether all recipe pages are wired. A count mismatch (e.g., 5 instead of 6) means a page exists but isn't navigable from the sidebar.
+- **Build output presence:** Each recipe produces `dist/recipes/<slug>/index.html`. Missing files mean the MDX page failed to compile — check `npm run build` stderr for the file path and error.
+- **Pagefind indexing:** `dist/pagefind/` directory existence confirms search works. If absent, Pagefind integration may be misconfigured in `astro.config.mjs`.
+- **Link integrity:** `node scripts/check-links.mjs` output lists every broken link with source file and target path — zero-output means clean.
+
 ## Expected Output
 
 - `astro.config.mjs` — modified with 6 new sidebar entries in the Recipes section

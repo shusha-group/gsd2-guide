@@ -63,6 +63,12 @@ export default defineConfig({
         {
           label: 'Recipes',
           items: [
+            { label: 'Fix a Bug', link: '/recipes/fix-a-bug/' },
+            { label: 'Small Change', link: '/recipes/small-change/' },
+            { label: 'New Milestone', link: '/recipes/new-milestone/' },
+            { label: 'Handle UAT Failures', link: '/recipes/uat-failures/' },
+            { label: 'Error Recovery', link: '/recipes/error-recovery/' },
+            { label: 'Working in Teams', link: '/recipes/working-in-teams/' },
             { label: 'Auto Mode', link: '/auto-mode/' },
             { label: 'Git Strategy', link: '/git-strategy/' },
             { label: 'Working in Teams', link: '/working-in-teams/' },
