@@ -75,3 +75,10 @@ Same authoring pattern as T01 — consistent structure, Mermaid flowcharts with 
 - `src/content/docs/recipes/uat-failures.mdx` — ~100-150 lines, UAT failure/replan recipe with Mermaid flowchart
 - `src/content/docs/recipes/error-recovery.mdx` — ~100-150 lines, doctor/forensics/crash recovery recipe with Mermaid flowchart
 - `src/content/docs/recipes/working-in-teams.mdx` — ~100-150 lines, team collaboration recipe with Mermaid flowchart
+
+## Observability Impact
+
+- **No runtime signals changed** — this task creates static documentation pages only.
+- **Build-time verification:** Each new `.mdx` file must produce a corresponding `dist/recipes/<slug>/index.html` in the build output. Absence means the page has a syntax or frontmatter error.
+- **Future agent inspection:** Run `ls src/content/docs/recipes/*.mdx | wc -l` to verify 6 recipe files exist. Run `grep -l 'mermaid' src/content/docs/recipes/*.mdx | wc -l` to verify all have flowcharts. If a Mermaid diagram renders as raw text in the browser, the diagram has a syntax error — the build won't catch it.
+- **Cross-reference integrity:** `node scripts/check-links.mjs` will catch broken links between recipe pages and command deep-dives after T03 wires the sidebar.

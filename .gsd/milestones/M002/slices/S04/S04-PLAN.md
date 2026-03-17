@@ -33,7 +33,7 @@
   - Verify: All 3 `.mdx` files exist, each has frontmatter with title/description, each contains a mermaid code block
   - Done when: 3 recipe files in `src/content/docs/recipes/`, each with scenario, steps, directory trees, Mermaid diagram, and outcomes
 
-- [ ] **T02: Author recovery and collaboration recipe pages (uat-failures, error-recovery, working-in-teams)** `est:45m`
+- [x] **T02: Author recovery and collaboration recipe pages (uat-failures, error-recovery, working-in-teams)** `est:45m`
   - Why: These three recipes cover what happens when things go wrong (UAT failures, errors/crashes) and how teams collaborate — the "what if" scenarios users need after learning the happy path.
   - Files: `src/content/docs/recipes/uat-failures.mdx`, `src/content/docs/recipes/error-recovery.mdx`, `src/content/docs/recipes/working-in-teams.mdx`
   - Do: Author 3 recipe MDX files following the same structure as T01. UAT failures recipe covers the replan flow (UAT fail → replan → re-execute). Error recovery covers `/gsd doctor`, `/gsd forensics`, crash recovery locks, manual state repair. Working in teams covers team mode setup, unique milestone IDs, push branches, concurrent workflows. Study GSD source for accuracy: `prompts/run-uat.md`, `prompts/replan-slice.md`, `auto-dispatch.ts` (UAT dispatch lines), `prompts/doctor-heal.md`, `prompts/forensics.md`, existing `working-in-teams.md` guide. Each recipe gets one Mermaid flowchart with dark terminal theme.
@@ -59,6 +59,8 @@
 
 - If build fails, `npm run build 2>&1 | grep -i error` surfaces the failing file and reason
 - If link check fails, `node scripts/check-links.mjs` prints each broken link with source file and target — inspect the link format (should be `../../commands/<slug>/` per Starlight convention)
+- If Mermaid renders as raw text in the browser, the diagram has a syntax error — check for unescaped special characters, missing node IDs, or malformed `%%{init:...}%%` blocks
+- If a recipe MDX file has invalid frontmatter, `npm run build` will fail with "Invalid frontmatter" and the file path — read the first 5 lines of the file to diagnose
 
 ## Files Likely Touched
 
