@@ -22,7 +22,6 @@ const version = releases[0]?.tag_name ?? 'v0.0.0';
   .version-badge {
     position: fixed;
     top: 0.6rem;
-    right: 7.5rem;
     z-index: 10;
     display: flex;
     align-items: center;
@@ -45,10 +44,19 @@ const version = releases[0]?.tag_name ?? 'v0.0.0';
     text-decoration: none;
   }
 
-  /* Hide version badge on mobile to avoid overlapping search + hamburger menu */
+  /* Desktop: position to the left of theme selector */
+  @media (min-width: 50rem) {
+    .version-badge {
+      right: 7.5rem;
+    }
+  }
+
+  /* Mobile: position next to site title, smaller */
   @media (max-width: 49.99rem) {
     .version-badge {
-      display: none;
+      left: 5rem;
+      font-size: 0.6rem;
+      padding: 0.1rem 0.4rem;
     }
   }
 </style>
