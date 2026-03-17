@@ -65,7 +65,7 @@
   - Verify: `npm run update` runs end-to-end, exits 0, output includes timing + diff summary + link check pass
   - Done when: `npm run update` completes the full pipeline in one command with structured output showing all phases passed
 
-- [ ] **T03: Create GitHub Actions deployment workflow** `est:15m`
+- [x] **T03: Create GitHub Actions deployment workflow** `est:15m`
   - Why: R008 requires GitHub Pages deployment. The workflow file is the deployment mechanism — it runs on push to main and uses the Astro official action.
   - Files: `.github/workflows/deploy.yml`
   - Do: Create a GitHub Actions workflow that: (1) triggers on push to main branch and workflow_dispatch, (2) sets permissions for `contents: read`, `pages: write`, `id-token: write`, (3) has a build job using `withastro/action@v5` with the `build` input set to run extract + build + check-links (the action handles npm install + the custom build command), (4) has a deploy job using `actions/deploy-pages@v4`. The build input should be: `npm run extract && npm run build && npm run check-links`. The action's node-version input should be set to 22. Use `ubuntu-latest` runner. Add concurrency group to prevent parallel deployments.

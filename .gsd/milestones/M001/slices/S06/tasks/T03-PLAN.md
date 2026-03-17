@@ -58,6 +58,13 @@ Create `.github/workflows/deploy.yml` — the GitHub Actions workflow that autom
 - Knowledge: `actions/deploy-pages@v4` deploys the artifact uploaded by the Astro action
 - Knowledge: Site is configured for `gsd-build.github.io/gsd2-guide` in `astro.config.mjs`
 
+## Observability Impact
+
+- **New signal:** GitHub Actions workflow runs visible in the repo's Actions tab — each push to main triggers a run with build + deploy jobs
+- **Inspection:** View workflow run logs in GitHub Actions UI; build job shows extract/build/check-links output; deploy job shows Pages deployment URL
+- **Failure state:** Build job fails if extract, build, or check-links exits non-zero — the failing step's output is visible in the Actions log. Deploy job fails if the build artifact is missing or Pages is not enabled.
+- **Local inspection:** `cat .github/workflows/deploy.yml` to review workflow structure; YAML parse check to validate syntax
+
 ## Expected Output
 
 - `.github/workflows/deploy.yml` — Complete GitHub Actions workflow file for GitHub Pages deployment
