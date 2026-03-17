@@ -35,6 +35,16 @@ If `package.json` has `"prebuild": "node scripts/prebuild.mjs"` AND `"build": "n
 
 Standard npm lifecycle hooks: `preinstall`/`postinstall`, `prebuild`/`postbuild`, `pretest`/`posttest`, `prestart`/`poststart`, `prepublishOnly`. There is no `predev`.
 
+## Astro base path and dist directory structure
+
+**Context:** When `base: '/gsd2-guide'` is set in `astro.config.mjs`, the `dist/` directory does NOT nest files under `dist/gsd2-guide/`. Pages live at `dist/placeholder/components/index.html`, not `dist/gsd2-guide/placeholder/components/index.html`. The base path is applied at serve/deploy time, not in the file system layout. Verification commands should always check `dist/placeholder/...` paths directly.
+
+## Starlight available user components (v0.38)
+
+**Context:** Components importable from `@astrojs/starlight/components` for use in MDX content pages.
+
+Available: `Card`, `CardGrid`, `LinkCard`, `Badge`, `Tabs`, `TabItem`, `Steps`, `FileTree`, `Icon`, `LinkButton`. Aside/callout syntax uses `:::note`, `:::tip`, `:::caution`, `:::danger` directives (not imported components).
+
 ## Starlight component override pattern
 
 **Context:** Overriding Starlight's built-in Header/Footer components.

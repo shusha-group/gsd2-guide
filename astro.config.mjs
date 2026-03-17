@@ -19,6 +19,42 @@ export default defineConfig({
       },
       sidebar: [
         { label: 'Home', link: '/' },
+        {
+          label: 'Placeholder',
+          items: [
+            { label: 'Components', link: '/placeholder/components/' },
+            { label: 'Diagrams', link: '/placeholder/diagrams/' },
+            { label: 'Code Examples', link: '/placeholder/code-examples/' },
+          ],
+        },
+        {
+          label: 'Getting Started',
+          autogenerate: { directory: 'getting-started' },
+        },
+        {
+          label: 'What Is Pi',
+          autogenerate: { directory: 'what-is-pi' },
+        },
+        {
+          label: 'Building Coding Agents',
+          autogenerate: { directory: 'building-coding-agents' },
+        },
+        {
+          label: 'Context and Hooks',
+          autogenerate: { directory: 'context-and-hooks' },
+        },
+        {
+          label: 'Extending Pi',
+          autogenerate: { directory: 'extending-pi' },
+        },
+        {
+          label: 'Pi UI / TUI',
+          autogenerate: { directory: 'pi-ui-tui' },
+        },
+        {
+          label: 'Proposals',
+          autogenerate: { directory: 'proposals' },
+        },
       ],
     }),
   ],

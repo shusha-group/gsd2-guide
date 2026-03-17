@@ -4,7 +4,38 @@ description: The definitive documentation for GSD 2 — commands, skills, extens
 template: splash
 hero:
   title: GSD 2
-  tagline: Build software with autonomous AI agents
+  tagline: Build software with autonomous AI agents — from architecture through deployment.
+  actions:
+    - text: Get Started
+      link: /gsd2-guide/placeholder/components/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/gsd-build/gsd2-guide
+      icon: external
+      variant: minimal
 ---
 
-Welcome to the GSD 2 documentation site.
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## Explore the Documentation
+
+<CardGrid>
+  <Card title="Component Gallery" icon="puzzle">
+    Every Starlight component variant — asides, tabs, cards, badges — demonstrated with real examples.
+  </Card>
+  <Card title="Diagrams" icon="document">
+    Mermaid flowcharts, sequence diagrams, and state machines rendered as interactive SVGs.
+  </Card>
+  <Card title="Code Examples" icon="seti:typescript">
+    ExpressiveCode blocks with syntax highlighting, line markers, file labels, and diff views.
+  </Card>
+  <Card title="Architecture" icon="setting">
+    How GSD 2 orchestrates autonomous agents through milestones, slices, and tasks.
+  </Card>
+</CardGrid>
+
+<CardGrid>
+  <LinkCard title="Component Gallery" description="All Starlight component variants in one page" href="/gsd2-guide/placeholder/components/" />
+  <LinkCard title="Diagrams" description="Mermaid diagram rendering examples" href="/gsd2-guide/placeholder/diagrams/" />
+  <LinkCard title="Code Examples" description="ExpressiveCode features and syntax" href="/gsd2-guide/placeholder/code-examples/" />
+</CardGrid>
