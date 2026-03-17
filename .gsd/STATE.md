@@ -28,3 +28,4 @@ All milestones complete. Check queue for next milestone.
 | 5 | Fix light mode mobile "On this page" TOC visibility | 2026-03-17 | b6cd618 | [5-the-on-this-page-navigation-still-cant-b](./quick/5-the-on-this-page-navigation-still-cant-b/) |
 | 6 | Restore version badge on mobile, add hamburger nav to homepage | 2026-03-17 | 61ea34c | [6-the-version-chip-is-now-missing-and-on-t](./quick/6-the-version-chip-is-now-missing-and-on-t/) |
 | 7 | Auto-link GSD commands in changelog to deep-dive pages | 2026-03-17 | a393fac | [7-is-there-any-way-we-can-link-from-change](./quick/7-is-there-any-way-we-can-link-from-change/) |
+| 8 | Fix light mode sidebar headers + reference card deep-dive links | 2026-03-17 | d727a54 | [8-the-main-navigation-headers-are-white-an](./quick/8-the-main-navigation-headers-are-white-an/) |
