@@ -1,0 +1,126 @@
+---
+title: "/gsd steer"
+description: "Hard-steer plan documents during execution — register an override that propagates through active plans immediately."
+---
+
+## What It Does
+
+`/gsd steer` registers a plan override that changes the direction of ongoing work. You describe the change in plain English, and GSD saves it to `OVERRIDES.md` and injects it into all future task prompts. This is how you course-correct without stopping auto-mode.
+
+The behavior differs depending on whether auto-mode is running. When active, the override triggers a document rewrite unit that updates all plan documents before the next task. When inactive, the agent is instructed to update plans manually in the current conversation.
+
+Overrides are scoped to the current execution point — the active milestone, slice, and task IDs are recorded so the system knows exactly when and where the override was applied.
+
+## Usage
+
+```
+/gsd steer <change description>
+```
+
+The description is plain English. Quotes are optional — everything after `steer` is captured.
+
+```
+/gsd steer switch from REST to GraphQL for the recipe API
+/gsd steer "skip mobile responsive work — desktop only for MVP"
+/gsd steer use Tailwind instead of custom CSS
+```
+
+## How It Works
+
+```mermaid
+flowchart TD
+    Start(["/gsd steer '...'"]) --> Scope[Derive scope from active M/S/T]
+    Scope --> Save[Append override to OVERRIDES.md]
+    Save --> Mode{Auto-mode active?}
+    Mode -->|Yes| Active[Send gsd-hard-steer message]
+    Active --> Rewrite[Document rewrite unit runs<br/>before next task]
+    Rewrite --> Done([Override propagated])
+    Mode -->|No| Inactive[Send gsd-hard-steer message]
+    Inactive --> Manual[Agent updates plans in<br/>current conversation]
+    Manual --> Done
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Scope fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Mode fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Active fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Rewrite fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Inactive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Manual fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+```
+
+### Override Registration
+
+1. **Scope derivation** — The command reads `deriveState()` to get the active milestone, slice, and task IDs. The override is tagged with the scope `M001/S02/T03` (or `none` for components without an active counterpart).
+2. **Append to OVERRIDES.md** — The override text and scope are appended to `.gsd/OVERRIDES.md`. This file is injected into every future task prompt, so overrides persist across context windows.
+
+### Auto-mode Active Path
+
+When auto-mode is running, the command sends a `gsd-hard-steer` message to the active agent. This message:
+
+- Tells the agent the override has been saved and will be injected into all future task prompts
+- Instructs the agent to finish current work respecting the override
+- Triggers a **document rewrite unit** before the next task dispatch — this unit reads `OVERRIDES.md` and propagates changes through the active slice plan, incomplete task plans, and `DECISIONS.md`
+
+### Auto-mode Inactive Path
+
+When auto-mode is not running, the `gsd-hard-steer` message instructs the agent to:
+
+- Read `OVERRIDES.md` immediately
+- Update the current plan documents to reflect the change
+- Focus on the active slice plan, incomplete task plans, and `DECISIONS.md`
+
+This path works in step mode (`/gsd`, `/gsd next`) or during a `/gsd discuss` conversation.
+
+## What Files It Touches
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.gsd/OVERRIDES.md` | Created if it doesn't exist |
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Active milestone/slice/task for scope tagging |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/OVERRIDES.md` | Override appended with scope and timestamp |
+| Slice plans, task plans, `DECISIONS.md` | Updated by the document rewrite unit (auto-mode) or agent (step mode) |
+
+## Examples
+
+Steering during auto-mode:
+
+```
+> /gsd steer switch from REST to GraphQL for the recipe API
+
+● Override registered
+  Scope: M002/S01/T02
+  Saved to .gsd/OVERRIDES.md
+  Will be applied before next task dispatch.
+```
+
+Steering when auto-mode is not running:
+
+```
+> /gsd steer skip mobile responsive work — desktop only for MVP
+
+● Override registered
+  Scope: M002/S03/none
+  Saved to .gsd/OVERRIDES.md
+  Update plan documents to reflect this change.
+```
+
+## Related Commands
+
+- [`/gsd auto`](../auto/) — Auto-mode that respects overrides
+- [`/gsd capture`](../capture/) — Lighter-weight thought capture (no plan rewrite)
+- [`/gsd queue`](../queue/) — Reorder or add future milestones
+- [`/gsd discuss`](../discuss/) — Discuss changes before committing to an override

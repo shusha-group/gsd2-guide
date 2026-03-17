@@ -40,6 +40,12 @@ export default defineConfig({
             { label: '/gsd discuss', link: '/commands/discuss/' },
             { label: '/gsd status', link: '/commands/status/' },
             { label: '/gsd visualize', link: '/commands/visualize/' },
+            { label: '/gsd queue', link: '/commands/queue/' },
+            { label: '/gsd steer', link: '/commands/steer/' },
+            { label: '/gsd capture', link: '/commands/capture/' },
+            { label: '/gsd triage', link: '/commands/triage/' },
+            { label: '/gsd knowledge', link: '/commands/knowledge/' },
+            { label: '/gsd cleanup', link: '/commands/cleanup/' },
           ],
         },
         {

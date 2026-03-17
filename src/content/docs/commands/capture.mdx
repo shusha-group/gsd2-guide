@@ -1,0 +1,126 @@
+---
+title: "/gsd capture"
+description: "Fire-and-forget thought capture — save ideas, concerns, or tasks without interrupting auto-mode."
+---
+
+## What It Does
+
+`/gsd capture` saves a thought to `.gsd/CAPTURES.md` without interrupting whatever's running. It's a fire-and-forget command — type your thought, hit enter, and the agent keeps working. No confirmation dialog, no context switch.
+
+Captures are tagged as `pending` until triaged. You can triage them manually with [`/gsd triage`](../triage/) or let the system handle them at natural pause points. Each capture gets a unique ID (like `CAP-a1b2c3d4`) for tracking.
+
+The command works in all modes — auto-mode running, paused, stopped, or even without a milestone. If `.gsd/` doesn't exist yet, it creates it. This makes capture the lowest-friction way to record a thought.
+
+## Usage
+
+```
+/gsd capture <thought>
+```
+
+Quotes around the thought are optional — they're stripped if present.
+
+```
+/gsd capture consider adding rate limiting to the API
+/gsd capture "the login form needs better error messages"
+/gsd capture 'should we use Redis for session storage?'
+```
+
+## How It Works
+
+### Capture Flow
+
+1. **Parse input** — Strips surrounding quotes (single or double) from the argument.
+2. **Ensure `.gsd/` exists** — Creates the directory if missing. Captures work even before any milestone is created.
+3. **Resolve path** — Determines the correct `CAPTURES.md` path, accounting for worktree isolation.
+4. **Generate ID** — Creates a unique ID like `CAP-a1b2c3d4` using a UUID prefix.
+5. **Append entry** — Adds an H3 section with the capture text, timestamp, and `pending` status.
+
+### Worktree Awareness
+
+When running inside a worktree (`.gsd/worktrees/<MID>/`), captures resolve to the **original project root's** `CAPTURES.md`, not the worktree-local copy. This ensures all captures from all worktrees end up in a single file, regardless of which worktree the agent is running in.
+
+### Capture Entry Format
+
+Each capture is stored as a markdown section:
+
+```markdown
+### CAP-a1b2c3d4
+**Text:** consider adding rate limiting to the API
+**Captured:** 2025-01-15T10:30:00.000Z
+**Status:** pending
+```
+
+After triage, additional fields are added:
+
+```markdown
+**Classification:** defer
+**Resolution:** Queued as future work in M005
+**Rationale:** Not in scope for current milestone
+**Resolved:** 2025-01-15T14:00:00.000Z
+```
+
+### Classifications
+
+Captures are classified during triage into one of five types:
+
+| Classification | Meaning |
+|----------------|---------|
+| `quick-task` | Small enough to handle as a `/gsd quick` task |
+| `inject` | Should be injected into the current slice plan |
+| `defer` | Valid work, but queue it for a future milestone |
+| `replan` | Requires replanning the current slice or milestone |
+| `note` | Informational — no action needed, just recorded |
+
+## What Files It Touches
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.gsd/CAPTURES.md` | Created on first capture if it doesn't exist |
+| `.gsd/` | Created if the directory doesn't exist |
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/CAPTURES.md` | Existing content to append to |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/CAPTURES.md` | New capture entry appended |
+
+## Examples
+
+Capturing a thought during auto-mode:
+
+```
+> /gsd capture consider adding rate limiting to the API
+
+● Captured: CAP-a1b2c3d4 — "consider adding rate limiting to the API"
+```
+
+Capturing with quotes:
+
+```
+> /gsd capture "the login form needs better error messages"
+
+● Captured: CAP-f9e8d7c6 — "the login form needs better error messages"
+```
+
+Checking pending captures:
+
+```
+> /gsd triage
+
+● Triaging 3 pending captures...
+```
+
+## Related Commands
+
+- [`/gsd triage`](../triage/) — Classify and act on pending captures
+- [`/gsd steer`](../steer/) — Direct plan override (stronger than capture)
+- [`/gsd queue`](../queue/) — Add future milestones (for larger work)
+- [`/gsd quick`](../quick/) — Execute a small task immediately

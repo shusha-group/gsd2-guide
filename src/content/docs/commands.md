@@ -17,7 +17,7 @@ title: "Commands Reference"
 | [`/gsd status`](status/) | Progress dashboard |
 | `/gsd queue` | Queue and reorder future milestones (safe during auto mode) |
 | `/gsd capture` | Fire-and-forget thought capture (works during auto mode) |
-| `/gsd triage` | Manually trigger triage of pending captures |
+| [`/gsd triage`](triage/) | Manually trigger triage of pending captures |
 | `/gsd forensics` | Post-mortem investigation of auto-mode failures — structured root-cause analysis with log inspection |
 | `/gsd cleanup` | Clean up GSD state files and stale worktrees |
 | [`/gsd visualize`](visualize/) | Open workflow visualizer (progress, deps, metrics, timeline) |
@@ -137,3 +137,4 @@ gsd --mode mcp
 ```
 
 The server registers all tools from the agent session and maps MCP `tools/list` and `tools/call` requests to GSD tool definitions. It runs until the transport closes.
+s.

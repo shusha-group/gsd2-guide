@@ -1,0 +1,104 @@
+---
+title: "/gsd cleanup"
+description: "Clean up merged GSD branches and prune old snapshot refs — housekeeping for your git repository."
+---
+
+## What It Does
+
+`/gsd cleanup` removes merged GSD branches and prunes old snapshot refs. It's housekeeping — after milestones complete and branches get merged, the leftover `gsd/*` branches and `refs/gsd/snapshots/` entries accumulate. This command cleans them up.
+
+Running `/gsd cleanup` without arguments executes both sub-commands: branch cleanup and snapshot pruning. You can also run them individually with `/gsd cleanup branches` or `/gsd cleanup snapshots`.
+
+The command is safe to run at any time — it only removes branches that are already merged into your main branch, and only prunes snapshot refs beyond the most recent 5 per label.
+
+## Usage
+
+```
+/gsd cleanup
+/gsd cleanup branches
+/gsd cleanup snapshots
+```
+
+| Variant | What it does |
+|---------|-------------|
+| `cleanup` | Run both branch and snapshot cleanup |
+| `cleanup branches` | Only remove merged `gsd/*` branches |
+| `cleanup snapshots` | Only prune old snapshot refs |
+
+## How It Works
+
+### Branch Cleanup
+
+1. **List GSD branches** — Finds all local branches matching the `gsd/*` pattern (e.g., `gsd/quick/3-add-toggle`, `milestone/M001`).
+2. **Detect main branch** — Determines the repository's main branch (`main` or `master`).
+3. **Filter merged** — Checks which GSD branches are already merged into the main branch. Only merged branches are candidates for deletion.
+4. **Delete merged branches** — Removes each merged branch. Branches that can't be deleted (e.g., currently checked out) are silently skipped.
+5. **Report results** — Shows how many branches were deleted and how many remain.
+
+### Snapshot Pruning
+
+GSD creates snapshot refs under `refs/gsd/snapshots/` at various points during execution. These accumulate over time.
+
+1. **List snapshot refs** — Reads all refs under `refs/gsd/snapshots/`.
+2. **Group by label** — Snapshots are organized by label (the path components before the final ref name). Each label is a logical group.
+3. **Sort within groups** — Refs within each label are sorted alphabetically (which corresponds to chronological order for timestamp-based names).
+4. **Prune old refs** — For each label group, keep the 5 most recent refs and delete the rest.
+5. **Report results** — Shows how many refs were pruned and how many remain.
+
+## What Files It Touches
+
+### Reads
+
+| Resource | Purpose |
+|----------|---------|
+| Local git branches (`gsd/*`) | Find cleanup candidates |
+| Main branch name | Determine merge target |
+| `refs/gsd/snapshots/` | List snapshot refs |
+
+### Deletes
+
+| Resource | Purpose |
+|----------|---------|
+| Merged `gsd/*` branches | Remove stale branches |
+| Old snapshot refs | Keep only last 5 per label |
+
+## Examples
+
+Running full cleanup on a Cookmate project:
+
+```
+> /gsd cleanup
+
+● Cleaned up 4 merged branches. 2 remain.
+● Pruned 12 old snapshot refs. 15 remain.
+```
+
+When no branches need cleanup:
+
+```
+> /gsd cleanup branches
+
+● 3 GSD branches found, none are merged into main yet.
+```
+
+When no snapshots exist:
+
+```
+> /gsd cleanup snapshots
+
+● No snapshot refs found.
+```
+
+Running branch cleanup only:
+
+```
+> /gsd cleanup branches
+
+● Cleaned up 2 merged branches. 1 remain.
+```
+
+## Related Commands
+
+- [`/gsd auto`](../auto/) — Creates the branches and snapshots that cleanup removes
+- [`/gsd status`](../status/) — Check project state before cleanup
+- [`/gsd queue`](../queue/) — Manage milestone ordering (cleanup is about git hygiene, not milestone management)

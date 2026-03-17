@@ -1,0 +1,115 @@
+---
+title: "/gsd knowledge"
+description: "Add persistent project knowledge — record rules, patterns, and lessons learned that persist across context windows."
+---
+
+## What It Does
+
+`/gsd knowledge` appends a knowledge entry to `.gsd/KNOWLEDGE.md`. This file is read at the start of every execution unit, so rules, patterns, and lessons you add here influence all future agent work without needing to repeat them.
+
+Each entry is typed as a `rule`, `pattern`, or `lesson` and scoped to the active milestone/slice. The scope helps future agents understand the context where the knowledge was discovered.
+
+Use `/gsd knowledge` when you discover something that would save time if the next agent knew it — a recurring gotcha, a non-obvious pattern in the codebase, or a rule that should always be followed.
+
+## Usage
+
+```
+/gsd knowledge <type> <description>
+```
+
+Where `<type>` is one of:
+
+| Type | Use for |
+|------|---------|
+| `rule` | Hard constraints — things that must always or never be done |
+| `pattern` | Recurring approaches — how to handle a specific category of work |
+| `lesson` | One-time discoveries — gotchas, workarounds, non-obvious behavior |
+
+```
+/gsd knowledge rule Always use parameterized queries for database access
+/gsd knowledge pattern API endpoints follow controller-service-repository layering
+/gsd knowledge lesson The CI runner has 4GB RAM — large test suites need splitting
+```
+
+## How It Works
+
+### Entry Flow
+
+1. **Parse arguments** — Extracts the type (`rule`, `pattern`, or `lesson`) and the description text. Shows usage help if either is missing or the type is invalid.
+2. **Derive scope** — Reads the current project state to determine the active milestone and slice. The scope is formatted as `M001/S02` or `global` if no milestone is active.
+3. **Append to KNOWLEDGE.md** — Calls `appendKnowledge()` which adds a structured entry to the file with the type, description, scope, and timestamp.
+
+### Entry Format
+
+Entries in `KNOWLEDGE.md` follow a consistent structure that agents can parse:
+
+```markdown
+## <type>: <description>
+
+**Context:** <scope>
+```
+
+The file is append-only — entries are never removed or modified. If a rule becomes obsolete, add a new entry that supersedes it rather than editing the old one.
+
+### How Knowledge Is Used
+
+`KNOWLEDGE.md` is injected into the system prompt for every execution unit (task execution, slice planning, milestone research, etc.). This means:
+
+- Rules are enforced automatically — the agent sees them as constraints
+- Patterns guide implementation choices — the agent follows established approaches
+- Lessons prevent repeated mistakes — the agent knows about gotchas in advance
+
+## What Files It Touches
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Derive active milestone/slice for scope |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/KNOWLEDGE.md` | New entry appended |
+
+## Examples
+
+Adding a rule to a Cookmate project:
+
+```
+> /gsd knowledge rule Always use parameterized queries for database access
+
+● Added rule to KNOWLEDGE.md: "Always use parameterized queries for database access"
+```
+
+Adding a pattern with active scope:
+
+```
+> /gsd knowledge pattern API endpoints follow controller-service-repository layering
+
+● Added pattern to KNOWLEDGE.md: "API endpoints follow controller-service-repository layering"
+```
+
+Adding a lesson:
+
+```
+> /gsd knowledge lesson The Stripe webhook needs idempotency keys — duplicate events cause double charges
+
+● Added lesson to KNOWLEDGE.md: "The Stripe webhook needs idempotency keys — duplicate events cause double charges"
+```
+
+Invalid usage:
+
+```
+> /gsd knowledge fix the tests
+
+● Usage: /gsd knowledge <rule|pattern|lesson> <description>
+  Example: /gsd knowledge rule Use real DB for integration tests
+```
+
+## Related Commands
+
+- [`/gsd capture`](../capture/) — Quick thought capture (triaged later, not direct knowledge)
+- [`/gsd steer`](../steer/) — Override active plans (knowledge is long-term, steer is immediate)
+- [`/gsd discuss`](../discuss/) — Discuss before deciding what to record as knowledge

@@ -91,6 +91,13 @@ Use the S02 convention — bullet points with `●` prefix, checkmarks with `✓
 - All 6 new pages appear in `dist/commands/*/index.html`
 - `grep "'/commands/" astro.config.mjs | wc -l` → 16
 
+## Observability Impact
+
+- **New inspection surface**: 6 new pages in `dist/commands/*/index.html` — presence confirms build success and sidebar wiring
+- **Link check coverage**: `check-links.mjs` now validates 6 additional cross-link targets — future broken links in these pages will surface as non-zero exit codes
+- **Sidebar verification**: `grep "'/commands/" astro.config.mjs | wc -l` rising from 10 to 16 confirms all entries wired
+- **Future agent inspection**: Count MDX files (`ls src/content/docs/commands/*.mdx | wc -l`) to verify page inventory matches expectations
+
 ## Inputs
 
 - `src/content/docs/commands/quick.mdx` — Reference for the established page template (read one existing S02 page to match structure)

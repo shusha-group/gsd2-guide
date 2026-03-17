@@ -24,6 +24,15 @@
 - Commands landing page has no unlinked `/gsd` commands (all use `[text](link/)` format)
 - Pagefind indexes all new pages
 
+## Observability / Diagnostics
+
+- **Build output page count**: `npm run build` reports total pages — verify count increases by 18 (from ~36 to ~54)
+- **Link integrity**: `node scripts/check-links.mjs` validates all internal cross-links — 0 broken links confirms no dead references
+- **Sidebar entry count**: `grep "'/commands/" astro.config.mjs | wc -l` — must reach 28 (27 pages + 1 Commands Reference link)
+- **Landing page coverage**: No unlinked `/gsd` commands remain — all use `[text](link/)` format
+- **Pagefind search**: New pages indexed and searchable — confirms they're reachable outside sidebar navigation
+- **Failure-path check**: Run `npm run build` with a deliberately broken Mermaid diagram in one MDX page (e.g., unclosed node) → build should fail with a Mermaid parse error pointing to the file. Revert after confirming. This validates that Mermaid syntax errors surface clearly rather than silently producing broken pages.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: S01 sidebar structure in `astro.config.mjs`, S02 per-command page template, `content/generated/docs/commands.md` link format
@@ -32,7 +41,7 @@
 
 ## Tasks
 
-- [ ] **T01: Author planning and queue command deep-dives** `est:45m`
+- [x] **T01: Author planning and queue command deep-dives** `est:45m`
   - Why: Covers the 6 "during execution" commands that modify `.gsd/` state — the simpler handlers that establish S03's cadence.
   - Files: `src/content/docs/commands/queue.mdx`, `src/content/docs/commands/steer.mdx`, `src/content/docs/commands/capture.mdx`, `src/content/docs/commands/triage.mdx`, `src/content/docs/commands/knowledge.mdx`, `src/content/docs/commands/cleanup.mdx`, `astro.config.mjs`, `content/generated/docs/commands.md`
   - Do: Create 6 MDX pages following the S02 template exactly (frontmatter → What It Does → Usage → How It Works → What Files It Touches → Examples → Related Commands). Study source handlers in `commands.ts`, `guided-flow.ts`, and `captures.ts` for accuracy. Add Mermaid diagrams for queue, steer, and triage. Capture, knowledge, and cleanup are simple enough for prose + tables. Add 6 sidebar entries to `astro.config.mjs` and link 6 commands in `content/generated/docs/commands.md`.
