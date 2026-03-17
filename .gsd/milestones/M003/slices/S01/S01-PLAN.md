@@ -47,7 +47,7 @@
   - Verify: `node --test tests/page-map.test.mjs` passes — all 42 pages present, all source paths validated against manifest
   - Done when: `page-source-map.json` generated with 42 entries, all source paths exist in manifest, tests pass
 
-- [ ] **T02: Build diff detection, staleness resolver, and snapshot logic with tests** `est:1h`
+- [x] **T02: Build diff detection, staleness resolver, and snapshot logic with tests** `est:1h`
   - Why: The change detection engine — compares manifests, identifies stale pages. Required by R034 (snapshot), R035 (diff detection), R037 (staleness). Depends on T01's page-source-map format.
   - Files: `scripts/lib/diff-sources.mjs`, `scripts/extract.mjs`, `tests/diff-sources.test.mjs`
   - Do: Create `diff-sources.mjs` with `detectChanges()` and `resolveStalePages()` exports. Modify `scripts/extract.mjs` to save `manifest.json` → `previous-manifest.json` before `buildManifest()` runs. Handle first-run gracefully (no previous manifest → skip). Add test file with mock manifests covering all scenarios: changed → stale, added → addedFiles, removed → removedFiles, no change → empty, first-run → graceful.

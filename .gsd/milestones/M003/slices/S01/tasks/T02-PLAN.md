@@ -94,6 +94,13 @@ The existing `scripts/lib/manifest.mjs` already has a `computeDiff(oldFiles, new
 - `npm run extract && ls content/generated/previous-manifest.json` — file exists after extraction
 - `node scripts/lib/diff-sources.mjs` — runs CLI mode without errors (should report "0 pages stale" or "First run" depending on state)
 
+## Observability Impact
+
+- **New signal: `previous-manifest.json`** — Created at runtime by `extract.mjs` before each extraction. Agents can diff this against `manifest.json` to see what changed between runs. Missing file = first run.
+- **New signal: CLI diff report** — Running `node scripts/lib/diff-sources.mjs` prints changed file counts, stale page counts, and per-page reasons to stdout. Zero-stale is normal when no source files changed.
+- **Failure visibility:** If `resolveStalePages()` returns stale pages, each is printed with the triggering source files. If the page-source-map has entries whose deps don't appear in the manifest, `detectChanges()` won't flag them (they're simply not tracked) — the page-map test suite catches mapping errors.
+- **Inspection:** `content/generated/previous-manifest.json` is human-readable JSON. Compare `headSha` fields between previous and current manifests to confirm they represent different repo states.
+
 ## Inputs
 
 - `content/generated/page-source-map.json` — produced by T01, maps 42 pages to source deps

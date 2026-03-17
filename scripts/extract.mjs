@@ -165,6 +165,14 @@ async function main() {
     token,
   };
 
+  // Snapshot: save current manifest as previous before extraction overwrites it
+  const manifestPath = path.join(outputDir, "manifest.json");
+  const prevManifestPath = path.join(outputDir, "previous-manifest.json");
+  if (fs.existsSync(manifestPath)) {
+    fs.copyFileSync(manifestPath, prevManifestPath);
+    console.log("[orchestrator] Saved previous manifest snapshot\n");
+  }
+
   // Phase 1: Run local + GitHub extraction in parallel (independent)
   console.log("── Phase 1: Parallel extraction ──────────────────────────────\n");
 
