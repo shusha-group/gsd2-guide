@@ -1,0 +1,20 @@
+---
+title: Changelog
+description: Release history for GSD 2 — every version, what shipped, and links to GitHub releases.
+---
+
+import releases from '../../../content/generated/releases.json';
+import ReleaseEntry from '../../../src/components/ReleaseEntry.astro';
+
+All releases of GSD 2, from newest to oldest. Each entry shows what was added, changed, and fixed. Click any version number to view the release on GitHub.
+
+{releases.map((release, index) => (
+  <ReleaseEntry
+    tagName={release.tag_name}
+    name={release.name}
+    publishedAt={release.published_at}
+    htmlUrl={release.html_url}
+    body={release.body}
+    isLatest={index === 0}
+  />
+))}

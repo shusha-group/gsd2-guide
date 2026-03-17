@@ -22,6 +22,15 @@
 - `grep -c 'v0.0.0' dist/index.html` returns 0 — placeholder version is gone
 - `grep 'changelog' dist/index.html` — home page links to changelog
 
+## Observability / Diagnostics
+
+- **Build-time release count:** `grep -o '<details' dist/changelog/index.html | wc -l` — must equal 48. Any mismatch indicates releases.json drift or rendering failure.
+- **Version badge inspection:** `grep 'v2.22.0' dist/index.html` — confirms header wiring. If absent, Header.astro import is broken.
+- **Changelog page existence:** `test -f dist/changelog/index.html` — confirms Astro routing and page generation.
+- **Markdown rendering check:** `grep '<h2>' dist/changelog/index.html` — body content should contain rendered HTML headings from release markdown.
+- **Failure visibility:** Build failures surface as non-zero exit from `npm run build` with Astro error output. Missing releases.json or malformed JSON will produce import errors at build time, not silent failures.
+- **No secrets or PII:** releases.json is public GitHub release data — no redaction constraints.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `content/generated/releases.json` (from S01), site scaffold with Header.astro and terminal theme CSS (from S02)
@@ -30,7 +39,7 @@
 
 ## Tasks
 
-- [ ] **T01: Build changelog page with release entry component** `est:30m`
+- [x] **T01: Build changelog page with release entry component** `est:30m`
   - Why: Delivers R005 — the browsable changelog aggregating all 48 GitHub releases with Added/Fixed/Changed sections rendered from the body markdown field.
   - Files: `src/components/ReleaseEntry.astro`, `src/content/docs/changelog.mdx`, `src/styles/terminal.css`, `package.json`
   - Do: Install `marked`. Create ReleaseEntry.astro component that receives release data as props, converts body markdown to HTML via `marked`, renders version heading linked to GitHub, formatted date, and body content in a `<details>/<summary>` wrapper. Create changelog.mdx that imports releases.json and renders all 48 releases. Add `.release-entry` CSS rules to terminal.css following the `.ref-card` pattern. Latest release (index 0) has `open` attribute on `<details>`.

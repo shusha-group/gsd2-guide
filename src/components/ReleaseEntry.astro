@@ -1,0 +1,32 @@
+---
+import { marked } from 'marked';
+
+interface Props {
+  tagName: string;
+  name: string;
+  publishedAt: string;
+  htmlUrl: string;
+  body: string;
+  isLatest: boolean;
+}
+
+const { tagName, name, publishedAt, htmlUrl, body, isLatest } = Astro.props;
+
+const bodyHtml = await marked(body);
+
+const formattedDate = new Date(publishedAt).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<details class="release-entry" open={isLatest}>
+  <summary>
+    <a href={htmlUrl} target="_blank" rel="noopener noreferrer" class="release-version">
+      {tagName}
+    </a>
+    <span class="release-date">{formattedDate}</span>
+  </summary>
+  <div class="release-body" set:html={bodyHtml} />
+</details>

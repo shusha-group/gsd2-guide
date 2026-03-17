@@ -64,3 +64,10 @@ Create the browsable changelog page that renders all 48 GitHub releases from `co
 - `src/content/docs/changelog.mdx` — new changelog page rendering all 48 releases
 - `src/styles/terminal.css` — `.release-entry` CSS rules appended (both dark and light theme variants)
 - `dist/changelog/index.html` — build output containing all 48 releases as `<details>` elements
+
+## Observability Impact
+
+- **New build-time signal:** `dist/changelog/index.html` existence and content verifies the entire release rendering pipeline (JSON import → marked conversion → Astro component → HTML output).
+- **Inspection surface:** `grep -o '<details' dist/changelog/index.html | wc -l` returns the rendered release count — should be 48. Drift from this number means releases.json changed or ReleaseEntry.astro has a rendering bug.
+- **Failure visibility:** If `marked` is missing or releases.json has malformed body fields, `npm run build` will fail with an import or runtime error traceable to ReleaseEntry.astro frontmatter. No silent degradation — the page either renders all releases or fails to build.
+- **Future agent inspection:** To verify this task's output, run `grep 'v2.22.0' dist/changelog/index.html && grep 'v0.2.9' dist/changelog/index.html && grep -o '<details' dist/changelog/index.html | wc -l`.

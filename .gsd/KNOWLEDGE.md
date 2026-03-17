@@ -62,3 +62,9 @@ Import the default from `@astrojs/starlight/components/Header.astro`, wrap it wi
 **Context:** Rewriting markdown `.md` links for Starlight compatibility.
 
 Starlight renders each `.md` page as `/page/index.html`. This means a page at `/getting-started/index.html` linking to `/auto-mode/index.html` needs `](../auto-mode/)` — the `../` goes up from the page's own directory. This applies to ALL pages regardless of their nesting depth: root pages, subdirectory pages, and index pages all use `../sibling/` to link to siblings. README.md link targets should become directory paths (`./subdir/README.md` → `../subdir/`), not `../subdir/index/`. Hash fragments go AFTER the trailing slash: `](../file/#section)` not `](../file#section)`.
+
+## Starlight adds its own `<details>` elements to build output
+
+**Context:** Counting `<details>` elements in dist/ HTML for verification.
+
+Starlight's sidebar sections use `<details>` for collapsible groups. A page with 48 custom `<details class="release-entry">` elements will show ~58 total `<details>` elements in `grep -o '<details'` output. Always scope the grep with the class name: `grep -o '<details class="release-entry"'` to get accurate counts of your own components.
