@@ -1,7 +1,7 @@
 # GSD State
 
 **Active Milestone:** M003: Continuous Documentation Regeneration
-**Active Slice:** S01: Source Diff and Page Mapping
+**Active Slice:** S02: LLM Page Regeneration
 **Phase:** executing
 **Requirements Status:** 13 active · 28 validated · 5 deferred · 1 out of scope
 
@@ -17,4 +17,4 @@
 - None
 
 ## Next Action
-Execute T01 of S01 — build page-source-map generator with tests.
+Execute T01 of S02 (build regeneration module with prompt template and unit tests).
