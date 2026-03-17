@@ -186,6 +186,34 @@
   background-color: #f4f8f4 !important;
 }
 
+/* ─── Light Mode: Mobile "On this page" TOC ────────────── */
+/* Starlight's .toggle and .dropdown use var(--sl-color-black) for background
+   and var(--sl-color-white) for hover/open text — both dark in our light theme. */
+:root[data-theme='light'] mobile-starlight-toc .toggle {
+  background-color: #f4f8f4 !important;
+  color: #1b2d1b !important;
+  border-color: #d0ddd0 !important;
+}
+:root[data-theme='light'] mobile-starlight-toc details[open] .toggle {
+  color: #116611 !important;
+  border-color: #116611 !important;
+}
+:root[data-theme='light'] mobile-starlight-toc details .toggle:hover {
+  color: #0a3d0a !important;
+  border-color: #8a9e8a !important;
+}
+:root[data-theme='light'] mobile-starlight-toc .dropdown {
+  background-color: #f4f8f4 !important;
+  border-color: #d0ddd0 !important;
+}
+:root[data-theme='light'] mobile-starlight-toc .dropdown a {
+  color: #384838 !important;
+}
+:root[data-theme='light'] mobile-starlight-toc .dropdown a[aria-current='true'],
+:root[data-theme='light'] mobile-starlight-toc .dropdown a:hover {
+  color: #116611 !important;
+}
+
 /* ─── Light Mode: Right Sidebar (TOC) ──────────────────── */
 :root[data-theme='light'] .right-sidebar-panel h2,
 :root[data-theme='light'] starlight-toc h2 {
