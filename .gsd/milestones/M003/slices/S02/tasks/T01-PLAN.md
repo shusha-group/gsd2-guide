@@ -105,6 +105,13 @@ Build the core `scripts/lib/regenerate-page.mjs` module that calls the Claude AP
 - `tests/diff-sources.test.mjs` — reference for test patterns (node:test + node:assert/strict, describe/it blocks)
 - `scripts/lib/diff-sources.mjs` or `scripts/lib/build-page-map.mjs` — reference for CLI entry point pattern (process.argv[1] vs import.meta.url)
 
+## Observability Impact
+
+- **New runtime signals**: `regeneratePage()` returns structured result objects with `{ pagePath, inputTokens, outputTokens, model, elapsedMs, stopReason }` for every call, or `{ skipped: true, reason }` / `{ error: string }` for skip/failure paths. CLI entry point prints per-page cost estimates to stdout.
+- **Inspection surfaces**: CLI `node scripts/lib/regenerate-page.mjs <page>` for single-page diagnostics. `regenerateStalePages()` returns aggregate stats `{ results[], totalInputTokens, totalOutputTokens, successCount, failCount, skipCount }`.
+- **Failure visibility**: Missing source files emit `console.warn` with file path. API `stop_reason: 'max_tokens'` triggers a warning. Invalid frontmatter returns `{ error: 'invalid frontmatter' }` without writing — inspectable from caller. Batch mode logs per-page errors and continues.
+- **Redaction**: `ANTHROPIC_API_KEY` never logged or included in error output.
+
 ## Expected Output
 
 - `scripts/lib/regenerate-page.mjs` — complete ESM module with `regeneratePage()`, `regenerateStalePages()`, and CLI entry point

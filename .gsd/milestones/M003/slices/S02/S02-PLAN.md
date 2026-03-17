@@ -29,6 +29,8 @@
 - `npm run build && node scripts/check-links.mjs` — regenerated pages build cleanly with no broken links
 - `ANTHROPIC_API_KEY= node scripts/lib/regenerate-page.mjs commands/capture.mdx` — prints skip message, exits cleanly with code 0
 - Quality comparison of 3 regenerated pages (capture, doctor, auto) against M02 originals confirms equivalent structure, depth, and visual quality
+- `ANTHROPIC_API_KEY= node scripts/lib/regenerate-page.mjs commands/nonexistent-page.mdx` — returns structured error result (not crash), exits 0
+- `node --test tests/regenerate-page.test.mjs 2>&1 | grep -c 'pass'` — confirms failure-path tests (invalid frontmatter, max_tokens warning, missing source file) all pass
 
 ## Observability / Diagnostics
 
@@ -45,7 +47,7 @@
 
 ## Tasks
 
-- [ ] **T01: Build regeneration module with prompt template and unit tests** `est:1h`
+- [x] **T01: Build regeneration module with prompt template and unit tests** `est:1h`
   - Why: This is the core deliverable — the module that calls Claude API with source files and a quality-focused prompt to regenerate documentation pages. Unit tests verify all code paths without needing an API key.
   - Files: `scripts/lib/regenerate-page.mjs`, `tests/regenerate-page.test.mjs`, `package.json`
   - Do: Install `@anthropic-ai/sdk` as devDependency. Build `regeneratePage(pagePath, sourceFiles, options)` that resolves gsd-pi package path via `resolvePackagePath()`, reads source files, reads current page, constructs system prompt with quality rules + capture.mdx exemplar, calls `anthropic.messages.create()`, validates frontmatter, writes output. Build `regenerateStalePages()` batch wrapper. Add CLI entry point. Write comprehensive unit tests mocking the Anthropic SDK.

@@ -25,5 +25,8 @@
   },
   "overrides": {
     "@astrojs/internal-helpers": "0.8.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.79.0"
   }
 }
