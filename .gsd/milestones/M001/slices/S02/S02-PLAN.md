@@ -49,7 +49,7 @@
   - Verify: `npm run dev` starts on localhost without errors; visiting the URL shows the default Starlight page with the index content
   - Done when: `npm run dev` starts cleanly, index page renders, `npm run build` produces `dist/` without errors
 
-- [ ] **T02: Apply terminal-native dark theme with distinctive fonts and bold color palette** `est:1h`
+- [x] **T02: Apply terminal-native dark theme with distinctive fonts and bold color palette** `est:1h`
   - Why: Custom design is the primary risk this slice retires (R006). Proves the Starlight customization ceiling is not a blocker. Must use the `frontend-design` skill for design quality. Dark-mode-first per D006.
   - Files: `src/styles/custom.css`, `src/styles/terminal.css`, `astro.config.mjs`, `package.json`
   - Do: Load the **frontend-design** skill before implementing. Install `@fontsource` packages for two distinctive fonts — a monospace for headings/code (e.g. JetBrains Mono, IBM Plex Mono, or similar characterful choice — NOT Inter/Roboto/Arial) and a clean sans for body (e.g. IBM Plex Sans, Geist Sans, or similar). Create `src/styles/custom.css` with CSS variable overrides targeting both `:root` and `:root[data-theme='dark']` — override Starlight's color tokens, font families, border radii, and spacing. Create `src/styles/terminal.css` with additional effects: custom scrollbar styling, code block enhancements, subtle glow/scanline effects for the terminal aesthetic, and any background textures. Wire both CSS files via `customCss` array in `astro.config.mjs`. The design must feel intentional, bold, and developer-focused — not a skin on default Starlight.

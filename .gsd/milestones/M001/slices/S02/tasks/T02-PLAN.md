@@ -87,6 +87,14 @@ This is the design task — the primary risk this slice retires. The Starlight c
 - `npm run build` still succeeds with the CSS changes
 - Browser dev console shows no CSS-related errors
 
+## Observability Impact
+
+- **CSS variable overrides:** Browser DevTools → Computed Styles on `html[data-theme='dark']` should show custom `--sl-font`, `--sl-font-mono`, `--sl-color-bg`, and accent color tokens. If these still show Starlight defaults (e.g. blue accent, system fonts), the `customCss` wiring or variable names are wrong.
+- **Font loading:** Network tab should show `.woff2` requests for JetBrains Mono and Outfit (or chosen fonts). Missing requests → font imports are broken or tree-shaken.
+- **Build output:** `npm run build` exit code 0 confirms CSS parses without fatal errors. Stderr warnings about unknown properties or missing files indicate broken imports.
+- **Console errors:** Browser console should be free of CSS-related errors (e.g. `@import` failures, missing font files). Check with `browser_get_console_logs`.
+- **Visual regression signal:** A future agent can screenshot the dev server and compare against the terminal-native aesthetic description: near-black background, green/amber/cyan accent, monospace headings, tight line-heights. Default Starlight blue accent = regression.
+
 ## Inputs
 
 - `astro.config.mjs` — from T01 (add `customCss` array)

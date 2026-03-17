@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════
+   GSD2 Guide — Terminal Aesthetic Effects
+   Layer 2: scrollbar, code blocks, headings, selection,
+            sidebar, tables, subtle textures
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Custom Scrollbar ─────────────────────────────────── */
+:root[data-theme='dark'] {
+  scrollbar-color: #1a3a1a #0a0e0a;
+  scrollbar-width: thin;
+}
+:root[data-theme='dark'] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+:root[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: #0a0e0a;
+}
+:root[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #1a3a1a;
+  border-radius: 0;
+}
+:root[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #39ff1450;
+}
+
+/* ─── Selection ────────────────────────────────────────── */
+:root[data-theme='dark'] ::selection {
+  background: #39ff1430;
+  color: #e8f4e8;
+}
+:root[data-theme='light'] ::selection {
+  background: #0d6e0d25;
+  color: #0a140a;
+}
+
+/* ─── Headings — Monospace, Tight ──────────────────────── */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5,
+.sl-markdown-content h6 {
+  font-family: var(--sl-font-mono);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+:root[data-theme='dark'] .sl-markdown-content h1 {
+  color: #39ff14;
+  text-shadow: 0 0 30px #39ff1415;
+}
+:root[data-theme='dark'] .sl-markdown-content h2 {
+  color: #b8ffb0;
+  border-bottom: 1px solid #1a2e1a;
+  padding-bottom: 0.35em;
+}
+:root[data-theme='dark'] .sl-markdown-content h3 {
+  color: #7adf70;
+}
+
+:root[data-theme='light'] .sl-markdown-content h1 {
+  color: #063806;
+}
+:root[data-theme='light'] .sl-markdown-content h2 {
+  color: #0d6e0d;
+  border-bottom: 1px solid #c4d8c4;
+  padding-bottom: 0.35em;
+}
+:root[data-theme='light'] .sl-markdown-content h3 {
+  color: #1a5a1a;
+}
+
+/* ─── Code Blocks — Enhanced ───────────────────────────── */
+:root[data-theme='dark'] .expressive-code {
+  --ec-codeBg: #0c140c;
+  --ec-codeBrdCol: #1a2e1a;
+  --ec-codeSelBg: #39ff1418;
+  --ec-frm-edActTabBg: #0c140c;
+  --ec-frm-edActTabBrdBtm: #39ff1480;
+  --ec-frm-edTabBg: #0a100a;
+  --ec-frm-edTabBarBg: #080c08;
+  --ec-frm-edTabBarBrdBtm: #1a2e1a;
+  --ec-frm-tooltipBg: #141e14;
+}
+
+:root[data-theme='dark'] .expressive-code .frame {
+  border: 1px solid #1a2e1a;
+  border-radius: 2px;
+  transition: border-color 0.2s ease;
+}
+:root[data-theme='dark'] .expressive-code .frame:hover {
+  border-color: #39ff1440;
+}
+
+/* Copy button accent */
+:root[data-theme='dark'] .expressive-code .copy button {
+  color: #4a6a4a;
+  transition: color 0.15s ease;
+}
+:root[data-theme='dark'] .expressive-code .copy button:hover {
+  color: #39ff14;
+}
+
+/* ─── Sidebar — Tighter, Terminal-feel ─────────────────── */
+nav.sidebar {
+  font-size: 0.875rem;
+}
+nav.sidebar a {
+  padding-block: 0.25rem;
+  border-radius: 0;
+}
+:root[data-theme='dark'] nav.sidebar a[aria-current='page'] {
+  background: #39ff1412;
+  border-left: 2px solid #39ff14;
+  padding-left: calc(0.5rem - 2px);
+  color: #39ff14;
+}
+:root[data-theme='dark'] nav.sidebar a:hover:not([aria-current='page']) {
+  color: #b8ffb0;
+  background: #39ff1408;
+}
+
+/* ─── Tables — Developer Grid ──────────────────────────── */
+:root[data-theme='dark'] .sl-markdown-content table {
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  font-family: var(--sl-font-mono);
+  width: 100%;
+}
+:root[data-theme='dark'] .sl-markdown-content th {
+  background: #0d180d;
+  color: #39ff14;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #1a2e1a;
+  text-align: left;
+}
+:root[data-theme='dark'] .sl-markdown-content td {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #1a2e1a;
+  color: #b4c8b4;
+}
+:root[data-theme='dark'] .sl-markdown-content tr:hover td {
+  background: #0f1a0f;
+}
+
+:root[data-theme='light'] .sl-markdown-content table {
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  width: 100%;
+}
+:root[data-theme='light'] .sl-markdown-content th {
+  background: #e0ece0;
+  color: #0d6e0d;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #c4d8c4;
+  text-align: left;
+}
+:root[data-theme='light'] .sl-markdown-content td {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #c4d8c4;
+}
+
+/* ─── Subtle Scan-Line Texture (Dark Only) ─────────────── */
+:root[data-theme='dark'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    #00000008 2px,
+    #00000008 4px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* ─── Page Title Area ──────────────────────────────────── */
+:root[data-theme='dark'] .content-panel h1.page-title {
+  font-family: var(--sl-font-mono);
+  color: #39ff14;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+/* ─── Horizontal Rules ─────────────────────────────────── */
+:root[data-theme='dark'] .sl-markdown-content hr {
+  border: none;
+  border-top: 1px dashed #1a3a1a;
+  margin: 2rem 0;
+}
+:root[data-theme='light'] .sl-markdown-content hr {
+  border: none;
+  border-top: 1px dashed #c4d8c4;
+  margin: 2rem 0;
+}
+
+/* ─── Blockquotes ──────────────────────────────────────── */
+:root[data-theme='dark'] .sl-markdown-content blockquote {
+  border-left: 3px solid #39ff1460;
+  background: #0f1a0f;
+  padding: 0.75rem 1rem;
+  color: #7a9a7a;
+  font-style: italic;
+  border-radius: 0;
+}
+:root[data-theme='light'] .sl-markdown-content blockquote {
+  border-left: 3px solid #0d6e0d40;
+  background: #eaf2ea;
+  padding: 0.75rem 1rem;
+  color: #3a5a3a;
+  font-style: italic;
+  border-radius: 0;
+}
+
+/* ─── Nav Header / Site Title ──────────────────────────── */
+.site-title {
+  font-family: var(--sl-font-mono) !important;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+:root[data-theme='dark'] .site-title {
+  color: #39ff14 !important;
+}
+
+/* ─── Focus Styles — Accessible Green Ring ─────────────── */
+:root[data-theme='dark'] :focus-visible {
+  outline: 2px solid #39ff14;
+  outline-offset: 2px;
+}
+:root[data-theme='light'] :focus-visible {
+  outline: 2px solid #0d6e0d;
+  outline-offset: 2px;
+}

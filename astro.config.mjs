@@ -9,6 +9,10 @@ export default defineConfig({
     starlight({
       title: 'GSD 2',
       plugins: [starlightClientMermaid()],
+      customCss: [
+        './src/styles/custom.css',
+        './src/styles/terminal.css',
+      ],
       sidebar: [
         { label: 'Home', link: '/' },
       ],

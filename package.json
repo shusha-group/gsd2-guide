@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.38.1",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/outfit": "^5.2.8",
     "@pasqal-io/starlight-client-mermaid": "^0.1.0",
     "astro": "^6.0.5",
     "gray-matter": "^4.0.3",
