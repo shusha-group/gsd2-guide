@@ -1,6 +1,6 @@
 /**
  * manage-pages.mjs — Detect new/removed commands and manipulate sidebar entries
- * and page-source-map entries.
+ * and page-source-map entries. Orchestrate page creation and removal.
  *
  * Exports:
  *   detectNewAndRemovedCommands(options?)
@@ -8,14 +8,19 @@
  *   removeSidebarEntry(slug, options?)
  *   addToPageMap(slug, options?)
  *   removeFromPageMap(slug, options?)
+ *   createNewPages(newCommands, options?)
+ *   removePages(removedCommands, options?)
  *
  * All functions accept an options object with path overrides for testability.
  * Defaults resolve from ROOT (project root, computed via import.meta.url).
+ *
+ * CLI: node scripts/lib/manage-pages.mjs [--execute] [--dry-run]
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { regeneratePage } from "./regenerate-page.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -252,4 +257,253 @@ export function removeFromPageMap(slug, options = {}) {
   fs.writeFileSync(mapPath, JSON.stringify(map, null, 2) + "\n");
 
   return { removed: true, slug };
+}
+
+// ─── Orchestration: createNewPages ───────────────────────────────────────────
+
+/**
+ * Compute source files for a command slug using the algorithmic fallback.
+ * Same logic as addToPageMap deps: shared deps + slug.ts + prompts/slug.md.
+ *
+ * @param {string} slug
+ * @param {object} [options]
+ * @param {string} [options.manifestPath]
+ * @returns {string[]} source file paths
+ */
+function computeSourceFiles(slug, options = {}) {
+  const manifestPath =
+    options.manifestPath ||
+    path.join(ROOT, "content/generated/manifest.json");
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+  const manifestFiles = new Set(Object.keys(manifest.files));
+
+  const deps = [...SHARED_COMMAND_DEPS];
+
+  const tsPath = `${GSD}/${slug}.ts`;
+  if (manifestFiles.has(tsPath)) {
+    deps.push(tsPath);
+  }
+
+  const promptPath = `${GSD}/prompts/${slug}.md`;
+  if (manifestFiles.has(promptPath)) {
+    deps.push(promptPath);
+  }
+
+  return deps;
+}
+
+/**
+ * Create new documentation pages for the given command slugs.
+ *
+ * For each slug: regenerate the page via LLM, then add sidebar entry and
+ * page-source-map entry. Only adds sidebar/map when regeneration succeeds.
+ *
+ * @param {string[]} newCommands - Array of command slugs to create pages for
+ * @param {object} [options]
+ * @param {object} [options.client]       - Mock Anthropic client (DI for testing)
+ * @param {boolean} [options.dryRun]      - If true, don't write files
+ * @param {string} [options.configPath]   - Path to astro.config.mjs
+ * @param {string} [options.mapPath]      - Path to page-source-map.json
+ * @param {string} [options.manifestPath] - Path to manifest.json
+ * @param {string} [options.commandsDir]  - Path to commands/ .mdx directory
+ * @param {string} [options.pkgPath]      - Override gsd-pi package path
+ * @param {string} [options.model]        - Claude model identifier
+ * @param {number} [options.maxTokens]    - Max output tokens
+ * @returns {Promise<{ results: Array, created: number, skipped: number, failed: number }>}
+ */
+export async function createNewPages(newCommands, options = {}) {
+  const results = [];
+  let created = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const slug of newCommands) {
+    const entry = { slug, regeneration: null, sidebar: null, map: null };
+
+    try {
+      // 1. Compute source files
+      const sourceFiles = computeSourceFiles(slug, {
+        manifestPath: options.manifestPath,
+      });
+
+      // 2. Regenerate the page
+      const pagePath = `commands/${slug}.mdx`;
+      const regeneration = await regeneratePage(pagePath, sourceFiles, {
+        client: options.client,
+        dryRun: options.dryRun,
+        pkgPath: options.pkgPath,
+        model: options.model,
+        maxTokens: options.maxTokens,
+      });
+      entry.regeneration = regeneration;
+
+      // 3. Only update sidebar/map if regeneration succeeded
+      if (regeneration.skipped) {
+        skipped++;
+      } else if (regeneration.error) {
+        failed++;
+      } else {
+        // Success — update sidebar and map (unless dry run)
+        if (!options.dryRun) {
+          entry.sidebar = addSidebarEntry(slug, {
+            configPath: options.configPath,
+          });
+          entry.map = addToPageMap(slug, {
+            mapPath: options.mapPath,
+            manifestPath: options.manifestPath,
+          });
+        }
+        created++;
+      }
+    } catch (err) {
+      entry.regeneration = { error: "unexpected error", details: err.message };
+      failed++;
+    }
+
+    results.push(entry);
+  }
+
+  return { results, created, skipped, failed };
+}
+
+// ─── Orchestration: removePages ──────────────────────────────────────────────
+
+/**
+ * Remove documentation pages for the given command slugs.
+ *
+ * For each slug: delete the .mdx file, remove sidebar entry, and remove
+ * page-source-map entry.
+ *
+ * @param {string[]} removedCommands - Array of command slugs to remove
+ * @param {object} [options]
+ * @param {string} [options.configPath]  - Path to astro.config.mjs
+ * @param {string} [options.mapPath]     - Path to page-source-map.json
+ * @param {string} [options.commandsDir] - Path to commands/ .mdx directory
+ * @returns {{ results: Array, removed: number, failed: number }}
+ */
+export function removePages(removedCommands, options = {}) {
+  const commandsDir =
+    options.commandsDir ||
+    path.join(ROOT, "src/content/docs/commands");
+
+  const results = [];
+  let removed = 0;
+  let failed = 0;
+
+  for (const slug of removedCommands) {
+    const entry = { slug, fileDeleted: false, sidebar: null, map: null };
+
+    try {
+      // 1. Delete the .mdx file
+      const mdxPath = path.join(commandsDir, `${slug}.mdx`);
+      try {
+        fs.unlinkSync(mdxPath);
+        entry.fileDeleted = true;
+      } catch (err) {
+        if (err.code === "ENOENT") {
+          console.warn(`⚠ File not found (already deleted?): ${mdxPath}`);
+          entry.fileDeleted = false;
+        } else {
+          throw err;
+        }
+      }
+
+      // 2. Remove sidebar entry
+      entry.sidebar = removeSidebarEntry(slug, {
+        configPath: options.configPath,
+      });
+
+      // 3. Remove page-source-map entry
+      entry.map = removeFromPageMap(slug, {
+        mapPath: options.mapPath,
+      });
+
+      removed++;
+    } catch (err) {
+      console.error(`[removePages] Error removing ${slug}: ${err.message}`);
+      entry.error = err.message;
+      failed++;
+    }
+
+    results.push(entry);
+  }
+
+  return { results, removed, failed };
+}
+
+// ─── CLI entry point ─────────────────────────────────────────────────────────
+
+const isDirectRun =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) ===
+    path.resolve(fileURLToPath(import.meta.url));
+
+if (isDirectRun) {
+  const args = process.argv.slice(2);
+  const executeMode = args.includes("--execute");
+  const dryRunMode = args.includes("--dry-run");
+
+  // 1. Always detect first
+  console.log("Detecting new and removed commands...\n");
+  const detection = detectNewAndRemovedCommands();
+
+  console.log(`New commands:     ${detection.newCommands.length === 0 ? "(none)" : detection.newCommands.join(", ")}`);
+  console.log(`Removed commands: ${detection.removedCommands.length === 0 ? "(none)" : detection.removedCommands.join(", ")}`);
+
+  if (!executeMode && !dryRunMode) {
+    // Detect-only mode
+    if (detection.newCommands.length === 0 && detection.removedCommands.length === 0) {
+      console.log("\n✓ All commands in sync — no changes needed.");
+    } else {
+      console.log("\nRun with --execute to apply changes, or --dry-run to preview.");
+    }
+    process.exit(0);
+  }
+
+  // 2. Execute or dry-run mode
+  const modeLabel = dryRunMode ? "DRY RUN" : "EXECUTE";
+  console.log(`\n── ${modeLabel} ──\n`);
+
+  // Create new pages
+  if (detection.newCommands.length > 0) {
+    console.log(`Creating ${detection.newCommands.length} new page(s)...`);
+    const createResult = await createNewPages(detection.newCommands, {
+      dryRun: dryRunMode,
+    });
+    for (const r of createResult.results) {
+      if (r.regeneration?.skipped) {
+        console.log(`  ⊘ ${r.slug}: skipped — ${r.regeneration.reason}`);
+      } else if (r.regeneration?.error) {
+        console.log(`  ✗ ${r.slug}: ${r.regeneration.error}`);
+      } else {
+        console.log(`  ✓ ${r.slug}: page created, sidebar updated, map updated`);
+      }
+    }
+    console.log(`  Summary: ${createResult.created} created, ${createResult.skipped} skipped, ${createResult.failed} failed\n`);
+  }
+
+  // Remove old pages
+  if (detection.removedCommands.length > 0) {
+    if (dryRunMode) {
+      console.log(`Would remove ${detection.removedCommands.length} page(s):`);
+      for (const slug of detection.removedCommands) {
+        console.log(`  - ${slug}`);
+      }
+    } else {
+      console.log(`Removing ${detection.removedCommands.length} page(s)...`);
+      const removeResult = removePages(detection.removedCommands);
+      for (const r of removeResult.results) {
+        const fileStatus = r.fileDeleted ? "file deleted" : "file not found";
+        const sidebarStatus = r.sidebar?.removed ? "sidebar removed" : "sidebar not found";
+        const mapStatus = r.map?.removed ? "map removed" : "map not found";
+        console.log(`  ${r.slug}: ${fileStatus}, ${sidebarStatus}, ${mapStatus}`);
+      }
+      console.log(`  Summary: ${removeResult.removed} removed, ${removeResult.failed} failed\n`);
+    }
+  }
+
+  if (detection.newCommands.length === 0 && detection.removedCommands.length === 0) {
+    console.log("Nothing to do — all commands in sync.");
+  }
 }

@@ -74,3 +74,9 @@ Starlight's sidebar sections use `<details>` for collapsible groups. A page with
 **Context:** Editing markdown content pages that are managed by the prebuild script.
 
 Files listed in `src/content/docs/.generated-manifest.json` are overwritten by `scripts/prebuild.mjs` on every `npm run build` (and `npm run dev`). Edits to `src/content/docs/commands.md` (or any other generated file) will be silently lost. Always edit the source at `content/generated/docs/<same-path>` instead. Hand-authored files (like `.mdx` pages not in the manifest) can be edited directly in `src/content/docs/`.
+
+## gsd-pi is globally installed — don't pass pkgPath to node_modules
+
+**Context:** Tests calling `regeneratePage()` with a `pkgPath` override.
+
+`resolvePackagePath()` in `extract-local.mjs` validates that the path has `src/resources/`. The gsd-pi package is installed globally (via `npm i -g gsd-pi`), not in the project's `node_modules/`. Passing `pkgPath: path.join(ROOT, "node_modules/gsd-pi")` fails because that directory doesn't have `src/resources/`. Omit `pkgPath` and let `resolvePackagePath` fall back to `npm root -g` to find the global install.

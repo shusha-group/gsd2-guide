@@ -96,6 +96,15 @@ These three exported functions (`detectNewAndRemovedCommands`, `createNewPages`,
   - When `currentPage` is empty string (new page), it generates from scratch using source files and exemplar
 - S02 Forward Intelligence: `regeneratePage()` reads the page from `src/content/docs/` — when it's a new page, the file doesn't exist yet and `currentPage` is empty string, which triggers new-page generation mode
 
+## Observability Impact
+
+- **`createNewPages()` returns structured result:** `{ results: Array<{ slug, regeneration, sidebar, map }>, created, skipped, failed }` — per-slug detail enables inspection of what succeeded/failed and why.
+- **`removePages()` returns structured result:** `{ results: Array<{ slug, fileDeleted, sidebar, map }>, removed, failed }` — confirms file deletion + metadata cleanup per slug.
+- **CLI entry point prints structured output:** Detection results (new/removed arrays), action taken per slug, aggregate counts. `--dry-run` mode shows what *would* happen without side effects.
+- **Graceful degradation signal:** When no API key is set and no mock client provided, `createNewPages()` returns `skipped` entries rather than throwing — visible in result.skipped count and per-slug `regeneration.skipped` field.
+- **Failure inspection:** Each result entry carries the `regeneration`, `sidebar`, and `map` sub-results from the underlying primitives — a future agent can inspect `result.regeneration.error` or `result.sidebar.removed === false` to diagnose specific failures.
+- **Integration test coverage:** Tests exercise the mock client path, dry-run path, no-key path, and full round-trip path — failures pinpoint which orchestration step broke.
+
 ## Expected Output
 
 - `scripts/lib/manage-pages.mjs` — updated with `createNewPages()`, `removePages()`, and CLI entry point added to the module from T01

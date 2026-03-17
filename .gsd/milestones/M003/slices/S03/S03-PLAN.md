@@ -55,7 +55,7 @@
   - Verify: `node --test tests/manage-pages.test.mjs` — all detection, sidebar, and map tests pass
   - Done when: Detection correctly identifies new/removed commands with all edge cases handled, sidebar entries are added/removed at correct positions, map entries added with algorithmic deps / removed cleanly
 
-- [ ] **T02: Wire createNewPages and removePages orchestration with mock LLM verification** `est:30m`
+- [x] **T02: Wire createNewPages and removePages orchestration with mock LLM verification** `est:30m`
   - Why: Closes the slice — orchestrates detection + file manipulation + LLM into the exported functions that match the S03→S04 boundary contract. Integration tests with mock client prove the full flow works end-to-end.
   - Files: `scripts/lib/manage-pages.mjs`, `tests/manage-pages.test.mjs`
   - Do: Add `createNewPages(newCommands, options)` — for each slug, calls `regeneratePage()` (from S02's module), then adds sidebar entry and map entry. Add `removePages(removedCommands, options)` — for each slug, deletes `.mdx` file, removes sidebar entry, removes map entry. Add `dryRun` support. Add graceful degradation (no API key → skip). Add CLI entry point. Write integration tests using mock client and temp directory with real astro.config.mjs/page-source-map.json/commands.json fixtures.

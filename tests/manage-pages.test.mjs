@@ -18,6 +18,8 @@ import {
   removeSidebarEntry,
   addToPageMap,
   removeFromPageMap,
+  createNewPages,
+  removePages,
 } from "../scripts/lib/manage-pages.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -442,5 +444,515 @@ describe("removeFromPageMap", () => {
   it("returns removed: false for nonexistent slug", () => {
     const result = removeFromPageMap("nonexistent", { mapPath });
     assert.deepEqual(result, { removed: false, slug: "nonexistent", reason: "not found" });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// T02: Orchestration integration tests (createNewPages, removePages)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Mock Anthropic client that returns valid frontmatter MDX content.
+ * Tracks calls for assertion purposes.
+ */
+function makeMockClient(responseText) {
+  const calls = [];
+  const text =
+    responseText ||
+    `---\ntitle: "/gsd fake-test"\ndescription: "A fake test command"\n---\n\n## What It Does\n\nThis is a test page.\n`;
+  return {
+    calls,
+    messages: {
+      create: async (args) => {
+        calls.push(args);
+        return {
+          content: [{ text }],
+          model: "claude-sonnet-4-5-20250929",
+          stop_reason: "end_turn",
+          usage: { input_tokens: 100, output_tokens: 200 },
+        };
+      },
+    },
+  };
+}
+
+// ─── createNewPages tests ────────────────────────────────────────────────────
+
+describe("createNewPages", () => {
+  /** @type {string} */
+  let tmpDir;
+  /** @type {string} */
+  let configPath;
+  /** @type {string} */
+  let mapPath;
+  /** @type {string} */
+  let manifestPath;
+  /** @type {string} */
+  let commandsDir;
+  /** @type {string} */
+  let createdPagePath;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-create-"));
+    configPath = path.join(tmpDir, "astro.config.mjs");
+    mapPath = path.join(tmpDir, "page-source-map.json");
+    manifestPath = path.join(tmpDir, "manifest.json");
+    commandsDir = path.join(tmpDir, "commands");
+
+    fs.writeFileSync(configPath, makeAstroConfig());
+    fs.writeFileSync(mapPath, JSON.stringify(makePageMap(), null, 2));
+    fs.writeFileSync(manifestPath, JSON.stringify(makeManifest()));
+    fs.mkdirSync(commandsDir);
+
+    // Track the page file that regeneratePage writes to real project dir
+    createdPagePath = path.join(
+      ROOT,
+      "src/content/docs/commands/fake-test-t02.mdx"
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    // Clean up any page file written to real project dir
+    try {
+      fs.unlinkSync(createdPagePath);
+    } catch {
+      // May not exist if test didn't get that far
+    }
+  });
+
+  it("creates a page, updates sidebar and map with mock client", async () => {
+    const mockClient = makeMockClient();
+    const result = await createNewPages(["fake-test-t02"], {
+      client: mockClient,
+      configPath,
+      mapPath,
+      manifestPath,
+    });
+
+    assert.equal(result.created, 1);
+    assert.equal(result.skipped, 0);
+    assert.equal(result.failed, 0);
+    assert.equal(result.results.length, 1);
+
+    const entry = result.results[0];
+    assert.equal(entry.slug, "fake-test-t02");
+
+    // Regeneration succeeded
+    assert.ok(entry.regeneration.pagePath, "Should have pagePath");
+    assert.equal(entry.regeneration.inputTokens, 100);
+    assert.equal(entry.regeneration.outputTokens, 200);
+
+    // Sidebar was updated
+    assert.ok(entry.sidebar?.added, "Sidebar entry should be added");
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(
+      sidebarContent.includes("/commands/fake-test-t02/"),
+      "Sidebar should contain the new command link"
+    );
+
+    // Map was updated
+    assert.ok(entry.map?.added, "Map entry should be added");
+    const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    assert.ok(
+      "commands/fake-test-t02.mdx" in map,
+      "Map should contain the new page key"
+    );
+
+    // Page file was created by regeneratePage
+    assert.ok(
+      fs.existsSync(createdPagePath),
+      "Page .mdx file should exist on disk"
+    );
+
+    // Mock client was called exactly once
+    assert.equal(mockClient.calls.length, 1);
+    assert.ok(
+      mockClient.calls[0].messages[0].content.includes("commands/fake-test-t02.mdx"),
+      "Mock client should receive the correct pagePath in the prompt"
+    );
+  });
+
+  it("skips sidebar/map changes in dryRun mode", async () => {
+    const mockClient = makeMockClient();
+    const result = await createNewPages(["fake-test-t02"], {
+      client: mockClient,
+      dryRun: true,
+      configPath,
+      mapPath,
+      manifestPath,
+    });
+
+    // dryRun still calls regeneratePage (which also uses dryRun)
+    assert.equal(result.created, 1);
+    assert.equal(result.results[0].regeneration.pagePath, "commands/fake-test-t02.mdx");
+
+    // But sidebar and map should NOT be updated
+    assert.equal(result.results[0].sidebar, null, "Sidebar should not be updated in dryRun");
+    assert.equal(result.results[0].map, null, "Map should not be updated in dryRun");
+
+    // Sidebar file should be unchanged
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(
+      !sidebarContent.includes("fake-test-t02"),
+      "Sidebar should NOT contain the command in dryRun"
+    );
+
+    // Map file should be unchanged
+    const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    assert.ok(
+      !("commands/fake-test-t02.mdx" in map),
+      "Map should NOT contain the page in dryRun"
+    );
+  });
+
+  it("returns skip result when no API key and no client", async () => {
+    // Temporarily unset ANTHROPIC_API_KEY
+    const origKey = process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+
+    try {
+      const result = await createNewPages(["fake-test-t02"], {
+        // No client provided — triggers API key check
+        configPath,
+        mapPath,
+        manifestPath,
+      });
+
+      assert.equal(result.skipped, 1);
+      assert.equal(result.created, 0);
+      assert.equal(result.failed, 0);
+
+      const entry = result.results[0];
+      assert.ok(entry.regeneration.skipped, "Should be skipped");
+      assert.equal(entry.regeneration.reason, "no API key");
+
+      // Sidebar and map should NOT be updated
+      assert.equal(entry.sidebar, null);
+      assert.equal(entry.map, null);
+    } finally {
+      // Restore API key
+      if (origKey !== undefined) {
+        process.env.ANTHROPIC_API_KEY = origKey;
+      }
+    }
+  });
+
+  it("processes multiple new commands", async () => {
+    const mockClient = makeMockClient();
+
+    // Clean up both files after
+    const page2Path = path.join(
+      ROOT,
+      "src/content/docs/commands/fake-test-t02b.mdx"
+    );
+
+    try {
+      const result = await createNewPages(
+        ["fake-test-t02", "fake-test-t02b"],
+        {
+          client: mockClient,
+          configPath,
+          mapPath,
+          manifestPath,
+        }
+      );
+
+      assert.equal(result.created, 2);
+      assert.equal(result.results.length, 2);
+      assert.equal(result.results[0].slug, "fake-test-t02");
+      assert.equal(result.results[1].slug, "fake-test-t02b");
+
+      // Both sidebar entries added
+      const sidebarContent = fs.readFileSync(configPath, "utf-8");
+      assert.ok(sidebarContent.includes("/commands/fake-test-t02/"));
+      assert.ok(sidebarContent.includes("/commands/fake-test-t02b/"));
+
+      // Both map entries added
+      const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+      assert.ok("commands/fake-test-t02.mdx" in map);
+      assert.ok("commands/fake-test-t02b.mdx" in map);
+
+      // Mock client called twice
+      assert.equal(mockClient.calls.length, 2);
+    } finally {
+      try {
+        fs.unlinkSync(page2Path);
+      } catch {
+        // May not exist
+      }
+    }
+  });
+});
+
+// ─── removePages tests ──────────────────────────────────────────────────────
+
+describe("removePages", () => {
+  /** @type {string} */
+  let tmpDir;
+  /** @type {string} */
+  let configPath;
+  /** @type {string} */
+  let mapPath;
+  /** @type {string} */
+  let commandsDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-remove-"));
+    configPath = path.join(tmpDir, "astro.config.mjs");
+    mapPath = path.join(tmpDir, "page-source-map.json");
+    commandsDir = path.join(tmpDir, "commands");
+
+    fs.writeFileSync(configPath, makeAstroConfig());
+    fs.writeFileSync(mapPath, JSON.stringify(makePageMap(), null, 2));
+    fs.mkdirSync(commandsDir);
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("deletes file, removes sidebar entry, removes map entry", () => {
+    // Create a fake page file
+    fs.writeFileSync(
+      path.join(commandsDir, "auto.mdx"),
+      "---\ntitle: test\n---\n"
+    );
+
+    const result = removePages(["auto"], {
+      configPath,
+      mapPath,
+      commandsDir,
+    });
+
+    assert.equal(result.removed, 1);
+    assert.equal(result.failed, 0);
+    assert.equal(result.results.length, 1);
+
+    const entry = result.results[0];
+    assert.equal(entry.slug, "auto");
+    assert.equal(entry.fileDeleted, true);
+    assert.ok(entry.sidebar?.removed, "Sidebar entry should be removed");
+    assert.ok(entry.map?.removed, "Map entry should be removed");
+
+    // Verify file is gone
+    assert.ok(!fs.existsSync(path.join(commandsDir, "auto.mdx")));
+
+    // Verify sidebar is cleaned
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!sidebarContent.includes("/commands/auto/"));
+
+    // Verify map is cleaned
+    const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    assert.ok(!("commands/auto.mdx" in map));
+  });
+
+  it("handles missing file gracefully and still cleans sidebar/map", () => {
+    // Don't create the file — it doesn't exist
+    const result = removePages(["auto"], {
+      configPath,
+      mapPath,
+      commandsDir,
+    });
+
+    assert.equal(result.removed, 1, "Should still count as removed");
+    assert.equal(result.results[0].fileDeleted, false, "File was not deleted (didn't exist)");
+
+    // Sidebar and map should still be cleaned
+    assert.ok(result.results[0].sidebar?.removed, "Sidebar entry should be removed");
+    assert.ok(result.results[0].map?.removed, "Map entry should be removed");
+  });
+
+  it("processes multiple removals", () => {
+    // Create page files for both
+    fs.writeFileSync(
+      path.join(commandsDir, "auto.mdx"),
+      "---\ntitle: auto\n---\n"
+    );
+    fs.writeFileSync(
+      path.join(commandsDir, "stop.mdx"),
+      "---\ntitle: stop\n---\n"
+    );
+
+    const result = removePages(["auto", "stop"], {
+      configPath,
+      mapPath,
+      commandsDir,
+    });
+
+    assert.equal(result.removed, 2);
+    assert.equal(result.failed, 0);
+    assert.equal(result.results.length, 2);
+
+    // Both files gone
+    assert.ok(!fs.existsSync(path.join(commandsDir, "auto.mdx")));
+    assert.ok(!fs.existsSync(path.join(commandsDir, "stop.mdx")));
+
+    // Both sidebar entries removed
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!sidebarContent.includes("/commands/auto/"));
+    assert.ok(!sidebarContent.includes("/commands/stop/"));
+
+    // Both map entries removed
+    const map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    assert.ok(!("commands/auto.mdx" in map));
+    assert.ok(!("commands/stop.mdx" in map));
+  });
+});
+
+// ─── Full round-trip test ────────────────────────────────────────────────────
+
+describe("Full round-trip: detect → create → remove", () => {
+  /** @type {string} */
+  let tmpDir;
+  /** @type {string} */
+  let commandsJsonPath;
+  /** @type {string} */
+  let commandsDir;
+  /** @type {string} */
+  let configPath;
+  /** @type {string} */
+  let mapPath;
+  /** @type {string} */
+  let manifestPath;
+  /** @type {string} */
+  let createdPagePath;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-roundtrip-"));
+    commandsJsonPath = path.join(tmpDir, "commands.json");
+    commandsDir = path.join(tmpDir, "commands");
+    configPath = path.join(tmpDir, "astro.config.mjs");
+    mapPath = path.join(tmpDir, "page-source-map.json");
+    manifestPath = path.join(tmpDir, "manifest.json");
+
+    fs.mkdirSync(commandsDir);
+
+    // Set up existing pages: auto, stop, status, gsd, skill-health
+    for (const slug of ["auto", "stop", "status", "gsd", "skill-health"]) {
+      fs.writeFileSync(
+        path.join(commandsDir, `${slug}.mdx`),
+        `---\ntitle: "/gsd ${slug}"\n---\nContent for ${slug}.\n`
+      );
+    }
+
+    // Set up commands.json WITH a new command "roundtrip-test"
+    const commands = makeCommandsJson([
+      {
+        command: "/gsd roundtrip-test",
+        description: "A round-trip test command",
+        category: "Session Commands",
+      },
+    ]);
+    fs.writeFileSync(commandsJsonPath, JSON.stringify(commands));
+
+    // Set up config, map, manifest
+    fs.writeFileSync(configPath, makeAstroConfig());
+    fs.writeFileSync(mapPath, JSON.stringify(makePageMap(), null, 2));
+    fs.writeFileSync(manifestPath, JSON.stringify(makeManifest()));
+
+    createdPagePath = path.join(
+      ROOT,
+      "src/content/docs/commands/roundtrip-test.mdx"
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    try {
+      fs.unlinkSync(createdPagePath);
+    } catch {
+      // May not exist
+    }
+  });
+
+  it("detects new → creates page → detects removed → removes page", async () => {
+    // Step 1: Detect new command
+    const detect1 = detectNewAndRemovedCommands({
+      commandsPath: commandsJsonPath,
+      commandsDir,
+    });
+    assert.ok(
+      detect1.newCommands.includes("roundtrip-test"),
+      "Should detect roundtrip-test as new"
+    );
+    assert.deepEqual(detect1.removedCommands, []);
+
+    // Step 2: Create the new page with mock client
+    const mockClient = makeMockClient(
+      `---\ntitle: "/gsd roundtrip-test"\ndescription: "Round-trip test"\n---\n\n## What It Does\n\nTest.\n`
+    );
+    const createResult = await createNewPages(["roundtrip-test"], {
+      client: mockClient,
+      configPath,
+      mapPath,
+      manifestPath,
+    });
+
+    assert.equal(createResult.created, 1);
+    assert.ok(
+      fs.existsSync(createdPagePath),
+      "Page file should exist after creation"
+    );
+
+    // Verify sidebar was updated
+    let sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(sidebarContent.includes("/commands/roundtrip-test/"));
+
+    // Verify map was updated
+    let map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    assert.ok("commands/roundtrip-test.mdx" in map);
+
+    // Add the page file to the temp commandsDir so detection sees it
+    fs.writeFileSync(
+      path.join(commandsDir, "roundtrip-test.mdx"),
+      fs.readFileSync(createdPagePath, "utf-8")
+    );
+
+    // Step 3: Verify detection now shows no new/removed
+    const detect2 = detectNewAndRemovedCommands({
+      commandsPath: commandsJsonPath,
+      commandsDir,
+    });
+    assert.deepEqual(detect2.newCommands, [], "No new commands after creation");
+    assert.deepEqual(detect2.removedCommands, [], "No removed commands");
+
+    // Step 4: Remove the command from commands.json
+    const commandsWithout = makeCommandsJson(); // No roundtrip-test
+    fs.writeFileSync(commandsJsonPath, JSON.stringify(commandsWithout));
+
+    // Step 5: Detect removed command
+    const detect3 = detectNewAndRemovedCommands({
+      commandsPath: commandsJsonPath,
+      commandsDir,
+    });
+    assert.ok(
+      detect3.removedCommands.includes("roundtrip-test"),
+      "Should detect roundtrip-test as removed"
+    );
+
+    // Step 6: Remove the page
+    const removeResult = removePages(["roundtrip-test"], {
+      configPath,
+      mapPath,
+      commandsDir,
+    });
+
+    assert.equal(removeResult.removed, 1);
+    assert.ok(
+      removeResult.results[0].fileDeleted,
+      "File in temp dir should be deleted"
+    );
+
+    // Verify sidebar cleaned
+    sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!sidebarContent.includes("/commands/roundtrip-test/"));
+
+    // Verify map cleaned
+    map = JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+    assert.ok(!("commands/roundtrip-test.mdx" in map));
+
+    // Verify temp file is gone
+    assert.ok(!fs.existsSync(path.join(commandsDir, "roundtrip-test.mdx")));
   });
 });
