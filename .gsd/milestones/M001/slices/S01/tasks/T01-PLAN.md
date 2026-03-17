@@ -49,6 +49,13 @@ The npm package lives at the global npm root (resolve via `npm root -g` + `/gsd-
 - `node --test tests/extract.test.mjs` — all assertions pass
 - `cat content/generated/skills.json | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.assert(d.length >= 8, 'Expected ≥8 skills, got ' + d.length)"` passes
 
+## Observability Impact
+
+- **Console output:** `extractLocal()` logs `[local] Skills: N, Agents: N, Extensions: N` on success, enabling automated count verification.
+- **Error shape:** `resolvePackagePath()` throws with message `gsd-pi package not found at <path> — missing src/resources/`, making the failure path inspectable via `node -e "import(...).then(m => m.resolvePackagePath('/bad')).catch(e => console.error(e.message))"`.
+- **JSON output files:** `content/generated/{skills,agents,extensions}.json` serve as durable inspection surfaces — any downstream task can `cat` and `jq` them to verify structure.
+- **Failure visibility:** If a skill/agent/extension file fails to parse, the error includes the file path and extraction phase so the offending source is immediately identifiable.
+
 ## Inputs
 
 - Installed `gsd-pi` npm package at global npm root (`~/.nvm/versions/node/v22.22.0/lib/node_modules/gsd-pi/`)

@@ -35,6 +35,8 @@
   - `content/generated/readme.md` exists and has content
   - `content/generated/manifest.json` has file entries with SHA hashes
 - Second run with unchanged content skips tarball re-download (cache hit)
+- `node scripts/extract.mjs --pkg-path /nonexistent` produces a structured error message including the invalid path and phase `[local]`, exits non-zero
+- If `GITHUB_TOKEN` is invalid/expired, error output includes HTTP status code and `rate limit remaining` value
 
 ## Observability / Diagnostics
 
@@ -51,7 +53,7 @@
 
 ## Tasks
 
-- [ ] **T01: Scaffold project and extract local content from npm package** `est:1h`
+- [x] **T01: Scaffold project and extract local content from npm package** `est:1h`
   - Why: Establishes the project structure, test framework, and extraction of skills/agents/extensions from the installed npm package — the zero-risk, zero-API-call foundation that proves extraction patterns work.
   - Files: `package.json`, `scripts/lib/extract-local.mjs`, `tests/extract.test.mjs`, `content/generated/.gitkeep`
   - Do: Initialize Node.js project with `gray-matter` dep. Write `extract-local.mjs` that dynamically resolves the npm package path, reads SKILL.md files (with recursive reference handling), agent .md files, and extension .ts files. Parse YAML frontmatter with gray-matter for skills/agents. Regex-extract `pi.registerTool({ name:, description: })` patterns from extension TypeScript. Exclude `shared/` directory. Write `skills.json`, `agents.json`, `extensions.json`. Set up Node.js built-in test runner with structural assertions.

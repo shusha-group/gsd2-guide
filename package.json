@@ -1,0 +1,12 @@
+{
+  "name": "gsd2-guide",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "extract": "node scripts/extract.mjs"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3"
+  }
+}
