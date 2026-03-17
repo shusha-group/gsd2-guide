@@ -76,3 +76,8 @@ Build three artifacts in sequence:
 - **Double prebuild execution** — `npm run build` already triggers prebuild via npm lifecycle hook. The update script should NOT call prebuild explicitly; it's handled by the build step. The extract → build chain is sufficient.
 - **GitHub API rate limits in CI** — The extraction script makes 3 API calls per cached run, more on first run. The GitHub Actions `GITHUB_TOKEN` has 1000 requests/hr for the default token but it's scoped to the current repo. For fetching from `gsd-build/gsd-2` (a different repo), a personal access token or the default token with public repo read access may be needed. Public repos can be read without authentication, so the 60/hr unauthenticated limit applies — this is fine for CI since it runs infrequently.
 - **Base path in link checking** — Internal links in the HTML use `/gsd2-guide/` prefix. The checker must strip this prefix when resolving against `dist/`. Don't forget that `dist/` does NOT have a `gsd2-guide/` subdirectory (per KNOWLEDGE.md).
+
+## Sources
+
+- Astro GitHub Pages deployment uses `withastro/action@v5` + `actions/deploy-pages@v4` (source: Astro docs)
+- Prototype link checker tested against current dist/: 18,601 internal links, only `favicon.svg` missing

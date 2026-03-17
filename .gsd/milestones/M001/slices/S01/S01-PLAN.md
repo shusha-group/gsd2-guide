@@ -1,88 +1,77 @@
-# S01: Content extraction pipeline
+# S01: Commands quick-reference with extraction pipeline and custom design
 
-**Goal:** A Node.js extraction script that pulls structured content from the installed `gsd-pi` npm package (skills, agents, extensions) and the `gsd-build/gsd-2` GitHub repo (docs, README, releases), producing JSON data files and markdown for downstream slices (S03 quick-reference cards, S04 deep-dive pages, S05 changelog).
-**Demo:** Running `node scripts/extract.mjs` produces all output files in `content/generated/` — structured JSON for skills (8), agents (5), extensions (≥14), commands, and releases (≥48), plus ~126 markdown doc files and a content manifest with SHA hashes for diff tracking.
+**Goal:** Build the complete foundation — content extraction from npm package + GitHub repo, Astro/Starlight site with terminal-native dark custom design, and a fully functional Commands quick-reference page. This proves the entire pipeline end-to-end: extraction → structured data → custom components → styled site with search.
+**Demo:** A developer opens the site in a browser, sees a polished dark-themed docs site, navigates to the Commands reference, searches for "auto", and finds `/gsd auto` with its description and usage. Pagefind search works across the site.
 
 ## Must-Haves
 
-- Dynamically resolves the `gsd-pi` npm package path (not hardcoded) with `--pkg-path` override flag
-- Extracts skills from YAML frontmatter of `SKILL.md` files, including nested references (e.g., `github-workflows/references/gh/`)
-- Extracts agents from YAML frontmatter of agent `.md` files with human-facing descriptions
-- Extracts extension metadata (name, tools, descriptions) via regex from TypeScript `pi.registerTool()` patterns, excluding `shared/`
-- Downloads GitHub repo content via single tarball API call (not per-file fetches)
-- Fetches all releases in one paginated API call, parses Added/Changed/Fixed sections
-- Generates content manifest with SHA hashes for diff tracking
-- Supports optional `GITHUB_TOKEN` env var for authenticated API calls
-- Caches tarball locally to avoid redundant downloads during development
-- All output written to `content/generated/` directory
+- Content extraction script runs successfully, producing `data/commands.json` with all 20+ GSD commands
+- Content extraction script produces `data/manifest.json` with content hashes for future diff tracking
+- Astro/Starlight site builds and serves with custom dark theme (not default Starlight skin)
+- Commands quick-reference page renders searchable/filterable cheat-sheet cards
+- Each command card shows: name, description, category, keyboard shortcut (if applicable)
+- Cards expand to show detailed info and examples
+- Pagefind search returns results for command queries
+- Mermaid diagram support is configured and renders a test diagram
+- Site uses semantic HTML with proper heading hierarchy
 
 ## Proof Level
 
-- This slice proves: integration (npm package reads + GitHub API calls + structured output)
-- Real runtime required: yes (reads real filesystem, makes real API calls)
-- Human/UAT required: no (automated count and structure assertions are sufficient)
+- This slice proves: integration (extraction → data → rendering → search all work together)
+- Real runtime required: yes (dev server, build, browser verification)
+- Human/UAT required: yes (design quality visual review)
 
 ## Verification
 
-- `node scripts/extract.mjs` exits 0 and produces all expected files
-- `node --test tests/extract.test.mjs` passes all assertions:
-  - `content/generated/skills.json` has ≥8 entries, each with `name`, `description`, `path`
-  - `content/generated/agents.json` has ≥5 entries, each with `name`, `description`
-  - `content/generated/extensions.json` has ≥14 entries, each with `name`, `tools[]`, `description`
-  - `content/generated/commands.json` has structured command data
-  - `content/generated/releases.json` has ≥48 entries with `tag_name`, `body`, parsed sections
-  - `content/generated/docs/` contains ≥100 markdown files
-  - `content/generated/readme.md` exists and has content
-  - `content/generated/manifest.json` has file entries with SHA hashes
-- Second run with unchanged content skips tarball re-download (cache hit)
-- `node scripts/extract.mjs --pkg-path /nonexistent` produces a structured error message including the invalid path and phase `[local]`, exits non-zero
-- If `GITHUB_TOKEN` is invalid/expired, error output includes HTTP status code and `rate limit remaining` value
+- `npm run build` completes without errors
+- `node scripts/extract-content.mjs` produces valid JSON files in `data/`
+- `data/commands.json` contains 20+ command entries with name, description, and category fields
+- `data/manifest.json` exists with content hashes
+- Dev server serves the site and Commands page renders all commands as cards
+- Pagefind search for "auto" returns the `/gsd auto` command
+- Custom dark theme is visually distinct from default Starlight
 
 ## Observability / Diagnostics
 
-- Runtime signals: console output with phase labels (`[local]`, `[github-docs]`, `[releases]`) and counts for each extraction phase
-- Inspection surfaces: `node scripts/extract.mjs --dry-run` to show what would be extracted without writing; direct inspection of JSON output files
-- Failure visibility: extraction errors include the source file path and phase name; GitHub API errors include status code and rate limit remaining
-- Redaction constraints: `GITHUB_TOKEN` must not be logged
-
-## Integration Closure
-
-- Upstream surfaces consumed: `gsd-pi` npm package filesystem (`src/resources/skills/`, `src/resources/agents/`, `src/resources/extensions/`), GitHub API (`/repos/gsd-build/gsd-2/tarball/main`, `/repos/gsd-build/gsd-2/releases`, `/repos/gsd-build/gsd-2/git/trees/main?recursive=1`)
-- New wiring introduced in this slice: `scripts/extract.mjs` entrypoint, `content/generated/` output directory
-- What remains before the milestone is truly usable end-to-end: S02 (site scaffold), S03 (cards consuming JSON), S04 (pages consuming docs), S05 (changelog consuming releases), S06 (pipeline wiring + deploy)
+- Runtime signals: extraction script logs progress per source (npm package, GitHub API) with counts
+- Inspection surfaces: `data/manifest.json` shows what was extracted and when, `data/commands.json` is human-readable
+- Failure visibility: extraction script exits with non-zero code and descriptive error on failure
+- Redaction constraints: GitHub token not logged
 
 ## Tasks
 
-- [x] **T01: Scaffold project and extract local content from npm package** `est:1h`
-  - Why: Establishes the project structure, test framework, and extraction of skills/agents/extensions from the installed npm package — the zero-risk, zero-API-call foundation that proves extraction patterns work.
-  - Files: `package.json`, `scripts/lib/extract-local.mjs`, `tests/extract.test.mjs`, `content/generated/.gitkeep`
-  - Do: Initialize Node.js project with `gray-matter` dep. Write `extract-local.mjs` that dynamically resolves the npm package path, reads SKILL.md files (with recursive reference handling), agent .md files, and extension .ts files. Parse YAML frontmatter with gray-matter for skills/agents. Regex-extract `pi.registerTool({ name:, description: })` patterns from extension TypeScript. Exclude `shared/` directory. Write `skills.json`, `agents.json`, `extensions.json`. Set up Node.js built-in test runner with structural assertions.
-  - Verify: `node --test tests/extract.test.mjs` — skills ≥8, agents ≥5, extensions ≥14, all have required fields
-  - Done when: Running the local extractor produces valid JSON files with correct counts and all required fields populated
+- [ ] **T01: Astro/Starlight project scaffold with terminal-native dark theme** `est:1h`
+  - Why: Establishes the site foundation — project structure, Starlight config, custom dark theme, Mermaid integration, and dev server. Everything downstream builds on this.
+  - Files: `package.json`, `astro.config.mjs`, `src/styles/custom.css`, `src/content/docs/index.mdx`, `tsconfig.json`
+  - Do: Initialize Astro project with Starlight template. Configure sidebar structure, Mermaid plugin, sitemap. Create custom CSS with terminal-native dark palette (dark backgrounds, monospace accents, green/cyan terminal colors). Override Starlight's default theme tokens. Add a placeholder index page with a test Mermaid diagram. Use the frontend-design skill for design quality.
+  - Verify: `npm run dev` serves the site, placeholder page renders with custom dark theme, Mermaid diagram renders as SVG
+  - Done when: Dev server runs, custom dark theme is visually distinct from Starlight defaults, Mermaid works
 
-- [x] **T02: Extract GitHub docs via tarball and fetch releases** `est:1h`
-  - Why: Pulls all narrative documentation and release history from the GitHub repo using minimal API calls (tarball + releases + tree), with caching to stay within rate limits.
-  - Files: `scripts/lib/extract-github-docs.mjs`, `scripts/lib/extract-releases.mjs`, `scripts/lib/manifest.mjs`, `tests/extract.test.mjs`
-  - Do: Write `extract-github-docs.mjs` that fetches the repo tarball (single API call), extracts `docs/**/*.md` and `README.md` to `content/generated/docs/` and `content/generated/readme.md`. Strip the variable-prefix root directory from the tarball. Add local caching (`.cache/tarball.tar.gz`) with HEAD SHA check to skip re-download. Write `extract-releases.mjs` that fetches all releases (`per_page=100`), parses markdown bodies into structured `{added, changed, fixed}` sections. Write `manifest.mjs` using the tree API (`/git/trees/main?recursive=1`) to get SHA hashes for all files, write `manifest.json`. Support `GITHUB_TOKEN` via env var for all API calls. Add tests for docs count, releases count, and manifest structure.
-  - Verify: `node --test tests/extract.test.mjs` — docs ≥100 .md files, releases ≥48, manifest has entries with SHA hashes, README exists
-  - Done when: All GitHub content is extracted to `content/generated/`, manifest tracks file hashes, and cached tarball is reused on second run
+- [ ] **T02: Content extraction script — commands from npm package and GitHub repo** `est:1h`
+  - Why: Builds the extraction pipeline that transforms raw GSD source artifacts into structured data. Commands are the first and most important content type. Also establishes the manifest pattern for incremental rebuilds.
+  - Files: `scripts/extract-content.mjs`, `data/commands.json`, `data/manifest.json`
+  - Do: Write a Node.js extraction script that: (1) reads the installed gsd-pi README and the GitHub repo's `docs/commands.md` to extract command tables, (2) parses command names, descriptions, categories (session, config, git, shortcuts), options, and keyboard shortcuts into structured JSON, (3) writes `data/commands.json`, (4) generates `data/manifest.json` with SHA-256 hashes per content file for future diff tracking. Use `gh api` or `@octokit/rest` for GitHub content. Handle rate limits with conditional requests (If-None-Match/ETag).
+  - Verify: `node scripts/extract-content.mjs` produces valid `data/commands.json` with 20+ entries and `data/manifest.json` with hashes
+  - Done when: Commands JSON has all commands from the reference, each with name/description/category, manifest tracks content hashes
 
-- [x] **T03: Wire extraction orchestrator and extract commands** `est:45m`
-  - Why: Creates the single entry point `extract.mjs` that runs all extraction phases, adds command extraction from downloaded docs, and proves the complete pipeline works end-to-end.
-  - Files: `scripts/extract.mjs`, `scripts/lib/extract-commands.mjs`, `tests/extract.test.mjs`
-  - Do: Write `extract.mjs` as the orchestrator that runs local extraction and GitHub extraction in parallel (using `Promise.all`), then runs command extraction (depends on docs being downloaded). Parse commands from `content/generated/docs/` command tables (consistent `| Command | Description |` markdown table format). Accept `--pkg-path` flag for npm package path override. Add `--dry-run` flag. Log phase progress with `[local]`, `[github-docs]`, `[releases]`, `[commands]` prefixes and counts. Add `"extract"` script to package.json. Run full end-to-end verification: all output files present, all counts correct, all structures valid.
-  - Verify: `node scripts/extract.mjs && node --test tests/extract.test.mjs` — all assertions pass including commands.json structure
-  - Done when: `npm run extract` produces the complete content/generated/ directory with all expected files, counts, and structures; second run demonstrates cache hit for tarball
+- [ ] **T03: Commands quick-reference page with cheat-sheet cards** `est:1h`
+  - Why: The first real content page — proves the full pipeline from extracted data through custom components to rendered page with search.
+  - Files: `src/components/CheatSheetCard.astro`, `src/components/FilterBar.astro`, `src/content/docs/reference/commands.mdx`, `src/styles/components.css`
+  - Do: Build CheatSheetCard component (expandable, shows name/description/category/shortcut, detail section). Build FilterBar component for category filtering (Session, Config, Git, Shortcuts). Create Commands reference page that imports data from `data/commands.json` and renders cards with client-side filtering. Style components with the terminal-native dark theme. Ensure Pagefind indexes the page content.
+  - Verify: Commands page renders all 20+ commands as cards, filter by category works, clicking a card expands it, Pagefind search for "auto" finds `/gsd auto`
+  - Done when: A developer can open the Commands page, filter by category, search for a command, and see its full details
 
 ## Files Likely Touched
 
-- `package.json`
-- `scripts/extract.mjs`
-- `scripts/lib/extract-local.mjs`
-- `scripts/lib/extract-github-docs.mjs`
-- `scripts/lib/extract-releases.mjs`
-- `scripts/lib/extract-commands.mjs`
-- `scripts/lib/manifest.mjs`
-- `tests/extract.test.mjs`
-- `content/generated/.gitkeep`
-- `.gitignore`
+- `package.json` — project deps (astro, starlight, mermaid plugin)
+- `astro.config.mjs` — Starlight configuration, sidebar, plugins
+- `tsconfig.json` — TypeScript config for Astro
+- `src/styles/custom.css` — Custom dark theme overrides
+- `src/styles/components.css` — Component-specific styles
+- `src/content/docs/index.mdx` — Placeholder landing page
+- `src/content/docs/reference/commands.mdx` — Commands quick-reference
+- `src/components/CheatSheetCard.astro` — Expandable card component
+- `src/components/FilterBar.astro` — Category filter component
+- `scripts/extract-content.mjs` — Content extraction pipeline
+- `data/commands.json` — Extracted command data
+- `data/manifest.json` — Content hash manifest

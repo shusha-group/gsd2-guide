@@ -15,7 +15,7 @@ This is low-risk work. The data exists, the import pattern is proven, and the co
 
 Build two tasks: (1) changelog page with release rendering component, and (2) Header version badge wiring. The changelog page is the larger piece — it needs an Astro component to render release entries (date, version, body-as-HTML) and CSS styling. The Header update is small — read `releases.json`, extract `tag_name` from index 0. Both can be built independently.
 
-For the release body content: use Astro's `set:html` directive to render the markdown body as HTML. Since the body is raw markdown, the component will need to convert it to HTML at build time. Use a lightweight markdown-to-HTML conversion — the project already has `@astrojs/markdown-remark` in the dependency tree (pulled by Starlight). The simplest approach: install `marked` (tiny, zero-config) and use it in the ReleaseEntry component's frontmatter to convert body markdown to HTML, then render with `set:html`.
+For the release body content: use Astro's `set:html` directive to render the markdown body as HTML. Since the body is raw markdown, the component will need to convert it to HTML at build time. Use a lightweight markdown-to-HTML conversion — the project already has `@astrojs/markdown-remark` in the dependency tree (pulled by Starlight). Alternatively, since these are release notes with simple formatting (headers, lists, bold, code), a custom Astro component can use the `marked` library or import a markdown utility. The simplest approach: use `marked` (tiny, zero-config) to convert the body markdown to HTML in the Astro component's frontmatter script, then render with `set:html`.
 
 Add a sidebar entry for the changelog page and a link from the home page.
 
@@ -83,17 +83,17 @@ The import path from `src/components/Header.astro` to `content/generated/release
 
 ### Sidebar Entry
 
-Add to `astro.config.mjs` sidebar — logical placement is as a top-level item after Home or in a new group:
+Add to `astro.config.mjs` sidebar — logical placement is as a top-level item after the existing groups, or within a new "Project" group:
 ```js
 { label: 'Changelog', link: '/changelog/' },
 ```
 
 ### Build Order
 
-1. **T01: Changelog page + release component** — Install `marked`. Create `ReleaseEntry.astro` component. Create `changelog.mdx` page. Add CSS for release entries in terminal.css. This is the main deliverable (R005).
-2. **T02: Header version badge + sidebar/home links** — Wire real version in Header.astro. Add sidebar entry in astro.config.mjs. Add changelog link to index.mdx. This completes R010.
+1. **T01: Changelog page + release component** — Install `marked`. Create `ReleaseEntry.astro` component. Create `changelog.mdx` page. Add CSS for release entries. This is the main deliverable (R005).
+2. **T02: Header version badge + sidebar/home links** — Wire real version in Header.astro. Add sidebar entry. Add changelog link to index.mdx. This completes R010.
 
-T01 is the larger task (~70% of the work). T02 is small and can be done independently.
+T01 is the larger task. T02 is small and can be done independently.
 
 ### Verification Approach
 
@@ -108,13 +108,12 @@ T01 is the larger task (~70% of the work). T02 is small and can be done independ
 ## Constraints
 
 - **Use `body` field, not structured arrays** — Only 14 of 48 releases have structured data. The body field is the universal content source. Structured arrays could optionally enhance the 14 releases that have them, but body alone is sufficient.
-- **`set:html` required** — Astro components can't render raw markdown strings directly. Must convert to HTML first, then use Astro's `set:html` directive.
+- **`set:html` required** — Astro components can't render raw markdown strings. Must convert to HTML first, then use `set:html` directive.
 - **Import path depth** — MDX at `src/content/docs/changelog.mdx` needs `../../../content/generated/releases.json` (3 levels up). Component at `src/components/` needs `../../content/generated/releases.json` (2 levels up).
 - **grep -o for counting** — Per knowledge base, always use `grep -o pattern | wc -l` not `grep -c` for counting in Astro's minified HTML output.
 
 ## Common Pitfalls
 
-- **All releases expanded by default** — With 48 releases, the page would be extremely long. Use `<details>` collapsed by default, with the latest release (index 0) expanded via `open` attribute. Users can click to expand any release.
-- **Date formatting** — `published_at` is ISO 8601 (`2026-03-16T21:27:41Z`). Needs human-readable formatting. Use `new Date(published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })` in Astro component frontmatter.
-- **Missing releases.json at build time** — If extraction hasn't run, the JSON import will fail at build. This is the same constraint S03 reference pages have — extraction must run before build. Already handled by existing `extract` → `prebuild` → `build` pipeline.
-- **Markdown in body may contain HTML** — GitHub release notes can include raw HTML (e.g., `<details>` blocks). `marked` handles this by default (passes HTML through). No special handling needed.
+- **Older releases expand to show all content by default** — With 48 releases, the page would be extremely long. Use `<details>` collapsed by default, optionally with latest 3-5 expanded via `open` attribute.
+- **Date formatting** — `published_at` is ISO 8601 ("2026-03-16T21:27:41Z"). Needs human-readable formatting. Use `new Date(published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })` in Astro frontmatter or component script.
+- **Missing releases.json at build time** — If extraction hasn't run, `releases.json` won't exist. The import will fail at build. This is the same constraint S03 reference pages have — extraction must run before build. Already handled by the existing `prebuild` / `extract` scripts.

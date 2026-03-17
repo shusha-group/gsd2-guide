@@ -5,7 +5,7 @@
 ## Success Criteria
 
 - Developer can find any GSD command, skill, or tool in under 10 seconds via search or quick-reference cards
-- All 130+ doc files from the GitHub repo render correctly as structured, navigable sections
+- All narrative doc files from the GitHub repo render correctly as structured, navigable sections with working internal links
 - The update pipeline detects version changes, regenerates affected content, and deploys in one command
 - Design is visually distinctive — terminal-native dark theme with diagrams and illustrations, not a default template
 - Current GSD version is prominently displayed, full release changelog is browsable
@@ -14,34 +14,32 @@
 ## Key Risks / Unknowns
 
 - **Content transformation from agent artifacts** — Prompt templates and agent instructions are written for LLMs. Transforming them into human-useful docs is unproven.
-- **Starlight design customization ceiling** — The terminal-native craft feel with visual aids may push past Starlight's theme system into lower-level overrides.
+- **Starlight design customization ceiling** — The terminal-native craft feel with visual aids may push past Starlight's theme system into lower-level Astro overrides.
 - **GitHub API rate limits** — 130+ file fetches + 48 releases per build. Need smart caching.
 
 ## Proof Strategy
 
-- Content transformation quality → retire in S01 by proving extraction produces meaningful, structured content from all source types
-- Starlight customization depth → retire in S02 by proving the custom dark design renders correctly with all component variants
-- GitHub API efficiency → retire in S01 by proving content fetch works within rate limits using caching/diffing
+- Content transformation + Starlight customization + GitHub API → retire in S01 by building a real, styled site with real extracted content end-to-end. The extraction pipeline, custom design, and GitHub integration are all proven by one working slice.
 
 ## Verification Classes
 
-- Contract verification: build succeeds, all pages render, search index builds, broken link check passes
-- Integration verification: GitHub API returns content, npm package extraction produces expected files, deployment to GitHub Pages succeeds
-- Operational verification: one-command update pipeline works end-to-end, incremental rebuild is measurably faster than full rebuild
-- UAT / human verification: design quality review, content accuracy spot-check, search relevance check
+- Contract verification: `npm run build` succeeds, all pages render without errors, search index builds, broken link check passes
+- Integration verification: GitHub API returns content for docs + releases, npm package extraction produces expected structured data
+- Operational verification: `npm run update` one-command pipeline works end-to-end from version detection through deployment
+- UAT / human verification: design quality visual review, content accuracy spot-check, search relevance for key queries
 
 ## Milestone Definition of Done
 
 This milestone is complete only when all are true:
 
-- All content extraction sources produce structured output (npm package + GitHub repo)
+- Content extraction produces structured output from both npm package and GitHub repo
 - Quick-reference cards exist for every command, skill, tool, extension, and agent
-- All docs/ narrative pages render with working internal links
-- Changelog shows all GitHub releases with current version in the header
+- All docs/ narrative pages render with correct navigation and working internal links
+- Changelog shows all GitHub releases with current version in the site header
 - Custom design passes visual review — terminal-native dark theme with diagrams, not default Starlight
 - Search returns relevant results for test queries across all content types
-- One-command update pipeline works: npm update → diff → build → deploy → live site
-- Site is accessible on GitHub Pages
+- One-command update pipeline works: detect version → diff content → rebuild → deploy → live on GitHub Pages
+- Site is accessible at the GitHub Pages URL
 
 ## Requirement Coverage
 
@@ -52,101 +50,109 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [x] **S01: Content extraction pipeline** `risk:high` `depends:[]`
-  > After this: Running the extraction script produces structured markdown from the installed npm package (skills, prompts, templates, agents) and GitHub repo (docs/, README, releases). Content manifest with hashes for diff tracking.
+- [ ] **S01: Commands quick-reference with extraction pipeline and custom design** `risk:high` `depends:[]`
+  > After this: A live Astro/Starlight dev site with terminal-native dark custom design, showing a fully functional Commands quick-reference page with searchable/filterable cheat-sheet cards for all 20+ GSD commands and keyboard shortcuts — content extracted from the installed npm package and GitHub repo. Pagefind search works across the site.
 
-- [x] **S02: Astro site scaffold with custom design** `risk:high` `depends:[]`
-  > After this: A running Astro/Starlight dev server with terminal-native dark design, custom components, Mermaid diagram support, Pagefind search, and semantic HTML. Placeholder content pages demonstrate all component variants.
+- [ ] **S02: Skills, extensions, and agents reference pages** `risk:medium` `depends:[S01]`
+  > After this: Three new quick-reference sections — Skills (7 bundled skills with triggers, capabilities, references), Extensions (14+ bundled tools with descriptions), and Agents (5 agents with roles and usage). All extracted from the installed npm package's actual files. Searchable and filterable like the commands page.
 
-- [x] **S03: Quick-reference pages** `risk:medium` `depends:[S01,S02]`
-  > After this: Searchable cheat-sheet cards for all GSD commands (20+), skills (7), extensions (14), agents (5), and keyboard shortcuts. Filter by category, expand for detail and examples.
+- [ ] **S03: Deep-dive documentation — core guides** `risk:medium` `depends:[S01]`
+  > After this: Getting Started, Auto Mode, Configuration, Git Strategy, Cost Management, Token Optimization, Troubleshooting, and Working in Teams pages render from GitHub repo content with proper navigation sidebar, Mermaid diagrams, and working internal links.
 
-- [x] **S04: Deep-dive documentation pages** `risk:medium` `depends:[S01,S02]`
-  > After this: All 130+ doc files from the GitHub repo rendered as navigable sections — Getting Started, Auto Mode, Architecture, Configuration, Git Strategy, Skills, Extending Pi, Building Agents, TUI/UI, Troubleshooting, and more.
+- [ ] **S04: Deep-dive documentation — advanced topics** `risk:low` `depends:[S01,S03]`
+  > After this: All remaining doc sections render: Extending Pi (25 chapters), Building Coding Agents (26 essays), Context & Hooks (8 chapters), TUI/UI (23 chapters), What is Pi (19 chapters), and Architecture. Full sidebar navigation across all sections.
 
-- [x] **S05: Changelog & release tracking** `risk:low` `depends:[S02]`
-  > After this: Browsable release history page showing all 48+ GitHub releases. Current version number displayed in the site header. Each release shows Added/Fixed/Changed sections.
+- [ ] **S05: Changelog, version tracking, and landing page** `risk:low` `depends:[S01]`
+  > After this: Browsable release history showing all 48+ GitHub releases with Added/Fixed/Changed sections. Current version in site header. A polished landing page with hero section, feature highlights, and clear navigation entry points.
 
-- [x] **S06: Update pipeline & GitHub Pages deployment** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
-  > After this: One command updates npm package, diffs content against last build, regenerates changed pages, builds the site, runs broken link detection, and deploys to GitHub Pages. Site is live.
+- [ ] **S06: Update pipeline and GitHub Pages deployment** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
+  > After this: Running `npm run update` detects the current gsd-pi version, diffs content against the last build manifest, regenerates only changed pages, runs broken link detection, builds the site, and deploys to GitHub Pages. The site is live and publicly accessible.
 
 ## Boundary Map
 
-### S01 → S03
+### S01 → S02
+
 Produces:
-- `scripts/extract.js` → extracts content from npm package and GitHub repo
-- `content/generated/commands.json` → structured command data (name, description, options, examples)
-- `content/generated/skills.json` → structured skill data (name, triggers, capabilities, references)
-- `content/generated/extensions.json` → structured extension data (name, tools, description)
-- `content/generated/agents.json` → structured agent data (name, role, description)
-- `content/generated/manifest.json` → content hash manifest for diff tracking
+- `scripts/extract-content.mjs` → Node.js extraction script with functions: `extractCommands()`, `extractSkills()`, `extractExtensions()`, `extractAgents()`, `extractDocs()`, `extractReleases()`, `writeManifest()`
+- `src/content/docs/reference/commands.mdx` → Commands quick-reference page consuming extracted data
+- `src/components/CheatSheetCard.astro` → Reusable expandable card component for quick-reference items
+- `src/components/FilterBar.astro` → Category filter component
+- `data/commands.json` → Structured command data (name, description, category, options, examples)
+- `data/manifest.json` → Content hash manifest for incremental rebuild tracking
+- Astro/Starlight project with custom dark theme in `src/styles/custom.css`
+- `astro.config.mjs` → Starlight configuration with sidebar, search, Mermaid plugin
 
 Consumes: nothing (first slice)
 
-### S01 → S04
+### S01 → S03
+
 Produces:
-- `content/generated/docs/` → markdown files pulled from GitHub repo's docs/ directory
-- `content/generated/readme.md` → processed README content
+- `scripts/extract-content.mjs` → `extractDocs()` function that pulls markdown from GitHub repo
+- `data/docs/` → Markdown files from GitHub repo's docs/ directory, ready for Astro content collections
+- Starlight sidebar configuration pattern for adding new sections
+- Custom theme and layout components
 
 Consumes: nothing (first slice)
 
 ### S01 → S05
+
 Produces:
-- `content/generated/releases.json` → structured release data from GitHub API
+- `scripts/extract-content.mjs` → `extractReleases()` function for GitHub release data
+- `data/releases.json` → Structured release data (version, date, body, tag)
+- Site header component with version display slot
 
 Consumes: nothing (first slice)
 
-### S02 → S03
+### S01 → S06
+
 Produces:
-- Astro/Starlight site scaffold with custom theme
-- Custom card components for cheat-sheet display
-- Search infrastructure (Pagefind)
-- Layout and navigation structure
+- `data/manifest.json` → Content hashes for diff-based incremental rebuild
+- `scripts/extract-content.mjs` → Full extraction pipeline callable from update script
 
-Consumes: nothing (parallel first slice)
+Consumes: nothing (first slice)
 
-### S02 → S04
+### S02 → S06
+
 Produces:
-- Astro/Starlight site with sidebar navigation
-- Mermaid diagram rendering support
-- Custom content components (callouts, code blocks, tabs)
-
-Consumes: nothing (parallel first slice)
-
-### S02 → S05
-Produces:
-- Site scaffold with header version display slot
-- Page templates for changelog rendering
-
-Consumes: nothing (parallel first slice)
-
-### S03 → S06
-Produces:
-- Quick-reference pages consuming generated JSON data
+- `src/content/docs/reference/skills.mdx` → Skills reference page
+- `src/content/docs/reference/extensions.mdx` → Extensions reference page
+- `src/content/docs/reference/agents.mdx` → Agents reference page
+- `data/skills.json`, `data/extensions.json`, `data/agents.json` → Structured reference data
 
 Consumes from S01:
-- `content/generated/commands.json`, `skills.json`, `extensions.json`, `agents.json`
+- `scripts/extract-content.mjs` → `extractSkills()`, `extractExtensions()`, `extractAgents()`
+- `src/components/CheatSheetCard.astro`, `src/components/FilterBar.astro`
+- Custom theme, Astro/Starlight configuration
 
-Consumes from S02:
-- Astro site scaffold, custom card components
+### S03 → S04
+
+Produces:
+- `src/content/docs/guides/` → Core guide pages (getting-started, auto-mode, configuration, etc.)
+- Sidebar navigation pattern for multi-page doc sections
+- Internal link resolution pattern between doc pages
+
+Consumes from S01:
+- `data/docs/` → Extracted markdown from GitHub repo
+- Astro/Starlight site scaffold, custom theme, Mermaid support
 
 ### S04 → S06
+
 Produces:
-- Deep-dive documentation pages from generated markdown
+- `src/content/docs/extending-pi/`, `src/content/docs/building-agents/`, `src/content/docs/context-hooks/`, `src/content/docs/tui/`, `src/content/docs/what-is-pi/`, `src/content/docs/architecture/` → All remaining doc sections
 
 Consumes from S01:
-- `content/generated/docs/` markdown files
+- `data/docs/` → Extracted markdown
 
-Consumes from S02:
-- Astro site scaffold, navigation, Mermaid support
+Consumes from S03:
+- Sidebar navigation pattern, internal link resolution
 
 ### S05 → S06
+
 Produces:
-- Changelog page consuming release data
-- Version display in site header
+- `src/content/docs/changelog.mdx` → Release history page
+- `src/pages/index.astro` → Landing page with hero, features, navigation
+- Version display in site header via `data/releases.json`
 
 Consumes from S01:
-- `content/generated/releases.json`
-
-Consumes from S02:
-- Site scaffold, page templates
+- `data/releases.json` → Structured release data
+- Site scaffold, theme, header component
