@@ -184,3 +184,47 @@
 :root[data-theme='light'] starlight-toc h2 {
   color: #1b2d1b !important;
 }
+
+/* ─── Light Mode: Hero Component ───────────────────────── */
+:root[data-theme='light'] .hero h1 {
+  color: #0a3d0a !important;
+}
+:root[data-theme='light'] .hero .tagline {
+  color: #384838 !important;
+}
+:root[data-theme='light'] .sl-link-button.minimal {
+  color: #0e580e !important;
+}
+:root[data-theme='light'] .sl-link-button.minimal:hover {
+  color: #0a3d0a !important;
+}
+
+/* ─── Light Mode: Starlight Cards (LinkCard, Card) ─────── */
+:root[data-theme='light'] .sl-link-card {
+  border-color: #d0ddd0;
+}
+:root[data-theme='light'] .sl-link-card .sl-flex {
+  color: #0e580e;
+}
+:root[data-theme='light'] .card {
+  border-color: #d0ddd0;
+}
+
+/* ─── Light Mode: Starlight search bar ─────────────────── */
+:root[data-theme='light'] starlight-search button {
+  color: #384838;
+  border-color: #d0ddd0;
+}
+
+/* ─── Light Mode: Version badge ────────────────────────── */
+:root[data-theme='light'] .version-badge {
+  color: #0a3d0a;
+  background: #e6f2e6;
+  border-color: #116611;
+}
+
+/* ─── Light Mode: Scrollbar ────────────────────────────── */
+:root[data-theme='light'] {
+  scrollbar-color: #c0d0c0 #fafcfa;
+  scrollbar-width: thin;
+}
