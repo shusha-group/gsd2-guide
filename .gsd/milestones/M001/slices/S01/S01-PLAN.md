@@ -60,7 +60,7 @@
   - Verify: `node --test tests/extract.test.mjs` — skills ≥8, agents ≥5, extensions ≥14, all have required fields
   - Done when: Running the local extractor produces valid JSON files with correct counts and all required fields populated
 
-- [ ] **T02: Extract GitHub docs via tarball and fetch releases** `est:1h`
+- [x] **T02: Extract GitHub docs via tarball and fetch releases** `est:1h`
   - Why: Pulls all narrative documentation and release history from the GitHub repo using minimal API calls (tarball + releases + tree), with caching to stay within rate limits.
   - Files: `scripts/lib/extract-github-docs.mjs`, `scripts/lib/extract-releases.mjs`, `scripts/lib/manifest.mjs`, `tests/extract.test.mjs`
   - Do: Write `extract-github-docs.mjs` that fetches the repo tarball (single API call), extracts `docs/**/*.md` and `README.md` to `content/generated/docs/` and `content/generated/readme.md`. Strip the variable-prefix root directory from the tarball. Add local caching (`.cache/tarball.tar.gz`) with HEAD SHA check to skip re-download. Write `extract-releases.mjs` that fetches all releases (`per_page=100`), parses markdown bodies into structured `{added, changed, fixed}` sections. Write `manifest.mjs` using the tree API (`/git/trees/main?recursive=1`) to get SHA hashes for all files, write `manifest.json`. Support `GITHUB_TOKEN` via env var for all API calls. Add tests for docs count, releases count, and manifest structure.

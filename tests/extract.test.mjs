@@ -172,3 +172,125 @@ describe("output files", () => {
     assert.ok(Array.isArray(parsed));
   });
 });
+
+// ── GitHub Docs ────────────────────────────────────────────────────────────
+
+describe("github docs extraction", () => {
+  const docsDir = path.join(OUTPUT_DIR, "docs");
+
+  /**
+   * Recursively count .md files in a directory.
+   */
+  function countMdFiles(dir) {
+    if (!fs.existsSync(dir)) return 0;
+    let count = 0;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        count += countMdFiles(full);
+      } else if (entry.name.endsWith(".md")) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  it("content/generated/docs/ contains ≥100 .md files", () => {
+    const count = countMdFiles(docsDir);
+    assert.ok(count >= 100, `Expected ≥100 docs, got ${count}`);
+  });
+
+  it("doc files preserve subdirectory structure", () => {
+    const expectedDirs = [
+      "building-coding-agents",
+      "context-and-hooks",
+      "extending-pi",
+      "pi-ui-tui",
+      "what-is-pi",
+    ];
+    for (const dir of expectedDirs) {
+      const dirPath = path.join(docsDir, dir);
+      assert.ok(
+        fs.existsSync(dirPath) && fs.statSync(dirPath).isDirectory(),
+        `Expected subdirectory docs/${dir}/ to exist`
+      );
+    }
+  });
+
+  it("content/generated/readme.md exists and has >100 characters", () => {
+    const readmePath = path.join(OUTPUT_DIR, "readme.md");
+    assert.ok(fs.existsSync(readmePath), "readme.md does not exist");
+    const content = fs.readFileSync(readmePath, "utf8");
+    assert.ok(content.length > 100, `readme.md too short: ${content.length} chars`);
+  });
+});
+
+// ── Releases ───────────────────────────────────────────────────────────────
+
+describe("releases extraction", () => {
+  let releases;
+
+  before(() => {
+    const content = fs.readFileSync(path.join(OUTPUT_DIR, "releases.json"), "utf8");
+    releases = JSON.parse(content);
+  });
+
+  it("releases.json has ≥48 entries", () => {
+    assert.ok(releases.length >= 48, `Expected ≥48 releases, got ${releases.length}`);
+  });
+
+  it("each release has tag_name and published_at", () => {
+    for (const release of releases) {
+      assert.ok(release.tag_name, `Release missing tag_name: ${JSON.stringify(release).slice(0, 80)}`);
+      assert.ok(release.published_at, `Release "${release.tag_name}" missing published_at`);
+    }
+  });
+
+  it("at least some releases have non-empty added arrays", () => {
+    const withAdded = releases.filter((r) => r.added && r.added.length > 0);
+    assert.ok(
+      withAdded.length >= 1,
+      `Expected at least 1 release with non-empty added array, got ${withAdded.length}`
+    );
+  });
+
+  it("each release has html_url and body fields", () => {
+    for (const release of releases) {
+      assert.ok(release.html_url, `Release "${release.tag_name}" missing html_url`);
+      assert.ok(typeof release.body === "string", `Release "${release.tag_name}" body is not a string`);
+    }
+  });
+});
+
+// ── Manifest ───────────────────────────────────────────────────────────────
+
+describe("manifest", () => {
+  let manifest;
+
+  before(() => {
+    const content = fs.readFileSync(path.join(OUTPUT_DIR, "manifest.json"), "utf8");
+    manifest = JSON.parse(content);
+  });
+
+  it("manifest.json has files object with ≥100 entries", () => {
+    assert.ok(manifest.files, "manifest missing files object");
+    const count = Object.keys(manifest.files).length;
+    assert.ok(count >= 100, `Expected ≥100 file entries, got ${count}`);
+  });
+
+  it("manifest has headSha field", () => {
+    assert.ok(manifest.headSha, "manifest missing headSha");
+    assert.ok(manifest.headSha.length >= 7, `headSha too short: ${manifest.headSha}`);
+  });
+
+  it("manifest has generatedAt field", () => {
+    assert.ok(manifest.generatedAt, "manifest missing generatedAt");
+    // Should be a valid ISO date
+    const date = new Date(manifest.generatedAt);
+    assert.ok(!isNaN(date.getTime()), `generatedAt is not a valid date: ${manifest.generatedAt}`);
+  });
+
+  it("manifest has version field", () => {
+    assert.ok(manifest.version !== undefined, "manifest missing version");
+  });
+});

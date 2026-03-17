@@ -94,6 +94,14 @@ Pull all narrative documentation from the `gsd-build/gsd-2` GitHub repo using th
 - Release body format: `## Added` / `## Changed` / `## Fixed` sections with `- **feature** — description` bullets
 - Docs subdirectories: `building-coding-agents/`, `context-and-hooks/`, `extending-pi/`, `pi-ui-tui/`, `proposals/`, `what-is-pi/`
 
+## Observability Impact
+
+- **New signals:** Console output with `[github-docs]`, `[releases]`, `[manifest]` phase labels, file counts, and GitHub rate limit remaining from `x-ratelimit-remaining` header on every API response
+- **Inspection surfaces:** `cat .cache/last-sha.txt` shows cached HEAD SHA; `jq '.files | length' content/generated/manifest.json` shows tracked file count; `jq 'length' content/generated/releases.json` shows release count; `find content/generated/docs -name '*.md' | wc -l` for docs count
+- **Failure visibility:** GitHub API errors include HTTP status code and rate-limit remaining; tarball extraction errors include the path that failed; SHA cache mismatch triggers re-download with old→new SHA log
+- **Cache diagnostics:** Second run logs `[github-docs] Cache hit — HEAD SHA unchanged ({sha})` when tarball is reused
+- **Redaction:** `GITHUB_TOKEN` value is never logged — only its presence/absence is noted
+
 ## Expected Output
 
 - `scripts/lib/extract-github-docs.mjs` — tarball downloader + extractor with caching
