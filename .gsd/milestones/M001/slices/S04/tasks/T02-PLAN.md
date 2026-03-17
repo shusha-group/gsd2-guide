@@ -101,6 +101,14 @@ This task restructures the sidebar configuration to give all pages logical homes
 - `src/content/docs/placeholder/` — S02 placeholder pages to be removed
 - T01 output: 125 generated doc files in `src/content/docs/` with corrected links and index files
 
+## Observability Impact
+
+- **Sidebar group count:** The built HTML nav should contain 10 sidebar groups (Home, Quick Reference, Guides, Architecture, What Is Pi, Building Coding Agents, Context and Hooks, Extending Pi, Pi UI / TUI, Proposals). Verify with: `grep -o 'group-label' dist/getting-started/index.html | wc -l` — should return 9 (Home is a link, not a group).
+- **Page count in build output:** `npm run build` final line reports total pages (expect ≥130). A drop below 125 indicates missing content.
+- **Placeholder removal:** `find dist/ -path "*/placeholder/*" | wc -l` must return 0. Any non-zero value means stale placeholder references survive.
+- **Landing page CTA:** `grep 'getting-started' dist/index.html | head -1` should show the Getting Started hero link. Its absence means the landing page wasn't updated.
+- **Sidebar entry verification:** Any page's built HTML contains the full sidebar. Grep for `Guides` and `Architecture` group labels in any `dist/*/index.html` to confirm groups rendered.
+
 ## Expected Output
 
 - `astro.config.mjs` — restructured sidebar with Guides, Architecture groups + existing autogenerate groups, no Placeholder group

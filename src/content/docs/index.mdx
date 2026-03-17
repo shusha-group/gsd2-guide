@@ -6,9 +6,13 @@ hero:
   title: GSD 2
   tagline: Build software with autonomous AI agents — from architecture through deployment.
   actions:
+    - text: Getting Started
+      link: /gsd2-guide/getting-started/
+      icon: right-arrow
     - text: Quick Reference
       link: /gsd2-guide/reference/
       icon: right-arrow
+      variant: minimal
     - text: View on GitHub
       link: https://github.com/gsd-build/gsd2-guide
       icon: external
@@ -39,4 +43,13 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
   <LinkCard title="Skills Reference" description="8 bundled skills with capabilities and triggers" href="/gsd2-guide/reference/skills/" />
   <LinkCard title="Extensions Reference" description="17 extensions with full tool inventories" href="/gsd2-guide/reference/extensions/" />
   <LinkCard title="Agents Reference" description="5 agents with roles and capabilities" href="/gsd2-guide/reference/agents/" />
+</CardGrid>
+
+## Deep-Dive Guides
+
+<CardGrid>
+  <LinkCard title="Getting Started" description="Install, configure, and run your first GSD session" href="/gsd2-guide/getting-started/" />
+  <LinkCard title="Auto Mode" description="Autonomous agent execution — milestones, slices, and tasks" href="/gsd2-guide/auto-mode/" />
+  <LinkCard title="Architecture" description="How GSD's worktree-based architecture works under the hood" href="/gsd2-guide/architecture/" />
+  <LinkCard title="Troubleshooting" description="Common issues, diagnostics, and fixes" href="/gsd2-guide/troubleshooting/" />
 </CardGrid>
