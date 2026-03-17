@@ -8,7 +8,8 @@
     "dev": "node scripts/prebuild.mjs && astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "extract": "node scripts/extract.mjs"
+    "extract": "node scripts/extract.mjs",
+    "check-links": "node scripts/check-links.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.38.1",

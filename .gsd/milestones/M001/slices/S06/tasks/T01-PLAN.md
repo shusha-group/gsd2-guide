@@ -64,3 +64,10 @@ Add `"check-links": "node scripts/check-links.mjs"` to package.json scripts.
 
 - `scripts/check-links.mjs` — ~60-80 line Node.js script for broken link detection
 - `package.json` — updated with `"check-links"` script entry
+
+## Observability Impact
+
+- **New signal:** `npm run check-links` outputs `[link-check]`-prefixed lines with total links checked and broken count
+- **Inspection surface:** Run `npm run check-links` standalone to validate dist/ internal links at any time after build
+- **Failure state:** Exit code 1 with per-link broken report (source file → target href → resolved path) when broken links detected
+- **Downstream consumption:** Update script (T02) and CI workflow (T03) invoke this script and surface its output

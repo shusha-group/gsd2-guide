@@ -33,6 +33,7 @@
 - `.github/workflows/deploy.yml` has correct structure: triggers on push/main + workflow_dispatch, uses withastro/action@v5, has pages permissions
 - `find dist/ -name "*.html" | wc -l` returns 134+ after pipeline run
 - Link checker reports 0 broken internal page links
+- Link checker exits 1 and prints structured broken-link report when a broken link exists (inject a bad href to test, then revert)
 
 ## Observability / Diagnostics
 
@@ -49,7 +50,7 @@
 
 ## Tasks
 
-- [ ] **T01: Build broken internal link checker** `est:20m`
+- [x] **T01: Build broken internal link checker** `est:20m`
   - Why: R021 requires broken link detection before deployment. The link checker is standalone — it validates dist/ HTML and is consumed by both the update script (T02) and the GitHub Actions workflow (T03).
   - Files: `scripts/check-links.mjs`, `package.json`
   - Do: Create a Node.js ESM script that scans all HTML files in `dist/`, extracts internal `href` attributes matching the `/gsd2-guide/` base path, strips the prefix to resolve against `dist/` filesystem, and reports broken links. Add `"check-links": "node scripts/check-links.mjs"` to package.json. Must handle: trailing slashes (resolve to index.html), hash fragments (strip before file check), anchor-only links (skip), external links (skip). Exit 0 with link count on success, exit 1 with broken link report on failure. Use only Node.js built-ins (fs, path, url — no npm deps).
