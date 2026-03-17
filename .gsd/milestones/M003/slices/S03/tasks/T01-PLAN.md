@@ -118,6 +118,13 @@ Map manipulation reads/writes `page-source-map.json` as JSON. New commands get a
 - `node --test tests/manage-pages.test.mjs` — all detection, sidebar, and map tests pass
 - `node -e "import('./scripts/lib/manage-pages.mjs').then(m => console.log(Object.keys(m)))"` — shows exported functions
 
+## Observability Impact
+
+- **New inspection surface:** All 5 exported functions return structured result objects (`{ added/removed: boolean, slug, deps?, reason? }`) — future agents can inspect return values directly without parsing logs.
+- **Detection signal:** `detectNewAndRemovedCommands()` return shape lets the caller (T02's orchestration) decide actions per-slug. No side effects — pure detection.
+- **Failure visibility:** Missing files throw with standard Node.js I/O errors (ENOENT). Sidebar/map entry not-found returns `{ removed: false, reason: 'not found' }` rather than throwing — distinguishes "target absent" from "I/O failure".
+- **Test coverage:** ~15 test cases in `tests/manage-pages.test.mjs` cover every edge case. Test failures identify the exact function and edge case.
+
 ## Inputs
 
 - `content/generated/commands.json` — extracted command list from gsd-pi's docs/commands.md. Each entry has `{ command, description, category }`. Example: `{ "command": "/gsd auto", "description": "...", "category": "Session Commands" }`.

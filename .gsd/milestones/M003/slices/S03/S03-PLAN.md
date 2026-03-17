@@ -31,6 +31,15 @@
   - Graceful degradation: no API key → skip result
 - `node -e "import('./scripts/lib/manage-pages.mjs').then(m => console.log(Object.keys(m)))"` — exports `detectNewAndRemovedCommands`, `createNewPages`, `removePages`
 
+## Observability / Diagnostics
+
+- **Detection results:** `detectNewAndRemovedCommands()` returns `{ newCommands, removedCommands }` — both arrays inspectable in test output and CLI log.
+- **Sidebar manipulation:** `addSidebarEntry()` / `removeSidebarEntry()` return `{ added/removed: boolean, slug, reason? }` — structured success/failure signals.
+- **Map manipulation:** `addToPageMap()` / `removeFromPageMap()` return `{ added/removed: boolean, slug, deps? }` — deps array confirms what was wired.
+- **Failure visibility:** Functions throw on I/O errors (missing files, unreadable config). Sidebar/map removal returns `{ removed: false, reason: 'not found' }` instead of throwing for missing targets.
+- **Test diagnostics:** `node --test tests/manage-pages.test.mjs` covers all detection edge cases, sidebar manipulation, and map manipulation with explicit assertions. Failures pinpoint which function/edge-case broke.
+- **Redaction:** No secrets handled in this slice. No env vars beyond `ANTHROPIC_API_KEY` (checked only in T02's `createNewPages`). API key is never logged — only its presence/absence is checked.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `content/generated/commands.json` (command list), `content/generated/page-source-map.json` (dependency map), `content/generated/manifest.json` (for algorithmic dep resolution), `scripts/lib/regenerate-page.mjs` (`regeneratePage()` for new page content), `astro.config.mjs` (sidebar), `src/content/docs/commands/*.mdx` (existing pages)
@@ -39,7 +48,7 @@
 
 ## Tasks
 
-- [ ] **T01: Build detection logic and sidebar/map manipulation primitives** `est:40m`
+- [x] **T01: Build detection logic and sidebar/map manipulation primitives** `est:40m`
   - Why: The foundation — everything depends on accurate detection of new/removed commands and reliable sidebar/map file manipulation. Combined because the detection logic is small (~30 lines) and testing the full module in one pass is more efficient than splitting across two context windows.
   - Files: `scripts/lib/manage-pages.mjs`, `tests/manage-pages.test.mjs`
   - Do: Create `manage-pages.mjs` with `detectNewAndRemovedCommands()` (compares commands.json slugs vs .mdx files, filters with regex `/^\/gsd [a-z][-a-z]*$/`, excludes `help`/`parallel`, protects non-command pages), `addSidebarEntry(slug, configPath)` and `removeSidebarEntry(slug, configPath)` (string manipulation on astro.config.mjs), `addToPageMap(slug, mapPath, manifestPath)` and `removeFromPageMap(slug, mapPath)` (JSON manipulation on page-source-map.json). Write comprehensive tests for each function using temp dirs for file operations.
