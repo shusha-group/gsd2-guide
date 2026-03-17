@@ -10,9 +10,9 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 ## Current State
 
-**M001 complete.** The documentation site is fully built with 135 HTML pages, terminal-native dark design, content extraction pipeline, quick-reference cards, browsable changelog, Pagefind search, broken link checker, and GitHub Pages deployment workflow. The one-command update pipeline (`npm run update`) completes in ~6 seconds.
+**M001 complete.** The documentation site is fully built with content extraction pipeline, terminal-native dark design, quick-reference cards, browsable changelog, Pagefind search, broken link checker, and GitHub Pages deployment workflow. The one-command update pipeline (`npm run update`) completes in ~6 seconds.
 
-**M002 in progress (all slices complete — S01, S02, S03, S04).** Site refocused from generic pi/agent content to GSD-specific user guide. S01 removed 109 pi/agent files, restructured the sidebar to 5 GSD-focused sections, and authored a 467-line end-to-end walkthrough. S02 added 9 command deep-dive pages for session/execution commands. S03 added 18 more pages covering all remaining commands. S04 added 6 core workflow recipe pages (fix-a-bug, small-change, new-milestone, uat-failures, error-recovery, working-in-teams) with Mermaid flowcharts, directory trees, and terminal examples. 60 pages built, 3558 links verified. All M002 definition-of-done criteria satisfied.
+**M002 complete.** Site transformed from 135-page generic pi/agent reference into a 60-page GSD-focused user guide. 109 pi/agent files excluded from the build pipeline. Sidebar restructured from 10 sections to 5 (User Guide, Commands, Recipes, Reference, Guides). Includes a 467-line end-to-end walkthrough following a Cookmate project through all GSD phases, 27 command deep-dive pages with Mermaid diagrams and terminal examples, and 6 core workflow recipe pages. 60 pages built, 3558 internal links verified, all indexed by Pagefind.
 
 ## Architecture / Key Patterns
 
@@ -33,4 +33,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 ## Milestone Sequence
 
 - [x] M001: GSD 2 Documentation Site — 135-page documentation site with content extraction pipeline, terminal-native dark design, 92 quick-reference cards, 125 deep-dive docs, browsable changelog, Pagefind search, and one-command update pipeline deploying to GitHub Pages in ~6 seconds.
-- [ ] M002: GSD User Guide — Remove generic pi/agent content, add end-to-end walkthrough with real project example, per-command deep-dive pages for all ~25 GSD commands, and core workflow recipes. Authored content with Mermaid diagrams and annotated terminal examples.
+- [x] M002: GSD User Guide — 60-page GSD-focused user guide with end-to-end walkthrough, 27 command deep-dive pages with Mermaid diagrams, and 6 core workflow recipes. Pi/agent content removed, sidebar restructured to 5 sections.
