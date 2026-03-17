@@ -50,22 +50,22 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Commands quick-reference with extraction pipeline and custom design** `risk:high` `depends:[]`
+- [x] **S01: Commands quick-reference with extraction pipeline and custom design** `risk:high` `depends:[]`
   > After this: A live Astro/Starlight dev site with terminal-native dark custom design, showing a fully functional Commands quick-reference page with searchable/filterable cheat-sheet cards for all 20+ GSD commands and keyboard shortcuts — content extracted from the installed npm package and GitHub repo. Pagefind search works across the site.
 
-- [ ] **S02: Skills, extensions, and agents reference pages** `risk:medium` `depends:[S01]`
+- [x] **S02: Skills, extensions, and agents reference pages** `risk:medium` `depends:[S01]`
   > After this: Three new quick-reference sections — Skills (7 bundled skills with triggers, capabilities, references), Extensions (14+ bundled tools with descriptions), and Agents (5 agents with roles and usage). All extracted from the installed npm package's actual files. Searchable and filterable like the commands page.
 
-- [ ] **S03: Deep-dive documentation — core guides** `risk:medium` `depends:[S01]`
+- [x] **S03: Deep-dive documentation — core guides** `risk:medium` `depends:[S01]`
   > After this: Getting Started, Auto Mode, Configuration, Git Strategy, Cost Management, Token Optimization, Troubleshooting, and Working in Teams pages render from GitHub repo content with proper navigation sidebar, Mermaid diagrams, and working internal links.
 
-- [ ] **S04: Deep-dive documentation — advanced topics** `risk:low` `depends:[S01,S03]`
+- [x] **S04: Deep-dive documentation — advanced topics** `risk:low` `depends:[S01,S03]`
   > After this: All remaining doc sections render: Extending Pi (25 chapters), Building Coding Agents (26 essays), Context & Hooks (8 chapters), TUI/UI (23 chapters), What is Pi (19 chapters), and Architecture. Full sidebar navigation across all sections.
 
-- [ ] **S05: Changelog, version tracking, and landing page** `risk:low` `depends:[S01]`
+- [x] **S05: Changelog, version tracking, and landing page** `risk:low` `depends:[S01]`
   > After this: Browsable release history showing all 48+ GitHub releases with Added/Fixed/Changed sections. Current version in site header. A polished landing page with hero section, feature highlights, and clear navigation entry points.
 
-- [ ] **S06: Update pipeline and GitHub Pages deployment** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
+- [x] **S06: Update pipeline and GitHub Pages deployment** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
   > After this: Running `npm run update` detects the current gsd-pi version, diffs content against the last build manifest, regenerates only changed pages, runs broken link detection, builds the site, and deploys to GitHub Pages. The site is live and publicly accessible.
 
 ## Boundary Map
