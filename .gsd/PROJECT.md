@@ -34,3 +34,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 - [x] M001: GSD 2 Documentation Site — 135-page documentation site with content extraction pipeline, terminal-native dark design, 92 quick-reference cards, 125 deep-dive docs, browsable changelog, Pagefind search, and one-command update pipeline deploying to GitHub Pages in ~6 seconds.
 - [x] M002: GSD User Guide — 60-page GSD-focused user guide with end-to-end walkthrough, 27 command deep-dive pages with Mermaid diagrams, and 6 core workflow recipes. Pi/agent content removed, sidebar restructured to 5 sections.
+- [ ] M003: Continuous Documentation Regeneration — LLM-powered pipeline that detects gsd-pi source changes between versions, maps them to affected doc pages, and regenerates only stale pages via Claude API. Handles new/removed commands automatically. Integrated into `npm run update`.
