@@ -84,3 +84,9 @@ Files listed in `src/content/docs/.generated-manifest.json` are overwritten by `
 ## ReleaseEntry.astro commandSlugs must stay in sync with manage-pages removals
 
 **Context:** When `manage-pages.mjs` removes a command page (e.g., `config`, `pause`), the corresponding slug entry in `src/components/ReleaseEntry.astro`'s `commandSlugs` map must also be removed. Otherwise, the component generates dead links from changelog release notes (`/gsd config` → `/commands/config/`) that fail the link checker. The `page-map.test.mjs` `COMMAND_SLUGS` array and counts must also be updated.
+
+## "update gsd-guide" is a pre-approved end-to-end workflow
+
+**Context:** User instruction for the gsd2-guide project.
+
+When the user says "update gsd-guide", execute the full pipeline with no confirmation prompts: `npm run update` → commit changes → push to main → verify GitHub Actions deploy succeeds. This is a standing override of the "confirm before outward-facing GitHub actions" rule for this specific project and workflow. No PR needed — push directly to main.
