@@ -1,0 +1,134 @@
+---
+title: "/gsd export"
+description: "Export session and milestone data as markdown, JSON, or self-contained HTML reports."
+---
+
+## What It Does
+
+`/gsd export` generates a shareable report of your milestone work — costs, token usage, phase breakdowns, and unit history. Reports are written to `.gsd/` with a timestamped filename.
+
+Three export formats are available:
+
+| Format | Flag | Output |
+|--------|------|--------|
+| Markdown | *(default)* | Human-readable session report |
+| JSON | `--json` | Machine-parseable structured data |
+| HTML | `--html` | Self-contained visual report with charts and graphs |
+
+## Usage
+
+```
+/gsd export
+/gsd export --json
+/gsd export --html
+/gsd export --html --all
+```
+
+## How It Works
+
+### Markdown Export (default)
+
+Generates a markdown report in `.gsd/` with:
+
+- **Project summary** — unit count, total cost, total tokens, total duration, tool calls
+- **Cost by phase** — table showing units, cost, tokens, and duration per phase (research, plan, execute, etc.)
+- **Cost by slice** — same breakdown per slice
+- **Unit history** — every executed unit with model, cost, tokens, and duration
+
+### JSON Export
+
+Same data as markdown but structured as a JSON object. Useful for feeding into dashboards, CI pipelines, or custom reporting tools.
+
+The JSON includes:
+
+```json
+{
+  "exportedAt": "2026-03-17T10:00:00.000Z",
+  "project": "my-project",
+  "totals": { "units": 12, "cost": 0.42, ... },
+  "byPhase": [...],
+  "bySlice": [...],
+  "byModel": [...],
+  "units": [...]
+}
+```
+
+### HTML Export (`--html`)
+
+Generates a self-contained HTML file in `.gsd/reports/` with the same data as the TUI [`/gsd visualize`](../visualize/) overlay — progress tree, dependency graph (SVG DAG), cost/token bar charts, execution timeline, changelog, and knowledge base.
+
+All CSS and JavaScript are inlined — no external dependencies. The file is printable to PDF from any browser.
+
+Use `--html --all` to generate retrospective reports for completed milestones, not just the active one.
+
+An auto-generated `index.html` in the reports directory shows all reports with progression metrics across milestones.
+
+### Auto-Report
+
+HTML reports can be generated automatically after milestone completion:
+
+```yaml
+# .gsd/preferences.md
+auto_report: true    # default: true
+```
+
+### Data Sources
+
+Export reads from the metrics ledger — either the in-memory ledger (if the session has executed units) or the on-disk ledger at `.gsd/activity/`. If no units have been executed, the export is skipped with a notification.
+
+## What Files It Touches
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.gsd/export-<timestamp>.md` | Markdown report |
+| `.gsd/export-<timestamp>.json` | JSON report |
+| `.gsd/reports/<timestamp>.html` | HTML report |
+| `.gsd/reports/index.html` | Report index page |
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/activity/` | Metrics ledger for cost/token data |
+
+## Examples
+
+Default markdown export:
+
+```
+> /gsd export
+
+● Exported to .gsd/export-2026-03-17T10-30-00.md
+```
+
+JSON export for CI integration:
+
+```
+> /gsd export --json
+
+● Exported to .gsd/export-2026-03-17T10-30-00.json
+```
+
+HTML report for sharing:
+
+```
+> /gsd export --html
+
+● Exported to .gsd/reports/2026-03-17T10-30-00.html
+```
+
+Retrospective across all milestones:
+
+```
+> /gsd export --html --all
+
+● Exported 3 milestone reports to .gsd/reports/
+```
+
+## Related Commands
+
+- [`/gsd visualize`](../visualize/) — Interactive TUI overlay with the same data
+- [`/gsd status`](../status/) — Quick progress dashboard
+- [`/gsd prefs`](../prefs/) — Configure auto-report and budget settings

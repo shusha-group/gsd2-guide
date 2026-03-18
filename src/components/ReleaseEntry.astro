@@ -36,6 +36,8 @@ const commandSlugs: Record<string, string> = {
   '/gsd hooks': 'hooks',
   '/gsd run-hook': 'run-hook',
   '/gsd migrate': 'migrate',
+  '/gsd export': 'export',
+  '/gsd update': 'update',
   // Variants without leading slash
   'gsd auto': 'auto',
   'gsd stop': 'stop',
@@ -60,6 +62,8 @@ const commandSlugs: Record<string, string> = {
   'gsd migrate': 'migrate',
   'gsd headless': 'headless',
   'gsd sessions': 'headless',
+  'gsd config': 'config',
+  'gsd update': 'update',
 };
 
 let bodyHtml = await marked(body);

@@ -2,10 +2,13 @@
 /**
  * update.mjs — One-command update pipeline orchestrator.
  *
- * Chains: npm update gsd-pi → extract → diff report → regenerate →
+ * Chains: npm update gsd-pi → extract → diff report →
  *         manage commands → build → check-links
- * Reports elapsed time per step, manifest diff summary, regeneration cost,
- * and overall result.
+ *
+ * Diff report writes stale-pages.json as the agent handoff contract —
+ * stale page regeneration is handled externally (not in this pipeline).
+ *
+ * Reports elapsed time per step, manifest diff summary, and overall result.
  *
  * - Does NOT call prebuild explicitly — it runs via npm lifecycle hook during build.
  * - Exits non-zero immediately if any step fails, naming the failed step.
@@ -21,26 +24,10 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectChanges, resolveStalePages } from './lib/diff-sources.mjs';
-import { regenerateStalePages } from './lib/regenerate-page.mjs';
 import { detectNewAndRemovedCommands, createNewPages, removePages } from './lib/manage-pages.mjs';
 
 const DIST_DIR = 'dist';
 const GENERATED_DIR = join('content', 'generated');
-
-// ── Module-level state for summary section ──────────────────────────────
-let regenResult = null;
-
-// ── Cost helper ─────────────────────────────────────────────────────────
-/**
- * Format cost estimate for token usage.
- * Sonnet pricing: $3/MTok input, $15/MTok output.
- */
-export function formatCost(inputTokens, outputTokens) {
-  const inputCost = (inputTokens / 1_000_000) * 3;
-  const outputCost = (outputTokens / 1_000_000) * 15;
-  const total = inputCost + outputCost;
-  return `$${total.toFixed(4)} (in: $${inputCost.toFixed(4)}, out: $${outputCost.toFixed(4)})`;
-}
 
 // ── Diff report step (runs between extract and build) ───────────────
 function runDiffReport() {
@@ -109,46 +96,6 @@ function runDiffReport() {
   }, null, 2));
 }
 
-// ── Regenerate step (async — calls regenerateStalePages) ────────────
-export async function runRegenerate() {
-  const batch = await regenerateStalePages();
-  regenResult = batch;
-
-  if (batch.skipped) {
-    console.log(`  ⊘ Skipped: ${batch.reason}`);
-    return;
-  }
-
-  if (batch.error) {
-    console.log(`  ✗ Error: ${batch.error}`);
-    if (batch.details) console.log(`    ${batch.details}`);
-    return;
-  }
-
-  // Per-page results
-  for (const r of batch.results) {
-    if (r.skipped) {
-      console.log(`  ⊘ ${r.pagePath || '?'}: skipped — ${r.reason}`);
-    } else if (r.error) {
-      console.log(`  ✗ ${r.pagePath || '?'}: ${r.error}`);
-    } else {
-      console.log(`  ✓ ${r.pagePath}: ${r.inputTokens} in / ${r.outputTokens} out`);
-    }
-  }
-
-  // Batch summary
-  console.log(`  Regenerated: ${batch.successCount} success, ${batch.failCount} failed, ${batch.skipCount} skipped`);
-
-  if (batch.totalInputTokens > 0) {
-    console.log(`  Total tokens: ${batch.totalInputTokens} in / ${batch.totalOutputTokens} out`);
-    console.log(`  Cost estimate: ${formatCost(batch.totalInputTokens, batch.totalOutputTokens)}`);
-  }
-
-  if (batch.totalElapsedMs > 0) {
-    console.log(`  Regeneration time: ${(batch.totalElapsedMs / 1000).toFixed(1)}s`);
-  }
-}
-
 // ── Manage commands step (async — calls detect + create/remove) ─────
 export async function runManageCommands() {
   const detection = detectNewAndRemovedCommands();
@@ -158,15 +105,9 @@ export async function runManageCommands() {
 
   if (detection.newCommands.length > 0) {
     console.log(`  Creating ${detection.newCommands.length} new page(s)...`);
-    const createResult = await createNewPages(detection.newCommands);
+    const createResult = createNewPages(detection.newCommands);
     for (const r of createResult.results) {
-      if (r.regeneration?.skipped) {
-        console.log(`    ⊘ ${r.slug}: skipped — ${r.regeneration.reason}`);
-      } else if (r.regeneration?.error) {
-        console.log(`    ✗ ${r.slug}: ${r.regeneration.error}`);
-      } else {
-        console.log(`    ✓ ${r.slug}: page created`);
-      }
+      console.log(`    ✓ ${r.slug}: scaffold created`);
     }
   }
 
@@ -189,7 +130,6 @@ export const steps = [
   { name: 'npm update', cmd: 'npm update gsd-pi', capture: false },
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
   { name: 'diff report', fn: runDiffReport },
-  { name: 'regenerate', fn: runRegenerate },
   { name: 'manage commands', fn: runManageCommands },
   { name: 'build',      cmd: 'npm run build', capture: false },
   { name: 'check-links', cmd: 'node scripts/check-links.mjs', capture: false },
@@ -294,25 +234,6 @@ if (isDirectRun) {
     console.log(`[update] Manifest diff: +${manifestDiff.added} added, ~${manifestDiff.changed} changed, -${manifestDiff.removed} removed`);
   } else {
     console.log('[update] Manifest diff: (not available — extract output did not contain diff data)');
-  }
-
-  // ── Regeneration summary ──────────────────────────────────────────
-  console.log('');
-  if (!regenResult) {
-    console.log('[update] Regeneration: (no result available)');
-  } else if (regenResult.skipped) {
-    console.log(`[update] Regeneration: skipped (${regenResult.reason})`);
-  } else if (regenResult.error) {
-    console.log(`[update] Regeneration: error — ${regenResult.error}`);
-  } else {
-    console.log(`[update] Regeneration: ${regenResult.successCount} regenerated, ${regenResult.skipCount} skipped, ${regenResult.failCount} failed`);
-    if (regenResult.totalInputTokens > 0) {
-      console.log(`[update] Tokens: ${regenResult.totalInputTokens} in / ${regenResult.totalOutputTokens} out`);
-      console.log(`[update] Cost: ${formatCost(regenResult.totalInputTokens, regenResult.totalOutputTokens)}`);
-    }
-    if (regenResult.totalElapsedMs > 0) {
-      console.log(`[update] Regeneration time: ${(regenResult.totalElapsedMs / 1000).toFixed(1)}s`);
-    }
   }
 
   console.log(`[update] Pages built: ${pageCount}`);

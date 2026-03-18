@@ -122,6 +122,7 @@ phases:
   skip_research: false        # skip milestone-level research
   skip_reassess: false        # skip roadmap reassessment after each slice
   skip_slice_research: true   # skip per-slice research
+  require_slice_discussion: false  # pause auto-mode before each slice for discussion
 ```
 
 These are usually set automatically by `token_profile`, but can be overridden explicitly.
@@ -184,6 +185,34 @@ Enable automatic UAT (User Acceptance Test) runs after slice completion:
 uat_dispatch: true
 ```
 
+### Verification (v2.26)
+
+Configure shell commands that run automatically after every task execution. Failures trigger auto-fix retries before advancing.
+
+```yaml
+verification_commands:
+  - npm run lint
+  - npm run test
+verification_auto_fix: true       # auto-retry on failure (default: true)
+verification_max_retries: 2       # max retry attempts (default: 2)
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `verification_commands` | string[] | `[]` | Shell commands to run after task execution |
+| `verification_auto_fix` | boolean | `true` | Auto-retry when verification fails |
+| `verification_max_retries` | number | `2` | Maximum auto-fix retry attempts |
+
+### `auto_report` (v2.26)
+
+Auto-generate HTML reports after milestone completion:
+
+```yaml
+auto_report: true    # default: true
+```
+
+Reports are written to `.gsd/reports/` as self-contained HTML files with embedded CSS/JS.
+
 ### `unique_milestone_ids`
 
 Generate milestone IDs with a random suffix to avoid collisions in team workflows:
@@ -209,6 +238,7 @@ git:
   merge_strategy: squash      # how worktree branches merge: "squash" or "merge"
   isolation: worktree         # git isolation: "worktree", "branch", or "none"
   commit_docs: true           # commit .gsd/ artifacts to git (set false to keep local)
+  manage_gitignore: true      # set false to prevent GSD from modifying .gitignore
   worktree_post_create: .gsd/hooks/post-worktree-create  # script to run after worktree creation
 ```
 
@@ -224,6 +254,7 @@ git:
 | `merge_strategy` | string | `"squash"` | How worktree branches merge: `"squash"` (combine all commits) or `"merge"` (preserve individual commits) |
 | `isolation` | string | `"worktree"` | Auto-mode isolation: `"worktree"` (separate directory), `"branch"` (work in project root — useful for submodule-heavy repos), or `"none"` (no isolation — commits on current branch, no worktree or milestone branch) |
 | `commit_docs` | boolean | `true` | Commit `.gsd/` planning artifacts to git. Set `false` to keep local-only |
+| `manage_gitignore` | boolean | `true` | When `false`, GSD will not modify `.gitignore` at all — no baseline patterns, no self-healing. Use if you manage your own `.gitignore` |
 | `worktree_post_create` | string | (none) | Script to run after worktree creation. Receives `SOURCE_DIR` and `WORKTREE_DIR` env vars |
 
 #### `git.worktree_post_create`

@@ -1,0 +1,75 @@
+---
+title: "gsd config"
+description: "Re-run the setup wizard to configure LLM providers, API keys, and tool credentials."
+---
+
+## What It Does
+
+`gsd config` launches the interactive setup wizard — the same one that runs on first install. Use it to change your LLM provider, switch API keys, add tool credentials, or reconfigure after a provider change.
+
+Since v2.14, you can also run `/gsd config` inside a running session to reconfigure without restarting.
+
+## Usage
+
+From your terminal:
+
+```bash
+gsd config
+```
+
+Inside a running session:
+
+```
+/gsd config
+```
+
+No arguments — the wizard is fully interactive.
+
+## How It Works
+
+### Setup Wizard Flow
+
+1. **LLM provider selection** — Choose between Anthropic (API key), OpenRouter, or other supported providers. Presented as a select list.
+2. **Authentication** — Enter your API key or complete OAuth flow depending on the provider.
+3. **Tool API keys** (optional) — Configure keys for GitHub, search, and other integrations.
+4. **Summary** — Shows what was configured and writes credentials to disk.
+
+### Credential Storage
+
+Credentials are stored in the pi configuration directory, not in your project. They're never committed to git or logged.
+
+### In-Session Config
+
+When run as `/gsd config` inside a session, the wizard runs inline without interrupting the session. Model selection uses a select list UI instead of free-text input (added in v2.14).
+
+## Examples
+
+First-time setup after install:
+
+```bash
+$ gsd config
+
+  ● Welcome to GSD
+
+  ? Select your LLM provider
+  ❯ Anthropic (API key)
+    OpenRouter
+    Other
+```
+
+Reconfiguring after a provider change:
+
+```bash
+$ gsd config
+
+  ● Reconfiguring GSD
+
+  ? Select your LLM provider
+  ❯ Anthropic (API key)
+```
+
+## Related Commands
+
+- [`/gsd prefs`](../prefs/) — Model selection, timeouts, and budget settings (per-project)
+- [`/gsd mode`](../mode/) — Switch workflow mode (solo/team)
+- [`/gsd doctor`](../doctor/) — Health checks for configuration and state issues
