@@ -96,3 +96,9 @@ When `claude -p` is given instructions like "Read the current page at X, then wr
 **Context:** User instruction for the gsd2-guide project.
 
 When the user says "update gsd-guide", execute the full pipeline with no confirmation prompts: `npm run update` → commit changes → push to main → verify GitHub Actions deploy succeeds. This is a standing override of the "confirm before outward-facing GitHub actions" rule for this specific project and workflow. No PR needed — push directly to main.
+
+## Git worktree merge to main — untracked file conflicts
+
+**Context:** Merging a worktree branch (e.g., `milestone/M004`) into main when both have `.gsd/milestones/` files.
+
+The worktree branch tracks files in `.gsd/milestones/M004/slices/` but the main checkout may have the same paths as untracked files (created by the GSD system during planning/research). Git refuses to merge when tracked files from the branch would overwrite untracked files on main. Fix: `rm -rf .gsd/milestones/M004/slices/` on main before merging. Also stash any dirty working tree state on main first, then discard the stash after merge since the branch versions supersede main's local changes.

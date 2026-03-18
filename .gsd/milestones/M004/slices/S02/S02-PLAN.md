@@ -61,7 +61,7 @@
   - Verify: `npm run update` exits 0; pipeline log shows ✓ for `commands/config.mdx`, `reference/skills.mdx`, `reference/extensions.mdx`; build passes; link check 0 broken
   - Done when: Pipeline completes end-to-end with 3 stale pages regenerated, build passes, 0 broken links
 
-- [ ] **T03: End-to-end deploy proof and fast path verification** `est:15m`
+- [x] **T03: End-to-end deploy proof and fast path verification** `est:15m`
   - Why: Proves R053 (zero-intervention deploy cycle) and R055 (fast path <15s). The final proof that "update gsd-guide" works end-to-end.
   - Files: `page-versions.json` (verified fresh after T02's stamp step)
   - Do: Merge the `milestone/M004` worktree branch to `main` (from the main repo checkout at `/Users/davidspence/dev/gsd2-guide`). Push to main. Verify GitHub Actions `deploy.yml` workflow triggers and succeeds. Then, from the main repo on `main`, run `npm run update` with all pages fresh to prove the fast path — should log "All N pages are current" and complete in under 15 seconds. Record the total pipeline time.
