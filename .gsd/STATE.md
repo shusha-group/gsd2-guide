@@ -24,4 +24,4 @@ All tasks done in S01. Write slice summary and complete slice.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 9 | Remove LLM regeneration from update pipeline | 2026-03-17 | 2fc6d11 | [9-paste-1-14](./quick/9-paste-1-14/) |
+| 9 | Remove LLM regen + add config/export/update pages | 2026-03-17 | 1f3986e | [9-paste-1-14](./quick/9-paste-1-14/) |
