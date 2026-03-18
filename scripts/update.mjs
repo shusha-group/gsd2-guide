@@ -3,7 +3,8 @@
  * update.mjs — One-command update pipeline orchestrator.
  *
  * Chains: npm i -g gsd-pi@latest → extract → diff report →
- *         manage commands → build → check-links → audit content
+ *         manage commands → build → check-links → audit content →
+ *         page freshness (non-blocking)
  *
  * Diff report writes stale-pages.json as the agent handoff contract —
  * stale page regeneration is handled externally (not in this pipeline).
@@ -134,6 +135,7 @@ export const steps = [
   { name: 'build',      cmd: 'npm run build', capture: false },
   { name: 'check-links', cmd: 'node scripts/check-links.mjs', capture: false },
   { name: 'audit content', cmd: 'node scripts/audit-content.mjs', capture: false },
+  { name: 'page freshness', cmd: 'node scripts/check-page-freshness.mjs', capture: false, nonBlocking: true },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -202,6 +204,11 @@ if (isDirectRun) {
       }
     } catch (err) {
       const elapsed = Date.now() - stepStart;
+      if (step.nonBlocking) {
+        timings.push({ name: step.name, elapsed, warning: true });
+        console.log(`[update] ⚠ ${step.name} reported issues (non-blocking) in ${formatElapsed(elapsed)}\n`);
+        continue;
+      }
       const totalElapsed = Date.now() - pipelineStart;
       console.log(`\n[update] ❌ Step "${step.name}" failed after ${formatElapsed(elapsed)}`);
       console.log(`[update] Total elapsed: ${formatElapsed(totalElapsed)}`);
@@ -226,7 +233,8 @@ if (isDirectRun) {
 
   console.log('[update] Step timings:');
   for (const t of timings) {
-    console.log(`  ${t.name.padEnd(18)} ${formatElapsed(t.elapsed)}`);
+    const mark = t.warning ? '⚠' : ' ';
+    console.log(`  ${mark} ${t.name.padEnd(18)} ${formatElapsed(t.elapsed)}`);
   }
 
   console.log('');
