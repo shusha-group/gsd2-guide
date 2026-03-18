@@ -244,6 +244,59 @@ function processMarkdown(content, filePath, isSubdirReadme = false) {
   return frontmatter + body;
 }
 
+/**
+ * Patch the generated commands reference page to add links from command names to their detail pages.
+ * Scans src/content/docs/commands/ for existing pages, then rewrites the commands.md table cells
+ * so that `` `/gsd auto` `` becomes `` [`/gsd auto`](./auto/) `` etc.
+ *
+ * This runs after prebuild because content/generated/docs/commands.md is overwritten by the
+ * extractor on every CI run — patching the generated output is the only stable approach.
+ */
+async function patchCommandsLinks() {
+  const commandsFile = join(TARGET_DIR, 'commands.md');
+  if (!existsSync(commandsFile)) return;
+
+  const commandsDir = join(TARGET_DIR, 'commands');
+  if (!existsSync(commandsDir)) return;
+
+  // Collect available command page slugs from the commands/ directory
+  const entries = await readdir(commandsDir);
+  const slugs = new Set(
+    entries
+      .filter(e => e.endsWith('.md') || e.endsWith('.mdx'))
+      .map(e => e.replace(/\.(md|mdx)$/, ''))
+  );
+
+  if (slugs.size === 0) return;
+
+  let content = await readFile(commandsFile, 'utf-8');
+
+  // Match table cells containing a backtick-quoted command: | `/gsd foo` | or | `/gsd foo --bar` |
+  // We link the first backtick segment if its slug maps to an existing page.
+  // Skips cells already wrapped in a markdown link [...](...)
+  content = content.replace(
+    /(\| )(`)([^`]+)(`)/g,
+    (match, pipe, openTick, cmd, closeTick) => {
+      // Already linked — skip
+      if (match.startsWith('| [')) return match;
+
+      // Derive slug: strip leading slash, take the subcommand word, normalise
+      // e.g. "/gsd auto" → "auto", "/gsd export --html" → "export"
+      // e.g. "gsd config" → "config", "gsd update" → "update"
+      const stripped = cmd.replace(/^\/gsd\s*/, '').replace(/^gsd\s*/, '');
+      const slug = stripped.split(/\s+/)[0] || 'gsd';
+      const resolvedSlug = slug === '' ? 'gsd' : slug;
+
+      if (!slugs.has(resolvedSlug)) return match;
+
+      return `${pipe}[\`${cmd}\`](./${resolvedSlug}/)`;
+    }
+  );
+
+  await writeFile(commandsFile, content, 'utf-8');
+  console.log(`[prebuild] Patched commands.md — linked ${slugs.size} command pages`);
+}
+
 async function main() {
   // Verify source directory exists
   if (!existsSync(SOURCE_DIR)) {
@@ -321,6 +374,11 @@ async function main() {
     file_count: generatedFiles.length,
     files: generatedFiles,
   }, null, 2), 'utf-8');
+
+  // Patch commands reference: inject links from command names to their detail pages.
+  // The source commands.md is overwritten by the extractor on every run, so we patch
+  // the generated output file after prebuild instead of editing the source.
+  await patchCommandsLinks();
 
   // Report
   console.log(`Prebuild complete: ${processed} files processed, ${excluded} excluded`);

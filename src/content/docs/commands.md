@@ -34,9 +34,9 @@ title: "Commands Reference"
 | [`/gsd mode`](./mode/) | Switch workflow mode (solo/team) with coordinated defaults for milestone IDs, git commit behavior, and documentation |
 | [`/gsd doctor`](./doctor/) | Runtime health checks (7 checks) with auto-fix for common state corruption issues |
 | [`/gsd skill-health`](./skill-health/) | Skill lifecycle dashboard — usage stats, success rates, token trends, staleness warnings |
-| `/gsd skill-health <name>` | Detailed view for a single skill |
-| `/gsd skill-health --declining` | Show only skills flagged for declining performance |
-| `/gsd skill-health --stale N` | Show skills unused for N+ days |
+| [`/gsd skill-health <name>`](./skill-health/) | Detailed view for a single skill |
+| [`/gsd skill-health --declining`](./skill-health/) | Show only skills flagged for declining performance |
+| [`/gsd skill-health --stale N`](./skill-health/) | Show skills unused for N+ days |
 | [`/gsd hooks`](./hooks/) | Show configured post-unit and pre-dispatch hooks |
 | [`/gsd run-hook`](./run-hook/) | Manually trigger a specific hook |
 | [`/gsd migrate`](./migrate/) | Migrate a v1 `.planning` directory to `.gsd` format |
@@ -92,7 +92,7 @@ See [Keyboard Shortcuts](./keyboard-shortcuts/) for full documentation.
 
 | Flag | Description |
 |------|-------------|
-| `gsd` | Start a new interactive session |
+| [`gsd`](./gsd/) | Start a new interactive session |
 | `gsd --continue` (`-c`) | Resume the most recent session for the current directory |
 | `gsd --model <id>` | Override the default model for this session |
 | `gsd --print "msg"` (`-p`) | Single-shot prompt mode (no TUI) |
@@ -100,9 +100,9 @@ See [Keyboard Shortcuts](./keyboard-shortcuts/) for full documentation.
 | `gsd --list-models [search]` | List available models and exit |
 | `gsd sessions` | Interactive session picker — list all saved sessions for the current directory and choose one to resume |
 | `gsd --debug` | Enable structured JSONL diagnostic logging for troubleshooting dispatch and state issues |
-| `gsd config` | Set up global API keys for search and docs tools (saved to `~/.gsd/agent/auth.json`, applies to all projects). See [Global API Keys](../configuration/#global-api-keys-gsd-config). |
-| `gsd update` | Update GSD to the latest version |
-| `gsd headless new-milestone` | Create a new milestone from a context file (headless — no TUI required) |
+| [`gsd config`](./config/) | Set up global API keys for search and docs tools (saved to `~/.gsd/agent/auth.json`, applies to all projects). See [Global API Keys](../configuration/#global-api-keys-gsd-config). |
+| [`gsd update`](./update/) | Update GSD to the latest version |
+| [`gsd headless new-milestone`](./headless/) | Create a new milestone from a context file (headless — no TUI required) |
 
 See [CLI Flags](./cli-flags/) for full documentation.
 
