@@ -3,11 +3,12 @@
  * update.mjs — One-command update pipeline orchestrator.
  *
  * Chains: npm i -g gsd-pi@latest → extract → diff report →
- *         manage commands → build → check-links → audit content →
- *         page freshness (non-blocking)
+ *         manage commands → regenerate stale pages → build →
+ *         check-links → audit content → stamp pages
  *
- * Diff report writes stale-pages.json as the agent handoff contract —
- * stale page regeneration is handled externally (not in this pipeline).
+ * When source dependencies change, stale pages are regenerated via
+ * Claude API before building. After a successful build, page-versions.json
+ * is stamped to mark all pages as current.
  *
  * Reports elapsed time per step, manifest diff summary, and overall result.
  *
@@ -26,6 +27,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectChanges, resolveStalePages } from './lib/diff-sources.mjs';
 import { detectNewAndRemovedCommands, createNewPages, removePages } from './lib/manage-pages.mjs';
+import { regeneratePage } from './lib/regenerate-page.mjs';
+import { getStalePages, stampPages } from './check-page-freshness.mjs';
 
 const DIST_DIR = 'dist';
 const GENERATED_DIR = join('content', 'generated');
@@ -126,16 +129,85 @@ export async function runManageCommands() {
   }
 }
 
+// ── Regenerate stale pages step ─────────────────────────────────────
+async function runRegenerateStale() {
+  const { stalePages, freshCount } = getStalePages();
+
+  if (stalePages.length === 0) {
+    console.log(`  ✓ All ${freshCount} pages are current — no regeneration needed.`);
+    return;
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.log(`  ⚠ ${stalePages.length} stale page(s) found but ANTHROPIC_API_KEY not set — skipping regeneration.`);
+    for (const { page, changedDeps } of stalePages) {
+      const depNames = changedDeps.map(f => f.split('/').pop());
+      console.log(`    - ${page} (${depNames.join(', ')})`);
+    }
+    return;
+  }
+
+  console.log(`  Regenerating ${stalePages.length} stale page(s)...\n`);
+
+  // Read page-source-map for dep resolution
+  const mapPath = join(GENERATED_DIR, 'page-source-map.json');
+  const pageSourceMap = JSON.parse(readFileSync(mapPath, 'utf8'));
+
+  let success = 0;
+  let failed = 0;
+  let totalCost = 0;
+
+  for (const { page, changedDeps } of stalePages) {
+    const sourceFiles = pageSourceMap[page] || [];
+    const depNames = changedDeps.map(f => f.split('/').pop());
+    console.log(`    ${page} (${depNames.join(', ')})...`);
+
+    try {
+      const result = await regeneratePage(page, sourceFiles);
+
+      if (result.skipped) {
+        console.log(`      ⊘ skipped: ${result.reason}`);
+      } else if (result.error) {
+        console.log(`      ✗ error: ${result.error}`);
+        failed++;
+      } else {
+        const inputCost = (result.inputTokens / 1_000_000) * 3;
+        const outputCost = (result.outputTokens / 1_000_000) * 15;
+        const cost = inputCost + outputCost;
+        totalCost += cost;
+        console.log(`      ✓ ${result.inputTokens} in / ${result.outputTokens} out — $${cost.toFixed(4)} (${(result.elapsedMs / 1000).toFixed(1)}s)`);
+        success++;
+      }
+    } catch (err) {
+      console.log(`      ✗ unexpected: ${err.message}`);
+      failed++;
+    }
+  }
+
+  console.log(`\n  Regeneration: ${success} updated, ${failed} failed, $${totalCost.toFixed(4)} total cost`);
+
+  if (failed > 0 && success === 0) {
+    throw new Error(`All ${failed} page regenerations failed`);
+  }
+}
+
+// ── Stamp pages step ────────────────────────────────────────────────
+function runStampPages() {
+  const count = stampPages();
+  console.log(`  ✓ Stamped ${count} pages as current.`);
+}
+
 // ── Pipeline steps ──────────────────────────────────────────────────
 export const steps = [
   { name: 'update gsd-pi', cmd: 'npm i -g gsd-pi@latest', capture: false },
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
   { name: 'diff report', fn: runDiffReport },
   { name: 'manage commands', fn: runManageCommands },
+  { name: 'regenerate',  fn: runRegenerateStale },
   { name: 'build',      cmd: 'npm run build', capture: false },
   { name: 'check-links', cmd: 'node scripts/check-links.mjs', capture: false },
   { name: 'audit content', cmd: 'node scripts/audit-content.mjs', capture: false },
-  { name: 'page freshness', cmd: 'node scripts/check-page-freshness.mjs', capture: false, nonBlocking: true },
+  { name: 'stamp pages', fn: runStampPages },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────

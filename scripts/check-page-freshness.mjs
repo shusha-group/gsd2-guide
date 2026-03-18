@@ -33,6 +33,74 @@ const MANIFEST_PATH = path.join(ROOT, "content/generated/manifest.json");
 const PAGE_MAP_PATH = path.join(ROOT, "content/generated/page-source-map.json");
 const VERSIONS_PATH = path.join(ROOT, "page-versions.json");
 
+/**
+ * Get the list of stale pages by comparing current manifest against page-versions.json.
+ * Returns { stalePages: [{page, changedDeps}], freshCount }
+ */
+export function getStalePages() {
+  if (!fs.existsSync(MANIFEST_PATH) || !fs.existsSync(PAGE_MAP_PATH)) {
+    return { stalePages: [], freshCount: 0 };
+  }
+
+  const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf-8"));
+  const pageMap = JSON.parse(fs.readFileSync(PAGE_MAP_PATH, "utf-8"));
+  let versions = {};
+  if (fs.existsSync(VERSIONS_PATH)) {
+    versions = JSON.parse(fs.readFileSync(VERSIONS_PATH, "utf-8"));
+  }
+
+  const stale = [];
+  let freshCount = 0;
+
+  for (const [page, deps] of Object.entries(pageMap)) {
+    const recorded = versions[page];
+    if (!recorded) {
+      stale.push({ page, changedDeps: deps });
+      continue;
+    }
+    const changedDeps = [];
+    for (const dep of deps) {
+      const currentSha = manifest.files[dep];
+      const recordedSha = recorded.deps?.[dep];
+      if (currentSha && currentSha !== recordedSha) {
+        changedDeps.push(dep);
+      }
+    }
+    if (changedDeps.length > 0) {
+      stale.push({ page, changedDeps });
+    } else {
+      freshCount++;
+    }
+  }
+
+  return { stalePages: stale, freshCount };
+}
+
+/**
+ * Stamp all pages as current against the current manifest.
+ */
+export function stampPages() {
+  const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf-8"));
+  const pageMap = JSON.parse(fs.readFileSync(PAGE_MAP_PATH, "utf-8"));
+
+  const stamped = {};
+  for (const [page, deps] of Object.entries(pageMap)) {
+    const depShas = {};
+    for (const dep of deps) {
+      if (manifest.files[dep]) {
+        depShas[dep] = manifest.files[dep];
+      }
+    }
+    stamped[page] = {
+      headSha: manifest.headSha,
+      deps: depShas,
+      stampedAt: new Date().toISOString(),
+    };
+  }
+  fs.writeFileSync(VERSIONS_PATH, JSON.stringify(stamped, null, 2) + "\n");
+  return Object.keys(stamped).length;
+}
+
 function run() {
   const stampMode = process.argv.includes("--stamp");
 
@@ -122,4 +190,13 @@ function run() {
   return 1;
 }
 
-process.exit(run());
+// CLI entry point
+const __filename_freshness = fileURLToPath(import.meta.url);
+const isFreshnessDirectRun = process.argv[1] && (
+  process.argv[1] === __filename_freshness ||
+  process.argv[1].endsWith('/check-page-freshness.mjs')
+);
+
+if (isFreshnessDirectRun) {
+  process.exit(run());
+}
