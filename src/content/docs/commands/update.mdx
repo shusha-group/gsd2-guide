@@ -1,0 +1,68 @@
+---
+title: "gsd update"
+description: "Update GSD to the latest version — from the terminal or inside a running session."
+---
+
+## What It Does
+
+`gsd update` updates GSD to the latest published version. It checks the npm registry, compares versions, downloads and installs the update, and reports what changed.
+
+Since v2.28, you can also run `/gsd update` as a slash command inside a running session for in-session self-update.
+
+## Usage
+
+From your terminal:
+
+```bash
+gsd update
+```
+
+Inside a running session (v2.28+):
+
+```
+/gsd update
+```
+
+No arguments — it always updates to the latest stable release.
+
+## How It Works
+
+### Update Flow
+
+1. **Version check** — Queries the npm registry for the latest published version of `gsd-pi`.
+2. **Compare** — Compares the current installed version against the latest. If already up to date, exits early.
+3. **Install** — Runs `npm install -g gsd-pi@latest` to update the global installation.
+4. **Report** — Shows the old version, new version, and a summary of what changed.
+
+### Startup Update Check
+
+GSD performs a background version check on startup. If a newer version is available, a notification appears in the TUI without blocking your workflow. This check respects rate limits and caches results to avoid repeated registry calls.
+
+### In-Session Update
+
+The `/gsd update` slash command (v2.28+) performs the same update without leaving your session. The session continues after the update completes.
+
+## Examples
+
+Updating from the terminal:
+
+```bash
+$ gsd update
+
+  ● Checking for updates...
+  ● Updating gsd-pi: v2.27.0 → v2.28.0
+  ● Updated successfully
+```
+
+Already up to date:
+
+```bash
+$ gsd update
+
+  ● Already on the latest version (v2.28.0)
+```
+
+## Related Commands
+
+- [`gsd config`](../config/) — Re-run the setup wizard
+- [`/gsd doctor`](../doctor/) — Health checks including version diagnostics

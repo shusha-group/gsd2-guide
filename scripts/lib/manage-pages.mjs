@@ -32,13 +32,16 @@ const ROOT = path.resolve(__dirname, "../..");
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 /** Commands that intentionally don't get pages. */
-const EXCLUDED_SLUGS = ["help", "parallel"];
+const EXCLUDED_SLUGS = ["help", "parallel", "sessions"];
 
 /** Pages in commands/ that aren't auto-managed command pages. */
-const NON_COMMAND_PAGES = ["keyboard-shortcuts", "cli-flags", "headless"];
+const NON_COMMAND_PAGES = ["keyboard-shortcuts", "cli-flags", "headless", "export"];
 
 /** Regex matching top-level /gsd subcommands (single-word, lowercase, with hyphens). */
 const COMMAND_RE = /^\/gsd [a-z][-a-z]*$/;
+
+/** Regex matching bare CLI gsd subcommands (no leading slash). */
+const CLI_COMMAND_RE = /^gsd [a-z][-a-z]*$/;
 
 const GSD = "src/resources/extensions/gsd";
 const SHARED_COMMAND_DEPS = [
@@ -72,6 +75,7 @@ export function detectNewAndRemovedCommands(options = {}) {
   // Extract slugs from commands.json:
   // - Bare "/gsd" → slug "gsd"
   // - "/gsd <word>" matching COMMAND_RE → slug is the word after "/gsd "
+  // - "gsd <word>" matching CLI_COMMAND_RE → slug is the word after "gsd "
   const commandSlugs = new Set();
   for (const entry of commands) {
     const cmd = entry.command;
@@ -79,6 +83,9 @@ export function detectNewAndRemovedCommands(options = {}) {
       commandSlugs.add("gsd");
     } else if (COMMAND_RE.test(cmd)) {
       const slug = cmd.slice("/gsd ".length);
+      commandSlugs.add(slug);
+    } else if (CLI_COMMAND_RE.test(cmd)) {
+      const slug = cmd.slice("gsd ".length);
       commandSlugs.add(slug);
     }
   }

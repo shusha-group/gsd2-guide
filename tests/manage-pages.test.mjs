@@ -36,6 +36,7 @@ function makeCommandsJson(extraCommands = []) {
     { command: "/gsd stop", description: "Stop auto", category: "Session Commands" },
     { command: "/gsd status", description: "Progress dashboard", category: "Session Commands" },
     { command: "/gsd help", description: "Help reference", category: "Session Commands" },
+    { command: "/gsd export --html", description: "HTML report", category: "Session Commands" },
     { command: "/gsd parallel start", description: "Start workers", category: "Parallel Orchestration" },
     { command: "/gsd parallel status", description: "Show workers", category: "Parallel Orchestration" },
     { command: "/gsd skill-health", description: "Skill dashboard", category: "Configuration & Diagnostics" },
@@ -47,6 +48,9 @@ function makeCommandsJson(extraCommands = []) {
     { command: "Escape", description: "Pause auto mode", category: "Keyboard Shortcuts" },
     { command: "gsd --continue (-c)", description: "Resume session", category: "CLI Flags" },
     { command: "gsd", description: "Start session", category: "CLI Flags" },
+    { command: "gsd config", description: "Re-run setup wizard", category: "CLI Flags" },
+    { command: "gsd update", description: "Update GSD", category: "CLI Flags" },
+    { command: "gsd sessions", description: "Alias for headless", category: "CLI Flags" },
     ...extraCommands,
   ];
   return base;
@@ -121,10 +125,10 @@ describe("detectNewAndRemovedCommands", () => {
     const commands = makeCommandsJson([
       { command: "/gsd fake-test", description: "Fake", category: "Session Commands" },
     ]);
-    // Existing pages: auto, stop, status, gsd, skill-health (match the base commands)
+    // Existing pages: auto, stop, status, gsd, skill-health, config, update (match the base commands)
     const { commandsPath, commandsDir } = setup({
       commands,
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -136,6 +140,7 @@ describe("detectNewAndRemovedCommands", () => {
       commands: makeCommandsJson(),
       mdxFiles: [
         "auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx",
+        "config.mdx", "update.mdx",
         "removed-cmd.mdx",
       ],
     });
@@ -148,7 +153,7 @@ describe("detectNewAndRemovedCommands", () => {
     // "/gsd skill-health <name>" should NOT produce a separate slug
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -160,7 +165,7 @@ describe("detectNewAndRemovedCommands", () => {
   it("filters out non-gsd commands", () => {
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -173,7 +178,7 @@ describe("detectNewAndRemovedCommands", () => {
   it("filters out keyboard shortcuts", () => {
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -185,7 +190,7 @@ describe("detectNewAndRemovedCommands", () => {
   it("filters out CLI flags", () => {
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -197,7 +202,7 @@ describe("detectNewAndRemovedCommands", () => {
     // help is in commands.json but should NOT be flagged as new even without a page
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -208,7 +213,7 @@ describe("detectNewAndRemovedCommands", () => {
     // "/gsd parallel start" doesn't match COMMAND_RE (has space + second word)
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -220,6 +225,7 @@ describe("detectNewAndRemovedCommands", () => {
       commands: makeCommandsJson(),
       mdxFiles: [
         "auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx",
+        "config.mdx", "update.mdx",
         "keyboard-shortcuts.mdx", "cli-flags.mdx", "headless.mdx",
       ],
     });
@@ -234,7 +240,7 @@ describe("detectNewAndRemovedCommands", () => {
     // No gsd.mdx → should detect "gsd" as new
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -244,7 +250,7 @@ describe("detectNewAndRemovedCommands", () => {
   it("returns empty arrays when all commands match pages", () => {
     const { commandsPath, commandsDir } = setup({
       commands: makeCommandsJson(),
-      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx"],
+      mdxFiles: ["auto.mdx", "stop.mdx", "status.mdx", "gsd.mdx", "skill-health.mdx", "config.mdx", "update.mdx"],
     });
 
     const result = detectNewAndRemovedCommands({ commandsPath, commandsDir });
@@ -729,8 +735,8 @@ describe("Full round-trip: detect → create → remove", () => {
 
     fs.mkdirSync(commandsDir);
 
-    // Set up existing pages: auto, stop, status, gsd, skill-health
-    for (const slug of ["auto", "stop", "status", "gsd", "skill-health"]) {
+    // Set up existing pages: auto, stop, status, gsd, skill-health, config, update
+    for (const slug of ["auto", "stop", "status", "gsd", "skill-health", "config", "update"]) {
       fs.writeFileSync(
         path.join(commandsDir, `${slug}.mdx`),
         `---\ntitle: "/gsd ${slug}"\n---\nContent for ${slug}.\n`
