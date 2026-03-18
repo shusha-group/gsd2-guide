@@ -25,6 +25,7 @@ export default defineConfig({
           items: [
             { label: 'Getting Started', link: '/getting-started/' },
             { label: 'Developing with GSD', link: '/user-guide/developing-with-gsd/' },
+            { label: 'Discussing a Milestone', link: '/user-guide/discussing-a-milestone/' },
           ],
         },
         {

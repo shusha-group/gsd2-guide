@@ -1,0 +1,178 @@
+---
+title: "Discussing a Milestone"
+description: "How to get the most out of GSD's discuss phase — the conversation that shapes everything downstream."
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+The discuss phase is the highest-leverage moment in the GSD workflow. Everything that executes in auto-mode — the research, the slice ordering, the task plans, the code — flows from what the discussion produced. A rich, precise discussion produces a context file that keeps every downstream agent oriented. A vague one produces a plan that drifts.
+
+This page explains what's actually happening during discussion, and how to show up to it in a way that gets great software built.
+
+## What Discussion Actually Does
+
+When you run `/gsd` on a new project or milestone, GSD enters a structured conversation protocol. It's not a chatbot — it has a specific job: collect enough understanding to write three artifacts that will guide every subsequent agent session.
+
+| Artifact | What it captures |
+|----------|-----------------|
+| `REQUIREMENTS.md` | The capability contract — what the software must do, organized by status |
+| `CONTEXT.md` | The milestone brief — scope, goals, constraints, and key decisions |
+| `ROADMAP.md` | The slice plan — demoable increments ordered by risk |
+
+Every research agent, planner, and executor that runs in auto-mode reads these files. They have no memory of your conversation — only what was written down. This makes the quality of what gets written a direct function of the quality of the discussion.
+
+## The Discussion Phases
+
+GSD runs discussion in a fixed sequence. Knowing the sequence helps you engage with each step intentionally.
+
+### 1. Vision input
+
+GSD asks "What's the vision?" once. Describe what you want to build in plain language — as much detail as feels natural. Don't worry about structure or completeness. That's what the rest of the conversation is for.
+
+### 2. Reflection
+
+Before asking any questions, GSD reflects back what it heard:
+
+- A concrete summary of what you described
+- A size estimate — roughly how many milestones, roughly how many slices in the first one
+- A list of the major capabilities it understood
+
+**This is a contract, not a nicety.** If GSD's reflection is wrong and you don't correct it, the roadmap will be wrong. Read it carefully. Push back on anything that missed the mark — a capability that wasn't there, a scope that expanded beyond what you meant, an emphasis that was lost.
+
+### 3. Investigation
+
+Before asking its first question, GSD scouts the codebase, checks library docs, and searches for relevant domain knowledge. This happens invisibly. Its purpose: the questions that follow reflect what's actually true about your codebase and technology choices, not generic assumptions.
+
+### 4. Questioning rounds
+
+GSD asks questions in rounds, building understanding progressively. The depth it reaches before offering to proceed depends on the scope — a config change might need one round, a social network might need four or more.
+
+Questions are about experience and outcomes, not implementation. GSD won't ask "what auth provider?" — it will ask "when someone logs in, what should that feel like?" Technical decisions are GSD's job. Understanding what you want to happen is the discussion's job.
+
+### 5. Depth verification
+
+Before wrapping up, GSD presents a structured summary across six dimensions and asks if it captured things correctly:
+
+- What you're building
+- Why it needs to exist
+- Who it's for
+- What "done" looks like
+- The biggest technical unknowns
+- What external systems it touches
+
+If anything is wrong or thin, this is the last clean moment to correct it.
+
+### 6. Requirements confirmation and roadmap preview
+
+GSD presents the capability contract as a table — Active, Deferred, Out of Scope — and asks for confirmation. Then it presents the roadmap slice-by-slice before writing any files. You see and approve both before anything lands on disk.
+
+---
+
+## How to Get the Most Out of It
+
+### Describe the experience, not the implementation
+
+GSD asks about what things should feel and behave like, not what technology to use. Meet it at that level.
+
+:::tip[Good]
+"When a user searches for a recipe, results should appear instantly as they type — no submit button, no loading spinner."
+:::
+
+:::caution[Weaker]
+"I need a search endpoint with PostgreSQL full-text search."
+:::
+
+The first tells GSD what the product should do. The second tells it a solution — which it may or may not agree with after researching the codebase. Describe the experience you want; let GSD figure out how to build it.
+
+### Don't pre-shrink your vision
+
+GSD will not try to talk you into building less. If you describe a social network, it plans a social network — phased across milestones intelligently, with high-risk work first. If something is complex, it becomes a later milestone, not a cut feature.
+
+Users who pre-shrink their idea — "I just want something simple" when they actually want something substantial — get a plan for a smaller thing than they wanted. Describe the full vision. GSD handles the sequencing.
+
+### Use precise language — it carries forward
+
+GSD's discussion prompt contains an explicit instruction to preserve your exact terminology in the context file. If you say "craft feel," that phrase appears in `CONTEXT.md` verbatim, and every downstream agent reads it. If you say "the feed should feel alive, not like a list," that constraint shapes how the execution agent approaches the component.
+
+Imprecise language — "good UX," "fast," "clean" — produces imprecise plans. The more specific your language, the more specific the plan.
+
+### Say what you don't want
+
+Negative constraints are often sharper than positive ones.
+
+- "It should never feel sluggish" defines the performance bar more precisely than "it should be fast."
+- "Users should never have to think about file formats" is a sharper upload constraint than "good file upload UX."
+- "It shouldn't feel like a CMS" tells GSD something real about the editorial experience.
+
+When GSD asks what would disappoint you, or what the product should never feel like — take the question seriously. Those answers shape the plan as much as the positive requirements.
+
+### Engage seriously with the reflection step
+
+The reflection is where GSD proves it understood you before asking a single question. It shows you what it's planning to build.
+
+If a capability is missing from the reflection list — it probably won't be in the plan. If the size estimate feels wildly off — the scope may have been misread. If a capability appears that you didn't intend — it will be in the requirements unless you remove it now.
+
+Treat the reflection like a PR diff. Read it, respond to what's wrong, and confirm what's right.
+
+### Correct vague answers before moving on
+
+GSD won't accept vague answers without probing — but it also can't probe indefinitely. If you find yourself giving an answer like "something reasonable" or "whatever makes sense," slow down. That vagueness goes into the context file and gets interpreted by an agent with no memory of your intent.
+
+If you're genuinely uncertain about something, say so explicitly: "I'm not sure about the notification model — I'd want to see what's standard and decide." That gets recorded as an open question, which is better than a guess that gets built as a decision.
+
+---
+
+## Multi-Milestone Projects
+
+For projects that span multiple milestones, discussion includes a sequential readiness gate after writing the first milestone's plan. For each remaining milestone, you choose:
+
+**Discuss now** — conduct a focused discussion for this milestone while the broader context is still fresh. GSD writes a full `CONTEXT.md`. This uses remaining session context but means the milestone is fully scoped before auto-mode starts.
+
+**Write draft for later** — GSD writes a `CONTEXT-DRAFT.md` capturing the seed material from this conversation: what was discussed, key ideas, provisional scope, open questions. When auto-mode reaches this milestone, it pauses and prompts you to run `/gsd` for a dedicated discussion. The draft pre-loads that session — nothing is lost.
+
+**Just queue it** — no context file is written. The milestone directory is created but empty. When auto-mode reaches it, it pauses and prompts a full discussion from scratch.
+
+The tradeoff is real: discussing now is more thorough but uses more of your current session. Queuing or drafting is faster now but means a future session will need to rebuild context. For milestones with significant dependencies on what was just discussed, "discuss now" is usually worth the investment.
+
+:::note
+Auto-mode is **blocked from starting** until every milestone's readiness gate has been answered. GSD maintains a `DISCUSSION-MANIFEST.json` tracking completion — if any gates are open, it won't proceed.
+:::
+
+---
+
+## What Gets Written
+
+After discussion completes, three files exist on disk. Every agent that runs afterward reads them.
+
+**`REQUIREMENTS.md`** — the capability contract. Each requirement has a stable ID (`R001`, `R002`, ...), a status (Active, Deferred, Out of Scope), an owner slice, and a source (whether it came from you directly, was inferred from your description, or emerged from research). Requirements don't disappear during execution — they get validated or moved to Deferred as slices prove or disprove them.
+
+**`CONTEXT.md`** — the milestone brief. Scope, goals, constraints, key decisions from the discussion, and technical context from the codebase investigation. This is written with explicit instructions to preserve your exact language — the research and planning agents read it verbatim.
+
+**`ROADMAP.md`** — the slice plan. Demoable vertical increments ordered by risk, with dependencies, risk levels, and a demo sentence for each. High-risk slices execute first. The roadmap is reassessed after each slice completes and can change as execution reveals new information.
+
+---
+
+## Common Patterns
+
+### Starting a greenfield project
+
+Describe the full vision including: who it's for, the core user loop, what "done" looks like for the first usable version, any hard constraints (tech stack, deployment target, integrations), and what the product should never feel like.
+
+Don't describe the data model or API structure. Don't propose a tech stack unless you have specific requirements. Those are GSD's job after it researches the problem.
+
+### Adding a major feature to an existing project
+
+GSD will scout the codebase before asking questions. Tell it what the new capability needs to do, how it fits into the existing product, and any constraints the current architecture imposes. GSD will surface what it found — existing patterns, potential conflicts, things that will need to change — and let you decide what those mean for direction.
+
+### Scoping something you're uncertain about
+
+Say what you know and what you don't. "I want real-time notifications but I'm not sure whether WebSockets or polling is more appropriate given our infrastructure" is better than either guessing or deferring. GSD will research the space and present a recommendation with rationale — and you can confirm, reject, or defer it.
+
+---
+
+## Related
+
+- [Developing with GSD](../developing-with-gsd/) — full lifecycle walkthrough from discussion through milestone completion
+- [Auto Mode](../../auto-mode/) — what happens after discussion ends
+- [Recipe: New Milestone](../../recipes/new-milestone/) — practical walkthrough of adding a milestone to an existing project
+- [Architecture](../../architecture/) — how the state machine uses the artifacts discussion produces
