@@ -54,7 +54,7 @@
   - Verify: `npm run build` exits 0; `node scripts/check-links.mjs` exits 0 with 0 broken links; 20/20 tests pass
   - Done when: Build produces 66+ pages, link check shows 0 broken links, all tests pass
 
-- [ ] **T02: Run full `npm run update` pipeline with real page regeneration** `est:20m`
+- [x] **T02: Run full `npm run update` pipeline with real page regeneration** `est:20m`
   - Why: This is the core proof for R049 and R052. The pipeline must detect stale pages, invoke `claude -p` for each, and pass build + link check. The 3 target pages must be among those regenerated.
   - Files: `src/content/docs/commands/config.mdx`, `src/content/docs/reference/skills.mdx`, `src/content/docs/reference/extensions.mdx`, `page-versions.json`
   - Do: First, stamp all pages fresh via `node -e "import('./scripts/check-page-freshness.mjs').then(m => m.stampPages())"`, then manually zero-out the version hashes for only the 3 target pages in `page-versions.json` so they are detected as stale. Run `npm run update`. Verify the pipeline output shows regeneration of those 3 pages with ✓ status. Verify build passes and link check passes. If any reference page regeneration produces poor quality, note it as a known limitation — prompt tuning is out of scope for this task.

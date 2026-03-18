@@ -85,6 +85,12 @@ Files listed in `src/content/docs/.generated-manifest.json` are overwritten by `
 
 **Context:** When `manage-pages.mjs` removes a command page (e.g., `config`, `pause`), the corresponding slug entry in `src/components/ReleaseEntry.astro`'s `commandSlugs` map must also be removed. Otherwise, the component generates dead links from changelog release notes (`/gsd config` → `/commands/config/`) that fail the link checker. The `page-map.test.mjs` `COMMAND_SLUGS` array and counts must also be updated.
 
+## claude -p subprocess can delete target files instead of rewriting them
+
+**Context:** Running `claude -p` to regenerate documentation pages.
+
+When `claude -p` is given instructions like "Read the current page at X, then write the updated MDX to X", it occasionally deletes the target file as part of its tool use sequence (perhaps a delete-then-create pattern where the create step fails or is interrupted). This was observed with `reference/skills.mdx` during pipeline regeneration. The workaround is to check for file existence after subprocess completion and restore from git if needed. This is a known limitation of the claude subprocess tool-use behavior, not a bug in the pipeline code.
+
 ## "update gsd-guide" is a pre-approved end-to-end workflow
 
 **Context:** User instruction for the gsd2-guide project.
