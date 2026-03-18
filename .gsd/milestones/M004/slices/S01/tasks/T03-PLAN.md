@@ -90,6 +90,14 @@ Three closing tasks for the slice:
 - `npm run build` — exit code 0
 - `node --test tests/regenerate-page.test.mjs` — all tests pass
 
+## Observability Impact
+
+- **Signal change:** `update.mjs` skip message changes from "ANTHROPIC_API_KEY not set" to "claude CLI not available" — any log-monitoring that greps for the old message must be updated.
+- **Inspection:** `grep "findClaude\|claude CLI" scripts/update.mjs` confirms the new guard is in place.
+- **Failure visibility:** When claude CLI is absent, the pipeline still logs each stale page it would regenerate and returns gracefully — same pattern as before, different guard condition.
+- **SDK removal proof:** `grep -r "@anthropic-ai/sdk" package.json scripts/ tests/` must return empty after this task.
+- **Integration proof artifact:** `src/content/docs/commands/capture.mdx` — regenerated page with valid frontmatter and 6 sections serves as the M004-S01 demo artifact.
+
 ## Inputs
 
 - `scripts/lib/regenerate-page.mjs` — T01's rewritten module with exported `findClaude()`

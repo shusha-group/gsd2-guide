@@ -27,7 +27,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectChanges, resolveStalePages } from './lib/diff-sources.mjs';
 import { detectNewAndRemovedCommands, createNewPages, removePages } from './lib/manage-pages.mjs';
-import { regeneratePage } from './lib/regenerate-page.mjs';
+import { regeneratePage, findClaude } from './lib/regenerate-page.mjs';
 import { getStalePages, stampPages } from './check-page-freshness.mjs';
 
 const DIST_DIR = 'dist';
@@ -138,8 +138,8 @@ async function runRegenerateStale() {
     return;
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log(`  ⚠ ${stalePages.length} stale page(s) found but ANTHROPIC_API_KEY not set — skipping regeneration.`);
+  if (!findClaude()) {
+    console.log(`  ⚠ ${stalePages.length} stale page(s) found but claude CLI not available — skipping regeneration.`);
     for (const { page, changedDeps } of stalePages) {
       const depNames = changedDeps.map(f => f.split('/').pop());
       console.log(`    - ${page} (${depNames.join(', ')})`);
@@ -155,7 +155,6 @@ async function runRegenerateStale() {
 
   let success = 0;
   let failed = 0;
-  let totalCost = 0;
 
   for (const { page, changedDeps } of stalePages) {
     const sourceFiles = pageSourceMap[page] || [];
@@ -171,11 +170,7 @@ async function runRegenerateStale() {
         console.log(`      ✗ error: ${result.error}`);
         failed++;
       } else {
-        const inputCost = (result.inputTokens / 1_000_000) * 3;
-        const outputCost = (result.outputTokens / 1_000_000) * 15;
-        const cost = inputCost + outputCost;
-        totalCost += cost;
-        console.log(`      ✓ ${result.inputTokens} in / ${result.outputTokens} out — $${cost.toFixed(4)} (${(result.elapsedMs / 1000).toFixed(1)}s)`);
+        console.log(`      ✓ ${result.model || 'unknown'} — ${(result.durationMs / 1000).toFixed(1)}s`);
         success++;
       }
     } catch (err) {
@@ -184,7 +179,7 @@ async function runRegenerateStale() {
     }
   }
 
-  console.log(`\n  Regeneration: ${success} updated, ${failed} failed, $${totalCost.toFixed(4)} total cost`);
+  console.log(`\n  Regeneration: ${success} updated, ${failed} failed`);
 
   if (failed > 0 && success === 0) {
     throw new Error(`All ${failed} page regenerations failed`);

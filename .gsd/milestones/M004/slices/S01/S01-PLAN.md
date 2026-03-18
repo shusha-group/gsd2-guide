@@ -59,7 +59,7 @@
   - Verify: `node --test tests/regenerate-page.test.mjs` — all tests pass
   - Done when: All tests pass, test count is ≥10, covering prompt construction, stream-json parsing, graceful degradation, frontmatter validation, and batch logic
 
-- [ ] **T03: Wire update.mjs, remove SDK, and run integration proof** `est:1h`
+- [x] **T03: Wire update.mjs, remove SDK, and run integration proof** `est:1h`
   - Why: The pipeline's `runRegenerateStale()` in `update.mjs` still guards on `ANTHROPIC_API_KEY`. This must be replaced with a `claude` CLI check. The `@anthropic-ai/sdk` dependency must be removed from `package.json`. Finally, the integration proof must demonstrate that `claude -p` produces quality documentation matching M002 standards.
   - Files: `scripts/update.mjs`, `package.json`
   - Do: (1) In `update.mjs`, replace the `ANTHROPIC_API_KEY` check with `findClaude()` imported from `regenerate-page.mjs` (or inline equivalent). Update the skip message to say "claude CLI not available" instead of "ANTHROPIC_API_KEY not set". (2) Remove `@anthropic-ai/sdk` from `package.json` devDependencies. Run `npm install` to update lockfile. (3) Run the integration proof: `node scripts/lib/regenerate-page.mjs commands/capture.mdx` and verify the output has correct frontmatter and all 6 required sections (What It Does, Usage, How It Works, What Files It Touches, Examples, Related Commands). (4) Run `npm run build` to verify the regenerated page passes the Astro build. (5) Run `node --test tests/regenerate-page.test.mjs` to confirm tests still pass after SDK removal.
