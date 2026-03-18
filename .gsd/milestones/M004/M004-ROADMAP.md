@@ -52,7 +52,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Claude Code Regeneration Engine** `risk:high` `depends:[]`
+- [x] **S01: Claude Code Regeneration Engine** `risk:high` `depends:[]`
   > After this: Running `node scripts/lib/regenerate-page.mjs commands/capture.mdx` regenerates the page via `claude -p` with full tool access, the output has correct frontmatter and all 6 sections, and passes the Astro build.
 
 - [ ] **S02: Pipeline Integration and End-to-End Proof** `risk:medium` `depends:[S01]`
