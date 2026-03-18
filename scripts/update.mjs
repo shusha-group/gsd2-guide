@@ -2,7 +2,7 @@
 /**
  * update.mjs — One-command update pipeline orchestrator.
  *
- * Chains: npm update gsd-pi → extract → diff report →
+ * Chains: npm i -g gsd-pi@latest → extract → diff report →
  *         manage commands → build → check-links
  *
  * Diff report writes stale-pages.json as the agent handoff contract —
@@ -127,7 +127,7 @@ export async function runManageCommands() {
 
 // ── Pipeline steps ──────────────────────────────────────────────────
 export const steps = [
-  { name: 'npm update', cmd: 'npm update gsd-pi', capture: false },
+  { name: 'update gsd-pi', cmd: 'npm i -g gsd-pi@latest', capture: false },
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
   { name: 'diff report', fn: runDiffReport },
   { name: 'manage commands', fn: runManageCommands },
