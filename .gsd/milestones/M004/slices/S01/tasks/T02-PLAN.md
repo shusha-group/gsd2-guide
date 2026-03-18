@@ -107,6 +107,13 @@ Key test scenarios to cover:
 - `src/content/docs/commands/capture.mdx` — exemplar page. Tests may check that the system prompt includes content from this file.
 - `content/generated/page-source-map.json` — used by `regenerateStalePages()` tests.
 
+## Observability Impact
+
+- **Test runner output:** `node --test tests/regenerate-page.test.mjs` reports pass/fail per test case with TAP output. 20 tests across 5 suites verify parseStreamJson, findClaude, prompt construction, regeneratePage integration, and regenerateStalePages batch logic.
+- **Inspection:** Mock-claude.sh supports `MOCK_CAPTURE_STDIN` env var — tests can capture and inspect the exact stdin sent to the subprocess, enabling prompt construction verification without exporting internal functions.
+- **Failure visibility:** Test failures show specific assertion messages (e.g. "stdin should contain pagePath", "should capture stderr"). Mock script env vars (`MOCK_EXIT_CODE`, `MOCK_BAD_FRONTMATTER`) control error simulation paths.
+- **Regression detection:** Tests cover all result shapes (success, error, skipped, invalid frontmatter) ensuring downstream code can rely on stable return types.
+
 ## Expected Output
 
 - `tests/regenerate-page.test.mjs` — fully rewritten test file with ≥10 test cases covering all key scenarios

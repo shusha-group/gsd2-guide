@@ -52,7 +52,7 @@
   - Verify: `node -e "import('./scripts/lib/regenerate-page.mjs').then(m => console.log(typeof m.regeneratePage, typeof m.regenerateStalePages))"` prints `function function`
   - Done when: Module loads without errors, exports both functions with correct signatures, `findClaude()` returns true in this environment, and the code has zero references to `@anthropic-ai/sdk`
 
-- [ ] **T02: Rewrite regenerate-page tests for subprocess mock strategy** `est:1h30m`
+- [x] **T02: Rewrite regenerate-page tests for subprocess mock strategy** `est:1h30m`
   - Why: The existing tests mock `options.client` (Anthropic SDK client injection) which no longer exists. Tests must validate prompt construction, stream-json parsing, graceful degradation, and batch logic using subprocess-level mocks.
   - Files: `tests/regenerate-page.test.mjs`
   - Do: Replace `options.client` mock tests with: (1) unit tests for `buildPrompt()` / prompt construction verifying section rules, exemplar inclusion, dep capping for reference pages; (2) unit tests for stream-json output parsing verifying model extraction, duration extraction, error detection; (3) unit tests for `findClaude()` graceful degradation; (4) batch tests for `regenerateStalePages()` with mocked subprocess; (5) frontmatter validation tests. Mock `spawnSync` by using `options.claudePath` to point at a shell script that echoes canned stream-json output, or by testing internal functions directly.
