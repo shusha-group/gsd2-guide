@@ -28,6 +28,7 @@
 - `npm run build` — Astro build passes with any regenerated pages
 - `grep -r "@anthropic-ai/sdk" scripts/ tests/ package.json` — returns nothing (SDK fully removed)
 - `node -e "const pkg = JSON.parse(require('fs').readFileSync('package.json','utf8')); if(pkg.devDependencies?.['@anthropic-ai/sdk']) process.exit(1)"` — SDK not in devDependencies
+- `node -e "import('./scripts/lib/regenerate-page.mjs').then(m => { const r = m.findClaude('/nonexistent/claude'); console.log('graceful degradation:', r === false ? 'PASS' : 'FAIL'); })"` — returns `graceful degradation: PASS` (confirms failure-path behavior when claude CLI is missing)
 
 ## Observability / Diagnostics
 
@@ -44,7 +45,7 @@
 
 ## Tasks
 
-- [ ] **T01: Rewrite regeneratePage() to spawn claude -p subprocess** `est:2h`
+- [x] **T01: Rewrite regeneratePage() to spawn claude -p subprocess** `est:2h`
   - Why: This is the core implementation — replacing the Anthropic SDK call with `spawnSync('claude', ...)`, building new prompt construction functions, parsing stream-json output, adding reference-page dep capping, and implementing graceful degradation when `claude` CLI is missing.
   - Files: `scripts/lib/regenerate-page.mjs`
   - Do: Replace `buildSystemPrompt()`, `buildUserMessage()`, and the `client.messages.create()` call with `spawnSync` invocation. Build `findClaude()` for CLI detection. Build `buildPrompt(pagePath, sourceFiles)` for the user message (stdin). Move quality rules + exemplar into `--system-prompt` flag. Parse stream-json output for `result` type (duration_ms, subtype) and `system`/`init` type (model). Add dep capping: when `sourceFiles.length > 50`, substitute curated paths for known reference pages. Update CLI entry point to report duration instead of cost. Remove all `@anthropic-ai/sdk` imports.

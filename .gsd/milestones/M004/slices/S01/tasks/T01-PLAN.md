@@ -121,6 +121,13 @@ Key differences from the old approach:
 - `content/generated/page-source-map.json` — dep mappings. Used by CLI entry point and batch mode.
 - S01-RESEARCH.md findings on: subprocess mechanics (`spawnSync` works, `claude` on PATH), stream-json format (result/system/init types), CWD requirements (project root, not worktree), dep capping strategy (compiled JSON for reference pages).
 
+## Observability Impact
+
+- **New signals:** `claude -p` subprocess exit code (0=success, non-zero=error), `duration_ms` from stream-json `result` event, `model` from stream-json `system`/`init` event, console output with `✓`/`✗`/`⊘` status per page
+- **Removed signals:** `inputTokens`/`outputTokens` (always 0 with subscription auth), cost formatting (`formatCost()` removed)
+- **Inspection:** Run `node scripts/lib/regenerate-page.mjs <page>` for single-page debug — reports model, duration, and success/failure status. `findClaude()` export lets callers check CLI availability without spawning a full subprocess.
+- **Failure visibility:** Subprocess stderr captured and included in error result objects (`details` field). Timeout detection via `spawnSync` timeout option. Frontmatter validation failure reported with page path. Non-zero exit code triggers error result with stderr contents.
+
 ## Expected Output
 
 - `scripts/lib/regenerate-page.mjs` — fully rewritten to use `claude -p` subprocess. Exports `regeneratePage()`, `regenerateStalePages()`, and `findClaude()`. Zero SDK references. Same function signatures except `options.client` replaced by `options.claudePath`.
