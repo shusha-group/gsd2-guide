@@ -1,6 +1,6 @@
 ---
 title: "Extensions"
-description: "17 GSD extensions — tools, capabilities, and integrations."
+description: "17 GSD extensions — tools, capabilities, and integrations built into the pi agent."
 ---
 
 import extensions from '../../../../content/generated/extensions.json';
@@ -11,7 +11,9 @@ import ToolList from '../../../../src/components/ToolList.astro';
 export const sorted = [...extensions].sort((a, b) => b.tools.length - a.tools.length);
 export const categories = ["Has Tools", "No Tools"];
 
-17 extensions that provide tools and integrations for the agent. Sorted by tool count. Click any card to expand and see registered tools.
+Extensions are built-in capabilities bundled with the pi agent. Each extension registers one or more tools the agent can call, or provides hooks, commands, and stream-level guardrails that operate without direct tool calls.
+
+17 extensions are active by default. Cards are sorted by tool count — extensions with more tools appear first. Click any card to expand and see its registered tools.
 
 <ReferenceGrid categories={categories}>
   {sorted.map((ext) => (

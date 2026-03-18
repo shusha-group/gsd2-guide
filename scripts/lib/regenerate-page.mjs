@@ -1,13 +1,14 @@
 /**
- * regenerate-page.mjs — LLM-powered page regeneration via Claude API.
+ * regenerate-page.mjs — LLM-powered page regeneration via claude -p subprocess.
  *
- * Reads source files from the installed gsd-pi package, reads the current page
- * content, constructs a quality-focused prompt with an exemplar page, sends
- * everything to Claude, validates the output, and writes updated MDX.
+ * Spawns `claude -p` with quality rules as system prompt, task instructions via
+ * stdin. Claude reads source files and writes updated MDX directly. Node.js
+ * validates frontmatter after the subprocess exits.
  *
  * Exports:
  *   regeneratePage(pagePath, sourceFiles, options) → result object
  *   regenerateStalePages(options)                  → batch result object
+ *   findClaude(claudePath?)                        → boolean
  *
  * CLI: node scripts/lib/regenerate-page.mjs [pagePath]
  */
@@ -15,21 +16,51 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolvePackagePath } from "./extract-local.mjs";
+import { execSync, spawnSync } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "../..");
 
+// ── Curated source mappings for high-dep reference pages ───────────────────
+
+const CURATED_SOURCES = {
+  "reference/skills.mdx": ["content/generated/skills.json"],
+  "reference/extensions.mdx": ["content/generated/extensions.json"],
+  "reference/agents.mdx": ["content/generated/agents.json"],
+};
+
+// ── Claude CLI detection ───────────────────────────────────────────────────
+
+/**
+ * Check if the `claude` CLI is available.
+ * @param {string} [claudePath] — override path to the claude binary
+ * @returns {boolean}
+ */
+export function findClaude(claudePath) {
+  const bin = claudePath || "claude";
+  try {
+    execSync(`${bin} --version`, {
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: 5000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ── System prompt construction ─────────────────────────────────────────────
 
 /**
  * Build the system prompt with quality rules and the exemplar page.
+ * Passed via --system-prompt flag. Does NOT contain source file paths.
  * @param {string} exemplarContent — full text of the exemplar page
  * @returns {string}
  */
 function buildSystemPrompt(exemplarContent) {
   return `You are a documentation writer for the gsd-pi CLI tool.
+You have access to Read and Write tools to read source files and write updated MDX.
 
 ## Quality Rules for Command Pages
 
@@ -67,79 +98,122 @@ description: "one-line description"
 ${exemplarContent}
 </exemplar>
 
-Output ONLY the complete MDX file content. No markdown code fences. No explanation before or after.`;
+When updating a page, preserve good existing content. Fix only what is outdated or inaccurate based on the current source code. Match the quality, structure, and style of the exemplar page.`;
+}
+
+// ── User message construction ──────────────────────────────────────────────
+
+/**
+ * Build the user message (stdin input) that instructs Claude what to do.
+ * Lists source file paths for Claude to read — does NOT include file contents.
+ * @param {string} pagePath — content-relative path like "commands/capture.mdx"
+ * @param {string[]} sourceFiles — repo-relative source paths for Claude to read
+ * @param {object} [options]
+ * @param {boolean} [options.dryRun] — if true, instruct Claude to output to stdout
+ * @returns {string}
+ */
+function buildUserMessage(pagePath, sourceFiles, options = {}) {
+  const pageRelPath = `src/content/docs/${pagePath}`;
+  const sourceList = sourceFiles.map((f) => `  - ${f}`).join("\n");
+
+  let writeInstruction;
+  if (options.dryRun) {
+    writeInstruction = `Output the complete updated MDX content to stdout. Do NOT write any files.`;
+  } else {
+    writeInstruction = `Write the updated MDX to: ${pageRelPath}`;
+  }
+
+  return `You are regenerating the documentation page \`${pagePath}\`.
+
+Read the current page at: ${pageRelPath}
+Read these source files (relative to project root):
+${sourceList}
+
+Update the page to reflect the current source code. Preserve good existing content. Fix outdated or inaccurate content. Match the section structure and quality of the exemplar in the system prompt.
+
+${writeInstruction}`;
 }
 
 /**
- * Build the user message with source files and current page content.
- * @param {string} pagePath — content-relative path like "commands/capture.mdx"
- * @param {Array<{path: string, content: string}>} sources — readable source files
- * @param {string} currentPage — current page content (empty string if new page)
- * @returns {string}
+ * Apply dep capping: for pages with too many deps, substitute curated source paths.
+ * @param {string} pagePath — content-relative path
+ * @param {string[]} sourceFiles — original source file list
+ * @param {number} threshold — max deps before capping (default: 50)
+ * @returns {string[]} — possibly substituted source file list
  */
-function buildUserMessage(pagePath, sources, currentPage) {
-  const sourceParts = sources
-    .map((s) => `<source path="${s.path}">\n${s.content}\n</source>`)
-    .join("\n\n");
+function capDeps(pagePath, sourceFiles, threshold = 50) {
+  if (sourceFiles.length > threshold && CURATED_SOURCES[pagePath]) {
+    return CURATED_SOURCES[pagePath];
+  }
+  return sourceFiles;
+}
 
-  const currentPart = currentPage
-    ? `\n\n<current_page>\n${currentPage}\n</current_page>`
-    : "";
+// ── Stream-json output parsing ─────────────────────────────────────────────
 
-  return `${sourceParts}${currentPart}
+/**
+ * Parse stream-json output from `claude -p --output-format stream-json`.
+ * Extracts model (from system/init event) and duration/result (from result event).
+ * @param {string} stdout — raw stdout from subprocess
+ * @returns {{ model: string, durationMs: number, subtype: string, resultText: string }}
+ */
+export function parseStreamJson(stdout) {
+  const parsed = {
+    model: "unknown",
+    durationMs: 0,
+    subtype: "unknown",
+    resultText: "",
+  };
 
-Regenerate the documentation page for \`${pagePath}\`. Use the source code above to ensure accuracy. Match the quality, structure, and style of the exemplar page.`;
+  if (!stdout) return parsed;
+
+  const lines = stdout.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    let obj;
+    try {
+      obj = JSON.parse(trimmed);
+    } catch {
+      // Skip non-JSON lines
+      continue;
+    }
+
+    if (obj.type === "system" && obj.subtype === "init" && obj.model) {
+      parsed.model = obj.model;
+    }
+
+    if (obj.type === "result") {
+      parsed.durationMs = obj.duration_ms || 0;
+      parsed.subtype = obj.subtype || "unknown";
+      parsed.resultText = obj.result || "";
+    }
+  }
+
+  return parsed;
 }
 
 // ── Core regeneration function ─────────────────────────────────────────────
 
 /**
- * Regenerate a single documentation page via Claude API.
+ * Regenerate a single documentation page via claude -p subprocess.
  *
  * @param {string} pagePath — content-relative key like "commands/capture.mdx"
  * @param {string[]} sourceFiles — repo-relative source paths
  * @param {object} [options]
- * @param {boolean} [options.dryRun] — if true, don't write output
- * @param {string} [options.pkgPath] — override gsd-pi package path
- * @param {string} [options.model] — Claude model identifier
- * @param {number} [options.maxTokens] — max output tokens
- * @param {object} [options.client] — pre-built Anthropic client (for testing)
- * @returns {Promise<object>} result with token usage or skip/error info
+ * @param {boolean} [options.dryRun] — if true, Claude outputs to stdout instead of writing file
+ * @param {string} [options.model] — Claude model identifier (default: 'sonnet')
+ * @param {number} [options.timeout] — subprocess timeout in ms (default: 300000)
+ * @param {string} [options.claudePath] — override path to claude binary
+ * @param {number} [options.depThreshold] — max deps before capping (default: 50)
+ * @returns {Promise<object>} result with timing info or skip/error info
  */
 export async function regeneratePage(pagePath, sourceFiles, options = {}) {
-  // API key check first — do NOT import SDK if no key
-  if (!options.client && !process.env.ANTHROPIC_API_KEY) {
-    return { skipped: true, reason: "no API key" };
-  }
+  const claudePath = options.claudePath || "claude";
 
-  // Resolve package path
-  let pkgRoot;
-  try {
-    pkgRoot = resolvePackagePath(options.pkgPath);
-  } catch (err) {
-    console.error(`[regenerate] Failed to resolve package path: ${err.message}`);
-    return { error: "package path resolution failed", details: err.message };
-  }
-
-  // Read source files
-  const sources = [];
-  for (const dep of sourceFiles) {
-    const fullPath = path.join(pkgRoot, dep);
-    try {
-      const content = fs.readFileSync(fullPath, "utf8");
-      sources.push({ path: dep, content });
-    } catch {
-      console.warn(`⚠ Source file not found: ${dep}`);
-    }
-  }
-
-  // Read current page (empty string if doesn't exist)
-  const pageFullPath = path.join(ROOT, "src", "content", "docs", pagePath);
-  let currentPage = "";
-  try {
-    currentPage = fs.readFileSync(pageFullPath, "utf8");
-  } catch {
-    // New page — that's fine
+  // Check if claude CLI is available
+  if (!findClaude(claudePath)) {
+    return { skipped: true, reason: "claude CLI not available" };
   }
 
   // Read exemplar page
@@ -153,68 +227,113 @@ export async function regeneratePage(pagePath, sourceFiles, options = {}) {
 
   // Construct prompt
   const systemPrompt = buildSystemPrompt(exemplarContent);
-  const userMessage = buildUserMessage(pagePath, sources, currentPage);
+  const cappedDeps = capDeps(pagePath, sourceFiles, options.depThreshold || 50);
+  const userMessage = buildUserMessage(pagePath, cappedDeps, options);
 
-  // Instantiate client
-  let client = options.client;
-  if (!client) {
-    const Anthropic = (await import("@anthropic-ai/sdk")).default;
-    client = new Anthropic();
-  }
+  // Spawn claude -p subprocess
+  const args = [
+    "-p",
+    "--output-format", "stream-json",
+    "--no-session-persistence",
+    "--dangerously-skip-permissions",
+    "--model", options.model || "sonnet",
+    "--system-prompt", systemPrompt,
+  ];
 
-  // Call Claude API
-  const startTime = Date.now();
-  let message;
-  try {
-    message = await client.messages.create({
-      model: options.model || "claude-sonnet-4-5-20250929",
-      max_tokens: options.maxTokens || 16384,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userMessage }],
-    });
-  } catch (err) {
-    console.error(`[regenerate] API error for ${pagePath}: ${err.message}`);
-    return { error: "API call failed", pagePath, details: err.message };
-  }
+  const result = spawnSync(claudePath, args, {
+    input: userMessage,
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+    env: process.env,
+    cwd: ROOT,
+    timeout: options.timeout || 300_000,
+  });
 
-  const elapsedMs = Date.now() - startTime;
-
-  // Extract response text
-  const text = message.content[0].text;
-
-  // Check stop reason
-  if (message.stop_reason === "max_tokens") {
-    console.warn(`⚠ Response truncated (max_tokens) for ${pagePath}`);
-  }
-
-  // Validate frontmatter
-  if (!text.startsWith("---\n") || text.indexOf("---\n", 4) === -1) {
-    console.error(`[regenerate] Invalid frontmatter in response for ${pagePath}`);
+  // Handle subprocess failure
+  if (result.status !== 0) {
+    const stderr = (result.stderr || "").trim();
+    const exitInfo = result.signal
+      ? `killed by signal ${result.signal}`
+      : `exit code ${result.status}`;
+    console.error(`[regenerate] claude -p failed for ${pagePath}: ${exitInfo}`);
+    if (stderr) console.error(`  stderr: ${stderr.slice(0, 500)}`);
     return {
-      error: "invalid frontmatter",
+      error: "subprocess failed",
       pagePath,
-      inputTokens: message.usage.input_tokens,
-      outputTokens: message.usage.output_tokens,
-      model: message.model,
-      elapsedMs,
-      stopReason: message.stop_reason,
+      details: stderr || exitInfo,
     };
   }
 
-  // Write output
-  if (!options.dryRun) {
-    const outDir = path.dirname(pageFullPath);
-    fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(pageFullPath, text);
+  // Parse stream-json output
+  const stream = parseStreamJson(result.stdout);
+
+  // Check if claude reported an error in stream-json
+  if (stream.subtype === "error") {
+    console.error(`[regenerate] claude reported error for ${pagePath}: ${stream.resultText}`);
+    return {
+      error: "claude error",
+      pagePath,
+      details: stream.resultText,
+      model: stream.model,
+      durationMs: stream.durationMs,
+    };
+  }
+
+  // For dryRun, validate the result text from stream-json
+  if (options.dryRun) {
+    const text = stream.resultText;
+    if (!text.startsWith("---\n") || text.indexOf("---\n", 4) === -1) {
+      // dryRun output may not have frontmatter if Claude wrote to file anyway
+      // or if the result text is a summary rather than MDX content
+      console.warn(`[regenerate] dryRun: result text may not contain raw MDX for ${pagePath}`);
+    }
+    return {
+      pagePath,
+      inputTokens: 0,
+      outputTokens: 0,
+      model: stream.model,
+      elapsedMs: stream.durationMs,
+      durationMs: stream.durationMs,
+    };
+  }
+
+  // Validate the written file
+  const pageFullPath = path.join(ROOT, "src", "content", "docs", pagePath);
+  let pageContent;
+  try {
+    pageContent = fs.readFileSync(pageFullPath, "utf8");
+  } catch (err) {
+    console.error(`[regenerate] File not found after subprocess for ${pagePath}: ${err.message}`);
+    return {
+      error: "file not written",
+      pagePath,
+      details: `Expected file at ${pageFullPath} but it was not found`,
+      model: stream.model,
+      durationMs: stream.durationMs,
+    };
+  }
+
+  // Validate frontmatter
+  if (!pageContent.startsWith("---\n") || pageContent.indexOf("---\n", 4) === -1) {
+    console.error(`[regenerate] Invalid frontmatter in written file for ${pagePath}`);
+    return {
+      error: "invalid frontmatter",
+      pagePath,
+      model: stream.model,
+      durationMs: stream.durationMs,
+      inputTokens: 0,
+      outputTokens: 0,
+      elapsedMs: stream.durationMs,
+    };
   }
 
   return {
     pagePath,
-    inputTokens: message.usage.input_tokens,
-    outputTokens: message.usage.output_tokens,
-    model: message.model,
-    elapsedMs,
-    stopReason: message.stop_reason,
+    inputTokens: 0,
+    outputTokens: 0,
+    model: stream.model,
+    elapsedMs: stream.durationMs,
+    durationMs: stream.durationMs,
   };
 }
 
@@ -308,17 +427,6 @@ const isDirectRun =
 if (isDirectRun) {
   const pagePath = process.argv[2];
 
-  /**
-   * Format cost estimate for token usage.
-   * Sonnet pricing: $3/MTok input, $15/MTok output.
-   */
-  function formatCost(inputTokens, outputTokens) {
-    const inputCost = (inputTokens / 1_000_000) * 3;
-    const outputCost = (outputTokens / 1_000_000) * 15;
-    const total = inputCost + outputCost;
-    return `$${total.toFixed(4)} (in: $${inputCost.toFixed(4)}, out: $${outputCost.toFixed(4)})`;
-  }
-
   if (pagePath) {
     // Single page mode — look up source files from page-source-map.json
     const mapPath = path.join(ROOT, "content", "generated", "page-source-map.json");
@@ -352,12 +460,7 @@ if (isDirectRun) {
 
     console.log(`✓ ${pagePath}`);
     console.log(`  Model: ${result.model}`);
-    console.log(`  Tokens: ${result.inputTokens} in / ${result.outputTokens} out`);
-    console.log(`  Cost: ${formatCost(result.inputTokens, result.outputTokens)}`);
-    console.log(`  Time: ${(result.elapsedMs / 1000).toFixed(1)}s`);
-    if (result.stopReason === "max_tokens") {
-      console.warn("  ⚠ Response was truncated (max_tokens)");
-    }
+    console.log(`  Duration: ${(result.durationMs / 1000).toFixed(1)}s`);
   } else {
     // Batch mode — regenerate all stale pages
     console.log("Regenerating stale pages...");
@@ -382,7 +485,7 @@ if (isDirectRun) {
         console.log(`  ✗ ${r.pagePath || "?"}: ${r.error}`);
       } else {
         console.log(
-          `  ✓ ${r.pagePath}: ${r.inputTokens} in / ${r.outputTokens} out — ${formatCost(r.inputTokens, r.outputTokens)}`
+          `  ✓ ${r.pagePath}: ${(r.durationMs / 1000).toFixed(1)}s (${r.model})`
         );
       }
     }
@@ -391,11 +494,7 @@ if (isDirectRun) {
     console.log(
       `\nBatch complete: ${batch.successCount} success, ${batch.failCount} failed, ${batch.skipCount} skipped`
     );
-    if (batch.totalInputTokens > 0) {
-      console.log(
-        `Total tokens: ${batch.totalInputTokens} in / ${batch.totalOutputTokens} out`
-      );
-      console.log(`Total cost: ${formatCost(batch.totalInputTokens, batch.totalOutputTokens)}`);
+    if (batch.totalElapsedMs > 0) {
       console.log(`Total time: ${(batch.totalElapsedMs / 1000).toFixed(1)}s`);
     }
 
