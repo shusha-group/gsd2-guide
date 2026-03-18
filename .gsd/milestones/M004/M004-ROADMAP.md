@@ -55,7 +55,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Claude Code Regeneration Engine** `risk:high` `depends:[]`
   > After this: Running `node scripts/lib/regenerate-page.mjs commands/capture.mdx` regenerates the page via `claude -p` with full tool access, the output has correct frontmatter and all 6 sections, and passes the Astro build.
 
-- [ ] **S02: Pipeline Integration and End-to-End Proof** `risk:medium` `depends:[S01]`
+- [x] **S02: Pipeline Integration and End-to-End Proof** `risk:medium` `depends:[S01]`
   > After this: Running `npm run update` with the 3 known stale pages regenerates them via Claude Code, build passes, link check passes. "Update gsd-guide" triggers the full cycle including commit, push, and GitHub Pages deployment — zero intervention.
 
 ## Boundary Map
