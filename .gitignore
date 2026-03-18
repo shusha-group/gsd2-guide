@@ -42,3 +42,6 @@ vendor/
 *.log
 coverage/
 tmp/
+
+# ── GSD baseline (auto-generated) ──
+.gsd/parallel/
