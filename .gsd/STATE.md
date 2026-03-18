@@ -1,20 +1,22 @@
 # GSD State
 
-**Active Milestone:** M003: Continuous Documentation Regeneration
-**Active Slice:** None
-**Phase:** complete
-**Requirements Status:** 0 active · 41 validated · 5 deferred · 1 out of scope
+**Active Milestone:** M004: Claude Code–Powered Documentation Regeneration
+**Active Slice:** None — planning complete, ready for S01
+**Phase:** executing
+**Requirements Status:** 9 active · 41 validated · 5 deferred · 1 out of scope
 
 ## Milestone Registry
 - ✅ **M001:** GSD 2 Documentation Site
 - ✅ **M002:** GSD User Guide
 - ✅ **M003:** Continuous Documentation Regeneration
+- 🔄 **M004:** Claude Code–Powered Documentation Regeneration
 
 ## Recent Decisions
-- None recorded
+- D050: Replace @anthropic-ai/sdk with `claude -p` subprocess (Claude Code, not bare API)
+- D051: Local-only regeneration — no GitHub Actions CI trigger
 
 ## Blockers
 - None
 
 ## Next Action
-All milestones complete.
+Begin S01: Claude Code Regeneration Engine. Rewrite `scripts/lib/regenerate-page.mjs` to spawn `claude -p` instead of calling the Anthropic SDK. Verify page-source-map accuracy. Prove output quality matches M002 on `commands/capture.mdx`.
