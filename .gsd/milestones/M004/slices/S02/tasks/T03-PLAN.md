@@ -86,6 +86,13 @@ Proves R053 (zero-intervention deploy) and R055 (fast path <15s). This task merg
 - Main repo at `/Users/davidspence/dev/gsd2-guide` — merge target
 - `.github/workflows/deploy.yml` — triggers on push to main, builds + deploys to GitHub Pages
 
+## Observability Impact
+
+- **Signals changed:** After merge+push, `git log --oneline -1 origin/main` shows the merge commit SHA and message. GitHub Actions deploy workflow status is visible in the Actions tab.
+- **Inspection:** `npm run update` logs "All N pages are current — no regeneration needed" on the fast path. `page-versions.json` shows all pages stamped current. `time npm run update` captures wall-clock time for R055 proof.
+- **Failure visibility:** If merge fails, git error message is explicit. If push fails, remote rejection message is captured. If deploy fails, GitHub Actions workflow shows red status with build logs. If fast path exceeds 15s, the timing output makes it obvious.
+- **Diagnostic commands:** `git log --oneline -3 origin/main` (merge history), `gh run list --workflow=deploy.yml -L 1` (latest deploy status), `cat page-versions.json | node -e "..."` (freshness state).
+
 ## Expected Output
 
 - `main` branch updated with all M004 changes (SDK removal, claude -p engine, regenerated pages)
