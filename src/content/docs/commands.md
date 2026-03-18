@@ -6,40 +6,40 @@ title: "Commands Reference"
 
 | Command | Description |
 |---------|-------------|
-| [`/gsd`](../commands/gsd/) | Step mode — execute one unit at a time, pause between each |
-| [`/gsd next`](../commands/next/) | Explicit step mode (same as `/gsd`) |
-| [`/gsd auto`](../commands/auto/) | Autonomous mode — research, plan, execute, commit, repeat |
-| [`/gsd quick`](../commands/quick/) | Execute a quick task with GSD guarantees (atomic commits, state tracking) without full planning overhead |
-| [`/gsd stop`](../commands/stop/) | Stop auto mode gracefully |
-| [`/gsd steer`](../commands/steer/) | Hard-steer plan documents during execution |
-| [`/gsd discuss`](../commands/discuss/) | Discuss architecture and decisions (works alongside auto mode) |
-| [`/gsd status`](../commands/status/) | Progress dashboard |
-| [`/gsd queue`](../commands/queue/) | Queue and reorder future milestones (safe during auto mode) |
-| [`/gsd capture`](../commands/capture/) | Fire-and-forget thought capture (works during auto mode) |
-| [`/gsd triage`](../commands/triage/) | Manually trigger triage of pending captures |
-| [`/gsd forensics`](../commands/forensics/) | Post-mortem investigation of auto-mode failures — structured root-cause analysis with log inspection |
-| [`/gsd cleanup`](../commands/cleanup/) | Clean up GSD state files and stale worktrees |
-| [`/gsd visualize`](../commands/visualize/) | Open workflow visualizer (progress, deps, metrics, timeline) |
-| [`/gsd export --html`](../commands/export/) | Generate self-contained HTML report for current or completed milestone |
-| [`/gsd export --html --all`](../commands/export/) | Generate retrospective reports for all milestones at once |
-| [`/gsd update`](../commands/update/) | Update GSD to the latest version in-session |
-| [`/gsd knowledge`](../commands/knowledge/) | Add persistent project knowledge (rule, pattern, or lesson) |
+| [`/gsd`](./gsd/) | Step mode — execute one unit at a time, pause between each |
+| [`/gsd next`](./next/) | Explicit step mode (same as `/gsd`) |
+| [`/gsd auto`](./auto/) | Autonomous mode — research, plan, execute, commit, repeat |
+| [`/gsd quick`](./quick/) | Execute a quick task with GSD guarantees (atomic commits, state tracking) without full planning overhead |
+| [`/gsd stop`](./stop/) | Stop auto mode gracefully |
+| [`/gsd steer`](./steer/) | Hard-steer plan documents during execution |
+| [`/gsd discuss`](./discuss/) | Discuss architecture and decisions (works alongside auto mode) |
+| [`/gsd status`](./status/) | Progress dashboard |
+| [`/gsd queue`](./queue/) | Queue and reorder future milestones (safe during auto mode) |
+| [`/gsd capture`](./capture/) | Fire-and-forget thought capture (works during auto mode) |
+| [`/gsd triage`](./triage/) | Manually trigger triage of pending captures |
+| [`/gsd forensics`](./forensics/) | Post-mortem investigation of auto-mode failures — structured root-cause analysis with log inspection |
+| [`/gsd cleanup`](./cleanup/) | Clean up GSD state files and stale worktrees |
+| [`/gsd visualize`](./visualize/) | Open workflow visualizer (progress, deps, metrics, timeline) |
+| [`/gsd export --html`](./export/) | Generate self-contained HTML report for current or completed milestone |
+| [`/gsd export --html --all`](./export/) | Generate retrospective reports for all milestones at once |
+| [`/gsd update`](./update/) | Update GSD to the latest version in-session |
+| [`/gsd knowledge`](./knowledge/) | Add persistent project knowledge (rule, pattern, or lesson) |
 | `/gsd help` | Categorized command reference with descriptions for all GSD subcommands |
 
 ## Configuration & Diagnostics
 
 | Command | Description |
 |---------|-------------|
-| [`/gsd prefs`](../commands/prefs/) | Model selection, timeouts, budget ceiling |
-| [`/gsd mode`](../commands/mode/) | Switch workflow mode (solo/team) with coordinated defaults for milestone IDs, git commit behavior, and documentation |
-| [`/gsd doctor`](../commands/doctor/) | Runtime health checks (7 checks) with auto-fix for common state corruption issues |
-| [`/gsd skill-health`](../commands/skill-health/) | Skill lifecycle dashboard — usage stats, success rates, token trends, staleness warnings |
+| [`/gsd prefs`](./prefs/) | Model selection, timeouts, budget ceiling |
+| [`/gsd mode`](./mode/) | Switch workflow mode (solo/team) with coordinated defaults for milestone IDs, git commit behavior, and documentation |
+| [`/gsd doctor`](./doctor/) | Runtime health checks (7 checks) with auto-fix for common state corruption issues |
+| [`/gsd skill-health`](./skill-health/) | Skill lifecycle dashboard — usage stats, success rates, token trends, staleness warnings |
 | `/gsd skill-health <name>` | Detailed view for a single skill |
 | `/gsd skill-health --declining` | Show only skills flagged for declining performance |
 | `/gsd skill-health --stale N` | Show skills unused for N+ days |
-| [`/gsd hooks`](../commands/hooks/) | Show configured post-unit and pre-dispatch hooks |
-| [`/gsd run-hook`](../commands/run-hook/) | Manually trigger a specific hook |
-| [`/gsd migrate`](../commands/migrate/) | Migrate a v1 `.planning` directory to `.gsd` format |
+| [`/gsd hooks`](./hooks/) | Show configured post-unit and pre-dispatch hooks |
+| [`/gsd run-hook`](./run-hook/) | Manually trigger a specific hook |
+| [`/gsd migrate`](./migrate/) | Migrate a v1 `.planning` directory to `.gsd` format |
 
 ## Parallel Orchestration
 
@@ -86,7 +86,7 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 >
 > **Tip:** If `Ctrl+V` is intercepted by your terminal (e.g. Warp), use `Alt+V` instead for clipboard image paste.
 
-See [Keyboard Shortcuts](../commands/keyboard-shortcuts/) for full documentation.
+See [Keyboard Shortcuts](./keyboard-shortcuts/) for full documentation.
 
 ## CLI Flags
 
@@ -104,7 +104,7 @@ See [Keyboard Shortcuts](../commands/keyboard-shortcuts/) for full documentation
 | `gsd update` | Update GSD to the latest version |
 | `gsd headless new-milestone` | Create a new milestone from a context file (headless — no TUI required) |
 
-See [CLI Flags](../commands/cli-flags/) for full documentation.
+See [CLI Flags](./cli-flags/) for full documentation.
 
 ## Headless Mode
 
@@ -150,7 +150,7 @@ echo "Build a CLI tool" | gsd headless new-milestone --context -
 
 Any `/gsd` subcommand works as a positional argument — `gsd headless status`, `gsd headless doctor`, `gsd headless dispatch execute`, etc.
 
-See [Headless Mode](../commands/headless/) for full documentation.
+See [Headless Mode](./headless/) for full documentation.
 
 ### `gsd headless query`
 
@@ -205,7 +205,7 @@ The server registers all tools from the agent session and maps MCP `tools/list` 
 
 ## In-Session Update
 
-[`/gsd update`](../commands/update/) checks npm for a newer version of GSD and installs it without leaving the session.
+[`/gsd update`](./update/) checks npm for a newer version of GSD and installs it without leaving the session.
 
 ```bash
 /gsd update
@@ -218,7 +218,7 @@ If already up to date, it reports so and takes no action.
 
 ## Export
 
-[`/gsd export`](../commands/export/) generates reports of milestone work.
+[`/gsd export`](./export/) generates reports of milestone work.
 
 ```bash
 # Generate HTML report for the active milestone

@@ -139,10 +139,16 @@ async function cleanPreviousGenerated() {
  *
  * Skips fenced code blocks (``` regions) and external links (http/https).
  */
-function rewriteLinks(content) {
+function rewriteLinks(content, sourceSlug = '') {
   const lines = content.split('\n');
   let inCodeBlock = false;
   const linkRegex = /\]\((?!https?:\/\/|#)(\.\/|\.\.\/|)([^)#\s]+?)\.md(#[^)]+)?\)/g;
+
+  // sourceSlug is the source file's own slug without extension, e.g. "commands" for commands.md
+  // Used to detect when a link target shares a path prefix with the source file's own slug,
+  // meaning we should emit a sibling-relative path instead of a parent-relative path.
+  // e.g. from commands.md, ./commands/gsd.md → ./gsd/  (not ../commands/gsd/)
+  const sourceDir = sourceSlug.includes('/') ? sourceSlug.split('/').slice(0, -1).join('/') : sourceSlug;
 
   return lines.map(line => {
     // Track fenced code block state
@@ -173,6 +179,13 @@ function rewriteLinks(content) {
       }
 
       // Regular file: ./file.md → ../file/
+      // Special case: if the link target starts with the source file's own slug as a directory
+      // (e.g. from commands.md linking to ./commands/gsd.md), emit a sibling-relative path
+      // (./gsd/) instead of the wrong parent-relative path (../commands/gsd/).
+      if (sourceDir && filePath.startsWith(sourceDir + '/')) {
+        const remainder = filePath.slice(sourceDir.length + 1);
+        return `](./${remainder}/${frag})`;
+      }
       return `](../${filePath}/${frag})`;
     });
   }).join('\n');
@@ -224,7 +237,9 @@ function processMarkdown(content, filePath, isSubdirReadme = false) {
   }
 
   // Rewrite internal .md links to Starlight-compatible format
-  body = rewriteLinks(body);
+  // Pass the source slug (e.g. "commands" for commands.md) so subdirectory links resolve correctly
+  const sourceSlug = basename(filePath, extname(filePath));
+  body = rewriteLinks(body, sourceSlug);
 
   return frontmatter + body;
 }
