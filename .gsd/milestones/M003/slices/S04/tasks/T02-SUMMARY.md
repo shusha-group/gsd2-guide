@@ -65,6 +65,16 @@ blocker_discovered: false
 - `node scripts/check-links.mjs` validates all internal links post-build
 - If a step fails, the pipeline exits non-zero with the step name and elapsed time printed
 
+## Verification Evidence
+
+| Gate | Command | Exit | Verdict | Duration |
+|------|---------|------|---------|----------|
+| E2E pipeline (no key) | `unset ANTHROPIC_API_KEY && npm run update` | 0 | All 7 steps ✅ | ~8s |
+| HTML pages built | `find dist -name '*.html' \| wc -l` | 0 | 58 pages | — |
+| Link check | `node scripts/check-links.mjs` | 0 | 3427 links, 0 broken | 0.04s |
+| Stale pages contract | `cat content/generated/stale-pages.json` | 0 | Valid JSON with all fields | — |
+| Full test suite | `node --test tests/*.test.mjs` | 0 | 118 pass, 0 fail | 1.5s |
+
 ## Deviations
 
 - Fixed pre-existing broken links in `ReleaseEntry.astro` — the `config` and `pause` command slugs were still in the mapping but their pages had already been removed by a prior manage-pages run. This was not in the original plan but was necessary to get check-links to pass.

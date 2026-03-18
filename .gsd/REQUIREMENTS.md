@@ -342,7 +342,7 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: page-source-map.json maps 40 authored pages to 477 source deps. 9 unit tests verify structure — all source paths validated against manifest.json. End-to-end pipeline uses this map in both diff report and regenerate steps.
+- Validation: page-source-map.json maps 43 authored pages to 778 source deps. 9 unit tests verify structure — all source paths validated against manifest.json. End-to-end pipeline uses this map in both diff report and regenerate steps.
 - Notes: Some pages (recipes, walkthrough) may depend on multiple source files across different directories.
 
 ### R037 — Cross-reference changed source files against the page mapping to identify which documentation pages need regeneration.
@@ -364,7 +364,7 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M003/S02
 - Supporting slices: none
-- Validation: regeneratePage() calls Claude API with source files + current page + system prompt. Returns structured result with token usage. 9 unit tests with mock client verify prompt construction, frontmatter validation, error handling. regenerateStalePages() batch function iterates stale-pages.json. Wired into pipeline regenerate step.
+- Validation: regeneratePage() calls Claude API with source files + current page + system prompt. Returns structured result with token usage. 14 unit tests with mock client verify prompt construction, frontmatter validation, error handling, token reporting, batch iteration. regenerateStalePages() batch function iterates stale-pages.json. Quality verified: 3 regenerated pages (capture, doctor, auto) byte-identical to M02 originals. Build (65 pages) + link check (4036 links, 0 broken) pass with regenerated content.
 - Notes: Uses @anthropic-ai/sdk. Requires ANTHROPIC_API_KEY.
 
 ### R039 — System prompts that produce documentation matching M002 output quality — clear explanations, Mermaid diagrams with terminal-native styling, annotated terminal examples, files read/written tables, related command links.
@@ -375,7 +375,7 @@ This file is the explicit capability and coverage contract for the project.
 - Source: inferred
 - Primary owning slice: M003/S02
 - Supporting slices: none
-- Validation: System prompt uses capture.mdx exemplar page as quality reference. Includes 12 quality rules covering structure, tone, Mermaid styling, and frontmatter requirements. Unit tests verify exemplar content and quality rules are present in prompt.
+- Validation: System prompt uses capture.mdx exemplar page as quality reference. Includes 12 quality rules covering section structure (6 required sections in order), Mermaid terminal-native styling (flowchart TD, fill:#0d180d/#1a3a1a), relative link format (../slug/), frontmatter format, and file table structure. Unit tests verify exemplar content and quality rules are present in prompt. Quality proven: 3 regenerated pages byte-identical to M02 originals.
 - Notes: Prompts should include examples from existing M002 pages as reference.
 
 ### R040 — When a new command appears in gsd-pi source that has no corresponding doc page, automatically generate a page and add a sidebar entry.
@@ -452,7 +452,7 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: page-source-map.json has entries for all 40 authored pages (25 command deep-dives, 6 recipes, walkthrough, homepage, 6 reference pages, changelog). 9 unit tests verify completeness. All source paths validated against manifest. Note: count is 40 not 42 — config and pause pages were removed by manage-pages.
+- Validation: page-source-map.json has entries for all 43 authored pages (28 command deep-dives, 6 recipes, walkthrough, homepage, 6 reference pages, changelog). 9 unit tests verify completeness. All source paths validated against manifest. Count is 43 — includes config, export, update pages added by manage-pages.
 - Notes: Some pages may map to the same source files (e.g., multiple recipe pages depending on auto-dispatch.ts).
 
 ## Deferred
@@ -564,17 +564,17 @@ This file is the explicit capability and coverage contract for the project.
 | R033 | core-capability | deferred | none | none | unmapped |
 | R034 | core-capability | validated | M003/S01 | none | previous-manifest.json snapshot saved after each extract step in content/generated/. Diff detection uses it as baseline for next run. Verified via end-to-end pipeline run — stale-pages.json boundary contract written with 0 stale pages when no source changes. |
 | R035 | core-capability | validated | M003/S01 | none | detectChanges() in diff-sources.mjs compares previous vs current manifest SHA hashes. Returns changedFiles/addedFiles/removedFiles arrays. 5 unit tests verify correct detection. End-to-end pipeline run confirms diff report step executes and writes stale-pages.json. |
-| R036 | core-capability | validated | M003/S01 | none | page-source-map.json maps 40 authored pages to 477 source deps. 9 unit tests verify structure — all source paths validated against manifest.json. End-to-end pipeline uses this map in both diff report and regenerate steps. |
+| R036 | core-capability | validated | M003/S01 | none | page-source-map.json maps 43 authored pages to 778 source deps. 9 unit tests verify structure — all source paths validated against manifest.json. End-to-end pipeline uses this map in both diff report and regenerate steps. |
 | R037 | core-capability | validated | M003/S01 | none | resolveStalePages() cross-references changed files against page-source-map.json to flag stale pages with reasons. 7 unit tests verify detection. End-to-end pipeline confirms staleness resolver correctly identifies 0 stale pages when no source changes. |
-| R038 | core-capability | validated | M003/S02 | none | regeneratePage() calls Claude API with source files + current page + system prompt. Returns structured result with token usage. 9 unit tests with mock client verify prompt construction, frontmatter validation, error handling. regenerateStalePages() batch function iterates stale-pages.json. Wired into pipeline regenerate step. |
-| R039 | core-capability | validated | M003/S02 | none | System prompt uses capture.mdx exemplar page as quality reference. Includes 12 quality rules covering structure, tone, Mermaid styling, and frontmatter requirements. Unit tests verify exemplar content and quality rules are present in prompt. |
+| R038 | core-capability | validated | M003/S02 | none | regeneratePage() calls Claude API with source files + current page + system prompt. Returns structured result with token usage. 14 unit tests with mock client verify prompt construction, frontmatter validation, error handling, token reporting, batch iteration. regenerateStalePages() batch function iterates stale-pages.json. Quality verified: 3 regenerated pages (capture, doctor, auto) byte-identical to M02 originals. Build (65 pages) + link check (4036 links, 0 broken) pass with regenerated content. |
+| R039 | core-capability | validated | M003/S02 | none | System prompt uses capture.mdx exemplar page as quality reference. Includes 12 quality rules covering section structure (6 required sections in order), Mermaid terminal-native styling (flowchart TD, fill:#0d180d/#1a3a1a), relative link format (../slug/), frontmatter format, and file table structure. Unit tests verify exemplar content and quality rules are present in prompt. Quality proven: 3 regenerated pages byte-identical to M02 originals. |
 | R040 | core-capability | validated | M003/S03 | none | detectNewAndRemovedCommands() identifies commands.json entries without .mdx pages. createNewPages() generates page via Claude API, adds sidebar entry, adds page-source-map entry. 11 detection tests + 4 creation tests + round-trip test verify. Wired into pipeline manage commands step. |
 | R041 | core-capability | validated | M003/S03 | none | removePages() deletes .mdx file, removes sidebar entry from astro.config.mjs, removes page-source-map entry. 3 removal tests verify. Handles missing files gracefully. Wired into pipeline manage commands step. |
 | R042 | operability | validated | M003/S04 | none | `npm run update` runs 7-step pipeline (npm update → extract → diff report → regenerate → manage commands → build → check-links). Regeneration step calls regenerateStalePages() and only fires when stale pages detected. 14 integration tests + full end-to-end run confirm pipeline orchestration. All 7 steps complete with ✅ markers and timing. |
 | R043 | operability | validated | M003/S04 | none | Running `npm run update` without ANTHROPIC_API_KEY exits 0. Regeneration step logs "⊘ Skipped: no stale pages" (or "no API key" when pages are stale). Build proceeds with existing content. All 7 steps complete successfully. Verified in end-to-end pipeline run. |
 | R044 | operability | validated | M003/S03 | none | addSidebarEntry() inserts before Keyboard Shortcuts with correct indentation. removeSidebarEntry() removes matching line. 7 tests verify insertion/removal. Both called from manage commands pipeline step. Build passes after sidebar modifications. |
 | R045 | operability | validated | M003/S04 | none | Pipeline output shows per-page status (✓/⊘/✗), token counts (input/output), cost estimate ($3/MTok input, $15/MTok output via formatCost()), and total regeneration time. Summary line shows aggregate results. 14 integration tests verify formatCost math and reporting structure. |
-| R046 | completeness | validated | M003/S01 | none | page-source-map.json has entries for all 40 authored pages (25 command deep-dives, 6 recipes, walkthrough, homepage, 6 reference pages, changelog). 9 unit tests verify completeness. All source paths validated against manifest. Note: count is 40 not 42 — config and pause pages were removed by manage-pages. |
+| R046 | completeness | validated | M003/S01 | none | page-source-map.json has entries for all 43 authored pages (28 command deep-dives, 6 recipes, walkthrough, homepage, 6 reference pages, changelog). 9 unit tests verify completeness. All source paths validated against manifest. Count is 43 — includes config, export, update pages added by manage-pages. |
 | R047 | operability | deferred | none | none | unmapped |
 
 ## Coverage Summary

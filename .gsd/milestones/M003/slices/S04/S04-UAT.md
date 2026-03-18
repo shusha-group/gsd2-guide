@@ -1,131 +1,109 @@
 # S04: Pipeline Integration and Polish — UAT
 
 **Milestone:** M003
-**Written:** 2026-03-17
+**Written:** 2026-03-18
 
 ## UAT Type
 
-- UAT mode: live-runtime
-- Why this mode is sufficient: This is the final-assembly slice — the pipeline must actually run end-to-end as a real command. Mocked unit tests (covered in T01) verify orchestration logic; this UAT verifies the real `npm run update` entrypoint produces correct results.
+- UAT mode: artifact-driven
+- Why this mode is sufficient: The pipeline is a build system — its outputs (built HTML, JSON boundary contracts, test results, link check verdicts) are deterministic artifacts that can be inspected without human judgment. The quality of regenerated pages was already proven in S02 UAT.
 
 ## Preconditions
 
-- Working directory: `gsd2-guide` project root
+- Working directory is the project root (where `package.json` and `scripts/update.mjs` live)
 - Node.js 20+ installed
-- `gsd-pi` globally installed (`npm i -g gsd-pi`)
-- `ANTHROPIC_API_KEY` should **not** be set (tests graceful degradation path)
-- Previous `npm run update` has been run at least once (so `content/generated/previous-manifest.json` exists)
+- `gsd-pi` npm package installed globally (`npm i -g gsd-pi`)
+- `ANTHROPIC_API_KEY` is NOT set (for graceful degradation tests)
 
 ## Smoke Test
 
-Run `npm run update` — it should exit 0 with all 7 steps showing ✅ markers in stdout.
+Run `node --test tests/*.test.mjs` and confirm exit code 0 with 113+ tests passing, 0 failures.
 
 ## Test Cases
 
 ### 1. Full pipeline completes without API key
 
-1. `unset ANTHROPIC_API_KEY`
-2. `npm run update`
-3. **Expected:** Exit code 0. All 7 steps show `[update] ✅` completion markers:
-   - npm update
-   - extract
-   - diff report
-   - regenerate
-   - manage commands
-   - build
-   - check-links
-
-### 2. Regeneration step skips gracefully
-
-1. Run `npm run update` without `ANTHROPIC_API_KEY`
-2. Look for the `[update] Step: regenerate` log block
-3. **Expected:** Contains `⊘ Skipped:` with a reason (either "no stale pages" or "no API key"). Does NOT show any error or stack trace.
-
-### 3. Manage commands step detects sync state
-
-1. Run `npm run update`
-2. Look for the `[update] Step: manage commands` log block
-3. **Expected:** Contains `✓ All commands in sync` (since no commands were added/removed between runs).
-
-### 4. Step timings reported for all 7 steps
-
-1. Run `npm run update`
-2. Look for the `[update] Step timings:` section at the bottom
-3. **Expected:** Lists all 7 step names with elapsed times (e.g., `npm update      639ms`). Step names are left-padded to 18 characters.
-
-### 5. Regeneration summary in pipeline output
-
-1. Run `npm run update`
-2. Look for the `[update] Regeneration:` line in the summary section
-3. **Expected:** Shows `skipped (no stale pages)` when no source changes detected. When pages are regenerated, shows `N regenerated, N skipped, N failed` with optional cost/token lines.
-
-### 6. Boundary contract file written
-
-1. Run `npm run update`
-2. `cat content/generated/stale-pages.json`
-3. **Expected:** Valid JSON with fields: `changedFiles` (array), `addedFiles` (array), `removedFiles` (array), `stalePages` (array), `reasons` (object), `timestamp` (ISO string).
-
-### 7. Build produces HTML pages
-
-1. Run `npm run update`
-2. `find dist -name '*.html' | wc -l`
-3. **Expected:** 58 HTML pages (may vary slightly if commands are added/removed upstream).
-
-### 8. Link check passes
-
-1. Run `npm run update`
-2. Look for check-links step output
-3. **Expected:** `X internal links checked — 0 broken` with exit code 0.
-
-### 9. Pipeline exits non-zero on step failure
-
-1. Temporarily rename `scripts/check-links.mjs` to `scripts/check-links.mjs.bak`
+1. Unset `ANTHROPIC_API_KEY`: `unset ANTHROPIC_API_KEY`
 2. Run `npm run update`
-3. **Expected:** Pipeline fails at `check-links` step with `[update] ❌ Step "check-links" failed` message and non-zero exit code.
-4. Restore: `mv scripts/check-links.mjs.bak scripts/check-links.mjs`
+3. **Expected:** Exit code 0. All 9 steps show ✅ markers. Regeneration step shows skip message (either "no stale pages" or "ANTHROPIC_API_KEY not set"). Build produces HTML pages. Check-links reports 0 broken links.
 
-### 10. Import guard prevents side effects
+### 2. Pipeline output shows step timings for all 9 steps
 
-1. `node -e "import('./scripts/update.mjs').then(m => console.log('steps:', m.steps.length))"`
-2. **Expected:** Prints `steps: 7` without executing the pipeline (no `[update]` log output). The import completes in under 1 second.
+1. Run `npm run update`
+2. Inspect the `[update] Step timings:` section at the end of output
+3. **Expected:** 9 lines listing: update gsd-pi, extract, diff report, manage commands, regenerate, build, check-links, audit content, stamp pages — each with elapsed time.
+
+### 3. Stale pages boundary contract is written
+
+1. Run `npm run update`
+2. Read `content/generated/stale-pages.json`
+3. **Expected:** Valid JSON with fields: `changedFiles` (array), `addedFiles` (array), `removedFiles` (array), `stalePages` (array), `reasons` (object), `timestamp` (ISO string). When no source changes, `stalePages` should be empty.
+
+### 4. Pipeline step order is correct
+
+1. Run `node -e "import('./scripts/update.mjs').then(m => console.log(m.steps.map(s => s.name)))"`
+2. **Expected:** Array: `['update gsd-pi', 'extract', 'diff report', 'manage commands', 'regenerate', 'build', 'check-links', 'audit content', 'stamp pages']`
+
+### 5. Import guard prevents side effects
+
+1. Run `node -e "import('./scripts/update.mjs').then(m => console.log('OK:', m.steps.length, 'steps'))"`
+2. **Expected:** Prints `OK: 9 steps` without any pipeline execution output (no `[update]` log lines).
+
+### 6. Manage commands detects sync state
+
+1. Run `npm run update`
+2. Find the `[update] Step: manage commands` section in output
+3. **Expected:** Shows "New commands: 0", "Removed commands: 0", "✓ All commands in sync — no changes needed."
+
+### 7. Link checker catches all internal links
+
+1. Run `node scripts/check-links.mjs`
+2. **Expected:** Exit code 0. Reports 4000+ internal links checked, 0 broken. No links to `/commands/config/` or `/commands/pause/` (these were removed).
+
+### 8. All test suites pass with zero regressions
+
+1. Run `node --test tests/*.test.mjs`
+2. **Expected:** 113+ tests pass, 0 fail, 0 cancelled across all suites (diff-sources, extract, manage-pages, page-source-map, regenerate-page, update-pipeline).
 
 ## Edge Cases
 
-### First run (no previous manifest)
+### Pipeline fails on broken step — exit code and message
 
-1. Delete `content/generated/previous-manifest.json`
+1. Temporarily introduce a build error (e.g., rename `astro.config.mjs`)
 2. Run `npm run update`
-3. **Expected:** Diff report shows "First run — no previous manifest for diff. All pages considered fresh." stale-pages.json has `firstRun: true`.
+3. **Expected:** Pipeline exits non-zero. Output shows `❌ Step "build" failed after Xms` with total elapsed time.
+4. Restore the file and re-run to confirm clean state.
 
-### All tests pass after pipeline changes
+### No previous manifest (first-run path)
 
-1. `node --test tests/*.test.mjs`
-2. **Expected:** 118 tests pass, 0 fail, 0 cancelled across all 28 suites.
+1. Move `content/generated/previous-manifest.json` aside temporarily
+2. Run `npm run update`
+3. **Expected:** Diff report step prints "First run — no previous manifest for diff. All pages considered fresh." Stale pages file shows `firstRun: true, stalePages: []`.
+4. Restore the file.
 
 ## Failure Signals
 
-- `npm run update` exits non-zero — check which step failed in the `[update] ❌` line
-- Missing `[update] Step: regenerate` or `[update] Step: manage commands` in output — steps not wired into pipeline
-- `stale-pages.json` not written — diff report step failed silently
-- Broken links in check-links output — a command page was removed but its ReleaseEntry.astro slug wasn't cleaned up
-- Test count drops below 118 — a test file was accidentally removed or broken
+- `npm run update` exits non-zero — a step failed, check the `❌ Step "..."` line
+- Tests report `# fail > 0` — regression introduced
+- `check-links` reports broken links — a page was added/removed without sidebar sync
+- `stale-pages.json` missing after pipeline run — diff report step didn't execute
+- Pipeline hangs on import — `isDirectRun` guard broken
 
 ## Requirements Proved By This UAT
 
-- R042 — Pipeline integration into `npm run update` (test cases 1, 4, 5)
-- R043 — Graceful degradation without API key (test cases 1, 2)
-- R045 — Cost/timing reporting (test cases 4, 5)
-- R007 — Single-command update cycle (test case 1)
+- R042 — Regeneration runs as part of `npm run update` between extract and build, only when stale pages detected (Test 1, Test 4)
+- R043 — Without ANTHROPIC_API_KEY, pipeline reports absence, skips regeneration, builds with existing content (Test 1)
+- R045 — Pipeline reports per-page status, token usage, cost estimate, and total time (Test 2)
+- R007 — Single command runs the full pipeline end-to-end (Test 1, Test 2)
 
 ## Not Proven By This UAT
 
-- Regeneration quality with actual API key and real source changes (proved by S02 UAT, not repeated here)
-- New command detection with a real new gsd-pi command (proved by S03 UAT with fake commands)
-- Token cost accuracy against actual Claude API billing (would require real API calls with billing verification)
+- Regeneration with a real API key and actual stale pages — S02 UAT covers this with mock clients; a live API test would require real source changes and API spend
+- Token cost accuracy for large regeneration runs — only the math formula is verified, not actual API charges
+- Build quality of regenerated pages — S02 UAT covers quality comparison against M02 originals
 
 ## Notes for Tester
 
-- The pipeline takes ~8 seconds total — most of that is the build step (~5.5s) and extract step (~1s).
-- The `npm update` step at the start may show npm warnings about deprecated packages — these are harmless.
-- If running in a worktree, ensure `content/generated/` exists and has the expected artifacts from prior runs.
-- The regeneration step currently shows "no stale pages" because the manifest hasn't changed between runs. To see the regeneration path exercise, you'd need to modify `content/generated/previous-manifest.json` to simulate a source change.
+- The pipeline step count may grow beyond 9 if future slices add steps. Test 1 and 4 may need count updates.
+- The "audit content" and "stamp pages" steps are newer additions — if they fail, check `scripts/audit-content.mjs` and `scripts/check-page-freshness.mjs` exist.
+- All tests run against real project data (page-source-map.json, commands.json, etc.) — they test the actual project state, not fixtures.

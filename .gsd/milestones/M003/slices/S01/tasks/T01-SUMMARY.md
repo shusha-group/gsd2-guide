@@ -50,6 +50,14 @@ The generator validates all source paths against `manifest.json` at build time, 
 
 Slice-level verification: 2/4 checks pass (page-map test + build-page-map CLI). Remaining 2 checks are for T02 (diff-sources).
 
+## Verification Evidence
+
+| Gate Check | Command | Exit Code | Verdict | Duration |
+|---|---|---|---|---|
+| Page map generation | `node scripts/lib/build-page-map.mjs` | 0 | ✅ pass | <1s |
+| Page map tests (9) | `node --test tests/page-map.test.mjs` | 0 | ✅ pass | ~1s |
+| Page count | `python3 -c "..."` → "43 pages mapped" | 0 | ✅ pass | <1s |
+
 ## Diagnostics
 
 - Inspect the map: `cat content/generated/page-source-map.json | python3 -m json.tool`

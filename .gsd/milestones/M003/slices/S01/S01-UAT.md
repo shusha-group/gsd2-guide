@@ -1,139 +1,129 @@
 # S01: Source Diff and Page Mapping — UAT
 
 **Milestone:** M003
-**Written:** 2026-03-17
+**Written:** 2026-03-18
 
 ## UAT Type
 
 - UAT mode: artifact-driven
-- Why this mode is sufficient: This slice produces detection-only artifacts (JSON files, console output) with no UI or runtime behavior. All verification is against generated data structures and CLI output.
+- Why this mode is sufficient: S01 is detection-only — no runtime server, no user-facing UI, no LLM calls. All outputs are JSON files and console messages that can be verified by inspecting artifacts and running scripts.
 
 ## Preconditions
 
-- Node.js 20+ installed
-- `npm install` completed in project root
-- `npm run extract` has been run at least once (so `content/generated/manifest.json` exists)
+- Node.js 22+ installed
+- gsd-pi globally installed (`npm root -g` resolves to a directory with `gsd-pi/dist/src/resources/`)
+- `content/generated/manifest.json` exists (run `npm run extract` if missing)
+- Working directory is the project root
 
 ## Smoke Test
 
-Run `node scripts/lib/build-page-map.mjs` — should print "42 pages mapped, 485 total deps" and exit 0.
+Run `node scripts/lib/build-page-map.mjs && node scripts/lib/diff-sources.mjs` — should print page count and diff summary without errors.
 
 ## Test Cases
 
-### 1. Page-source-map covers all 42 authored pages
+### 1. Page map covers all 43 authored pages
 
 1. Run `node scripts/lib/build-page-map.mjs`
-2. Open `content/generated/page-source-map.json`
-3. Count the top-level keys
-4. **Expected:** Exactly 42 keys. Should include: 27 `commands/*.mdx` entries, 6 `recipes/*.mdx` entries, `user-guide/developing-with-gsd.mdx`, `reference/skills.mdx`, `reference/agents.mdx`, `reference/extensions.mdx`, `reference/prompts.mdx`, `reference/hooks.mdx`, `reference/index.mdx`, `changelog.mdx`, `index.mdx`.
+2. Run `python3 -c "import json; m=json.load(open('content/generated/page-source-map.json')); print(f'{len(m)} pages'); cmds=[k for k in m if k.startswith('commands/')]; print(f'{len(cmds)} commands'); recipes=[k for k in m if k.startswith('recipes/')]; print(f'{len(recipes)} recipes')"`
+3. **Expected:** 43 pages, 28 commands, 6 recipes
 
-### 2. All source paths exist in manifest
+### 2. All source paths are valid
 
 1. Run `node --test tests/page-map.test.mjs`
-2. Check the "every source path in every entry exists in manifest.json" test
-3. **Expected:** Test passes — zero source paths reference files not in the current manifest.
+2. **Expected:** 9/9 tests pass — includes "every source path in every entry exists in manifest.json"
 
-### 3. Command pages have meaningful dependencies
+### 3. Diff detection finds changed files
 
-1. Open `content/generated/page-source-map.json`
-2. Check `commands/auto.mdx` — should list `src/resources/extensions/gsd/auto.ts`, `src/resources/extensions/gsd/auto-dispatch.ts`, plus shared deps
-3. Check `commands/discuss.mdx` — no dedicated `discuss.ts` exists, so should map to shared deps (commands.ts, state.ts, types.ts) plus prompts/discuss.md if it exists
-4. **Expected:** Every command page has ≥1 `.ts` file in its dependency array. Complex commands (auto, doctor, migrate, visualize) have multiple specific source files.
+1. Run `node scripts/extract.mjs` (ensures current manifest exists)
+2. Run `cp content/generated/manifest.json content/generated/previous-manifest.json`
+3. Edit `content/generated/previous-manifest.json` — change any SHA value for `src/resources/extensions/gsd/auto.ts`
+4. Run `node scripts/lib/diff-sources.mjs`
+5. **Expected:** Output reports 1 file changed, 0 added, 0 removed. `commands/auto.mdx` listed as stale.
 
-### 4. Cross-cutting pages have broad dependency sets
+### 4. Diff detection finds added files
 
-1. Check `recipes/fix-a-bug.mdx` in the page-source-map
-2. Check `user-guide/developing-with-gsd.mdx`
-3. **Expected:** Each cross-cutting page has ≥3 dependencies spanning multiple source directories.
-
-### 5. Diff detection with identical manifests
-
-1. Run `npm run extract` (creates current manifest)
-2. Run `npm run update` (which re-extracts, making previous = current)
-3. Check `content/generated/stale-pages.json`
-4. **Expected:** `stalePages` is an empty array, `changedFiles` is empty, pipeline log shows "✓ No stale pages — skipping regeneration".
-
-### 6. Diff detection with simulated change
-
-1. Copy `content/generated/manifest.json` to `content/generated/previous-manifest.json`
-2. Edit `previous-manifest.json`: change the SHA value for `src/resources/extensions/gsd/auto.ts` to `"aaaa"`
-3. Run `node scripts/lib/diff-sources.mjs`
-4. **Expected:** Output reports 1 changed file. `commands/auto.mdx` appears in stale pages list. The reason includes `src/resources/extensions/gsd/auto.ts`.
-
-### 7. First-run graceful handling
-
-1. Delete `content/generated/previous-manifest.json` (if it exists)
+1. Edit `content/generated/previous-manifest.json` — remove the entry for `src/resources/extensions/gsd/auto.ts` entirely
 2. Run `node scripts/lib/diff-sources.mjs`
-3. **Expected:** Output says "First run — no previous manifest" (or similar). Exits with code 0. No error thrown.
+3. **Expected:** Output reports 1 file added (auto.ts). No pages flagged stale (added files don't trigger staleness — S03 handles new commands).
 
-### 8. Stale-pages.json boundary contract shape
+### 5. Diff detection finds removed files
+
+1. Edit `content/generated/manifest.json` — temporarily remove the entry for `src/resources/extensions/gsd/auto.ts`
+2. Ensure `previous-manifest.json` still has `auto.ts` with its original SHA
+3. Run `node scripts/lib/diff-sources.mjs`
+4. **Expected:** Output reports 1 file removed. `commands/auto.mdx` listed as stale (removed deps trigger staleness).
+5. Restore manifest.json: `node scripts/extract.mjs`
+
+### 6. First-run graceful handling
+
+1. If `content/generated/previous-manifest.json` exists, rename it: `mv content/generated/previous-manifest.json content/generated/previous-manifest.json.bak`
+2. Run `node scripts/lib/diff-sources.mjs`
+3. **Expected:** Output prints "First run — no previous manifest" message and exits cleanly (exit code 0).
+4. Restore: `mv content/generated/previous-manifest.json.bak content/generated/previous-manifest.json`
+
+### 7. Pipeline integration — diff report in update output
 
 1. Run `npm run update`
-2. Inspect `content/generated/stale-pages.json`
-3. **Expected:** JSON object with exactly these keys: `changedFiles` (array), `addedFiles` (array), `removedFiles` (array), `stalePages` (array), `reasons` (object), `timestamp` (string).
+2. **Expected:** Output includes `[update] Step: diff report` block between extract and build. Changed file count and stale page count visible.
 
-### 9. Previous-manifest snapshot saved before extraction
+### 8. stale-pages.json boundary contract format
 
-1. Note the current `content/generated/manifest.json` headSha
-2. Run `npm run extract`
-3. Check `content/generated/previous-manifest.json`
-4. **Expected:** `previous-manifest.json` exists and its `headSha` matches the pre-extraction manifest's headSha (the old state was preserved).
+1. After `npm run update`, run `node -e "const s=JSON.parse(require('fs').readFileSync('content/generated/stale-pages.json','utf8')); console.log(Object.keys(s).sort().join(', ')); console.log('stalePages is array:', Array.isArray(s.stalePages)); console.log('timestamp exists:', !!s.timestamp)"`
+2. **Expected:** Keys include `addedFiles, changedFiles, reasons, removedFiles, stalePages, timestamp`. stalePages is array: true. timestamp exists: true.
 
-### 10. Update pipeline includes diff report
+### 9. Idempotent — second run shows zero stale
 
-1. Run `npm run update`
-2. Scan console output for `[update] Step: diff report`
-3. **Expected:** Diff report step appears between extract and build steps, shows changed file count and stale page list (or "No stale pages" message).
+1. Run `npm run update` twice in succession
+2. **Expected:** Second run shows "0 stale pages" or "✓ No stale pages" in diff report output.
+
+### 10. Unit tests all green
+
+1. Run `node --test tests/page-map.test.mjs tests/diff-sources.test.mjs`
+2. **Expected:** 21/21 tests pass (9 page-map + 12 diff-sources)
 
 ## Edge Cases
 
-### Added file does not trigger staleness
+### Cross-cutting page with broad deps
 
-1. Copy `content/generated/manifest.json` to `content/generated/previous-manifest.json`
-2. Add a new entry `"src/resources/extensions/gsd/brand-new.ts": "deadbeef"` to the current `manifest.json` files
-3. Run `node scripts/lib/diff-sources.mjs`
-4. **Expected:** `brand-new.ts` appears in "added files" but stale pages count is 0 — added files don't flag existing pages.
+1. Run `node -e "const m=JSON.parse(require('fs').readFileSync('content/generated/page-source-map.json','utf8')); console.log('walkthrough deps:', m['user-guide/developing-with-gsd.mdx'].length)"`
+2. **Expected:** Walkthrough has ≥3 dependencies (broad cross-cutting)
 
-### Removed file triggers staleness
+### Reference page dynamic deps
 
-1. Copy `content/generated/manifest.json` to `content/generated/previous-manifest.json`
-2. Remove `src/resources/extensions/gsd/auto.ts` from the current `manifest.json` files
-3. Run `node scripts/lib/diff-sources.mjs`
-4. **Expected:** `auto.ts` appears in "removed files" and `commands/auto.mdx` appears in stale pages.
+1. Run `node -e "const m=JSON.parse(require('fs').readFileSync('content/generated/page-source-map.json','utf8')); console.log('skills deps:', m['reference/skills.mdx'].length); console.log('extensions deps:', m['reference/extensions.mdx'].length)"`
+2. **Expected:** Both have multiple deps (dynamically pulled from manifest, not hardcoded)
 
-### Reference pages with dynamic deps
+### Static pages have zero deps
 
-1. Check `reference/skills.mdx` in page-source-map.json
-2. **Expected:** Dependencies include all `src/resources/skills/**/SKILL.md` files found in the manifest. Count should be ≥8 (matching the known skill count).
+1. Run `node -e "const m=JSON.parse(require('fs').readFileSync('content/generated/page-source-map.json','utf8')); console.log('index:', m['index.mdx'].length); console.log('ref/index:', m['reference/index.mdx'].length); console.log('changelog:', m['changelog.mdx'].length)"`
+2. **Expected:** All three print 0
 
 ## Failure Signals
 
-- `node --test tests/page-map.test.mjs` fails — page-source-map is incomplete or has invalid paths
-- `node --test tests/diff-sources.test.mjs` fails — diff detection or staleness logic is broken
-- `content/generated/page-source-map.json` missing or has fewer than 42 entries
-- `content/generated/stale-pages.json` missing after `npm run update`
-- `content/generated/previous-manifest.json` missing after `npm run extract`
-- `npm run update` errors during the diff report step
-- Console warnings about >50% missing source paths (suggests manifest/map mismatch)
+- `build-page-map.mjs` warns about missing source paths → manifest.json may be stale, run `npm run extract`
+- `build-page-map.mjs` errors with ">50% paths missing" → likely a gsd-pi repo restructure, mappings need updating
+- `diff-sources.mjs` crashes on missing previous-manifest → extract.mjs didn't save the snapshot properly
+- `stale-pages.json` is missing after `npm run update` → diff report step in update.mjs may have thrown
+- Tests fail on page count → a page was added or removed without updating the test expectations
 
 ## Requirements Proved By This UAT
 
-- **R034** — Test case 9 proves previous manifest snapshot is saved before extraction
-- **R035** — Test cases 5, 6, 7 prove diff detection works for identical, changed, and first-run scenarios
-- **R036** — Test cases 1, 2, 3, 4 prove all 42 pages mapped with validated source paths
-- **R037** — Test cases 6 and edge cases (added/removed) prove staleness resolution works correctly
-- **R046** — Test case 1 proves all 42 authored pages have explicit source mappings
+- R034 — Test 7 proves previous-manifest.json is saved during extract; Tests 3-6 prove diff uses it as baseline
+- R035 — Tests 3-5 prove correct detection of changed, added, and removed files
+- R036 — Tests 1-2 prove all 43 pages are mapped with valid source paths
+- R037 — Tests 3, 5 prove stale page flagging from changed/removed files; Test 4 proves added files don't trigger staleness
+- R046 — Test 1 proves all 43 authored pages have explicit mappings
 
 ## Not Proven By This UAT
 
-- LLM regeneration quality (S02) — this slice only detects staleness, doesn't regenerate
-- New/removed command page creation (S03) — addedFiles are detected but not acted on
-- Full pipeline end-to-end with regeneration (S04) — only the detection stage is wired
-- Token cost and latency of regeneration — no API calls made in this slice
+- LLM regeneration quality (S02)
+- New/removed command page creation/deletion (S03)
+- Full end-to-end `npm run update` with actual regeneration (S04)
+- Cost/timing reporting for regeneration runs (S02/S04)
+- Graceful degradation without ANTHROPIC_API_KEY (S04)
 
 ## Notes for Tester
 
-- The "485 total deps" count may change if gsd-pi adds new source files — the reference pages dynamically pull deps from the manifest. The key assertion is 42 page entries, not the exact dep count.
-- Test case 6 (simulated change) requires manually editing a JSON file. Be careful to maintain valid JSON — use a JSON-aware editor or `python3 -m json.tool` to validate after editing.
-- Running `npm run update` takes ~15-20 seconds (extract + build). The diff report itself is ~3ms.
-- The `previous-manifest.json` is overwritten on every extract. If you need to test specific scenarios, back up the file first.
+- Tests 3-6 involve editing manifest JSON files — make sure to restore them afterward (run `npm run extract` to regenerate clean manifests).
+- The page count (43) and command count (28) reflect S03's additions (config, export, update). If S03 adds or removes more pages in the future, these counts will need updating.
+- The diff report step runs in ~3ms — if it takes longer, it's likely doing file I/O that should be cached.

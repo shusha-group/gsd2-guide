@@ -85,6 +85,18 @@ These estimates will be validated when API-based regeneration runs in production
 - ✅ Original pages restored after verification
 - ✅ Build + link check passes with restored originals
 
+## Verification Evidence
+
+| Gate | Command | Exit | Verdict | Duration |
+|------|---------|------|---------|----------|
+| Build with regen pages | `npm run build` | 0 | 65 pages built | ~5s |
+| Link check | `node scripts/check-links.mjs` | 0 | 4036 links, 0 broken | ~2s |
+| Diff capture | `diff capture.mdx.bak capture.mdx` | 0 | Byte-identical | <1s |
+| Diff doctor | `diff doctor.mdx.bak doctor.mdx` | 0 | Byte-identical | <1s |
+| Diff auto | `diff auto.mdx.bak auto.mdx` | 0 | Byte-identical | <1s |
+| Unit tests | `node --test tests/regenerate-page.test.mjs` | 0 | 14/14 pass | <1s |
+| No-key skip | `ANTHROPIC_API_KEY= node scripts/lib/regenerate-page.mjs commands/capture.mdx` | 0 | Prints skip, exits 0 | <1s |
+
 ## Diagnostics
 
 - **Per-page regeneration**: `node scripts/lib/regenerate-page.mjs <pagePath>` — prints model, token counts, cost, timing

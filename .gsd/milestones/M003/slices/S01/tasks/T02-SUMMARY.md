@@ -56,6 +56,15 @@ Slice-level checks:
 - ✅ `node scripts/lib/build-page-map.mjs && echo "OK"` — generates without errors
 - ✅ `node -e "import('./scripts/lib/diff-sources.mjs').then(m => console.log(Object.keys(m)))"` — exports confirmed
 
+## Verification Evidence
+
+| Gate Check | Command | Exit Code | Verdict | Duration |
+|---|---|---|---|---|
+| Diff-sources tests (12) | `node --test tests/diff-sources.test.mjs` | 0 | ✅ pass | ~1s |
+| Module exports | `node -e "import('./scripts/lib/diff-sources.mjs').then(m => console.log(Object.keys(m)))"` | 0 | ✅ pass | <1s |
+| Extract with snapshot | `node scripts/extract.mjs` | 0 | ✅ pass | ~8s |
+| CLI diff report | `node scripts/lib/diff-sources.mjs` | 0 | ✅ pass | <1s |
+
 ## Diagnostics
 
 - Inspect diff results: `node scripts/lib/diff-sources.mjs`

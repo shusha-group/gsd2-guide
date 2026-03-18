@@ -15,15 +15,18 @@ import { detectNewAndRemovedCommands } from '../scripts/lib/manage-pages.mjs';
 // ── Pipeline step structure ────────────────────────────────────────────────
 
 describe('pipeline step structure', () => {
-  it('has 6 steps in the correct order', () => {
+  it('has 9 steps in the correct order', () => {
     const stepNames = steps.map((s) => s.name);
     assert.deepStrictEqual(stepNames, [
-      'npm update',
+      'update gsd-pi',
       'extract',
       'diff report',
       'manage commands',
+      'regenerate',
       'build',
       'check-links',
+      'audit content',
+      'stamp pages',
     ]);
   });
 
@@ -40,10 +43,22 @@ describe('pipeline step structure', () => {
 
   it('shell steps have cmd strings', () => {
     const shellSteps = steps.filter((s) => s.cmd);
-    assert.equal(shellSteps.length, 4);
+    assert.equal(shellSteps.length, 5);
     for (const step of shellSteps) {
       assert.equal(typeof step.cmd, 'string');
     }
+  });
+
+  it('regenerate step uses fn (not cmd)', () => {
+    const regenStep = steps.find((s) => s.name === 'regenerate');
+    assert.equal(typeof regenStep.fn, 'function');
+    assert.equal(regenStep.cmd, undefined);
+  });
+
+  it('stamp pages step uses fn (not cmd)', () => {
+    const stampStep = steps.find((s) => s.name === 'stamp pages');
+    assert.equal(typeof stampStep.fn, 'function');
+    assert.equal(stampStep.cmd, undefined);
   });
 });
 

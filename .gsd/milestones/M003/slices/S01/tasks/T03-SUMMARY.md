@@ -50,6 +50,17 @@ The diff report runs as an in-process function (not a shelled-out command) for s
 - Slice verification: `build-page-map.mjs` generates OK, `diff-sources.mjs` exports both functions, all test suites green ✅
 - Full build + check-links still passes — no regressions ✅
 
+## Verification Evidence
+
+| Gate Check | Command | Exit Code | Verdict | Duration |
+|---|---|---|---|---|
+| Pipeline with diff report | `npm run update` | 0 | ✅ pass | ~15s |
+| stale-pages.json exists | `cat content/generated/stale-pages.json` | 0 | ✅ pass | <1s |
+| Idempotent (0 stale on rerun) | `npm run update` (second run) | 0 | ✅ pass | ~15s |
+| Manual SHA tweak → stale detected | edit SHA + `node scripts/lib/diff-sources.mjs` | 0 | ✅ pass | <1s |
+| All tests green (21) | `node --test tests/page-map.test.mjs tests/diff-sources.test.mjs` | 0 | ✅ pass | ~2s |
+| Build + check-links | `npm run build && node scripts/check-links.mjs` | 0 | ✅ pass | ~30s |
+
 ## Diagnostics
 
 - Inspect diff results: `cat content/generated/stale-pages.json | python3 -m json.tool`

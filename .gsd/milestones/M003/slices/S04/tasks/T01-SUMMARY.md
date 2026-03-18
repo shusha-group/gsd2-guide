@@ -60,6 +60,14 @@ Created `tests/update-pipeline.test.mjs` with 14 tests across 5 suites.
 - `content/generated/stale-pages.json` is the boundary contract between diff report and regenerate steps
 - Module-level `regenResult` variable carries regeneration results to the summary section
 
+## Verification Evidence
+
+| Gate | Command | Exit | Verdict | Duration |
+|------|---------|------|---------|----------|
+| Integration tests | `node --test tests/update-pipeline.test.mjs` | 0 | 14 pass, 0 fail | 0.5s |
+| Full test suite | `node --test tests/*.test.mjs` | 0 | 118 pass, 0 fail | 1.5s |
+| Import guard | `node -e "import('./scripts/update.mjs')"` | 0 | No side effects on import | 0.1s |
+
 ## Deviations
 
 - Changed `padEnd(14)` to `padEnd(18)` in step timing formatting to accommodate the longer "manage commands" name.

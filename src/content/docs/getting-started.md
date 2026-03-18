@@ -10,7 +10,18 @@ npm install -g gsd-pi
 
 Requires Node.js ≥ 20.6.0 (22+ recommended) and Git.
 
-GSD checks for updates once every 24 hours. When a new version is available, you'll see an interactive prompt at startup with the option to update immediately or skip.
+GSD checks for updates once every 24 hours. When a new version is available, you'll see an interactive prompt at startup with the option to update immediately or skip. You can also update from within a session with `/gsd update`.
+
+### Set up API keys
+
+If you use a non-Anthropic model, you'll need a search API key for web search. Run `/gsd config` to set keys globally — they're saved to `~/.gsd/agent/auth.json` and apply to all projects:
+
+```bash
+# Inside any GSD session:
+/gsd config
+```
+
+See [Global API Keys](../configuration/#global-api-keys-gsd-config) for details on supported keys.
 
 ### VS Code Extension
 

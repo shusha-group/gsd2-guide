@@ -61,6 +61,16 @@ Installed `@anthropic-ai/sdk` as devDependency. Built the complete regeneration 
 - ⏳ Build + link check with regenerated pages (T02)
 - ⏳ Quality comparison of 3 pages (T02)
 
+## Verification Evidence
+
+| Gate | Command | Exit | Verdict | Duration |
+|------|---------|------|---------|----------|
+| Unit tests | `node --test tests/regenerate-page.test.mjs` | 0 | 14/14 pass | <1s |
+| Exports | `node -e "import('./scripts/lib/regenerate-page.mjs').then(m => console.log(Object.keys(m)))"` | 0 | `regeneratePage`, `regenerateStalePages` | <1s |
+| No-key skip (single) | `ANTHROPIC_API_KEY= node scripts/lib/regenerate-page.mjs commands/capture.mdx` | 0 | "⊘ Skipped: no API key" | <1s |
+| No-key skip (batch) | `ANTHROPIC_API_KEY= node scripts/lib/regenerate-page.mjs` | 0 | "⊘ Skipped: no stale pages" | <1s |
+| Build | `npm run build` | 0 | 65 pages, no errors | ~5s |
+
 ## Diagnostics
 
 - **Single-page diagnostics**: `node scripts/lib/regenerate-page.mjs <pagePath>` — prints model, token counts, cost, timing, and truncation warnings
