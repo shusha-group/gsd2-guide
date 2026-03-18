@@ -47,7 +47,7 @@
 
 ## Tasks
 
-- [ ] **T01: Restore skills.mdx and verify clean build with zero broken links** `est:10m`
+- [x] **T01: Restore skills.mdx and verify clean build with zero broken links** `est:10m`
   - Why: `reference/skills.mdx` was accidentally deleted in S01/T02, causing 65 broken links. This blocks the pipeline's check-links step and must be fixed before any `npm run update` run.
   - Files: `src/content/docs/reference/skills.mdx`
   - Do: `git checkout main -- src/content/docs/reference/skills.mdx` to restore the file. Run `npm run build` to verify it builds (should be 66+ pages now). Run `node scripts/check-links.mjs` to verify 0 broken links. Run `node --test tests/regenerate-page.test.mjs` to confirm 20/20 tests still pass.

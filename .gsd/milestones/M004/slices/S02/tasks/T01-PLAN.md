@@ -43,6 +43,12 @@ This is a quick prerequisite fix: restore the file, rebuild, verify zero broken 
 - The sidebar entry in `astro.config.mjs` already references skills.mdx (line 88) — no config changes needed
 - The `page-source-map.json` already has an entry for `reference/skills.mdx` — no map changes needed
 
+## Observability Impact
+
+- **Signals changed:** Build page count increases from 65 to 66+; `check-links.mjs` broken-link count drops from 65 to 0.
+- **Inspection:** `ls src/content/docs/reference/skills.mdx` confirms file presence; `npm run build 2>&1 | grep "page(s) built"` shows page count; `node scripts/check-links.mjs` reports link health.
+- **Failure visibility:** If the file is missing or malformed, `npm run build` may still succeed but `check-links.mjs` will exit non-zero listing all pages that link to `/reference/skills/`.
+
 ## Expected Output
 
 - `src/content/docs/reference/skills.mdx` — restored file, identical to the version on `main`
