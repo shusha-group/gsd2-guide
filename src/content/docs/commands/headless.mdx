@@ -32,6 +32,18 @@ gsd headless doctor
 
 # Force a specific dispatch phase
 gsd headless dispatch plan
+
+# Instant JSON snapshot — no LLM, ~50ms
+gsd headless query
+
+# Create a new milestone from a context file and start auto mode
+gsd headless new-milestone --context brief.md --auto
+
+# Create a milestone from inline text
+gsd headless new-milestone --context-text "Build a REST API with auth"
+
+# Pipe context from stdin
+echo "Build a CLI tool" | gsd headless new-milestone --context -
 ```
 
 ## Flags
@@ -39,8 +51,72 @@ gsd headless dispatch plan
 | Flag | Syntax | Default | Description |
 |------|--------|---------|-------------|
 | `--timeout` | `--timeout N` | `300000` (5 min) | Overall timeout in milliseconds. The process exits with code `1` if this limit is reached. |
+| `--max-restarts` | `--max-restarts N` | `3` | Auto-restart on crash with exponential backoff. Set `0` to disable. |
 | `--json` | `--json` | Off | Stream all events as JSONL to stdout. Each line is a self-contained JSON object with event type, timestamp, and payload. |
 | `--model` | `--model ID` | Session default | Override the model for the headless session. |
+| `--context` | `--context <file>` | — | Context file for `new-milestone`. Use `-` to read from stdin. |
+| `--context-text` | `--context-text <text>` | — | Inline context text for `new-milestone`. |
+| `--auto` | `--auto` | Off | Chain into auto-mode after milestone creation. |
+
+## Subcommands
+
+### `gsd headless query`
+
+Returns a single JSON object with the full project snapshot — no LLM session, no RPC child, instant response (~50ms). This is the recommended way for orchestrators and scripts to inspect GSD state.
+
+```bash
+gsd headless query | jq '.state.phase'
+# "executing"
+
+gsd headless query | jq '.next'
+# {"action":"dispatch","unitType":"execute-task","unitId":"M001/S01/T03"}
+
+gsd headless query | jq '.cost.total'
+# 4.25
+```
+
+**Output schema:**
+
+```json
+{
+  "state": {
+    "phase": "executing",
+    "activeMilestone": { "id": "M001", "title": "..." },
+    "activeSlice": { "id": "S01", "title": "..." },
+    "activeTask": { "id": "T01", "title": "..." },
+    "registry": [{ "id": "M001", "status": "active" }],
+    "progress": { "milestones": { "done": 0, "total": 2 }, "slices": { "done": 1, "total": 3 } },
+    "blockers": []
+  },
+  "next": {
+    "action": "dispatch",
+    "unitType": "execute-task",
+    "unitId": "M001/S01/T01"
+  },
+  "cost": {
+    "workers": [{ "milestoneId": "M001", "cost": 1.50, "state": "running" }],
+    "total": 1.50
+  }
+}
+```
+
+### `gsd headless new-milestone`
+
+Create a new milestone from a context file without the TUI. Combine with `--auto` to immediately start execution after creation.
+
+```bash
+# From a file
+gsd headless new-milestone --context brief.md
+
+# Inline text
+gsd headless new-milestone --context-text "Build a REST API with auth"
+
+# From stdin
+echo "Build a CLI tool" | gsd headless new-milestone --context -
+
+# Create and immediately start auto-mode
+gsd headless new-milestone --context brief.md --auto
+```
 
 ## How It Works
 
@@ -103,6 +179,12 @@ Run auto-mode in CI:
 # In a GitHub Actions workflow
 gsd headless --timeout 600000 auto
 echo "Exit code: $?"
+```
+
+Auto-restart on crash (up to 5 times):
+
+```bash
+gsd headless --max-restarts 5 auto
 ```
 
 Get machine-readable status:

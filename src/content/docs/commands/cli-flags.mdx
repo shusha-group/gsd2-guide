@@ -24,9 +24,11 @@ GSD is invoked from the command line as `gsd` with optional flags. Most work hap
 | Subcommand | Syntax | Description |
 |------------|--------|-------------|
 | `config` | [`gsd config`](../config/) | Re-run the setup wizard — configure LLM provider, API keys, and tool integrations. |
-| `update` | `gsd update` | Update GSD to the latest version via npm. |
+| `update` | [`gsd update`](../update/) | Update GSD to the latest version via npm. |
 | `sessions` | `gsd sessions` | Interactive session picker — list all saved sessions for the current directory and choose one to resume. |
 | `headless` | [`gsd headless`](../headless/) | Run GSD commands without a TUI — for CI, cron jobs, and scripted automation. |
+| `headless new-milestone` | `gsd headless new-milestone` | Create a new milestone from a context file (headless — no TUI required). See [Headless Mode](../headless/) for flags. |
+| `headless query` | `gsd headless query` | Instant JSON snapshot — state, next dispatch, costs. No LLM session, ~50ms. See [Headless Mode](../headless/). |
 
 ## Examples
 

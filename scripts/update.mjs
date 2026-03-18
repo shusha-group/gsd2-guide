@@ -3,7 +3,7 @@
  * update.mjs — One-command update pipeline orchestrator.
  *
  * Chains: npm i -g gsd-pi@latest → extract → diff report →
- *         manage commands → build → check-links
+ *         manage commands → build → check-links → audit content
  *
  * Diff report writes stale-pages.json as the agent handoff contract —
  * stale page regeneration is handled externally (not in this pipeline).
@@ -133,6 +133,7 @@ export const steps = [
   { name: 'manage commands', fn: runManageCommands },
   { name: 'build',      cmd: 'npm run build', capture: false },
   { name: 'check-links', cmd: 'node scripts/check-links.mjs', capture: false },
+  { name: 'audit content', cmd: 'node scripts/audit-content.mjs', capture: false },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────
