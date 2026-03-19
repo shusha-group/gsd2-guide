@@ -875,24 +875,24 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R067 — Section 5: What You Write vs What GSD Writes
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Context engineering from the practitioner's perspective — agent-instructions.md as project constitution, DECISIONS.md as architectural memory, KNOWLEDGE.md for domain terminology, reading GSD's output, and giving good discussion answers.
 - Why it matters: The highest-leverage skill in the entire workflow. Quality of inputs determines quality of outputs.
 - Source: user
 - Primary owning slice: M006/S07
 - Supporting slices: none
-- Validation: unmapped
+- Validation: context-engineering.mdx — 128 lines covering all five R067 topics (agent-instructions.md lifecycle, DECISIONS.md as architectural memory, KNOWLEDGE.md types and habit, reading GSD output, giving good discussion answers); 8 cross-references using → gsd2-guide: notation; Australian spelling confirmed; npm run build exits 0 at 113 pages; npm run check-links exits 0 at 12,288 links
 - Notes: Woven with Addy Osmani's "context packing" and TÂCHES design philosophy.
 
 ### R068 — Section 6: Controlling Costs
 - Class: operability
-- Status: active
+- Status: validated
 - Description: Flat-rate Claude Max advantage, token profiles (budget/balanced/quality), per-phase model routing, budget ceiling configuration, typical milestone cost patterns, and the cheapest-workflow tradeoffs.
 - Why it matters: Cost awareness is survival for a solo builder whose project isn't making money yet.
 - Source: user
 - Primary owning slice: M006/S07
 - Supporting slices: none
-- Validation: unmapped
+- Validation: controlling-costs.mdx — 114 lines covering all five R068 topics (flat-rate vs pay-per-use landscape, token profiles as confidence-based choices, per-phase model routing with dynamic classification, budget ceiling enforcement modes, typical cost patterns and drivers); 9 cross-references using → gsd2-guide: notation; Australian spelling confirmed; npm run build exits 0 at 113 pages; npm run check-links exits 0 at 12,288 links
 - Notes: Honest about tradeoffs — cheaper workflow means lower cost, higher risk of poor output.
 
 ### R069 — Section 8: Building a Rhythm
@@ -945,8 +945,8 @@ This file is the explicit capability and coverage contract for the project.
 | R064 | primary-user-loop | validated | M006/S04 | none | first-project.mdx — 148 lines, 5 lifecycle phases, 2 external citations, 9 cross-refs; npm run build 0 at 113 pages; npm run check-links 0 |
 | R065 | core-capability | validated | M006/S05 | none | brownfield.mdx — 128 lines covering all four R065 topics; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; 9 cross-refs; Australian spelling verified |
 | R066 | core-capability | active | M006/S06 | none | unmapped |
-| R067 | core-capability | active | M006/S07 | none | unmapped |
-| R068 | operability | active | M006/S07 | none | unmapped |
+| R067 | core-capability | validated | M006/S07 | none | context-engineering.mdx — 128 lines, 5 sections, 8 cross-refs; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
+| R068 | operability | validated | M006/S07 | none | controlling-costs.mdx — 114 lines, 5 sections, 9 cross-refs; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
 | R069 | continuity | active | M006/S08 | none | unmapped |
 | R070 | integration | active | M006/S01 | M006/S02–S08 | S02+S03: 18 cross-refs in when-things-go-wrong.mdx confirm notation applied consistently; both sections pass check-links |
 | R071 | integration | active | M006/S04 | M006/S06 | unmapped |

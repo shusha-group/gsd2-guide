@@ -70,7 +70,7 @@ This milestone is complete only when all are true:
 - [x] **S06: Section 1 — Why GSD 2** `risk:medium` `depends:[S01]`
   > After this: The context window ceiling argument, cost comparison, and technical director framing are published. Reads as the compelling entry point for a sceptical vibe coder.
 
-- [ ] **S07: Sections 5 & 6 — Context Engineering + Costs** `risk:medium` `depends:[S01]`
+- [x] **S07: Sections 5 & 6 — Context Engineering + Costs** `risk:medium` `depends:[S01]`
   > After this: Both the context engineering in practice section and the cost management section are live and cross-referenced correctly.
 
 - [ ] **S08: Section 8 — Building a Rhythm** `risk:low` `depends:[S01]`
