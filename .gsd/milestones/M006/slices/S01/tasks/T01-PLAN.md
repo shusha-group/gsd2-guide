@@ -202,6 +202,14 @@ The sidebar group goes at the end of the sidebar array in `astro.config.mjs`, ju
 - `ls src/content/docs/solo-guide/*.mdx | wc -l` returns 9
 - `grep -c "Solo Builder" astro.config.mjs` returns 1
 
+## Observability Impact
+
+- **Success signal:** `npm run build` stdout shows page count — 113 confirms all 9 new pages were discovered and rendered successfully
+- **Failure visibility:** MDX parse errors from malformed frontmatter or invalid component imports appear in build stderr with file path + line number; inspect with `npm run build 2>&1 | grep -A5 "solo-guide"`
+- **Pipeline contamination check:** `diff <(git show HEAD:content/generated/page-source-map.json) content/generated/page-source-map.json` — empty diff is the expected healthy state; any diff indicates a script incorrectly ingested solo-guide pages into the pipeline
+- **Sidebar registration:** `grep -c "Solo Builder" astro.config.mjs` returns 1 — confirms the group was added exactly once
+- **File count surface:** `ls src/content/docs/solo-guide/*.mdx | wc -l` — quick check that all 9 files exist
+
 ## Inputs
 
 - `astro.config.mjs` — existing sidebar configuration; new group goes before the closing `],` of the sidebar array

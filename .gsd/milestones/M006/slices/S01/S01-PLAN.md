@@ -22,10 +22,19 @@
 - `diff <(git show HEAD:content/generated/page-source-map.json) content/generated/page-source-map.json` → no diff
 - `grep "solo-guide" src/content/docs/.generated-manifest.json` → no output (exit 1)
 - `grep -c "Solo Builder" astro.config.mjs` → 1
+- **Failure-path check:** `npm run build 2>&1 | grep -i "error\|warn" | grep -i "solo-guide"` → no output (confirms no build errors scoped to new pages)
+
+## Observability / Diagnostics
+
+- **Build output** (`npm run build`) is the primary success signal — page count in stdout confirms all 9 MDX files were discovered and rendered
+- **Pipeline contamination** is inspectable via `diff <(git show HEAD:content/generated/page-source-map.json) content/generated/page-source-map.json` — any diff means a script injected solo-guide into the pipeline (unexpected and should be investigated)
+- **MDX parse failures** surface as build errors in stderr with file path and line number — inspect with `npm run build 2>&1 | grep -A5 "solo-guide"`
+- **Sidebar misconfiguration** results in a broken build (Starlight validates link targets) or missing entries in the rendered site — inspect `astro.config.mjs` sidebar array directly
+- **Redaction:** No secrets or sensitive data — all content is public documentation
 
 ## Tasks
 
-- [ ] **T01: Create solo-guide directory, 9 MDX files, and sidebar group** `est:30m`
+- [x] **T01: Create solo-guide directory, 9 MDX files, and sidebar group** `est:30m`
   - Why: This is the entire slice — create the directory structure, landing page with LinkCards, 8 section stubs with placeholder content, and the sidebar registration. All must exist together for the build to pass.
   - Files: `src/content/docs/solo-guide/index.mdx`, `src/content/docs/solo-guide/why-gsd.mdx`, `src/content/docs/solo-guide/first-project.mdx`, `src/content/docs/solo-guide/brownfield.mdx`, `src/content/docs/solo-guide/daily-mix.mdx`, `src/content/docs/solo-guide/context-engineering.mdx`, `src/content/docs/solo-guide/controlling-costs.mdx`, `src/content/docs/solo-guide/when-things-go-wrong.mdx`, `src/content/docs/solo-guide/building-rhythm.mdx`, `astro.config.mjs`
   - Do: Create all 9 MDX files following the frontmatter pattern from existing hand-authored pages. Index page imports `CardGrid` and `LinkCard` from `@astrojs/starlight/components` and links to all 8 sections. Each stub has a placeholder paragraph (Australian spelling). Add the sidebar group to `astro.config.mjs` before the closing `],` of the sidebar array (around line 169). Sidebar link values use `/solo-guide/{slug}/` format — no `/gsd2-guide/` prefix. Run `npm run build` and verify 113 pages. Confirm pipeline files are untouched.
