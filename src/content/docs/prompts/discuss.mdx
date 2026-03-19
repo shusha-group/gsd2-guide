@@ -1,8 +1,50 @@
 ---
 title: "discuss"
-description: "Prompt reference: discuss"
+description: "Interactive milestone planning prompt — guides the user through vision mapping, deep questioning, and requirement capture to produce a structured roadmap before auto-mode begins."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+## What It Does
+
+`discuss` is the interactive front door to every GSD project. It runs when the user invokes `/gsd`, `/gsd discuss`, or `/gsd steer`, opening a structured conversation that transforms a raw idea into a complete, actionable milestone plan. The prompt is deliberately opinionated about the order of operations: reflection before questions, mandatory codebase investigation before the first question round, and a depth checklist that must be fully satisfied before any roadmap gets written.
+
+The conversation unfolds in several phases. First the prompt asks "What's the vision?" and then immediately proves comprehension by reflecting back a concrete summary — including a scope estimate and a bullet list of major capabilities. This forces the agent to demonstrate understanding before asking anything. Only after the user confirms the reflection does the prompt advance to deep questioning, which continues for as many rounds as the scope demands: simple well-defined work may need one round, a large ambiguous vision may need four or more.
+
+Throughout the discussion the prompt maintains a depth checklist: what is being built, why it needs to exist, who it's for, what "done" looks like, the biggest technical unknowns, and what external systems it touches. Once the checklist is satisfied the prompt runs a focused research pass, produces a `REQUIREMENTS.md` capability contract for the user to confirm, previews the roadmap in chat, and only then writes the planning artifacts. For multi-milestone visions the prompt handles the full milestone sequence — calling `gsd_generate_milestone_id` for each, writing context and roadmap for the primary milestone, and running per-milestone readiness gates for the remainder.
+
+## Pipeline Position
+
+```mermaid
+flowchart LR
+    UserInvoke["user invokes /gsd"] --> Discuss["discuss"]
+    Discuss --> Reflection["reflection + questioning"]
+    Reflection --> Requirements["REQUIREMENTS.md"]
+    Requirements --> Roadmap["roadmap written"]
+    Roadmap --> AutoMode["auto-mode starts"]
+
+    style Discuss fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style UserInvoke fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reflection fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Requirements fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Roadmap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AutoMode fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+`discuss` runs once at the start of a project or whenever the user wants to plan new work. It is the only GSD prompt that owns the milestone planning ceremony — all downstream prompts operate on the artifacts this prompt produces. When `/gsd steer` is used mid-project, this same prompt re-enters the discussion flow with existing milestone context already loaded.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `preamble` | Opening context paragraph describing the current project state and the intended scope of this discussion | Yes |
+| `milestoneId` | Current active milestone identifier for scoping the discussion | Yes |
+| `contextPath` | File path to a context document providing background for the discussion topic | Yes |
+| `roadmapPath` | File path to the project roadmap for reference during discussion | Yes |
+| `commitInstruction` | Instruction block telling the agent how to commit GSD state changes at the end of the discussion session | Yes |
+| `multiMilestoneCommitInstruction` | Extended commit instruction used when the discussion spans multiple milestones | Yes |
+| `inlinedTemplates` | Pre-assembled block of GSD templates (plan, task-plan, roadmap, etc.) for reference during the discussion | Yes |
+
+## Used By
+
+- [`/gsd`](../../commands/gsd/) — primary invocation; opens the project planning wizard
+- [`/gsd discuss`](../../commands/discuss/) — explicit discuss invocation; same prompt, surfaced directly
+- [`/gsd steer`](../../commands/steer/) — mid-project steering; re-enters the discussion flow with current milestone context

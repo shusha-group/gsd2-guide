@@ -1,8 +1,52 @@
 ---
 title: "worktree-merge"
-description: "Prompt reference: worktree-merge"
+description: "Worktree merge prompt — reviews diffs between a GSD worktree branch and main, categorizes changes, assesses conflicts, and guides the user through a structured merge with generated commit messages."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+## What It Does
+
+`worktree-merge` manages the merge of a GSD worktree branch back into the main branch. GSD uses git worktrees to isolate milestone work — each milestone runs in its own worktree, accumulating code changes and GSD artifact changes (roadmaps, summaries, decisions, requirements) independently. When the milestone is complete, `worktree-merge` orchestrates a careful, structured merge that avoids silently discarding changes from either branch.
+
+The prompt follows a five-step protocol. First, it categorizes every changed file: new source files, modified source files, config changes, and deleted files on the code side; new milestones, updated roadmaps, new slice plans, research, decisions, and requirements on the GSD artifact side. Second, it assesses conflicts by comparing each modified file between the worktree and main branches, using `git merge-base` to find the common ancestor if needed, and classifying each as a clean merge, a conflict requiring reconciliation, or a stale change. Third, it presents a merge plan — listing clean merges, showing side-by-side conflict comparisons with proposed reconciliations, and confirming additions and deletions. The user confirms before anything is applied.
+
+Fourth, the merge is executed from the main tree path: the agent ensures it is on the target branch, applies any pre-reconciled files, runs `git merge --squash`, reviews staged changes, and commits with a `merge(worktree/{worktreeName}):` message. Fifth, the user is offered a cleanup prompt to remove the worktree directory and branch, or keep it for continued parallel work. If removal is chosen, the agent runs `git worktree remove` and `git branch -D` directly — not through any command handler abstraction.
+
+## Pipeline Position
+
+```mermaid
+flowchart LR
+    WorktreeComplete["worktree milestone complete"] --> WorktreeMerge["worktree-merge"]
+    WorktreeMerge --> Categorize["categorize + conflict assess"]
+    Categorize --> UserApproval["user confirms merge plan"]
+    UserApproval --> Execute["git merge --squash + commit"]
+    Execute --> Cleanup["optional: remove worktree"]
+
+    style WorktreeMerge fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style WorktreeComplete fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Categorize fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UserApproval fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Cleanup fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+`worktree-merge` is not directly invoked by a user-facing command — it is triggered internally by GSD workflows when a worktree is ready to be merged back into the main branch. The triggering mechanism is internal to the GSD worktree management system.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `worktreeName` | Human-readable name of the worktree being merged (e.g. 'M005') | Yes |
+| `worktreeBranch` | Name of the worktree branch being merged | Yes |
+| `mainBranch` | Name of the main branch that the worktree will be merged into | Yes |
+| `mainTreePath` | File system path to the main branch worktree checkout | Yes |
+| `worktreePath` | File system path to the worktree directory being merged | Yes |
+| `commitLog` | Log of commits in the worktree branch to be merged | Yes |
+| `addedFiles` | List of files added in the worktree branch relative to the main branch | Yes |
+| `modifiedFiles` | List of files modified in the worktree branch relative to the main branch | Yes |
+| `removedFiles` | List of files removed in the worktree branch relative to the main branch | Yes |
+| `codeDiff` | Unified diff of code changes between the worktree branch and the main branch | Yes |
+| `gsdDiff` | Unified diff of .gsd directory changes between the worktree and main branch | Yes |
+
+## Used By
+
+Not directly invoked by a user-facing command — triggered internally by GSD workflows when a worktree branch is ready to be merged back into the main branch.

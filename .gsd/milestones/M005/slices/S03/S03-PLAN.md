@@ -71,7 +71,7 @@
   - Verify: `npm run build` → 104 pages, 0 errors. `grep "no template variables" src/content/docs/prompts/system.mdx` → matches
   - Done when: All 9 pages have authored content, `system.mdx` has no variable rows, `npm run build` succeeds
 
-- [ ] **T03: Author command prompt pages (13 pages) and run final validation** `est:40m`
+- [x] **T03: Author command prompt pages (13 pages) and run final validation** `est:40m`
   - Why: The 13 command-invoked prompts have simpler diagrams showing command trigger → prompt → output. This is the final batch — includes the comprehensive `npm run check-links` validation to verify all cross-links across all 32 pages.
   - Files: `src/content/docs/prompts/discuss.mdx`, `src/content/docs/prompts/discuss-headless.mdx`, `src/content/docs/prompts/doctor-heal.mdx`, `src/content/docs/prompts/forensics.mdx`, `src/content/docs/prompts/heal-skill.mdx`, `src/content/docs/prompts/queue.mdx`, `src/content/docs/prompts/quick-task.mdx`, `src/content/docs/prompts/review-migration.mdx`, `src/content/docs/prompts/rewrite-docs.mdx`, `src/content/docs/prompts/run-uat.mdx`, `src/content/docs/prompts/triage-captures.mdx`, `src/content/docs/prompts/workflow-start.mdx`, `src/content/docs/prompts/worktree-merge.mdx`
   - Do: For each command prompt, write the 4-section MDX page. Mermaid diagrams show: command-invocation → prompt → agent-work → output. For `workflow-start` and `worktree-merge` (empty `usedByCommands`), the "Used By" section should note "Not directly invoked by a user-facing command — triggered internally by GSD workflows." After all 13 pages are written, run both `npm run build` and `npm run check-links` as the final gate for the entire slice.
