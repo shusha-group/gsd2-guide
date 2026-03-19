@@ -1,7 +1,7 @@
 # GSD State
 
 **Active Milestone:** M005: Prompt Reference Section
-**Active Slice:** S04: Command page backlinks
+**Active Slice:** S05: Pipeline integration
 **Phase:** executing
 **Requirements Status:** 1 active · 49 validated · 5 deferred · 1 out of scope
 
@@ -19,4 +19,4 @@
 - None
 
 ## Next Action
-Execute slice S04 T01 (Add "Prompts Used" sections to 16 command pages).
+Execute T01 of S05 (Extend manage-pages.mjs with prompt detection, sidebar, and CRUD functions).
