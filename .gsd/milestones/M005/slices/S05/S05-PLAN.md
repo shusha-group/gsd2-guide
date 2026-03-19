@@ -27,6 +27,15 @@
 - `node scripts/check-page-freshness.mjs` — exits 0 (all pages fresh)
 - `npm run build` — exits 0
 - Simulate stale detection: modify one prompt page stamp in `page-versions.json`, run `node scripts/check-page-freshness.mjs`, confirm the modified page is reported stale
+- Failure-path diagnostic: `node scripts/lib/manage-pages.mjs` — exits 0, prints "(none)" for both new and removed prompts when all pages are in sync; non-zero `failed` in returned object is visible in stderr output
+
+## Observability / Diagnostics
+
+- **Runtime signals:** `detectNewAndRemovedPrompts()` logs to stdout via `console.log` in CLI mode. `createNewPromptPages()` emits `[createNewPromptPages] Error creating {slug}: {message}` to stderr on failure; `removePromptPages()` emits analogous errors and a `⚠` warning when a file is already missing.
+- **Inspection surfaces:** `node scripts/lib/manage-pages.mjs` (no flags) runs detect-only mode and prints new/removed prompt counts. `node scripts/lib/manage-pages.mjs --execute --dry-run` previews changes without writing. Sidebar state is directly inspectable via `grep -n '/prompts/' astro.config.mjs`.
+- **Structured failure state:** `createNewPromptPages()` and `removePromptPages()` return `{ results, created/removed, failed }` — non-zero `failed` count is observable by callers. Individual errors appear in each result's `.error` field.
+- **Diagnostic command:** `node -e "import('./scripts/lib/manage-pages.mjs').then(m => m.detectNewAndRemovedPrompts().then ? m.detectNewAndRemovedPrompts().then(console.log) : console.log(m.detectNewAndRemovedPrompts()))"` — both arrays empty means prompts and pages are in sync.
+- **Redaction:** No secrets involved. All paths and slugs are plain strings.
 
 ## Integration Closure
 
@@ -36,7 +45,7 @@
 
 ## Tasks
 
-- [ ] **T01: Extend manage-pages.mjs with prompt detection, sidebar, and CRUD functions** `est:45m`
+- [x] **T01: Extend manage-pages.mjs with prompt detection, sidebar, and CRUD functions** `est:45m`
   - Why: The pipeline needs prompt-specific equivalents of the command page management functions — detection of new/removed prompts, group-aware sidebar insertion/removal, and scaffold page creation/deletion. These are the building blocks that T02 wires into the pipeline.
   - Files: `scripts/lib/manage-pages.mjs`, `tests/manage-pages.test.mjs`
   - Do: Add 5 exported functions for prompt page lifecycle: `detectNewAndRemovedPrompts()` scans prompt `.md` files from the gsd-pi package directory against existing `src/content/docs/prompts/*.mdx` pages. `addPromptSidebarEntry(slug)` determines the prompt's group from `prompts.json` and inserts into the correct sidebar sub-group alphabetically. `removePromptSidebarEntry(slug)` finds and removes by link pattern across all 4 sub-groups. `createNewPromptPages(slugs)` creates stub MDX + sidebar + page-source-map entry. `removePromptPages(slugs)` deletes file + sidebar + map entry. Add comprehensive tests for each function using temp directories.

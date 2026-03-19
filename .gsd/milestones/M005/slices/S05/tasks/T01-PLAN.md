@@ -68,6 +68,13 @@ Add comprehensive tests for each new function using temp directories, following 
    - `describe("removePromptPages")`: deletes file and sidebar entry, handles missing file gracefully
    - Sidebar tests use a copy of the real `astro.config.mjs` (via `makeAstroConfig()` which already reads the real file)
 
+## Observability Impact
+
+- **What signals change:** This task adds 5 prompt-management functions whose outputs are inspectable via `node scripts/lib/manage-pages.mjs` (detect-only) or `--execute`/`--dry-run` flags in the CLI entry point, extended to cover prompt detection alongside command detection.
+- **How a future agent inspects:** `node -e "import('./scripts/lib/manage-pages.mjs').then(m => console.log(m.detectNewAndRemovedPrompts()))"` — both arrays empty confirms sync. `grep -n '/prompts/' astro.config.mjs` shows sidebar state. `ls src/content/docs/prompts/*.mdx | wc -l` counts existing pages.
+- **Failure visibility:** `createNewPromptPages()` and `removePromptPages()` return structured `{ results, created/removed, failed }` objects. Each failed result includes an `.error` field with the exception message. Callers can check `result.failed > 0` to surface problems. The CLI entry point prints `✗ {slug}: {error}` per failed operation to stdout.
+- **Test suite as observability:** `node --test tests/manage-pages.test.mjs` covers all 5 new functions — a failing test directly identifies which function broke and under what input condition.
+
 ## Must-Haves
 
 - [ ] `detectNewAndRemovedPrompts()` exported and correctly compares source `.md` files against existing `.mdx` pages
