@@ -802,7 +802,152 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 1
-- Mapped to slices: 1
+- Active requirements: 13
+- Mapped to slices: 13
 - Validated: 53 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056, R057, R058, R059, R060)
 - Unmapped active requirements: 0
+
+### R061 — Solo Builder's Guide landing page and sidebar navigation
+- Class: core-capability
+- Status: active
+- Description: A "Solo Builder's Guide" sidebar group with index/landing page and links to all 8 sections. Navigation works end-to-end; all pages are reachable from the sidebar.
+- Why it matters: Without navigation scaffolding, individual sections can't be found or linked to from the existing gsd2-guide site.
+- Source: user
+- Primary owning slice: M006/S01
+- Supporting slices: M006/S02–S08
+- Validation: unmapped
+- Notes: Hand-authored MDX files in src/content/docs/solo-guide/. Not pipeline-generated. Sidebar registered in astro.config.mjs.
+
+### R062 — Section 4: The Daily Mix decision framework
+- Class: primary-user-loop
+- Status: active
+- Description: A practical decision framework explaining when to use direct git commits, /gsd quick, /gsd quick --research, /gsd quick --full, or a full milestone. Includes a printable decision table, flag explanations in plain English, and guidance on handling interruptions mid-auto-mode.
+- Why it matters: This is the section the reader uses every working day. Getting it right is the core value proposition of the entire guide.
+- Source: user
+- Primary owning slice: M006/S02
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Build first — before onboarding sections. Most valuable, least documented content in the GSD ecosystem.
+
+### R063 — Section 7: When Things Go Wrong
+- Class: failure-visibility
+- Status: active
+- Description: Plain-English failure modes and recovery steps covering: stuck detection, auto mode crashes, loose must-haves, orientation after time away, full state repair, and timeout management.
+- Why it matters: Nobody else writes this section. Solo builders hit these failure modes alone and need a clear recovery path.
+- Source: user
+- Primary owning slice: M006/S03
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Write second — from real experience as the author uses GSD 2. Every failure mode hit becomes a subsection.
+
+### R064 — Section 2: Your First Project walkthrough
+- Class: primary-user-loop
+- Status: active
+- Description: Complete annotated walkthrough of starting a new GSD 2 project — discussion phase, roadmap reading, auto mode first run, verification, and completion. Written as narrative, not command reference.
+- Why it matters: The onboarding section that converts curious readers into active users.
+- Source: user
+- Primary owning slice: M006/S04
+- Supporting slices: none
+- Validation: unmapped
+- Notes: References Addy Osmani's spec-first workflow and the Esteban Torres first-person GSD account. Cross-references gsd2-guide's developing-with-gsd walkthrough.
+
+### R065 — Section 3: Brownfield Reality
+- Class: core-capability
+- Status: active
+- Description: Guidance for starting GSD 2 on an existing (possibly messy) codebase — agent-instructions.md, issue tracker mapping, the handoff spec approach, and constraining GSD from restructuring things the author doesn't want restructured.
+- Why it matters: Most solo builders aren't starting from zero. This section serves the majority case.
+- Source: user
+- Primary owning slice: M006/S05
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Cross-references gsd2-guide's agent-instructions.md format and KNOWLEDGE.md.
+
+### R066 — Section 1: Why GSD 2
+- Class: core-capability
+- Status: active
+- Description: The "aha moment" section explaining the context window ceiling, what context engineering means, why GSD 2 exists, the cost comparison (Claude Max vs Replit/Lovable/API), and the technical director mindset.
+- Why it matters: Earns trust and positions the guide for readers who are sceptical of "yet another tool."
+- Source: user
+- Primary owning slice: M006/S06
+- Supporting slices: none
+- Validation: unmapped
+- Notes: References the vibe coding ceiling problem (15–20 component limit), the desk analogy for context engineering, and the SolveIt philosophy. Written after the daily workflow sections are proven.
+
+### R067 — Section 5: What You Write vs What GSD Writes
+- Class: core-capability
+- Status: active
+- Description: Context engineering from the practitioner's perspective — agent-instructions.md as project constitution, DECISIONS.md as architectural memory, KNOWLEDGE.md for domain terminology, reading GSD's output, and giving good discussion answers.
+- Why it matters: The highest-leverage skill in the entire workflow. Quality of inputs determines quality of outputs.
+- Source: user
+- Primary owning slice: M006/S07
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Woven with Addy Osmani's "context packing" and TÂCHES design philosophy.
+
+### R068 — Section 6: Controlling Costs
+- Class: operability
+- Status: active
+- Description: Flat-rate Claude Max advantage, token profiles (budget/balanced/quality), per-phase model routing, budget ceiling configuration, typical milestone cost patterns, and the cheapest-workflow tradeoffs.
+- Why it matters: Cost awareness is survival for a solo builder whose project isn't making money yet.
+- Source: user
+- Primary owning slice: M006/S07
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Honest about tradeoffs — cheaper workflow means lower cost, higher risk of poor output.
+
+### R069 — Section 8: Building a Rhythm
+- Class: continuity
+- Status: active
+- Description: Weekly cycle suggestion, /gsd queue usage, /gsd export retrospectives, evolving agent-instructions.md over time, and the graduation path from vibe coding → GSD 2 → custom multi-agent workflows.
+- Why it matters: Sustaining GSD 2 as a daily practice is what separates users who get value from those who abandon it after one project.
+- Source: user
+- Primary owning slice: M006/S08
+- Supporting slices: none
+- Validation: unmapped
+- Notes: References SolveIt's compounding insight and Daniel Priestley's 24 Assets framework.
+
+### R070 — Cross-references to gsd2-guide throughout
+- Class: integration
+- Status: active
+- Description: Every section links to the relevant gsd2-guide pages for command syntax, file format reference, and configuration detail. Uses consistent "→ gsd2-guide: [page]" notation.
+- Why it matters: The guide is a phrasebook, not a dictionary. It should never duplicate what the gsd2-guide already covers.
+- Source: user
+- Primary owning slice: M006/S01
+- Supporting slices: M006/S02–S08
+- Validation: unmapped
+- Notes: Link checker must pass on all cross-references. Use relative Starlight paths.
+
+### R071 — External resources cited and linked
+- Class: integration
+- Status: active
+- Description: Key external resources — Addy Osmani's LLM workflow article, Esteban Torres's GSD account, The New Stack GSD walkthrough — are cited and linked where referenced. No dead links.
+- Why it matters: Builds credibility and gives readers a path to deeper reading.
+- Source: user
+- Primary owning slice: M006/S04
+- Supporting slices: M006/S06
+- Validation: unmapped
+- Notes: External URLs verified during investigation phase. Addy Osmani (addyosmani.com), Esteban Torres (estebantorr.es), New Stack (thenewstack.io) all confirmed live.
+
+### R072 — Australian spelling and Apple Notes–friendly formatting
+- Class: quality-attribute
+- Status: active
+- Description: Australian spelling (colour, behaviour, recognise, organise, etc.) throughout all sections. Tables render cleanly when pasted into Apple Notes. No formatting that breaks in plain-text contexts.
+- Why it matters: Author preference and target reading context (Apple Notes for quick reference).
+- Source: user
+- Primary owning slice: M006/S01
+- Supporting slices: M006/S02–S08
+- Validation: unmapped
+- Notes: Use standard Markdown tables with pipe-separated columns. Avoid HTML table tags.
+
+| R061 | core-capability | active | M006/S01 | M006/S02–S08 | unmapped |
+| R062 | primary-user-loop | active | M006/S02 | none | unmapped |
+| R063 | failure-visibility | active | M006/S03 | none | unmapped |
+| R064 | primary-user-loop | active | M006/S04 | none | unmapped |
+| R065 | core-capability | active | M006/S05 | none | unmapped |
+| R066 | core-capability | active | M006/S06 | none | unmapped |
+| R067 | core-capability | active | M006/S07 | none | unmapped |
+| R068 | operability | active | M006/S07 | none | unmapped |
+| R069 | continuity | active | M006/S08 | none | unmapped |
+| R070 | integration | active | M006/S01 | M006/S02–S08 | unmapped |
+| R071 | integration | active | M006/S04 | M006/S06 | unmapped |
+| R072 | quality-attribute | active | M006/S01 | M006/S02–S08 | unmapped |
