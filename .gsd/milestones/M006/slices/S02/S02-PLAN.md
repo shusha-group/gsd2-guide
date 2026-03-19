@@ -25,12 +25,30 @@
 
 ## Tasks
 
-- [ ] **T01: Write Section 4 content and verify cross-references** `est:45m`
+- [x] **T01: Write Section 4 content and verify cross-references** `est:45m`
   - Why: This is the entire slice — replace the stub with the full decision framework, decision table, quick-mode walkthrough, interruption handling, and daily rhythm narrative. Then build and link-check to retire the cross-reference format risk.
   - Files: `src/content/docs/solo-guide/daily-mix.mdx`
   - Do: Rewrite the file keeping existing frontmatter. Write 6 sections in order: (1) The three paths, (2) Decision table, (3) What `/gsd quick` actually does, (4) When quick isn't enough, (5) Handling interruptions, (6) The daily rhythm. Use `../../commands/slug/` for command links, `../../slug/` for root pages, `../slug/` for sibling solo-guide pages. Australian spelling. Decision table as standard Markdown table (3 columns). Link to command pages, recipes, and root-level pages. Use companion voice — don't duplicate reference content. Wrap any `{{variable}}` in backticks to avoid MDX JSX errors.
   - Verify: `npm run build` exits 0 at 113 pages; `npm run check-links` exits 0; `wc -l` >100; `grep -c "../../commands/"` ≥4; no American spellings; no build errors mentioning solo-guide
   - Done when: All 6 verification checks in the slice Verification section pass
+
+## Observability / Diagnostics
+
+**Runtime signals:** No server process — the observable output is the built static site and link-check exit code.
+
+**Inspection surfaces:**
+- `npm run build 2>&1 | grep "pages"` — confirms page count is still 113 (no new files accidentally created, no files removed)
+- `npm run build 2>&1 | grep -A5 "solo-guide"` — surfaces any MDX parse errors in solo-guide files; should return no output on success
+- `npm run check-links` — validates every internal link in the built site; exit 0 means all `../../commands/slug/` references resolve correctly
+- `wc -l src/content/docs/solo-guide/daily-mix.mdx` — confirms substantive content was written (>100 lines)
+- `grep -c "../../commands/" src/content/docs/solo-guide/daily-mix.mdx` — confirms cross-reference density (≥4)
+
+**Failure visibility:**
+- MDX parse errors surface in build stderr with file path and line number — grep for `solo-guide` in build output
+- Broken links surface in `check-links` output with the source file and broken href
+- American spelling errors found via `grep -i "behavior\|recognize\|organize"` on the file
+
+**Redaction constraints:** None — this is static documentation with no secrets.
 
 ## Files Likely Touched
 

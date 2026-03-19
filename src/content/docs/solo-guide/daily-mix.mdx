@@ -3,6 +3,127 @@ title: "The Daily Mix"
 description: "Choosing between direct commits, quick tasks, and full milestones — every day."
 ---
 
-This section provides a practical decision framework for the question you'll face every working day: should this change be a direct git commit, a `/gsd quick` task, or a full milestone? It includes a printable decision table, flag explanations in plain English, and guidance on handling interruptions.
+Every working session starts with a question: *how much structure does this change actually need?* Over-structuring wastes time; under-structuring loses context. This section gives you the practitioner framework for getting that call right — every day.
 
-Content is being written and will appear here shortly.
+## The three paths
+
+GSD gives you three ways to ship a change, each matched to a different scope of work.
+
+**Direct git commit** — you open a file, make the change, commit. No GSD involvement. This is the right choice for changes that are self-evident: fixing a typo, bumping a version number, updating a comment. The change is so obvious that documenting the decision process would cost more than the change itself.
+
+**`/gsd quick`** — you describe the change in plain English and GSD handles the branch, the agent execution, the commit, and the summary. This is the right choice for bounded, single-concern changes that take more than a minute to explain but don't need a plan. Think: "add input validation to the email field", "convert the date formatting utility to use Intl.DateTimeFormat", "write tests for the auth middleware".
+
+**Full milestone** — you open a slice plan, break the work into tasks, and run the planning pipeline before execution. This is the right choice when the change crosses multiple layers, requires investigation before you know what to fix, or when the outcome needs to be tracked over days. Think: "migrate the database from Postgres to PlanetScale", "redesign the onboarding flow based on user research", "add support for multi-tenancy".
+
+## The decision table
+
+When you're unsure which path to take, match the change to this table:
+
+| The change looks like… | Use this | Why |
+|---|---|---|
+| A typo, a version bump, a config tweak | Direct commit | Zero decision overhead; the change is self-documenting |
+| One clear file change, under 30 minutes | `/gsd quick` | Structured execution without planning ceremony |
+| A bug with a known fix in a single module | `/gsd quick` | The scope is bounded; no investigation required |
+| A bug that needs investigation first | Full milestone | You don't know the fix yet — planning surfaces the real problem |
+| A feature touching 2+ layers or services | Full milestone | Multiple concerns need coordinated tasks, not one shot |
+| A refactor that changes public interfaces | Full milestone | Risk of unintended breakage across callers requires tracking |
+| Infrastructure or deployment changes | Full milestone | Irreversible steps benefit from explicit verification criteria |
+| Exploratory work (prototyping, research) | Direct commit or milestone | Prototype → direct commit; research with deliverable → milestone |
+
+When in doubt, default to `/gsd quick`. If it grows mid-execution, the agent will tell you — and you can promote it to a milestone.
+
+## What `/gsd quick` actually does
+
+`/gsd quick` takes a plain-English description and nothing else — no flags, no options. The description is everything after the word `quick`:
+
+```
+/gsd quick add rate limiting to the API login endpoint
+```
+
+Here is what happens when you run it:
+
+1. **Branch creation** — GSD creates a new git branch for the task, scoped to the description.
+2. **Agent dispatch** — the agent receives your description as its execution brief and begins working. You don't write a plan; the description is the plan.
+3. **Atomic commit** — when the agent finishes, all changes are committed in a single commit with a message derived from the description.
+4. **Summary written** — a plain-English summary of what was done is written to `.gsd/quick/N-slug/N-SUMMARY.md` where `N` is the sequential task number and `slug` is derived from your description.
+5. **STATE.md updated** — the state file is updated to reflect the completed quick task.
+
+The branch is yours to merge (or discard) when you're happy with it. The summary file is your audit trail.
+
+→ gsd2-guide: [/gsd quick command reference](../../commands/quick/)
+
+## When quick isn't enough
+
+The key heuristic is this: **if you would investigate before fixing, use a milestone**.
+
+Investigation is a signal that the problem is bigger than it appears. You don't yet know the scope, the root cause, or the right solution. A quick task assumes you know what needs to happen — you're just delegating the execution. A milestone gives you space to find out what actually needs to happen first.
+
+The second signal is **crossing multiple concerns**. If the change touches the API layer *and* the database schema *and* the frontend state, those concerns need coordinated tasks with explicit handoffs. A single quick task will blur the boundaries and make the result harder to reason about.
+
+Practical signals that a change needs a milestone instead:
+
+- You find yourself writing a multi-paragraph description for `/gsd quick`
+- The change requires reading code you don't fully understand before deciding what to change
+- The change has rollback risk (migrations, infrastructure, public APIs)
+- The outcome depends on choices you haven't made yet
+- You want to be able to pause, resume, or hand off mid-way
+
+→ gsd2-guide: [/gsd auto mode](../../auto-mode/) — how milestones run end-to-end
+
+## Handling interruptions
+
+Real work is interrupted. GSD has three commands for managing the moment when something more urgent arrives, or when you want to change course without losing context.
+
+### `/gsd capture` — save it for later
+
+When something lands in your head mid-session — a bug you noticed, a feature idea, an edge case — run `/gsd capture` with a plain-English description. It writes the thought to a capture file with a timestamp and slug, so you can finish what you're doing without losing it.
+
+```
+/gsd capture the error message on 404 is confusing for logged-out users
+```
+
+Captures are reviewed in bulk via the captures-triage workflow. Nothing is acted on immediately — that's the point.
+
+→ gsd2-guide: [/gsd capture](../../commands/capture/) | [Captures and triage](../../captures-triage/)
+
+### `/gsd steer` — change direction now
+
+When you realise the current task is going the wrong way — wrong approach, wrong scope, new information that changes the picture — run `/gsd steer` with a description of what needs to change. This adjusts the active agent's execution without abandoning the work already done.
+
+```
+/gsd steer use the existing auth middleware instead of rolling a custom one
+```
+
+→ gsd2-guide: [/gsd steer](../../commands/steer/)
+
+### `/gsd queue` — shape what comes next
+
+When you know what the next piece of work should be but want to finish the current thing first, `/gsd queue` registers the next task without interrupting execution. It becomes the next item when the current work completes.
+
+```
+/gsd queue after this, add end-to-end tests for the login flow
+```
+
+→ gsd2-guide: [/gsd queue](../../commands/queue/)
+
+## The daily rhythm
+
+A typical productive day with GSD looks something like this:
+
+**Morning** — run `/gsd status` to see where things are. If you have open milestones, review the active slice. If you have captures from yesterday, triage them: promote the important ones to quick tasks or milestones, discard the rest.
+
+→ gsd2-guide: [/gsd status](../../commands/status/)
+
+**During the session** — work in short loops. Direct commits for obvious fixes. `/gsd quick` for bounded tasks you can describe in a sentence. Full milestone slices for structured work you planned. Use `/gsd capture` liberally when thoughts arrive mid-flow.
+
+**End of day** — run `/gsd next` to see what the system recommends. If you're mid-milestone, check the slice progress. If everything is green, commit any open quick tasks and let the branch sit overnight — review with fresh eyes in the morning.
+
+→ gsd2-guide: [/gsd next](../../commands/next/)
+
+**Weekly** — the daily rhythm compounds into a weekly cadence of planning, executing, and reviewing. The full pattern — how to structure your week around milestone work, how to use `/gsd auto` for longer-running execution, and how to keep the system from accumulating debt — is covered in Section 8.
+
+→ gsd2-guide: [Section 8: Building a Rhythm](../building-rhythm/)
+
+For a deeper look at how GSD fits into your git workflow — branching, merging, and the commit strategy that makes quick tasks reviewable — see the git strategy guide.
+
+→ gsd2-guide: [Git strategy](../../git-strategy/)

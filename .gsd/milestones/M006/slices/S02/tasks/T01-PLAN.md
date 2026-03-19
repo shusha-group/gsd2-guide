@@ -62,6 +62,21 @@ After writing, build and link-check to retire the "cross-reference format" risk 
 - `npm run build 2>&1 | grep -A5 "solo-guide"` → no output
 - `grep -i "behavior\|recognize\|organize" src/content/docs/solo-guide/daily-mix.mdx` → no output
 
+## Observability Impact
+
+**What changes:** `daily-mix.mdx` grows from 7 lines to >100 lines. No new build artifacts are created — the existing page is replaced in the static site output.
+
+**How to inspect this task later:**
+- `wc -l src/content/docs/solo-guide/daily-mix.mdx` — quick content volume check
+- `grep -c "../../commands/" src/content/docs/solo-guide/daily-mix.mdx` — verifies cross-reference wiring
+- `npm run build 2>&1 | grep "pages"` — confirms 113 pages (no files added or removed)
+- `npm run check-links` — validates all links from this page resolve; exit 0 means cross-references are correct
+
+**Failure state:**
+- MDX JSX parse error (e.g., unescaped `{` or `<`) surfaces in build stderr with file path + line number
+- Broken link surfaces in `check-links` output with source file and target href
+- Wrong page count in build output indicates an accidental file creation or deletion
+
 ## Inputs
 
 - `src/content/docs/solo-guide/daily-mix.mdx` — existing 7-line stub with valid frontmatter (from S01)
