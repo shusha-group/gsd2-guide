@@ -687,9 +687,118 @@ This file is the explicit capability and coverage contract for the project.
 | R055 | operability | validated | M004/S02 | none | Fast path proven: `npm run update` with all 43 pages current logged "All 43 pages are current — no regeneration needed" and completed pipeline logic in 8.7s (regenerate step: 2ms). Under the 15s target. Total wall-clock 20.7s includes network fetch for `npm i -g gsd-pi@latest` (~12s). Decision D054 defines pipeline-logic time as the R055 metric. |
 | R056 | operability | validated | M004/S01 | M004/S02 | findClaude('/nonexistent/claude') returns false. update.mjs logs 'claude CLI not available' and skips regeneration. Build proceeds with existing content. Verified by unit test and manual check. |
 
+### R057 — Per-prompt deep-dive pages for all 32 GSD prompts, grouped by role (Auto-mode pipeline, Guided variants, Commands, Foundation), each with a Mermaid pipeline position diagram
+- Class: core-capability
+- Status: active
+- Description: One MDX page per prompt file in `extensions/gsd/prompts/`, grouped into 4 role-based sidebar sections. Each page shows what the prompt does, where it sits in the auto-mode pipeline (Mermaid flowchart), what variables it receives, and which commands invoke it.
+- Why it matters: Prompts are the core behavioral contracts of GSD auto-mode. Without documentation, users and contributors have no way to understand what each agent session is instructed to do, what context it receives, or how the pipeline sequences.
+- Source: user
+- Primary owning slice: M005/S03
+- Supporting slices: M005/S01, M005/S02
+- Validation: unmapped
+- Notes: 32 prompts total. Grouped: Auto-mode pipeline (10), Guided variants (7), Commands (14), Foundation (1 — system.md). Mermaid diagrams use terminal-native styling matching existing command pages.
+
+### R058 — Each prompt page shows the variables it receives, with descriptions of what context each variable carries
+- Class: core-capability
+- Status: active
+- Description: A structured table on every prompt page listing each `{{variable}}` the prompt declares, a plain-language description of what it contains, and whether it's always present or conditional.
+- Why it matters: Variables are how the pipeline injects context into each agent session. Understanding what data the agent has available is essential for understanding what it can do and why it behaves as it does.
+- Source: user
+- Primary owning slice: M005/S03
+- Supporting slices: M005/S01
+- Validation: unmapped
+- Notes: Variable descriptions are authored from studying `auto-prompts.ts` builder functions where each variable is assembled. Not extracted verbatim from source.
+
+### R059 — Bidirectional linking between prompt pages and command pages
+- Class: core-capability
+- Status: active
+- Description: Prompt pages link to the commands that invoke them. Command pages that use prompts get a "Prompts used by this command" section with links to those prompt pages.
+- Why it matters: Users arriving from a command page need to find the prompt that command uses. Users on a prompt page need to know which commands invoke it.
+- Source: user
+- Primary owning slice: M005/S04
+- Supporting slices: M005/S02
+- Validation: unmapped
+- Notes: 15 command pages are affected. Reverse mapping derivable from `page-source-map.json`.
+
+### R060 — Prompt pages wired into the `npm run update` regeneration pipeline with source dependency tracking
+- Class: operability
+- Status: active
+- Description: Prompt pages appear in `page-source-map.json` with their source `.md` files as dependencies. When a prompt file changes, the pipeline detects staleness and regenerates the affected page.
+- Why it matters: Prompts change frequently with gsd-pi releases. Without pipeline integration, prompt pages would silently go stale.
+- Source: inferred
+- Primary owning slice: M005/S05
+- Supporting slices: M005/S02
+- Validation: unmapped
+- Notes: Each prompt page maps to its single `.md` source file. `build-page-map.mjs` and `manage-pages.mjs` need to be extended to cover the `prompts/` directory.
+
+## Traceability
+
+| ID | Class | Status | Primary owner | Supporting | Proof |
+|---|---|---|---|---|---|
+| R001 | core-capability | validated | M001/S01 | M001/S03, M001/S04 | Extraction produces skills.json (8), agents.json (5), extensions.json (17) from installed gsd-pi npm package with dynamic path resolution. 39/39 tests pass covering all output structures and counts. |
+| R002 | core-capability | validated | M001/S01 | M001/S04, M001/S05 | Pipeline pulls 127 markdown docs, README, 49 releases, and 1023-file manifest from gsd-build/gsd-2 GitHub repo via tarball + releases + tree API with SHA-based caching. |
+| R003 | primary-user-loop | validated | M001/S03 | none | 92 searchable, filterable, expandable cheat-sheet cards across 5 reference pages (58 commands, 8 skills, 17 extensions, 5 agents, 4 shortcuts). Category filter works. Pagefind indexes all content. |
+| R004 | core-capability | validated | M001/S04 | none | 125 deep-dive doc pages covering getting started, auto mode, configuration, architecture, git strategy, skills, troubleshooting, extending pi, building coding agents, TUI/UI. Sidebar organized into 10 navigable groups. 17975 internal links validated. |
+| R005 | continuity | validated | M001/S05 | none | S05 builds changelog page at /changelog/ with all 48 GitHub releases — expand/collapse, dates, GitHub links, rendered markdown bodies. Verified by grep counts on dist/ output. |
+| R006 | differentiator | validated | M001/S02 | M001/S03, M001/S04 | Terminal-native dark design with phosphor green #39FF14 on near-black #0a0e0a, JetBrains Mono + Outfit fonts, scanline effects, custom code blocks. Mermaid SVGs render. Not default Starlight. |
+| R007 | operability | validated | M001/S06 | none | S06 builds `scripts/update.mjs` — `npm run update` chains npm update → extract → diff report → regenerate → manage commands → build → check-links in one command (7 steps). Reports per-step timing, manifest diff, regeneration cost/token summary, page count, and link check result. Exits non-zero naming the failed step. Full pipeline completes in ~8s. Extended by M003/S04 with regeneration and command management steps. |
+| R008 | launchability | validated | M001/S06 | none | S06 creates `.github/workflows/deploy.yml` — triggers on push to main + workflow_dispatch, uses withastro/action@v5 (extract + build + check-links), deploys via actions/deploy-pages@v4 with pages:write + id-token:write permissions. Concurrency group prevents parallel deploys. Ready to go live when repo is pushed to GitHub with Pages enabled. |
+| R009 | primary-user-loop | validated | M001/S02 | none | Pagefind search indexes all 135 pages at build time across all content types — reference cards, deep-dive docs, changelog, and landing page. |
+| R010 | continuity | validated | M001/S05 | M001/S06 | S05 wires Header.astro to import releases.json and display releases[0].tag_name (v2.22.0) as a clickable badge. Verified: grep confirms version present and v0.0.0 placeholder eliminated. |
+| R011 | operability | validated | M001/S06 | none | S01 manifest tracks 1023 files with SHA hashes. S06 update script captures extract output and reports manifest diff summary (+N added, ~N changed, -N removed). Astro's content collections handle page-level rebuild. The manifest diff enables knowing what changed; Astro handles incremental static generation internally. |
+| R012 | quality-attribute | validated | M001/S02 | none | Starlight generates semantic HTML with proper headings. Sitemap at dist/sitemap-index.xml. 135 pages with structured markup accessible to AI tools. |
+| R013 | differentiator | validated | M001/S02 | M001/S04 | Mermaid diagrams render as SVGs via @pasqal-io/starlight-client-mermaid. Verified in multiple built pages including configuration, auto-mode, git-strategy. |
+| R014 | core-capability | validated | M001/S03 | none | All 8 skills documented with conditional objective/arguments/detection sections. gh nested under github-workflows as sub-skill. |
+| R015 | core-capability | validated | M001/S03 | none | All 17 extensions documented with tool lists. 4 toolless extensions show graceful fallback text. Sorted by tool count. |
+| R016 | core-capability | validated | M001/S03 | none | All 5 agents documented on reference cards with role, summary, and conditional model/memory/tools info. |
+| R017 | core-capability | validated | M001/S04 | none | Architecture pages render in Architecture sidebar group. Building-coding-agents essay series (10 pages) renders as its own section. |
+| R018 | core-capability | validated | M001/S01 | M001/S03 | Skills extracted with YAML frontmatter + XML sections, agents with summaries, extensions with tool inventories. All rendered as user-facing reference cards with meaningful structure, not raw dumps. |
+| R019 | failure-visibility | validated | M001/S04 | none | Troubleshooting page renders in Guides sidebar group with prominent LinkCard on the landing page. |
+| R020 | launchability | validated | M001/S04 | none | Getting Started page renders as first Guides entry. Landing page hero CTA links directly to it. Cross-link to auto-mode verified. |
+| R021 | quality-attribute | validated | M001/S06 | none | S06 builds `scripts/check-links.mjs` — scans all dist/ HTML files, checks 17975 internal `<a>` links against filesystem after stripping /gsd2-guide/ base path. Exits 0 with count on success, exits 1 with per-link broken report on failure. Integrated into both `npm run update` pipeline and GitHub Actions workflow. |
+| R022 | continuity | deferred | none | none | unmapped |
+| R023 | differentiator | deferred | none | none | unmapped |
+| R024 | operability | deferred | none | none | unmapped |
+| R025 | constraint | out-of-scope | none | none | n/a |
+| R026 | primary-user-loop | validated | M002/S01 | none | 467-line walkthrough at /user-guide/developing-with-gsd/ follows a Cookmate recipe app through all GSD phases: discuss, research, plan, execute, verify, summarize, complete. Includes 2 Mermaid diagrams (lifecycle flowchart, auto-mode dispatch state machine), 4 ASCII directory trees showing .gsd/ state at discussion, planning, mid-execution, and completion phases, and annotated terminal output examples. Build passes, 720 links checked, 0 broken. |
+| R027 | core-capability | validated | M002/S02 | M002/S03 | 27 command deep-dive MDX pages in src/content/docs/commands/ covering all GSD commands. S02 delivered 9 session/execution commands; S03 delivered 18 planning/maintenance/utility/reference pages (queue, steer, capture, triage, knowledge, cleanup, doctor, forensics, prefs, mode, skill-health, config, hooks, run-hook, migrate, keyboard-shortcuts, cli-flags, headless). 54 pages built, 2880 links verified, 0 broken. All pages reachable via sidebar (28 entries) and indexed by Pagefind. |
+| R028 | primary-user-loop | validated | M002/S04 | none | 6 recipe pages (fix-a-bug, small-change, new-milestone, uat-failures, error-recovery, working-in-teams) in dist/recipes/*/index.html. Each has numbered steps, terminal examples, .gsd/ directory trees, Mermaid flowcharts, and expected outcomes. All navigable via sidebar, indexed by Pagefind. Build passes, 3558 links verified. |
+| R029 | constraint | validated | M002/S01 | none | 109 pi/agent files excluded from prebuild pipeline via EXCLUDED_DIRS/EXCLUDED_ROOT_FILES sets. Sidebar in astro.config.mjs has zero pi/agent entries. grep confirms no pi/agent content references in src/content/docs/. Build succeeds with 27 GSD-focused pages. 720 internal links checked, 0 broken. |
+| R030 | core-capability | validated | M002/S02 | M002/S03 | All 27 command pages show lifecycle documentation — triggers, files read/written, internal mechanics (with Mermaid diagrams for complex commands), and annotated terminal examples. S02 covered 9 session/execution commands; S03 completed the remaining 18 with Mermaid diagrams for doctor, forensics, prefs, skill-health, config, queue, steer, triage, run-hook, migrate, and headless. Simpler commands use prose + tables where Mermaid adds no value. |
+| R031 | differentiator | validated | M002/S01 | M002/S02, M002/S03, M002/S04 | Visual approach applied across all M002 content: S01 walkthrough (2 Mermaid diagrams, 4 directory trees), S02 (9 command pages with flow diagrams), S03 (18 pages with 11 Mermaid diagrams), S04 (6 recipe pages with 6 Mermaid flowcharts, directory trees, terminal output). Comprehensive coverage of all authored content. |
+| R032 | continuity | validated | M002/S01 | none | All existing GSD guide pages remain accessible under reorganized 5-section sidebar (User Guide, Commands, Recipes, Reference, Guides). 720 internal links checked, 0 broken. All 17 remaining GSD pages build and render correctly. |
+| R033 | core-capability | deferred | none | none | unmapped |
+| R034 | core-capability | validated | M003/S01 | none | previous-manifest.json snapshot saved after each extract step in content/generated/. Diff detection uses it as baseline for next run. Verified via end-to-end pipeline run — stale-pages.json boundary contract written with 0 stale pages when no source changes. |
+| R035 | core-capability | validated | M003/S01 | none | detectChanges() in diff-sources.mjs compares previous vs current manifest SHA hashes. Returns changedFiles/addedFiles/removedFiles arrays. 5 unit tests verify correct detection. End-to-end pipeline run confirms diff report step executes and writes stale-pages.json. |
+| R036 | core-capability | validated | M003/S01 | none | page-source-map.json maps 43 authored pages to 778 source deps. 9 unit tests verify completeness. All source paths validated against manifest. End-to-end pipeline uses this map in both diff report and regenerate steps. |
+| R037 | core-capability | validated | M003/S01 | none | resolveStalePages() cross-references changed files against page-source-map.json to flag stale pages with reasons. 7 unit tests verify detection. End-to-end pipeline confirms staleness resolver correctly identifies 0 stale pages when no source changes. |
+| R038 | core-capability | validated | M003/S02 | none | regeneratePage() calls Claude API with source files + current page + system prompt. Returns structured result with token usage. 14 unit tests with mock client verify prompt construction, frontmatter validation, error handling, token reporting, batch iteration. regenerateStalePages() batch function iterates stale-pages.json. Quality verified: 3 regenerated pages (capture, doctor, auto) byte-identical to M02 originals. Build (65 pages) + link check (4036 links, 0 broken) pass with regenerated content. |
+| R039 | core-capability | validated | M003/S02 | none | System prompt uses capture.mdx exemplar page as quality reference. Includes 12 quality rules covering section structure (6 required sections in order), Mermaid terminal-native styling (flowchart TD, fill:#0d180d/#1a3a1a), relative link format (../slug/), frontmatter format, and file table structure. Unit tests verify exemplar content and quality rules are present in prompt. Quality proven: 3 regenerated pages byte-identical to M02 originals. |
+| R040 | core-capability | validated | M003/S03 | none | detectNewAndRemovedCommands() identifies commands.json entries without .mdx pages. createNewPages() generates page via Claude API, adds sidebar entry, adds page-source-map entry. 11 detection tests + 4 creation tests + round-trip test verify. Wired into pipeline manage commands step. |
+| R041 | core-capability | validated | M003/S03 | none | removePages() deletes .mdx file, removes sidebar entry from astro.config.mjs, removes page-source-map entry. 3 removal tests verify. Handles missing files gracefully. Wired into pipeline manage commands step. |
+| R042 | operability | validated | M003/S04 | none | `npm run update` runs 7-step pipeline (npm update → extract → diff report → regenerate → manage commands → build → check-links). Regeneration step calls regenerateStalePages() and only fires when stale pages detected. 14 integration tests + full end-to-end run confirm pipeline orchestration. All 7 steps complete with ✅ markers and timing. |
+| R043 | operability | validated | M003/S04 | none | Running `npm run update` without ANTHROPIC_API_KEY exits 0. Regeneration step logs "⊘ Skipped: no stale pages" (or "no API key" when pages are stale). Build proceeds with existing content. All 7 steps complete successfully. Verified in end-to-end pipeline run. |
+| R044 | operability | validated | M003/S03 | none | addSidebarEntry() inserts before Keyboard Shortcuts with correct indentation. removeSidebarEntry() removes matching line. 7 tests verify insertion/removal. Both called from manage commands pipeline step. Build passes after sidebar modifications. |
+| R045 | operability | validated | M003/S04 | none | Pipeline output shows per-page status (✓/⊘/✗), token counts (input/output), cost estimate ($3/MTok input, $15/MTok output via formatCost()), and total regeneration time. Summary line shows aggregate results. 14 integration tests verify formatCost math and reporting structure. |
+| R046 | completeness | validated | M003/S01 | none | page-source-map.json has entries for all 43 authored pages (28 command deep-dives, 6 recipes, walkthrough, homepage, 6 reference pages, changelog). 9 unit tests verify completeness. All source paths validated against manifest. Count is 43 — includes config, export, update pages added by manage-pages. |
+| R047 | operability | deferred | none | none | unmapped |
+| R048 | core-capability | validated | M004/S01 | none | regeneratePage() spawns `claude -p` via spawnSync with --output-format stream-json, --no-session-persistence, --dangerously-skip-permissions. Integration proof: capture.mdx regenerated by claude-sonnet-4-6 in 139.7s with valid frontmatter and all 6 sections. 20 tests pass. Zero SDK references in codebase. |
+| R049 | operability | validated | M004/S02 | none | `npm run update` detected 3 stale pages and invoked `claude -p` for each automatically. Pipeline ran end-to-end with zero intervention: commands/config.mdx (291s), reference/skills.mdx (94s), reference/extensions.mdx (72s) — all regenerated by claude-sonnet-4-6. |
+| R050 | core-capability | validated | M004/S01 | M004/S02 | Multi-page-type proof: commands/config.mdx (132 lines, valid frontmatter, correct section structure) and reference/extensions.mdx (33 lines, valid frontmatter) regenerated via claude-sonnet-4-6. All regenerated pages pass Astro build and link check (4036 links, 0 broken). Combined with S01's single-page proof on capture.mdx, both command pages and reference pages are proven. |
+| R051 | completeness | active | M004/S01 | none | Structural validation: all 43 source paths exist in manifest.json. Operational proof: 3 stale pages correctly detected and regenerated in M004/S02. Full semantic audit pending. |
+| R052 | operability | validated | M004/S02 | none | Full cycle proven: `npm run update` detected 3 stale pages → `claude -p` regenerated all 3 → build passed (65 pages) → link check passed (4036 links, 0 broken) → commit pushed (28 commits, a4dfc67..2fd2681) → GitHub Actions deploy.yml workflow succeeded (run 23235046096) → GitHub Pages deployment live. Proven on commands/config.mdx, reference/skills.mdx, reference/extensions.mdx. |
+| R053 | operability | validated | M004/S02 | none | "Update gsd-guide" triggers full pipeline: detect → regenerate via Claude Code → build → check links → stamp → commit → push → GitHub Pages deploy. Proven end-to-end with merge to main, push to origin, GitHub Actions deploy.yml completing successfully. Zero prompts, zero manual push. |
+| R054 | constraint | validated | M004/S02 | none | `grep -r "@anthropic-ai/sdk" scripts/ tests/ package.json` returns nothing. SDK removed from devDependencies. `ANTHROPIC_API_KEY` references removed from update.mjs regeneration path. Replaced by findClaude() guard. |
+| R055 | operability | validated | M004/S02 | none | Fast path proven: `npm run update` with all 43 pages current logged "All 43 pages are current — no regeneration needed" and completed pipeline logic in 8.7s (regenerate step: 2ms). Under the 15s target. Total wall-clock 20.7s includes network fetch for `npm i -g gsd-pi@latest` (~12s). Decision D054 defines pipeline-logic time as the R055 metric. |
+| R056 | operability | validated | M004/S01 | M004/S02 | findClaude('/nonexistent/claude') returns false. update.mjs logs 'claude CLI not available' and skips regeneration. Build proceeds with existing content. Verified by unit test and manual check. |
+| R057 | core-capability | active | M005/S03 | M005/S01, M005/S02 | unmapped |
+| R058 | core-capability | active | M005/S03 | M005/S01 | unmapped |
+| R059 | core-capability | active | M005/S04 | M005/S02 | unmapped |
+| R060 | operability | active | M005/S05 | M005/S02 | unmapped |
+
 ## Coverage Summary
 
-- Active requirements: 1
-- Mapped to slices: 1
+- Active requirements: 5
+- Mapped to slices: 5
 - Validated: 49 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056)
 - Unmapped active requirements: 0
