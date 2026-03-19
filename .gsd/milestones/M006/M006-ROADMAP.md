@@ -67,7 +67,7 @@ This milestone is complete only when all are true:
 - [x] **S05: Section 3 — Brownfield Reality** `risk:medium` `depends:[S01]`
   > After this: Guidance for starting GSD 2 on an existing codebase is published — agent-instructions.md, issue tracker mapping, the handoff spec approach, and constraining GSD.
 
-- [ ] **S06: Section 1 — Why GSD 2** `risk:medium` `depends:[S01]`
+- [x] **S06: Section 1 — Why GSD 2** `risk:medium` `depends:[S01]`
   > After this: The context window ceiling argument, cost comparison, and technical director framing are published. Reads as the compelling entry point for a sceptical vibe coder.
 
 - [ ] **S07: Sections 5 & 6 — Context Engineering + Costs** `risk:medium` `depends:[S01]`
