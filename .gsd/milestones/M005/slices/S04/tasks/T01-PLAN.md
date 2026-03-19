@@ -95,6 +95,24 @@ The link format is `[`slug`](../../prompts/{slug}/)` with an em-dash description
 
 Links from command pages to prompt pages must use `../../prompts/{slug}/` — two levels up because Starlight renders `/commands/{slug}/index.html` and the link needs to reach `/prompts/{slug}/`. This is documented in KNOWLEDGE.md under "Starlight internal link format".
 
+## Observability Impact
+
+**Signals added by this task:**
+- Each modified command MDX file gains a `## Prompts Used` section; `grep -rl "## Prompts Used" src/content/docs/commands/*.mdx | wc -l` is the primary health check (should return 16).
+- The script reports per-file status to stdout during execution, giving a live progress trace. If any file is skipped, it logs `SKIP: {file}` with a reason.
+
+**How a future agent inspects this task's output:**
+- `grep -A 20 "## Prompts Used" src/content/docs/commands/auto.mdx` — confirms section content and link format.
+- `grep -c "../../prompts/" src/content/docs/commands/auto.mdx` → 12 confirms auto has all links.
+- `npm run check-links` → 0 broken links confirms all `../../prompts/{slug}/` paths resolve.
+
+**Failure state visibility:**
+- Missing section: `grep -L "## Prompts Used" src/content/docs/commands/*.mdx` lists affected files.
+- Bad link: `npm run check-links` fails with the exact broken URL in stdout.
+- Wrong insertion point: `grep -B5 "## Prompts Used" src/content/docs/commands/auto.mdx` reveals surrounding context.
+
+**Redaction:** No secrets; all content is static MDX text.
+
 ## Expected Output
 
 - 16 modified command MDX files in `src/content/docs/commands/`, each with a new `## Prompts Used` section containing alphabetically sorted prompt page links
