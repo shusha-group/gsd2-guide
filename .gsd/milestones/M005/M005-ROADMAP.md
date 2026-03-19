@@ -59,7 +59,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Prompt page content generation** `risk:medium` `depends:[S01,S02]`
   > After this: All 32 prompt pages have real authored content — prose description, Mermaid pipeline diagram, variable table, "Used by commands" section. `npm run build` and `npm run check-links` pass.
 
-- [ ] **S04: Command page backlinks** `risk:low` `depends:[S02]`
+- [x] **S04: Command page backlinks** `risk:low` `depends:[S02]`
   > After this: 15 command pages have a "Prompts used" section with links to the prompt pages that command invokes. All cross-links validated by `npm run check-links`.
 
 - [ ] **S05: Pipeline integration** `risk:low` `depends:[S02,S04]`

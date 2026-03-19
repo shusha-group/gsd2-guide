@@ -20,7 +20,7 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 **M005/S02 complete.** 32 stub MDX pages exist in `src/content/docs/prompts/`, all 4 sidebar groups registered in `astro.config.mjs`, and `page-source-map.json` has 32 new entries. `npm run build` succeeds at 104 pages.
 
-**M005/S03 complete.** All 32 prompt pages have fully authored 4-section content: What It Does (behavioral prose), Pipeline Position (Mermaid diagram with terminal-native styling), Variables (table from prompts.json), Used By (command links or internal-trigger note). `npm run build` passes at 104 pages (0 errors). `npm run check-links` passes with 10380 links verified (0 broken). Key patterns: camelCase Mermaid node IDs, 5-7 node diagrams, guided variants use session model (not auto-mode pipeline), MDX template-variable literals wrapped in backticks to prevent JSX parse errors.
+**M005/S04 complete.** All 16 command pages (auto, gsd, capture, config, discuss, doctor, forensics, headless, hooks, knowledge, migrate, queue, quick, skill-health, steer, triage) now have a `## Prompts Used` section with alphabetically sorted bullet-list links to their associated prompt pages. Bidirectional prompt↔command link graph is fully wired. `npm run build` passes at 104 pages, `npm run check-links` confirms 10,380 links with 0 broken. One-shot script deleted after use.
 
 ## Architecture / Key Patterns
 
