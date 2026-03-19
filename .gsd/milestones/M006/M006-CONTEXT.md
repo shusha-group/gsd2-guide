@@ -114,4 +114,4 @@ To call this milestone complete, we must prove:
 
 ## Open Questions
 
-- None — scope is fully defined
+- The vibe coding guide URL (shareuhack.com/en/posts/vibe-coding-guide-2026) returned a redirect during investigation — not confirmed live. Agent executing S06 should search for the current URL or an equivalent source before citing it. All other external resources (Addy Osmani, Esteban Torres, New Stack) were confirmed live.
