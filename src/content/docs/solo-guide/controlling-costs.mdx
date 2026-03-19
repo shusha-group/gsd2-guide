@@ -3,6 +3,112 @@ title: "Controlling Costs"
 description: "Token profiles, model routing, and keeping spend predictable."
 ---
 
-This section covers the practical economics of using GSD 2 — the flat-rate Claude Max advantage, token profile tradeoffs (budget, balanced, quality), per-phase model routing, and how to set a budget ceiling that prevents surprises.
+Section 1 covered the landscape — the three models of paying for AI, what you get with each, and why efficient cost management matters for sustained delivery. This section is the practical companion. It covers the levers you actually pull: choosing a token profile, routing models by phase, setting a ceiling, and understanding what drives spend up or down. By the end you'll have a clear enough picture to configure GSD sensibly for your budget and adjust it as you learn your own cost patterns.
 
-Content is being written and will appear here shortly.
+→ gsd2-guide: [Section 1: Why GSD 2](../why-gsd/)
+
+---
+
+## Flat-rate vs pay-per-use in practice
+
+The choice between a flat-rate subscription and pay-per-token billing shapes everything that follows, so it's worth being precise about what each actually means for a solo builder.
+
+Flat-rate platforms — Cursor, Replit, Lovable — give you a fixed monthly cost. The predictability is genuine and worth something, especially when you're in an exploration phase and don't want a surprise invoice. The trade-off is that you're working within whatever model choices the platform made, and usage limits are enforced in ways that aren't always visible until you hit them mid-session. For most casual use the limits are generous, but for a sustained build they can become a friction point.
+
+The Anthropic API is pay-per-token. What you spend correlates directly with what you use — each request has a cost based on input tokens, output tokens, and cache hits. On a busy day running many slices in auto mode, that bill can be meaningful. On a quiet day running targeted tasks, it's small. The advantage is full visibility: you can see exactly where the tokens went, configure which model runs which phase, and optimise deliberately. GSD's structured approach works particularly well here because each task uses a fresh context window sized to the task — you're not dragging a full conversation history through every request.
+
+Claude Max, Anthropic's flat-rate subscription tier, sits in the middle. It gives you higher usage limits on Claude's consumer interface without per-token billing, but it doesn't expose the programmatic API access that GSD requires for structured task execution. Claude Max is useful for exploration and discussion — it's what you'd use for the back-and-forth of planning a milestone before handing off to auto mode — but it's not a substitute for API access when GSD is running tasks.
+
+The practical consequence of this landscape is that most GSD users end up with both: Claude Max for discussion and exploration, and API credits for auto mode execution. The API bill for a well-run GSD project tends to be lower than people expect, because context engineering keeps sessions lean and the token profile system gives you explicit control over model spend.
+
+---
+
+## Token profiles in plain English
+
+GSD's three token profiles — `budget`, `balanced`, and `quality` — coordinate a bundle of decisions that affect cost: which models run which phases, whether optional phases like milestone research are skipped, and how much context is compressed before dispatch. The reference documentation has the full tables.
+
+→ gsd2-guide: [Token Optimization](../../token-optimization/)
+
+The practitioner's framing is simpler: pick the profile that matches your confidence in the work.
+
+**Use `budget` when you know exactly what you're building.** If a milestone is well-understood — you've done this kind of work before, the codebase is familiar, the tasks are mechanical — `budget` is entirely appropriate. It uses cheaper models for simple tasks, skips phases with diminishing returns, and compresses context aggressively. The 40–60% cost reduction is real and the quality impact is minimal for routine work. If you're adding documentation pages to an established guide, writing routine tests, or extracting configuration values into constants, `budget` is the right default.
+
+**Use `balanced` for most active development.** The default profile keeps the important planning phases, uses your configured models for execution, and applies moderate context compression. It's designed to be the right choice when you don't have strong reasons to deviate in either direction. Most milestones on a growing project will run well on `balanced`.
+
+**Reserve `quality` for architectural decisions.** When you're making choices that are hard to undo — restructuring a schema, redesigning an API boundary, introducing a new pattern that will propagate throughout the codebase — `quality` runs every phase with full context. The cost premium buys higher confidence that the agent has everything it needs to make a coherent decision. One slice on `quality` mid-project costs more than the surrounding slices, but it's worth it when the stakes are higher.
+
+Token profiles are set per-project using `/gsd prefs project`. They apply to every subsequent auto mode run until you change them, so the rhythm is: configure the profile before a milestone based on the nature of the work, adjust mid-milestone if the complexity changes.
+
+→ gsd2-guide: [/gsd prefs](../../commands/prefs/)
+
+---
+
+## Per-phase model routing
+
+Within a token profile, you can route different models to different phases of auto mode execution. The logic is straightforward: not all phases have equal reasoning requirements, and routing cheaper models to lower-stakes phases is one of the most reliable ways to reduce cost without affecting output quality.
+
+The cost difference between model tiers is significant. A Haiku-class model costs roughly 20× less than an Opus-class model. Sonnet sits in the middle — capable enough for most execution work, at a fraction of Opus cost. When you have a milestone with ten tasks, and several of those tasks involve straightforward file operations or content writing rather than architectural reasoning, the difference between running everything on Opus versus routing mechanical tasks to Haiku is substantial.
+
+Dynamic model routing automates this. When enabled, GSD classifies each unit by complexity — analysing step count, file count, and signal words in the task plan — and routes it to the appropriate tier. A documentation task with three steps and two files routes to a light model. A refactor task with eight steps, cross-file dependencies, and the word "migrate" in the plan routes to a heavier one. The escalation logic means that if a task fails at a light tier, the retry moves up — you don't burn multiple failed attempts at cheap models when the work genuinely needs more reasoning.
+
+→ gsd2-guide: [Dynamic Model Routing](../../dynamic-model-routing/)
+
+The practical configuration looks like this: enable `dynamic_routing` in your preferences, set explicit `tier_models` if you want to control exactly which models are used at each tier, and let the classifier handle the rest. For most projects, the built-in classification produces sensible routing without needing manual adjustment. When you notice a pattern — mechanical tasks going to expensive models, or complex tasks routing too light — you can provide feedback via `over`, `under`, or `ok` signals that adjust the classifier's behaviour for that task type.
+
+The interaction with token profiles matters: token profiles set the baseline models, and dynamic routing further optimises within those baselines. A `budget` profile plus dynamic routing gives maximum cost reduction. A `quality` profile plus dynamic routing still routes within quality-tier models rather than downgrading to Haiku — the profile is the ceiling, not overridden by the router.
+
+---
+
+## Budget ceiling configuration
+
+A budget ceiling is a project-level spend limit. It doesn't constrain any individual task — it constrains cumulative spend across the project. When the ceiling is reached, GSD's response depends on the enforcement mode you've configured.
+
+To set a ceiling, open `/gsd prefs project` and navigate to the Budget category:
+
+```
+budget_ceiling: 50.00
+budget_enforcement: pause
+```
+
+Three enforcement modes exist: `warn` logs a notification and continues, `pause` stops auto mode and waits for you to confirm or adjust, and `halt` stops auto mode entirely. For most solo builders, `pause` is the right choice — it gives you visibility at the moment the ceiling is hit and lets you decide whether to increase the ceiling, switch to a cheaper token profile, or stop.
+
+→ gsd2-guide: [Cost Management](../../cost-management/)
+
+Setting an appropriate ceiling requires calibrating against your actual spend patterns, which you won't know in full on a first project. The practical approach is to start with a generous ceiling — something high enough that you won't hit it accidentally mid-milestone — and lower it progressively as you learn what your work costs. After two or three milestones you'll have enough per-slice averages to project remaining cost accurately, and you can set a ceiling that gives you genuine budget control without accidentally pausing mid-task.
+
+When the ceiling is approached (but not yet hit), the budget pressure mechanism in the complexity router automatically downgrades model assignments — less capable models for standard tasks, lighter models for everything else. This graduated response means the budget is spread across remaining work rather than being exhausted early on complex tasks. The cost curve bends before you hit the wall, not after.
+
+The `context_pause_threshold` preference adds a second safety valve: if context window usage for a single task exceeds the threshold percentage you set, auto mode pauses before dispatch and asks for confirmation. This is useful for catching unexpectedly large tasks before they burn significant tokens — a task that balloons to 200K tokens of context is worth reviewing before it runs.
+
+To review what you've spent and where, `/gsd export` generates a full retrospective report with cost by phase, cost by slice, and cost by model.
+
+→ gsd2-guide: [/gsd export](../../commands/export/)
+
+---
+
+## Typical cost patterns
+
+Understanding what a milestone actually costs, and what drives that cost, is the most useful thing you can carry into your first few auto mode runs.
+
+A typical balanced-profile milestone — eight to twelve tasks across three or four slices — costs somewhere between $2 and $8 on the Anthropic API, depending on task complexity and context size. That's the range you'll see on routine feature work with Sonnet as your execution model. Milestones with significant architectural decisions, complex migrations, or many large files in context will sit at the higher end or above it. Documentation and test-writing milestones will sit at the lower end.
+
+The three biggest drivers of spend are:
+
+**Token profile.** Switching from `balanced` to `budget` on a well-understood milestone can cut cost by 40–60%. Switching from `balanced` to `quality` can double it. Profile selection is the single highest-leverage cost control you have.
+
+**Context size.** Each task dispatches a prompt that includes the task plan, prior summaries, relevant source files, and architectural context. Tasks that pull in many large files or long decision registers cost more than tasks that reference small, focused files. This is where context engineering from Section 5 pays dividends — a well-maintained `agent-instructions.md` with precise, concise rules costs fewer tokens than a sprawling one with outdated entries. A `DECISIONS.md` that records only meaningful choices is less expensive to inline than one that records every minor detail. The discipline of writing focused context isn't just about quality — it directly reduces cost.
+
+→ gsd2-guide: [Section 5: What You Write vs What GSD Writes](../context-engineering/)
+
+**Model selection.** Opus costs roughly 5× more than Sonnet per token. If you've configured Opus as your execution model across the board, your milestones will cost significantly more than the same work on Sonnet. For most execution tasks — writing feature code, writing tests, writing documentation — Sonnet is the right model. Opus is worth the premium for planning, complex architectural reasoning, and tasks where getting it right the first time is materially cheaper than a failed attempt.
+
+The cost transparency that GSD's fresh-context approach provides is genuinely useful for calibration. After each milestone, run `/gsd export` and look at the per-slice and per-phase breakdown. If slice research is consuming a disproportionate share, consider switching to `balanced` (which skips slice research). If execution is expensive on tasks that are mostly mechanical, enable dynamic routing. The dashboard at `/gsd status` shows real-time cost accumulation mid-milestone so you can catch surprises before they compound.
+
+→ gsd2-guide: [Cost Management](../../cost-management/)\
+→ gsd2-guide: [Section 7: Building Rhythm](../building-rhythm/)
+
+The goal isn't to minimise cost — it's to spend predictably on the work that matters. A milestone that cost $6 and produced coherent, working code was money well spent. A $6 milestone that required three correction cycles and manual patch-up afterwards wasn't. Context engineering is cost engineering: the two disciplines are the same thing from different angles.
+
+---
+
+*This is Section 6 of the GSD 2 Solo Guide.*

@@ -39,7 +39,7 @@
   - Verify: `wc -l` >100; `grep -c "→ gsd2-guide:"` ≥5; `grep -c "behaviour\|recognise\|organise\|practise\|colour"` >0
   - Done when: File has substantive content covering all five R067 topics with correct cross-references and Australian spelling
 
-- [ ] **T02: Write Section 6 — controlling-costs.mdx, build, and verify** `est:30m`
+- [x] **T02: Write Section 6 — controlling-costs.mdx, build, and verify** `est:30m`
   - Why: R068 requires the practical cost management section. This task also runs the build and link-check verification for both S07 pages, since cross-references between Section 5 and Section 6 must both exist to resolve.
   - Files: `src/content/docs/solo-guide/controlling-costs.mdx`
   - Do: Replace the stub content with ~100–130 lines of narrative prose covering: (1) flat-rate vs pay-per-use reality — Claude Max, API, platform subscriptions; (2) token profiles (budget/balanced/quality) — what each trades off, in plain English, without reproducing the reference page tables; (3) per-phase model routing — using cheaper models for mechanical work; (4) budget ceiling configuration — set it, enforce it, adjust it; (5) typical cost patterns — what drives spend up, how context engineering from Section 5 affects costs. Preserve existing frontmatter title and description exactly. Same conventions as T01. Then run `npm run build` and `npm run check-links` to verify both pages compile and all cross-references resolve.
@@ -68,6 +68,9 @@
 
 **Failure-path verification check:**
 - `npm run build 2>&1 | grep -i "error\|warn" | head -20` — surfaces MDX parse errors and broken imports in a single scannable list
+- `npm run check-links 2>&1 | grep -v "^$" | head -30` — shows which slugs failed resolution so you can correlate against `src/content/docs/` paths
+- `grep -n "[{}]" src/content/docs/solo-guide/controlling-costs.mdx` — detects unescaped curly braces that cause MDX parse failures
+- `cat content/generated/page-source-map.json | python3 -m json.tool | grep solo-guide` — inspectable failure state: any match here means D068 is violated (solo-guide pages leaked into the generated source map)
 
 ## Files Likely Touched
 

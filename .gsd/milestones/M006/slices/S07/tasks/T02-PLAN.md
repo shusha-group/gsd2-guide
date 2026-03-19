@@ -81,3 +81,22 @@ The page must cover five topics (per R068):
 - `src/content/docs/solo-guide/controlling-costs.mdx` — ~100–130 lines of narrative prose covering all five R068 topics, with ≥5 cross-references, Australian spelling, `---` separators, and no reference-page duplication
 - Build output: 113 pages, 0 build errors
 - Link check: exits 0, all cross-references resolve
+
+## Observability Impact
+
+**What signals change when this task runs:**
+- `src/content/docs/solo-guide/controlling-costs.mdx` grows from 8 lines to >100 lines — observable via `wc -l`
+- `npm run build` page count holds at 113 — the page already existed as a stub; the build compiles the new MDX content
+- `npm run check-links` transitions from potential failure (Section 5 cross-referenced Section 6 in T01) to confirmed passing — observable as exit code 0
+
+**How a future agent inspects this task:**
+- `wc -l src/content/docs/solo-guide/controlling-costs.mdx` — primary content presence check
+- `grep -c "→ gsd2-guide:" src/content/docs/solo-guide/controlling-costs.mdx` — cross-reference convention check
+- `npm run build 2>&1 | tail -5` — build outcome with page count
+- `cat .gsd/milestones/M006/slices/S07/tasks/T02-SUMMARY.md` — full verification evidence table
+
+**What failure state becomes visible:**
+- MDX parse error: Astro prints file path + line/column — most common cause is unescaped `{` or `}` in prose
+- Broken cross-reference: `npm run check-links` lists the failing slug — compare against `ls src/content/docs/` to find the correct path
+- Stub not replaced: `wc -l` returns ≤10 and file still contains "Content is being written" placeholder text
+- D068 violation: `grep "solo-guide" content/generated/page-source-map.json` returns matches
