@@ -18,6 +18,10 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 **M005/S01 complete.** `content/generated/prompts.json` exists with all 32 prompts: name, slug, group (4-group D057 taxonomy), variables with descriptions, pipeline positions, and command backlinks. `extractPrompts()` wired into extract.mjs Phase 1. 48 tests pass (9 new prompts extraction tests). Group distribution: 10 auto-mode-pipeline + 8 guided-variants + 13 commands + 1 foundation.
 
+**M005/S02 complete.** 32 stub MDX pages exist in `src/content/docs/prompts/`, all 4 sidebar groups registered in `astro.config.mjs`, and `page-source-map.json` has 32 new entries. `npm run build` succeeds at 104 pages.
+
+**M005/S03 complete.** All 32 prompt pages have fully authored 4-section content: What It Does (behavioral prose), Pipeline Position (Mermaid diagram with terminal-native styling), Variables (table from prompts.json), Used By (command links or internal-trigger note). `npm run build` passes at 104 pages (0 errors). `npm run check-links` passes with 10380 links verified (0 broken). Key patterns: camelCase Mermaid node IDs, 5-7 node diagrams, guided variants use session model (not auto-mode pipeline), MDX template-variable literals wrapped in backticks to prevent JSX parse errors.
+
 ## Architecture / Key Patterns
 
 - **Astro 6 + Starlight 0.38** — Static site generator purpose-built for documentation, zero client JS by default, Pagefind search

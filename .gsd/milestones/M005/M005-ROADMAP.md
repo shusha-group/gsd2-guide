@@ -56,7 +56,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Page scaffold, sidebar, and source map** `risk:medium` `depends:[S01]`
   > After this: 32 stub MDX pages exist in `src/content/docs/prompts/`, all 4 sidebar groups are registered in `astro.config.mjs`, and `page-source-map.json` has 32 new entries. `npm run build` succeeds (stubs, no real content yet).
 
-- [ ] **S03: Prompt page content generation** `risk:medium` `depends:[S01,S02]`
+- [x] **S03: Prompt page content generation** `risk:medium` `depends:[S01,S02]`
   > After this: All 32 prompt pages have real authored content — prose description, Mermaid pipeline diagram, variable table, "Used by commands" section. `npm run build` and `npm run check-links` pass.
 
 - [ ] **S04: Command page backlinks** `risk:low` `depends:[S02]`
