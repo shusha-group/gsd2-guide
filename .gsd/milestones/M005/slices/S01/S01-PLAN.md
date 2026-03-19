@@ -28,6 +28,25 @@
 - `system` prompt has empty variables array
 - `execute-task` prompt has 16 variables
 
+## Observability / Diagnostics
+
+**Runtime signals:**
+- `[prompts] Extracted 32 prompts from <pkgPath>/src/resources/extensions/gsd/prompts/` — emitted by `extractPrompts()` on success
+- `extract.mjs` final summary includes `Prompts: 32` line for quick count validation
+- `content/generated/prompts.json` — primary inspection surface; valid JSON array of 32 objects
+
+**Inspection surfaces:**
+- `python3 -m json.tool content/generated/prompts.json | head -80` — spot-check structure
+- `python3 -c "import json; d=json.load(open('content/generated/prompts.json')); print(len(d))"` → 32
+- `node --test tests/extract.test.mjs` — structural contract tests (added in T02)
+
+**Failure visibility:**
+- Missing gsd-pi package → `resolvePackagePath()` throws with actionable install message
+- Missing prompts directory → `[prompts] Prompts directory not found:` warning, count 0 in output
+- Wrong variable count → test failures in T02 with per-prompt assertion messages
+
+**Redaction constraints:** None — prompts are documentation-grade content with no secrets.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `resolvePackagePath()` from `scripts/lib/extract-local.mjs` (reused, not duplicated)
@@ -36,7 +55,7 @@
 
 ## Tasks
 
-- [ ] **T01: Build extract-prompts.mjs and wire into extraction pipeline** `est:1h`
+- [x] **T01: Build extract-prompts.mjs and wire into extraction pipeline** `est:1h`
   - Why: This is the core deliverable — the module that reads 32 prompt `.md` files from the globally installed gsd-pi package, extracts `{{variable}}` placeholders via regex, and combines them with hardcoded metadata (descriptions, groups, command mappings, pipeline positions) to produce `prompts.json`. Wiring into `extract.mjs` is included here because it's 2 lines and can't be tested without it.
   - Files: `scripts/lib/extract-prompts.mjs` (new), `scripts/extract.mjs`
   - Do: Create `extract-prompts.mjs` following the `extract-local.mjs` pattern. Import `resolvePackagePath` from `extract-local.mjs`. Read all `.md` files from `src/resources/extensions/gsd/prompts/`. Extract variables with `/\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}/g`. Apply the static data tables from the research (group taxonomy per D057, variable descriptions, usedByCommands mappings, pipelinePosition strings). Write output to `content/generated/prompts.json`. In `extract.mjs`, add import and call `extractPrompts()` in the Phase 1 `Promise.all` alongside `extractLocal()`.

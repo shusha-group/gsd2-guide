@@ -3,6 +3,25 @@ estimated_steps: 6
 estimated_files: 3
 ---
 
+## Observability Impact
+
+**Signals emitted at runtime:**
+- `[prompts]` prefixed log line on success: `[prompts] Extracted 32 prompts from <pkgPath>/src/resources/extensions/gsd/prompts/`
+- The `extract.mjs` final summary includes a `Prompts: 32` line once wired in
+- `content/generated/prompts.json` written to disk — inspectable with `python3 -m json.tool content/generated/prompts.json`
+
+**How a future agent inspects this task:**
+- Run `node scripts/extract.mjs` and check for `[prompts]` log line
+- `cat content/generated/prompts.json | python3 -m json.tool | head -80` to spot-check structure
+- `python3 -c "import json; d=json.load(open('content/generated/prompts.json')); print(len(d))"` → 32
+
+**Failure visibility:**
+- If `resolvePackagePath()` fails: throws with message pointing to missing `src/resources/` — same error surface as `extractLocal`
+- If prompts directory missing: warns `[prompts] Prompts directory not found:` and returns early with count 0
+- If a prompt file has no variables: treated as empty array — `system.md` is the expected case
+
+**Redaction constraints:** None — prompt files contain no secrets; output JSON is safe to commit.
+
 # T01: Build extract-prompts.mjs and wire into extraction pipeline
 
 **Slice:** S01 — Prompt metadata extraction
