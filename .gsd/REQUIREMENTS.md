@@ -853,13 +853,13 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R065 — Section 3: Brownfield Reality
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Guidance for starting GSD 2 on an existing (possibly messy) codebase — agent-instructions.md, issue tracker mapping, the handoff spec approach, and constraining GSD from restructuring things the author doesn't want restructured.
 - Why it matters: Most solo builders aren't starting from zero. This section serves the majority case.
 - Source: user
 - Primary owning slice: M006/S05
 - Supporting slices: none
-- Validation: unmapped
+- Validation: brownfield.mdx — 128 lines covering all four required topics; npm run build exits 0 at 113 pages; npm run check-links exits 0 at 12,288 links; 9 cross-references; Australian spelling verified
 - Notes: Cross-references gsd2-guide's agent-instructions.md format and KNOWLEDGE.md.
 
 ### R066 — Section 1: Why GSD 2
@@ -942,8 +942,8 @@ This file is the explicit capability and coverage contract for the project.
 | R061 | core-capability | validated | M006/S01 | M006/S02–S08 | 9 MDX files + sidebar group; npm run build exits 0 at 113 pages; pipeline uncontaminated |
 | R062 | primary-user-loop | validated | M006/S02 | none | daily-mix.mdx — 129 lines, 8-row decision table, 6 command cross-references; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links |
 | R063 | failure-visibility | validated | M006/S03 | none | when-things-go-wrong.mdx — 183 lines, 8 failure scenarios, 18 cross-refs, 9 command links; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
-| R064 | primary-user-loop | active | M006/S04 | none | unmapped |
-| R065 | core-capability | active | M006/S05 | none | unmapped |
+| R064 | primary-user-loop | validated | M006/S04 | none | first-project.mdx — 148 lines, 5 lifecycle phases, 2 external citations, 9 cross-refs; npm run build 0 at 113 pages; npm run check-links 0 |
+| R065 | core-capability | validated | M006/S05 | none | brownfield.mdx — 128 lines covering all four R065 topics; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; 9 cross-refs; Australian spelling verified |
 | R066 | core-capability | active | M006/S06 | none | unmapped |
 | R067 | core-capability | active | M006/S07 | none | unmapped |
 | R068 | operability | active | M006/S07 | none | unmapped |

@@ -64,7 +64,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Section 2 — Your First Project** `risk:high` `depends:[S01]`
   > After this: The complete annotated new-project walkthrough is live — discussion phase, roadmap reading, auto mode first run, verification, and completion — with external citations to Addy Osmani and Esteban Torres.
 
-- [ ] **S05: Section 3 — Brownfield Reality** `risk:medium` `depends:[S01]`
+- [x] **S05: Section 3 — Brownfield Reality** `risk:medium` `depends:[S01]`
   > After this: Guidance for starting GSD 2 on an existing codebase is published — agent-instructions.md, issue tracker mapping, the handoff spec approach, and constraining GSD.
 
 - [ ] **S06: Section 1 — Why GSD 2** `risk:medium` `depends:[S01]`
