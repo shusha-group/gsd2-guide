@@ -62,7 +62,7 @@
   - Verify: `node scripts/extract.mjs` succeeds; `python3 -c "import json; d=json.load(open('content/generated/prompts.json')); print(len(d))"` → 32
   - Done when: `prompts.json` exists with 32 entries, each having all required fields, and extraction runs cleanly as part of the pipeline
 
-- [ ] **T02: Add prompts extraction tests to extract.test.mjs** `est:30m`
+- [x] **T02: Add prompts extraction tests to extract.test.mjs** `est:30m`
   - Why: Structural tests validate the boundary contract consumed by all downstream slices. Without tests, a future change to prompts could silently break the output shape.
   - Files: `tests/extract.test.mjs`
   - Do: Add a `describe("prompts extraction", ...)` block. Tests: (1) prompts.json exists and is valid JSON, (2) array length is 32, (3) every entry has required fields (name, slug, group, variables, pipelinePosition, usedByCommands) with correct types, (4) group distribution is 10+8+13+1, (5) `system` has empty variables array, (6) `execute-task` has 16 variables, (7) all group values are one of the 4 canonical names, (8) variable objects have name/description/required fields, (9) usedByCommands entries are strings. Add `prompts.json` to the idempotency test's `jsonFiles` array.

@@ -57,3 +57,22 @@ The existing test file uses Node.js built-in `node:test` and `node:assert`. It r
 ## Expected Output
 
 - `tests/extract.test.mjs` — extended with ~60–80 lines of new test code in a `describe("prompts extraction")` block
+
+## Observability Impact
+
+**What signals change after this task:**
+- `node --test tests/extract.test.mjs` now includes an `ok N - prompts extraction` suite line in TAP output with 9 subtests. A future agent can grep for `prompts extraction` in test output to confirm the suite is present and passing.
+- The TAP summary line changes from `# tests 39` to `# tests 48` — the delta of 9 confirms all new tests were registered.
+
+**How a future agent inspects this task:**
+- Run `node --test tests/extract.test.mjs 2>&1 | grep -A2 "prompts extraction"` — should show `ok N - prompts extraction` with `type: 'suite'`.
+- Run `node --test tests/extract.test.mjs 2>&1 | grep "# tests"` — should show `# tests 48`.
+- Read `tests/extract.test.mjs` and search for `describe("prompts extraction"` to confirm the block exists.
+
+**Failure states that become visible:**
+- If `prompts.json` is missing or malformed: `prompts.json exists and is valid JSON` test fails with a file-read or parse error — points directly at the T01 extractor.
+- If prompt count changes from 32: `contains exactly 32 prompts` fails with the actual count — tells an agent exactly how many prompts were found.
+- If a new prompt is added to an existing group or a group count shifts: `group distribution matches taxonomy` fails with per-group expected vs actual — pinpoints which group changed.
+- If `execute-task` gains or loses variables: `execute-task prompt has 16 variables` fails with the new count.
+- If the `system` prompt gains variables unexpectedly: `system prompt has zero variables` fails immediately.
+- If a variable object loses the `required` boolean field: `variable objects have name, description, and required fields` fails with the field name and prompt context.

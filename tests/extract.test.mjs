@@ -348,6 +348,105 @@ describe("commands extraction", () => {
   });
 });
 
+// ── Prompts ────────────────────────────────────────────────────────────────
+
+describe("prompts extraction", () => {
+  let prompts;
+
+  before(() => {
+    const content = fs.readFileSync(path.join(OUTPUT_DIR, "prompts.json"), "utf8");
+    prompts = JSON.parse(content);
+  });
+
+  it("prompts.json exists and is valid JSON", () => {
+    const content = fs.readFileSync(path.join(OUTPUT_DIR, "prompts.json"), "utf8");
+    assert.doesNotThrow(() => JSON.parse(content), "prompts.json is not valid JSON");
+    const parsed = JSON.parse(content);
+    assert.ok(Array.isArray(parsed), "prompts.json should be an array");
+  });
+
+  it("contains exactly 32 prompts", () => {
+    assert.equal(prompts.length, 32, `Expected 32 prompts, got ${prompts.length}`);
+  });
+
+  it("every prompt has required fields with correct types", () => {
+    const validGroups = ["auto-mode-pipeline", "guided-variants", "commands", "foundation"];
+    for (const entry of prompts) {
+      assert.ok(typeof entry.name === "string" && entry.name.length > 0,
+        `Prompt missing non-empty name: ${JSON.stringify(entry)}`);
+      assert.ok(typeof entry.slug === "string" && entry.slug.length > 0,
+        `Prompt "${entry.name}" missing non-empty slug`);
+      assert.ok(validGroups.includes(entry.group),
+        `Prompt "${entry.name}" has invalid group: "${entry.group}" (must be one of ${validGroups.join(", ")})`);
+      assert.ok(Array.isArray(entry.variables),
+        `Prompt "${entry.name}" variables is not an array`);
+      assert.ok(typeof entry.pipelinePosition === "string" && entry.pipelinePosition.length > 0,
+        `Prompt "${entry.name}" missing non-empty pipelinePosition`);
+      assert.ok(Array.isArray(entry.usedByCommands),
+        `Prompt "${entry.name}" usedByCommands is not an array`);
+    }
+  });
+
+  it("group distribution matches taxonomy (10+8+13+1)", () => {
+    const counts = {};
+    for (const entry of prompts) {
+      counts[entry.group] = (counts[entry.group] ?? 0) + 1;
+    }
+    assert.equal(counts["auto-mode-pipeline"], 10,
+      `Expected 10 auto-mode-pipeline prompts, got ${counts["auto-mode-pipeline"]}`);
+    assert.equal(counts["guided-variants"], 8,
+      `Expected 8 guided-variants prompts, got ${counts["guided-variants"]}`);
+    assert.equal(counts["commands"], 13,
+      `Expected 13 commands prompts, got ${counts["commands"]}`);
+    assert.equal(counts["foundation"], 1,
+      `Expected 1 foundation prompt, got ${counts["foundation"]}`);
+  });
+
+  it("system prompt has zero variables", () => {
+    const system = prompts.find((p) => p.name === "system");
+    assert.ok(system, "Could not find prompt with name='system'");
+    assert.equal(system.variables.length, 0,
+      `Expected system prompt to have 0 variables, got ${system.variables.length}`);
+  });
+
+  it("execute-task prompt has 16 variables", () => {
+    const executeTask = prompts.find((p) => p.name === "execute-task");
+    assert.ok(executeTask, "Could not find prompt with name='execute-task'");
+    assert.equal(executeTask.variables.length, 16,
+      `Expected execute-task to have 16 variables, got ${executeTask.variables.length}`);
+  });
+
+  it("variable objects have name, description, and required fields", () => {
+    const executeTask = prompts.find((p) => p.name === "execute-task");
+    assert.ok(executeTask, "Could not find execute-task prompt");
+    for (const variable of executeTask.variables) {
+      assert.ok(typeof variable.name === "string" && variable.name.length > 0,
+        `Variable missing non-empty name: ${JSON.stringify(variable)}`);
+      assert.ok(typeof variable.description === "string" && variable.description.length > 0,
+        `Variable "${variable.name}" missing non-empty description`);
+      assert.ok(typeof variable.required === "boolean",
+        `Variable "${variable.name}" required field is not a boolean`);
+    }
+  });
+
+  it("usedByCommands entries are strings", () => {
+    for (const entry of prompts) {
+      if (entry.usedByCommands.length === 0) continue;
+      for (const cmd of entry.usedByCommands) {
+        assert.ok(typeof cmd === "string",
+          `Prompt "${entry.name}" usedByCommands contains non-string: ${JSON.stringify(cmd)}`);
+      }
+    }
+  });
+
+  it("slug matches name for all prompts", () => {
+    for (const entry of prompts) {
+      assert.equal(entry.slug, entry.name,
+        `Prompt slug "${entry.slug}" does not match name "${entry.name}"`);
+    }
+  });
+});
+
 // ── End-to-end ─────────────────────────────────────────────────────────────
 
 describe("end-to-end orchestrator", () => {
@@ -381,7 +480,7 @@ describe("end-to-end orchestrator", () => {
   });
 
   it("all JSON files are valid JSON", () => {
-    const jsonFiles = ["skills.json", "agents.json", "extensions.json", "commands.json", "releases.json", "manifest.json"];
+    const jsonFiles = ["skills.json", "agents.json", "extensions.json", "commands.json", "releases.json", "manifest.json", "prompts.json"];
     for (const file of jsonFiles) {
       const content = fs.readFileSync(path.join(OUTPUT_DIR, file), "utf8");
       assert.doesNotThrow(() => JSON.parse(content), `${file} is not valid JSON`);
