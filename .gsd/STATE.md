@@ -1,9 +1,8 @@
 # GSD State
 
 **Active Milestone:** M005: Prompt Reference Section
-**Active Slice:** S02: Page scaffold, sidebar, and source map
+**Active Slice:** S03: Prompt page content generation
 **Phase:** executing
-**Active Task:** T01
 **Requirements Status:** 1 active · 49 validated · 5 deferred · 1 out of scope
 
 ## Milestone Registry
@@ -20,4 +19,4 @@
 - None
 
 ## Next Action
-Execute T01 of S02 — create 32 prompt stub MDX pages and wire sidebar config.
+Execute T01 of S03 (Author auto-mode pipeline prompt pages — 10 pages).
