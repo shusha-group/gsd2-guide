@@ -31,6 +31,24 @@
 - `grep -c '|' src/content/docs/prompts/execute-task.mdx` → at least 18 (header + separator + 16 variable rows)
 - `grep "no template variables" src/content/docs/prompts/system.mdx` → matches
 
+## Observability / Diagnostics
+
+**Runtime signals:**
+- `npm run build` stdout reports total page count and any MDX parse errors (Mermaid syntax errors surface here as build failures)
+- `npm run check-links` reports every broken internal link with file + line context
+
+**Inspection surfaces:**
+- Build errors reference the specific `.mdx` file and line number for any MDX/Mermaid parse failures
+- `grep -l "## What It Does" src/content/docs/prompts/*.mdx` — quick count to verify section presence
+- `grep -c '|' src/content/docs/prompts/execute-task.mdx` — verifies row count in variable table
+
+**Failure visibility:**
+- Missing `---` frontmatter fences → Astro/Starlight emits "invalid frontmatter" error with file path
+- Mermaid node IDs with hyphens → render as broken diagram (no build error, visible only in browser)
+- Broken cross-links → caught by `npm run check-links` but NOT by `npm run build`
+
+**Redaction constraints:** None — all content is documentation, no secrets or credentials.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `content/generated/prompts.json` (S01), 32 stub MDX files (S02), source prompt `.md` files from gsd-pi package
@@ -39,7 +57,7 @@
 
 ## Tasks
 
-- [ ] **T01: Author auto-mode pipeline prompt pages (10 pages)** `est:45m`
+- [x] **T01: Author auto-mode pipeline prompt pages (10 pages)** `est:45m`
   - Why: The 10 auto-mode pipeline prompts are the most complex pages with full pipeline loop diagrams showing neighboring stages. They define the quality bar for all other prompt pages.
   - Files: `src/content/docs/prompts/execute-task.mdx`, `src/content/docs/prompts/research-milestone.mdx`, `src/content/docs/prompts/research-slice.mdx`, `src/content/docs/prompts/plan-milestone.mdx`, `src/content/docs/prompts/plan-slice.mdx`, `src/content/docs/prompts/complete-slice.mdx`, `src/content/docs/prompts/complete-milestone.mdx`, `src/content/docs/prompts/reassess-roadmap.mdx`, `src/content/docs/prompts/replan-slice.mdx`, `src/content/docs/prompts/validate-milestone.mdx`
   - Do: For each of the 10 auto-mode-pipeline prompts, read the source `.md` file from the gsd-pi package and `prompts.json` entry. Write the MDX page following the D056 4-section structure. Mermaid diagrams show 5-8 nodes of the simplified pipeline loop with the current prompt highlighted. Use camelCase node IDs. Links to commands use `../../commands/{slug}/`, links to sibling prompts use `../{slug}/`.

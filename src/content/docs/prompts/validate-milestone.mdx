@@ -1,8 +1,49 @@
 ---
 title: "validate-milestone"
-description: "Prompt reference: validate-milestone"
+description: "Reconciliation gate before milestone completion — audits slice summaries and UAT results against the roadmap's success criteria and flags gaps before the milestone is sealed."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+## What It Does
+
+`validate-milestone` sits between all-slices-complete and milestone-completion as an explicit quality gate. Its job is not to re-execute work, but to audit what was delivered against what was promised. For every success criterion in the milestone roadmap, it checks whether the slice summaries and UAT results provide evidence that the criterion was actually met. For every slice, it checks whether the delivery claim in the roadmap matches what the slice summary reports.
+
+The validator's verdict determines what happens next. A `pass` verdict means all criteria are met, all slices delivered, and no integration gaps exist — the pipeline advances to `complete-milestone`. A `needs-attention` verdict means minor gaps exist that do not block completion but should be documented. A `needs-remediation` verdict means material gaps were found — the validator adds new remediation slices to the roadmap, those slices are planned and executed, and then validation re-runs as a new remediation round.
+
+This prompt is designed to catch the failure mode where individual tasks and slices all pass their own verification but the assembled milestone as a whole does not deliver its promised user-facing capability. It is also the check that ensures requirement coverage — every active requirement must be addressed by at least one slice by the time this gate runs. The validation pass is the last substantive review before the milestone branch is merged and the worktree is torn down.
+
+## Pipeline Position
+
+```mermaid
+flowchart TD
+    ReassessRoadmap["reassess-roadmap (final)"] --> ValidateMilestone["validate-milestone"]
+    ValidateMilestone --> Verdict{"verdict?"}
+    Verdict -->|"pass"| CompleteMilestone["complete-milestone"]
+    Verdict -->|"needs-remediation"| AddSlices["add remediation slices"]
+    AddSlices --> ResearchSlice["research-slice (remediation)"]
+    ResearchSlice --> ValidateMilestone
+
+    style ValidateMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ReassessRoadmap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Verdict fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CompleteMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AddSlices fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ResearchSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+This prompt fires after the final `reassess-roadmap` unit completes (when no more planned slices remain). The `remediationRound` variable tracks how many validation cycles have run — on the first pass it is `0`, and it increments with each `needs-remediation` verdict. The validation can be skipped entirely via the `skip_milestone_validation` preference, in which case `complete-milestone` fires directly.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `milestoneId` | Current milestone identifier being validated | Yes |
+| `milestoneTitle` | Human-readable title of the milestone being validated | Yes |
+| `workingDirectory` | Absolute path to the project working directory | Yes |
+| `remediationRound` | Current remediation attempt number if this is a re-validation after fixes | Yes |
+| `inlinedContext` | Pre-assembled context block containing all slice summaries and milestone artifacts for validation | Yes |
+| `roadmapPath` | File path to the project roadmap for cross-referencing during validation | Yes |
+| `validationPath` | File path where the validation report should be written | Yes |
+
+## Used By
+
+- [`/gsd auto`](../../commands/auto/) — dispatched after all planned slices are complete, in `validating-milestone` phase

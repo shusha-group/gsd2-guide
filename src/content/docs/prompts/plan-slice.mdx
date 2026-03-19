@@ -1,8 +1,53 @@
 ---
 title: "plan-slice"
-description: "Prompt reference: plan-slice"
+description: "Decomposes a slice into a set of executable tasks, each sized to fit one context window, with concrete steps, specific file lists, and verifiable must-haves."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+## What It Does
+
+`plan-slice` turns a slice description — which might be a single line in the milestone roadmap — into a set of fully specified, executable task plans. Each task plan is sized to fit one context window, contains everything the executor agent needs (specific file paths, numbered steps, must-haves, verification commands, and expected output), and is ordered so that each task's output unblocks the next.
+
+Before decomposing, the planner explores the relevant code to verify that the roadmap's assumptions still hold. Dependency summaries from completed slices are provided so the planner can account for constraints discovered during execution — a prior slice's summary may contain findings that change how this slice should approach its work. The planner adjusts its decomposition accordingly, rather than blindly following a roadmap description that may already be stale.
+
+The resulting task plans are the primary contract for executor agents. Executors see only their task plan and a slice goal excerpt — they do not see the research document, the full roadmap, or requirements. Everything they need must be explicit in the task plan itself: which files to read, which files to write, what commands to run to verify success, and what "done" looks like as an observable, checkable condition. A vague task plan produces vague execution; a precise task plan produces precise execution.
+
+## Pipeline Position
+
+```mermaid
+flowchart TD
+    ResearchSlice["research-slice"] --> PlanSlice["plan-slice"]
+    PlanSlice --> ExecuteTask["execute-task"]
+    ExecuteTask --> ReplnSlice{"blocker?"}
+    ReplnSlice -->|"yes"| ReplanSlice["replan-slice"]
+    ReplnSlice -->|"no"| CompleteSlice["complete-slice"]
+    ReplanSlice --> ExecuteTask
+
+    style PlanSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ResearchSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ExecuteTask fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ReplnSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ReplanSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CompleteSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+This prompt fires after `research-slice` completes. The planner writes the slice plan file (`S0x-PLAN.md`) and individual task plan files (`T01-PLAN.md`, `T02-PLAN.md`, etc.) into the slice directory. Once these are written, the dispatcher begins dispatching `execute-task` for each incomplete task in order. If any task reports `blocker_discovered: true`, the dispatcher fires `replan-slice` instead of continuing to the next task.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `sliceId` | Current slice identifier being planned | Yes |
+| `sliceTitle` | Human-readable title of the slice being planned | Yes |
+| `milestoneId` | Current milestone identifier | Yes |
+| `workingDirectory` | Absolute path to the project working directory | Yes |
+| `inlinedContext` | Pre-assembled context block containing research output and milestone context for the planner | Yes |
+| `dependencySummaries` | Pre-assembled summaries of completed slices that this slice depends on | Yes |
+| `sourceFilePaths` | List of source file paths particularly relevant to this slice's implementation scope | Yes |
+| `executorContextConstraints` | Constraints and context limits that executor agents must respect when running tasks in this slice | Yes |
+| `outputPath` | File path where the completed slice plan (S01-PLAN.md) should be written | Yes |
+| `slicePath` | File system path to the slice directory | Yes |
+| `commitInstruction` | Instruction block telling the planner how to commit the completed slice plan | Yes |
+
+## Used By
+
+- [`/gsd auto`](../../commands/auto/) — dispatched after slice research completes, transitioning the slice into `executing` phase

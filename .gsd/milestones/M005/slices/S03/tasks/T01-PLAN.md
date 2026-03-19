@@ -99,6 +99,15 @@ The 10 prompts in this group are:
 - `grep -c '|' src/content/docs/prompts/execute-task.mdx` → at least 18 (header + separator + 16 rows)
 - `grep -c 'fill:#0d180d' src/content/docs/prompts/execute-task.mdx` → at least 1 (Mermaid highlight style)
 
+## Observability Impact
+
+This task writes static MDX content only — no runtime code is introduced. The observable signal is `npm run build` output (page count and error list). Failure state is visible as:
+- Build error with file+line if MDX frontmatter or Mermaid code fence is malformed
+- Wrong page count (< 104) if a file was skipped or the build excluded a page
+- Silently broken Mermaid diagrams (hyphens in node IDs) visible only in browser — not caught by build
+
+No new runtime signals, logs, or metrics are introduced. Post-build, the 10 pages are inspectable at `/prompts/{slug}/` in the dev server.
+
 ## Inputs
 
 - `content/generated/prompts.json` — structured metadata for all 32 prompts (filter to `group === "auto-mode-pipeline"` for this task's 10)

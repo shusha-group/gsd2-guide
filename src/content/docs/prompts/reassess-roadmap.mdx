@@ -1,8 +1,49 @@
 ---
 title: "reassess-roadmap"
-description: "Prompt reference: reassess-roadmap"
+description: "Reviews the milestone roadmap after each slice completes, deciding whether remaining slices still make sense in light of what was actually built — and rewriting them if not."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+## What It Does
+
+`reassess-roadmap` fires after every slice completes and asks a simple question: does the remaining plan still make sense? It reads the slice summary just written, compares it against the remaining unchecked slices in the roadmap, and evaluates whether any of the original assumptions have been invalidated by what execution actually revealed.
+
+The assessment bias is strongly toward "roadmap is fine." Most of the time, the plan is still good, and the agent writes a brief confirmation and the pipeline moves on immediately. Changes are only warranted when there is concrete evidence — a prior slice changed an API surface that a later slice depends on, a risk was retired earlier than expected and a proof slice is now redundant, or a new risk emerged that should be addressed before the next planned slice.
+
+When changes are needed, the reassessment agent rewrites only the unchecked slices in the roadmap — completed slices are never modified. It also considers deferred captures: user thoughts captured during execution and deferred to future consideration. These may warrant slice adjustments, reordering, or new scope additions. The assessment document it writes is brief and concrete: what changed, why, and what the coverage impact is. The pipeline then continues with the next slice in the updated roadmap.
+
+## Pipeline Position
+
+```mermaid
+flowchart TD
+    CompleteSlice["complete-slice"] --> ReassessRoadmap["reassess-roadmap"]
+    ReassessRoadmap --> MoreSlices{"more slices?"}
+    MoreSlices -->|"yes"| ResearchSlice["research-slice"]
+    MoreSlices -->|"no"| ValidateMilestone["validate-milestone"]
+    ValidateMilestone --> CompleteMilestone["complete-milestone"]
+
+    style ReassessRoadmap fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CompleteSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style MoreSlices fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ResearchSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ValidateMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CompleteMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+This prompt fires after every `complete-slice` in the pipeline. It can be skipped entirely via the `skip_reassess` preference, in which case the dispatcher moves directly from `complete-slice` to the next `research-slice` (or to `validate-milestone` if all slices are done). When it does run, it writes an assessment document to disk — the dispatcher checks for this artifact before advancing the pipeline.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `milestoneId` | Current milestone identifier | Yes |
+| `completedSliceId` | Identifier of the slice that was just completed, triggering this reassessment | Yes |
+| `workingDirectory` | Absolute path to the project working directory | Yes |
+| `inlinedContext` | Pre-assembled context block containing milestone status, roadmap state, and completion summaries | Yes |
+| `deferredCaptures` | List of deferred capture items to consider when reassessing the roadmap priorities | Yes |
+| `assessmentPath` | File path where the roadmap reassessment document should be written | Yes |
+| `roadmapPath` | File path to the project roadmap document being reassessed | Yes |
+| `commitInstruction` | Instruction block telling the reassessment agent how to commit updated roadmap files | Yes |
+
+## Used By
+
+- [`/gsd auto`](../../commands/auto/) — dispatched after every `complete-slice`, between the end of one slice and the start of the next
