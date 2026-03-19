@@ -9,19 +9,20 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { steps } from '../scripts/update.mjs';
-import { detectNewAndRemovedCommands } from '../scripts/lib/manage-pages.mjs';
+import { steps, runManagePrompts } from '../scripts/update.mjs';
+import { detectNewAndRemovedCommands, detectNewAndRemovedPrompts } from '../scripts/lib/manage-pages.mjs';
 
 // ── Pipeline step structure ────────────────────────────────────────────────
 
 describe('pipeline step structure', () => {
-  it('has 9 steps in the correct order', () => {
+  it('has 10 steps in the correct order', () => {
     const stepNames = steps.map((s) => s.name);
     assert.deepStrictEqual(stepNames, [
       'update gsd-pi',
       'extract',
       'diff report',
       'manage commands',
+      'manage prompts',
       'regenerate',
       'build',
       'check-links',
@@ -34,6 +35,12 @@ describe('pipeline step structure', () => {
     const manageStep = steps.find((s) => s.name === 'manage commands');
     assert.equal(typeof manageStep.fn, 'function');
     assert.equal(manageStep.cmd, undefined);
+  });
+
+  it('manage prompts step uses fn (not cmd)', () => {
+    const managePromptsStep = steps.find((s) => s.name === 'manage prompts');
+    assert.equal(typeof managePromptsStep.fn, 'function');
+    assert.equal(managePromptsStep.cmd, undefined);
   });
 
   it('diff report step uses fn (not cmd)', () => {

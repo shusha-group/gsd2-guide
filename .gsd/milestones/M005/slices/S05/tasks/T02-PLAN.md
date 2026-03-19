@@ -55,6 +55,25 @@ This task closes the integration loop: after T01 added the building blocks, T02 
    - `node scripts/check-page-freshness.mjs` — exits 0 (all pages fresh)
    - Simulate stale detection: use `python3` to modify one prompt page stamp in `page-versions.json` (change a SHA to `"aaaa"`), run `node scripts/check-page-freshness.mjs`, confirm it reports that prompt page as stale, then restore the original stamp with `--stamp`
 
+## Observability Impact
+
+**Signals added by this task:**
+- `update.mjs` pipeline now emits `New prompts: N` / `Removed prompts: N` / `✓ All prompts in sync — no changes needed.` for the "manage prompts" step — visible in `npm run update` stdout.
+- `regenerate-page.mjs` now logs `[regenerate] Using prompt system prompt for {pagePath}` (implicit via dispatch path) — the prompt-specific exemplar path appears in the subprocess call context.
+- `page-versions.json` grows from 48 to 80 entries; future `node scripts/check-page-freshness.mjs` calls will evaluate all 80 (including 32 `prompts/` keys).
+
+**Inspection surfaces:**
+- `node scripts/update.mjs` (or `npm run update`) — step 5 "manage prompts" output confirms prompt sync state.
+- `python3 -c "import json; d=json.load(open('page-versions.json')); print(len([k for k in d if k.startswith('prompts/')]))"` → 32 when stamped.
+- `node scripts/check-page-freshness.mjs` — exits 0 when all 80 pages are fresh; exit 1 + list of stale pages when any stamp is outdated.
+- `grep 'manage prompts' update.mjs` — confirms step is present.
+
+**Failure state visibility:**
+- If `runManagePrompts()` fails (e.g., fs error), the pipeline prints `[update] ❌ Step "manage prompts" failed` and exits non-zero, naming the step.
+- If `createNewPromptPages` or `removePromptPages` returns `failed > 0`, individual errors appear in the per-result `.error` field logged by `runManagePrompts()`.
+- `regeneratePage()` dispatch to wrong system prompt is detectable by inspecting the Claude subprocess call (the exemplar path logged to stderr at `[regenerate] Exemplar page not found:` if file missing).
+- Stale prompt pages are reported by `check-page-freshness.mjs` with the `prompts/` prefix — distinguishable from command pages.
+
 ## Must-Haves
 
 - [ ] `update.mjs` `steps` array has 10 entries with "manage prompts" at index 4

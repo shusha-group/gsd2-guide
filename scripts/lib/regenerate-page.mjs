@@ -101,6 +101,60 @@ ${exemplarContent}
 When updating a page, preserve good existing content. Fix only what is outdated or inaccurate based on the current source code. Match the quality, structure, and style of the exemplar page.`;
 }
 
+/**
+ * Build the system prompt specific to prompt pages.
+ * Passed via --system-prompt flag. Does NOT contain source file paths.
+ * @param {string} exemplarContent — full text of the exemplar prompt page
+ * @returns {string}
+ */
+function buildPromptSystemPrompt(exemplarContent) {
+  return `You are a documentation writer for the gsd-pi CLI tool.
+You have access to Read and Write tools to read source files and write updated MDX.
+
+## Quality Rules for Prompt Pages
+
+### Section Order (exact)
+1. What It Does
+2. Pipeline Position (with Mermaid diagram)
+3. Variables (table)
+4. Used By (links)
+
+### Frontmatter Format
+\`\`\`
+---
+title: "{prompt-name}"
+description: "one-line description"
+---
+\`\`\`
+
+### Mermaid Diagrams
+- Use \`flowchart TD\` orientation
+- Decision nodes: \`fill:#0d180d,stroke:#39ff14,color:#39ff14\`
+- Action nodes: \`fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8\`
+- Apply styles with \`style\` statements
+
+### Variable Table Format
+\`\`\`
+| Variable | Description | Required |
+|----------|-------------|----------|
+| \`variableName\` | What this variable provides | Yes/No |
+\`\`\`
+
+### MDX Escaping (CRITICAL)
+- Template variables like \`{{variable}}\` MUST be wrapped in backticks to avoid JSX parse errors
+- Example: write \`{{taskId}}\` not {{taskId}} in prose text
+
+### Link Format
+- Command links use: \`../../commands/{slug}/\`
+- Example: \`[/gsd auto](../../commands/auto/)\`
+
+<exemplar>
+${exemplarContent}
+</exemplar>
+
+When updating a page, preserve good existing content. Fix only what is outdated or inaccurate based on the current source code. Match the quality, structure, and style of the exemplar page.`;
+}
+
 // ── User message construction ──────────────────────────────────────────────
 
 /**
@@ -216,17 +270,29 @@ export async function regeneratePage(pagePath, sourceFiles, options = {}) {
     return { skipped: true, reason: "claude CLI not available" };
   }
 
-  // Read exemplar page
-  const exemplarPath = path.join(ROOT, "src", "content", "docs", "commands", "capture.mdx");
-  let exemplarContent = "";
-  try {
-    exemplarContent = fs.readFileSync(exemplarPath, "utf8");
-  } catch {
-    console.warn("[regenerate] Exemplar page not found: commands/capture.mdx");
+  // Determine page type and select appropriate system prompt + exemplar
+  let systemPrompt;
+  if (pagePath.startsWith("prompts/")) {
+    // Prompt page path — use prompt-specific exemplar and system prompt
+    const exemplarPath = path.join(ROOT, "src", "content", "docs", "prompts", "execute-task.mdx");
+    let exemplarContent = "";
+    try {
+      exemplarContent = fs.readFileSync(exemplarPath, "utf8");
+    } catch {
+      console.warn("[regenerate] Exemplar page not found: prompts/execute-task.mdx");
+    }
+    systemPrompt = buildPromptSystemPrompt(exemplarContent);
+  } else {
+    // Command/reference page — use existing exemplar and system prompt
+    const exemplarPath = path.join(ROOT, "src", "content", "docs", "commands", "capture.mdx");
+    let exemplarContent = "";
+    try {
+      exemplarContent = fs.readFileSync(exemplarPath, "utf8");
+    } catch {
+      console.warn("[regenerate] Exemplar page not found: commands/capture.mdx");
+    }
+    systemPrompt = buildSystemPrompt(exemplarContent);
   }
-
-  // Construct prompt
-  const systemPrompt = buildSystemPrompt(exemplarContent);
   const cappedDeps = capDeps(pagePath, sourceFiles, options.depThreshold || 50);
   const userMessage = buildUserMessage(pagePath, cappedDeps, options);
 

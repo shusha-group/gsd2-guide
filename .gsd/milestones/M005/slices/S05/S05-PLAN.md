@@ -52,7 +52,7 @@
   - Verify: `node --test tests/manage-pages.test.mjs` — all tests pass (existing command tests + new prompt tests)
   - Done when: All 5 prompt functions exported, tested, and the existing command tests still pass
 
-- [ ] **T02: Wire prompt pipeline step, prompt-aware regeneration, and stamp pages** `est:40m`
+- [x] **T02: Wire prompt pipeline step, prompt-aware regeneration, and stamp pages** `est:40m`
   - Why: The new manage-pages functions need to be called during `npm run update`, regeneration needs to produce correct content for prompt pages, and page-versions.json must be stamped to avoid a mass stale flag.
   - Files: `scripts/update.mjs`, `scripts/lib/regenerate-page.mjs`, `tests/update-pipeline.test.mjs`, `page-versions.json`
   - Do: (1) Add `runManagePrompts()` to `update.mjs` that calls `detectNewAndRemovedPrompts` + `createNewPromptPages`/`removePromptPages`. Insert a "manage prompts" step after "manage commands" in the steps array. (2) In `regenerate-page.mjs`, add `buildPromptSystemPrompt()` with the 4-section structure (What It Does → Pipeline Position → Variables → Used By) and use `prompts/execute-task.mdx` as the exemplar. In `regeneratePage()`, check if `pagePath.startsWith('prompts/')` and use the prompt system prompt accordingly. (3) Stamp all 32 prompt pages in `page-versions.json` by running `node scripts/check-page-freshness.mjs --stamp`. (4) Update `tests/update-pipeline.test.mjs` step count from 9 to 10 and add the "manage prompts" step to the expected order. (5) Verify E2E: `npm run build`, confirm stale detection works by tampering with one stamp.
