@@ -49,6 +49,23 @@ The page must cover five topics (per R067):
 - `grep -c "behaviour\|recognise\|organise\|practise\|colour" src/content/docs/solo-guide/context-engineering.mdx` → >0
 - `head -3 src/content/docs/solo-guide/context-engineering.mdx` → frontmatter title matches "What You Write vs What GSD Writes"
 
+## Observability Impact
+
+**What signals change after this task:**
+- `wc -l src/content/docs/solo-guide/context-engineering.mdx` goes from 8 → >100 lines
+- `grep -c "→ gsd2-guide:" …/context-engineering.mdx` goes from 0 → ≥5
+- `grep -c "behaviour\|recognise\|…" …/context-engineering.mdx` goes from 0 → >0
+
+**How a future agent inspects this task:**
+- Run the four verification commands listed in the Verification section — they are deterministic and self-describing
+- Read `T01-SUMMARY.md` for the Verification Evidence table which records actual command outputs and exit codes
+- If the file was correctly written, `head -3 context-engineering.mdx` shows the exact frontmatter title
+
+**Failure state:**
+- If the file is still the 8-line stub, the write step did not complete — re-run from step 2
+- If `npm run build` fails with an MDX error on this file, look for unescaped `{` or `}` characters in the prose — the Astro error output names the line
+- `T01-SUMMARY.md` will have `blocker_discovered: false` if execution completed normally; absence of the summary file means the task never finished
+
 ## Inputs
 
 - Current stub: `src/content/docs/solo-guide/context-engineering.mdx` (8 lines — frontmatter + placeholder)

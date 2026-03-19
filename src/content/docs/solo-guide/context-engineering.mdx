@@ -3,6 +3,126 @@ title: "What You Write vs What GSD Writes"
 description: "The files you maintain and how they shape every AI session."
 ---
 
-This section covers context engineering from the practitioner's perspective — the files you write (agent-instructions.md, DECISIONS.md, KNOWLEDGE.md), how they influence every AI session, and how to recognise when your context is working well or needs adjustment.
+The reference documentation explains what the files are — their formats, the commands that write to them, the schemas GSD expects. This section is different. It's about the practitioner's side: what you actually write into those files, how that writing accumulates into something that shapes every AI session, and how to recognise when your context is doing its job versus when it's getting stale. This is the highest-leverage skill in the GSD workflow, and it's entirely yours.
 
-Content is being written and will appear here shortly.
+---
+
+## agent-instructions.md: your project constitution
+
+Section 3 covers how to write an `agent-instructions.md` for the first time on a brownfield project — the hard limits, the pattern rules, the things to leave alone. That introduction is worth reading if you haven't yet.
+
+→ gsd2-guide: [Section 3: Brownfield Reality](../brownfield/)
+
+But agent-instructions.md isn't a one-time document. It's a living constitution that evolves with the project. The version you write at the start of Milestone 1 will look different from the one you're running at Milestone 4, and that difference is healthy — it reflects what you've learned about the project and where the real risk lives.
+
+The evolution follows a predictable pattern. Early milestones tend to produce broad rules: "follow the established API pattern", "don't modify the auth layer". Later milestones add specificity as you encounter the actual edge cases: "the payments webhook uses idempotent processing — never retry without checking `processed_at` first", "the legacy report generation code in `src/reports/` is intentionally not typed and must not be touched during this milestone". The document gets more precise as the project's complexity becomes more visible.
+
+Two things worth maintaining deliberately: the **hard limits section** and the **pattern rules section**.
+
+Hard limits are the things you're protecting. They should be written in terms of files, directories, or data structures — specific enough that an agent can't accidentally violate them without explicitly recognising the boundary. "Don't touch the auth layer" is weaker than "Do not modify any file in `src/auth/` — bugs can be fixed, design is off-limits". The second version leaves no room for interpretation.
+
+Pattern rules are the things you want the agent to replicate, not invent. If your codebase has a consistent way of handling database access, error responses, or test structure, those patterns belong in agent-instructions.md. An agent that hasn't seen the pattern before will produce something locally reasonable that doesn't fit. An agent that has the pattern written down will follow it.
+
+Between milestones, review agent-instructions.md before starting each new discussion. Ask: are the hard limits still the right ones? Has anything graduated from "fragile, leave alone" to "now stable"? Has the new milestone scope introduced a new area that needs protecting? Ten minutes of deliberate maintenance before a discussion is worth more than steering corrections mid-execution.
+
+→ gsd2-guide: [Configuration](../../configuration/)
+
+---
+
+## DECISIONS.md: architectural memory
+
+Every non-trivial project accumulates decisions that aren't visible in the code itself. Why JWT instead of sessions. Why this particular queue library. Why the API is split across two services rather than one. Why that table has the denormalised column that looks like it shouldn't be there. The code reflects the decision, but it doesn't explain the reasoning — and reasoning is what an agent needs to make the next decision coherently.
+
+DECISIONS.md is where that reasoning lives. GSD writes to it automatically whenever the planning pipeline records an architectural decision, but you can and should add to it directly when something significant is decided outside of a formal milestone — in a conversation, during a code review, when you read something that changes your approach.
+
+The format is simple: what was decided, why, and when. The why is what matters most. "We chose to use background jobs for email delivery" is a fact. "We chose background jobs for email delivery because synchronous delivery was causing webhook timeouts in Stripe — the HTTP response was taking 800ms and Stripe was interpreting that as a failure and retrying" is a decision that an agent can reason from. The second version prevents the agent from suggesting "just make it synchronous" when email delivery comes up in a future task.
+
+Each entry in DECISIONS.md is injected into the agent's context when it's working on a task in that scope. This means a decision made in Milestone 2 is available to the agent in Milestone 5 without you doing anything — it's already there, already loaded. The accumulation is the point.
+
+When should you record a decision? The heuristic is: if you would have to explain this choice to a new developer joining the project, it belongs in DECISIONS.md. If it's self-evident from the code, it probably doesn't. If you made a tradeoff — accepted a limitation, chose one approach over another for reasons that aren't obvious — record it.
+
+The practical consequence of maintaining a good DECISIONS.md is that discussions become faster. When the agent is already familiar with why the current architecture looks the way it does, the discussion doesn't have to re-derive it. You spend the conversation deciding what to build next, not re-litigating what was already decided.
+
+---
+
+## KNOWLEDGE.md: domain rules, patterns, and lessons
+
+DECISIONS.md records choices. KNOWLEDGE.md records facts — things the agent needs to know that aren't choices, they're just true about your project or domain.
+
+GSD structures knowledge into three types, each serving a different purpose:
+
+**Rules** are hard constraints that must always or never be done. "Always use parameterised queries for database access." "Never send email in a synchronous request path." Rules belong in KNOWLEDGE.md rather than agent-instructions.md when they're discovered mid-execution rather than established upfront — you realise mid-task that a pattern is being violated, you record the rule, and it's enforced automatically in every subsequent task.
+
+**Patterns** are recurring approaches for a specific category of work. "API endpoints follow controller-service-repository layering." "New database migrations use the snake_case naming convention from the existing schema." Patterns are most useful for codebases with established conventions that don't exist in formal documentation — the kind of thing you'd tell a new developer in an onboarding session.
+
+**Lessons** are one-time discoveries — gotchas, workarounds, non-obvious behaviour. "The Stripe webhook uses HMAC verification — the secret is in `STRIPE_WEBHOOK_SECRET`, not `STRIPE_SECRET`." "The CI runner has 4GB RAM and large test suites need splitting to avoid OOM failures." Lessons prevent repeated mistakes. Once the agent has encountered something the hard way and you've recorded the lesson, it won't encounter it again.
+
+The command for adding knowledge is simple:
+
+```
+/gsd knowledge rule Always use parameterised queries for database access
+/gsd knowledge pattern API endpoints follow controller-service-repository layering
+/gsd knowledge lesson The CI runner has 4GB RAM — large test suites need splitting
+```
+
+→ gsd2-guide: [/gsd knowledge](../../commands/knowledge/)
+
+The key practise is building the habit of reaching for `/gsd knowledge` when you spot something the agent got wrong or discovered. The moment of discovery is the cheapest time to record it — you still have the context. Lessons recorded immediately are accurate; lessons recorded later are summaries, which are less useful.
+
+KNOWLEDGE.md is injected into every agent session. This means knowledge added today is active tomorrow, in a completely fresh context window, without you doing anything. That's the point of the append-only design — the accumulation works automatically once you build the habit of contributing to it.
+
+---
+
+## Reading GSD's output
+
+Auto mode produces a lot of output, and not all of it deserves equal attention. Learning to read the output efficiently is part of the practitioner skill.
+
+The most important things to review after each task run are: the task summary, the verification evidence table, and the diff.
+
+**Task summaries** are at `.gsd/milestones/M00X/slices/S0X/tasks/TX-SUMMARY.md`. They tell you what the task set out to do, what decisions were made during execution, and what the one-line commit message describes. If you read nothing else, read the one-liner — it's the agent's description of what it actually did, which may differ subtly from what you asked. A good one-liner and a bad one-liner are both signals.
+
+**Verification evidence** is the table in each summary that shows which checks passed. Every must-have check should show ✅. If any show ❌, the agent knew about it — the summary will say what the failure was and whether it was investigated. A task that completes with a known failing check isn't necessarily wrong, but it needs your attention before the next task runs.
+
+**The diff** is the actual code change. You don't need to read every line of every diff, but you should read diffs for: changes to schemas or APIs, changes near the hard-limit areas defined in agent-instructions.md, and any task where the summary notes a significant deviation from the plan. Diff reading is where you catch drift before it compounds.
+
+Beyond individual tasks, GSD gives you two surfaces for reviewing state across a milestone: `STATE.md` and the slice plan. `STATE.md` is a one-page snapshot of where everything is — which milestones are active, which slices are complete, what's currently running. The slice plan (`S0X-PLAN.md`) shows the full task breakdown with completion status. Together they answer "where am I?" without requiring you to piece it together from individual task files.
+
+If you want to export a readable summary of what a milestone produced — for your own records, for a changelog, or to share context with a collaborator — `/gsd export` produces a consolidated retrospective report.
+
+→ gsd2-guide: [/gsd export](../../commands/export/)
+
+The rhythm that works for most builders is: check the summary after every task (30 seconds), read the diff for tasks that touch sensitive areas (2 minutes), review STATE.md and the slice plan at the start of each working session (1 minute). That's enough to stay in control without burning time on low-value review.
+
+---
+
+## Giving good discussion answers
+
+The planning phase is where the quality of the plan is determined. And the quality of the plan is determined, more than anything else, by the quality of your input to the discussion.
+
+GSD's discussion mode asks questions. The questions are good ones — they're calibrated to surface the information the planning pipeline needs to produce a coherent, executionable plan. But how you answer them is entirely up to you, and the difference between a vague answer and a specific one shows up in every task that follows.
+
+The most common failure mode is summarising instead of describing. "There are some reliability issues with the payment flow" is a summary. "The payment webhook sometimes fails silently — no error is logged, the order stays in `pending`, and we only notice when the customer emails" is a description. The second version gives the planner something to work with: it knows what fails, how it fails, and what the observable symptom is. The first version produces a vague requirement and a vague plan.
+
+Specificity also matters for scope decisions. When you're describing the cluster of work for a milestone, the planning pipeline uses your description to decide what belongs in scope and what doesn't. A precise description of the problem cluster — "these four issues all relate to payment reliability, here are the specific symptoms" — produces a focused milestone. A broad description — "let's improve the payment flow" — produces an over-scoped one.
+
+Three specific things that reliably improve discussion quality:
+
+**Name the files.** If you know which file or module is involved, say so. "The webhook processing is in `src/lib/stripe.js`" is more useful than "somewhere in the Stripe integration". It lets the planner scope the investigation correctly.
+
+**Describe the current behaviour, not just the desired one.** "I want it to fail gracefully" is a desired outcome. "Currently it throws an unhandled exception that crashes the worker process" is the current behaviour. Both are useful; the second one determines what the fix needs to protect against.
+
+**Say what you've already tried, if anything.** If you've made a previous attempt to fix something and it didn't work, that's valuable context. It tells the planner what to avoid and what hypotheses are already ruled out.
+
+The discussion phase is also where you establish the constraints for the milestone — what's off-limits, what patterns to follow, what the acceptance criteria look like. Being precise here means fewer steering corrections mid-execution. Time invested in the discussion is recovered during auto mode.
+
+→ gsd2-guide: [Section 2: Your First Project](../first-project/)\
+→ gsd2-guide: [Section 4: The Daily Mix](../daily-mix/)\
+→ gsd2-guide: [Section 6: Controlling Costs](../controlling-costs/)
+
+When the discussion finishes and you have a plan you're confident in, that confidence is the signal that the context engineering is working. The plan is precise because the conversation was precise. Everything that follows — the tasks, the verification, the diffs — is an expression of the quality of what you wrote into the discussion. That's what context engineering means in practice.
+
+→ gsd2-guide: [/gsd prefs](../../commands/prefs/)
+
+---
+
+*This is Section 5 of the GSD 2 Solo Guide.*

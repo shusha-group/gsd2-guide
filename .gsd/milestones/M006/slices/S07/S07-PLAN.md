@@ -32,7 +32,7 @@
 
 ## Tasks
 
-- [ ] **T01: Write Section 5 — context-engineering.mdx** `est:30m`
+- [x] **T01: Write Section 5 — context-engineering.mdx** `est:30m`
   - Why: R067 requires context engineering from the practitioner's perspective — the five topics that make up the highest-leverage skill in the GSD workflow. This is the meatier of the two pages.
   - Files: `src/content/docs/solo-guide/context-engineering.mdx`
   - Do: Replace the stub content with ~120–150 lines of narrative prose covering: (1) agent-instructions.md as the project constitution — hard limits + pattern rules, how it evolves across milestones (deepen brownfield.mdx's introduction without repeating it); (2) DECISIONS.md as architectural memory — how it feeds into every session; (3) KNOWLEDGE.md for domain terminology, rules, patterns, lessons; (4) reading GSD's output — summaries, state files, what to look for; (5) giving good discussion answers — specificity pays dividends. Preserve existing frontmatter title and description exactly. Use `---` separators between major sections. Australian spelling. Cross-references to reference pages with `../../page-slug/` and to siblings with `../page-slug/`. `→ gsd2-guide:` notation. No MDX component imports needed — pure narrative prose. Do not duplicate what reference pages already explain.
@@ -45,6 +45,29 @@
   - Do: Replace the stub content with ~100–130 lines of narrative prose covering: (1) flat-rate vs pay-per-use reality — Claude Max, API, platform subscriptions; (2) token profiles (budget/balanced/quality) — what each trades off, in plain English, without reproducing the reference page tables; (3) per-phase model routing — using cheaper models for mechanical work; (4) budget ceiling configuration — set it, enforce it, adjust it; (5) typical cost patterns — what drives spend up, how context engineering from Section 5 affects costs. Preserve existing frontmatter title and description exactly. Same conventions as T01. Then run `npm run build` and `npm run check-links` to verify both pages compile and all cross-references resolve.
   - Verify: `wc -l` >100; `grep -c "→ gsd2-guide:"` ≥5; Australian spelling present; `npm run build` exits 0 at 113 pages; `npm run check-links` exits 0
   - Done when: Both Section 5 and Section 6 are live, all cross-references resolve, build and link-check pass
+
+## Observability / Diagnostics
+
+**Runtime signals:**
+- `npm run build` exit code and page count are the primary signal — 0 / 113 pages means the MDX compiled cleanly
+- `npm run check-links` exit code signals broken cross-references — non-zero means a `→ gsd2-guide:` link points to a slug that doesn't exist
+- `wc -l` on each file confirms substantive content was written (>100 lines)
+- `grep -c` counts confirm cross-reference and spelling conventions were applied
+
+**Inspection surfaces:**
+- Build output in stdout/stderr: Astro prints the failing file path and line number on MDX parse errors (unescaped `{`, bad JSX, etc.) — read stderr carefully on non-zero exit
+- `page-source-map.json` at `content/generated/page-source-map.json` — grep for `solo-guide` entries to verify D068 (no solo-guide pages in the generated source map) is still satisfied
+- `.gsd/milestones/M006/slices/S07/tasks/T01-SUMMARY.md` and `T02-SUMMARY.md` — verification evidence tables document actual check outcomes
+
+**Failure visibility:**
+- If `npm run build` fails with an MDX error, Astro prints the file, line, and column. The most common cause in MDX prose files is unescaped curly braces — wrap any template-variable-looking text in backticks.
+- If `npm run check-links` fails, the output lists the failing URL slug — cross-reference the slug against the actual file paths in `src/content/docs/`
+- If `wc -l` returns ≤100, the file contains only the stub — check that the write step completed and the frontmatter is intact
+
+**Redaction constraints:** None — these files contain only public documentation prose with no secrets or PII.
+
+**Failure-path verification check:**
+- `npm run build 2>&1 | grep -i "error\|warn" | head -20` — surfaces MDX parse errors and broken imports in a single scannable list
 
 ## Files Likely Touched
 
