@@ -73,7 +73,7 @@ This milestone is complete only when all are true:
 - [x] **S07: Sections 5 & 6 — Context Engineering + Costs** `risk:medium` `depends:[S01]`
   > After this: Both the context engineering in practice section and the cost management section are live and cross-referenced correctly.
 
-- [ ] **S08: Section 8 — Building a Rhythm** `risk:low` `depends:[S01]`
+- [x] **S08: Section 8 — Building a Rhythm** `risk:low` `depends:[S01]`
   > After this: The full guide is complete and navigable end-to-end. All 8 sections live, sidebar complete, `npm run update` deploys successfully to GitHub Pages.
 
 <!--

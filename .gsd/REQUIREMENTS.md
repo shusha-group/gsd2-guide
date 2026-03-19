@@ -802,9 +802,9 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 13
-- Mapped to slices: 13
-- Validated: 53 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056, R057, R058, R059, R060)
+- Active requirements: 1
+- Mapped to slices: 1
+- Validated: 59 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056, R057, R058, R059, R060, R061, R062, R063, R064, R065, R066, R067, R068, R069, R070, R071, R072)
 - Unmapped active requirements: 0
 
 ### R061 — Solo Builder's Guide landing page and sidebar navigation
@@ -864,13 +864,13 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R066 — Section 1: Why GSD 2
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: The "aha moment" section explaining the context window ceiling, what context engineering means, why GSD 2 exists, the cost comparison (Claude Max vs Replit/Lovable/API), and the technical director mindset.
 - Why it matters: Earns trust and positions the guide for readers who are sceptical of "yet another tool."
 - Source: user
 - Primary owning slice: M006/S06
 - Supporting slices: none
-- Validation: unmapped
+- Validation: why-gsd.mdx — 104 lines covering ceiling argument, context engineering definition, cost landscape, technical director framing, and GSD 2 in concrete terms; 9 cross-references; SolveIt and The New Stack cited inline; Australian spelling confirmed; npm run build exits 0 at 113 pages; npm run check-links exits 0 at 12,288 links
 - Notes: References the vibe coding ceiling problem (15–20 component limit), the desk analogy for context engineering, and the SolveIt philosophy. Written after the daily workflow sections are proven.
 
 ### R067 — Section 5: What You Write vs What GSD Writes
@@ -897,46 +897,46 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R069 — Section 8: Building a Rhythm
 - Class: continuity
-- Status: active
+- Status: validated
 - Description: Weekly cycle suggestion, /gsd queue usage, /gsd export retrospectives, evolving agent-instructions.md over time, and the graduation path from vibe coding → GSD 2 → custom multi-agent workflows.
 - Why it matters: Sustaining GSD 2 as a daily practice is what separates users who get value from those who abandon it after one project.
 - Source: user
 - Primary owning slice: M006/S08
 - Supporting slices: none
-- Validation: unmapped
+- Validation: building-rhythm.mdx — 102 lines covering all five required topics (weekly cycle, /gsd queue, /gsd export retrospectives, evolving agent-instructions.md, graduation path); 12 cross-references using → gsd2-guide: notation; Daniel Priestley 24 Assets and SolveIt cited inline; Australian spelling confirmed; npm run build exits 0 at 113 pages; npm run check-links exits 0 at 12,288 links
 - Notes: References SolveIt's compounding insight and Daniel Priestley's 24 Assets framework.
 
 ### R070 — Cross-references to gsd2-guide throughout
 - Class: integration
-- Status: active
+- Status: validated
 - Description: Every section links to the relevant gsd2-guide pages for command syntax, file format reference, and configuration detail. Uses consistent "→ gsd2-guide: [page]" notation.
 - Why it matters: The guide is a phrasebook, not a dictionary. It should never duplicate what the gsd2-guide already covers.
 - Source: user
 - Primary owning slice: M006/S01
 - Supporting slices: M006/S02–S08
-- Validation: unmapped
+- Validation: All 8 content sections use → gsd2-guide: notation; combined cross-reference count: 12 (building-rhythm) + 12 (daily-mix) + 18 (when-things-go-wrong) + 9 (first-project) + 9 (brownfield) + 8 (context-engineering) + 9 (controlling-costs) + 9 (why-gsd) = 86 cross-references total; npm run check-links exits 0 at 12,288 links confirming all resolve
 - Notes: Link checker must pass on all cross-references. Use relative Starlight paths.
 
 ### R071 — External resources cited and linked
 - Class: integration
-- Status: active
+- Status: validated
 - Description: Key external resources — Addy Osmani's LLM workflow article, Esteban Torres's GSD account, The New Stack GSD walkthrough — are cited and linked where referenced. No dead links.
 - Why it matters: Builds credibility and gives readers a path to deeper reading.
 - Source: user
 - Primary owning slice: M006/S04
 - Supporting slices: M006/S06
-- Validation: unmapped
+- Validation: first-project.mdx links Addy Osmani (addyosmani.com/blog/ai-coding-workflow/) and Esteban Torres (estebantorr.es/blog/2026/); why-gsd.mdx links The New Stack (thenewstack.io/beating-the-rot-and-getting-stuff-done/) and Shareuhack; building-rhythm.mdx links Daniel Priestley 24 Assets (danielpriestley.com/24assets/); npm run check-links exits 0 (external links not checked by link checker — all verified live during authoring)
 - Notes: External URLs verified during investigation phase. Addy Osmani (addyosmani.com), Esteban Torres (estebantorr.es), New Stack (thenewstack.io) all confirmed live.
 
 ### R072 — Australian spelling and Apple Notes–friendly formatting
 - Class: quality-attribute
-- Status: active
+- Status: validated
 - Description: Australian spelling (colour, behaviour, recognise, organise, etc.) throughout all sections. Tables render cleanly when pasted into Apple Notes. No formatting that breaks in plain-text contexts.
 - Why it matters: Author preference and target reading context (Apple Notes for quick reference).
 - Source: user
 - Primary owning slice: M006/S01
 - Supporting slices: M006/S02–S08
-- Validation: unmapped
+- Validation: grep -ri "organize\|recognize\|behavior\|color[^:]" src/content/docs/solo-guide/*.mdx → exit 1 (no matches) across all 9 files; all tables use standard pipe-separated Markdown (no HTML tags); verified in S02+S03+S05+S07+S08
 - Notes: Use standard Markdown tables with pipe-separated columns. Avoid HTML table tags.
 
 | R061 | core-capability | validated | M006/S01 | M006/S02–S08 | 9 MDX files + sidebar group; npm run build exits 0 at 113 pages; pipeline uncontaminated |
@@ -944,10 +944,10 @@ This file is the explicit capability and coverage contract for the project.
 | R063 | failure-visibility | validated | M006/S03 | none | when-things-go-wrong.mdx — 183 lines, 8 failure scenarios, 18 cross-refs, 9 command links; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
 | R064 | primary-user-loop | validated | M006/S04 | none | first-project.mdx — 148 lines, 5 lifecycle phases, 2 external citations, 9 cross-refs; npm run build 0 at 113 pages; npm run check-links 0 |
 | R065 | core-capability | validated | M006/S05 | none | brownfield.mdx — 128 lines covering all four R065 topics; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; 9 cross-refs; Australian spelling verified |
-| R066 | core-capability | active | M006/S06 | none | unmapped |
+| R066 | core-capability | validated | M006/S06 | none | why-gsd.mdx — 104 lines, ceiling/context-engineering/cost/director framing, 9 cross-refs, SolveIt + New Stack cited; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
 | R067 | core-capability | validated | M006/S07 | none | context-engineering.mdx — 128 lines, 5 sections, 8 cross-refs; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
 | R068 | operability | validated | M006/S07 | none | controlling-costs.mdx — 114 lines, 5 sections, 9 cross-refs; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
-| R069 | continuity | active | M006/S08 | none | unmapped |
-| R070 | integration | active | M006/S01 | M006/S02–S08 | S02+S03: 18 cross-refs in when-things-go-wrong.mdx confirm notation applied consistently; both sections pass check-links |
-| R071 | integration | active | M006/S04 | M006/S06 | unmapped |
-| R072 | quality-attribute | active | M006/S01 | M006/S02–S08 | S02+S03: Australian spelling grep passes for both companion guide sections |
+| R069 | continuity | validated | M006/S08 | none | building-rhythm.mdx — 102 lines, all 5 R069 topics, 12 cross-refs, Priestley/SolveIt cited; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
+| R070 | integration | validated | M006/S01 | M006/S02–S08 | 86 total cross-references across all 8 sections using → gsd2-guide: notation; npm run check-links exits 0 at 12,288 links confirming all resolve |
+| R071 | integration | validated | M006/S04 | M006/S06 | Addy Osmani + Esteban Torres in first-project.mdx; New Stack + Shareuhack in why-gsd.mdx; Priestley 24 Assets in building-rhythm.mdx; all URLs verified live |
+| R072 | quality-attribute | validated | M006/S01 | M006/S02–S08 | grep -ri "organize\|recognize\|behavior\|color[^:]" across all 9 solo-guide files → exit 1 (no matches); all tables use standard Markdown pipe format |
