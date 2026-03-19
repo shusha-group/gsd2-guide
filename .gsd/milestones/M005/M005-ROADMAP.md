@@ -62,7 +62,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Command page backlinks** `risk:low` `depends:[S02]`
   > After this: 15 command pages have a "Prompts used" section with links to the prompt pages that command invokes. All cross-links validated by `npm run check-links`.
 
-- [ ] **S05: Pipeline integration** `risk:low` `depends:[S02,S04]`
+- [x] **S05: Pipeline integration** `risk:low` `depends:[S02,S04]`
   > After this: `manage-pages.mjs` extended for prompt directory. `npm run update` end-to-end detects a prompt page as stale when its `.md` source changes and regenerates it via `claude -p`. Full pipeline exits 0.
 
 <!--

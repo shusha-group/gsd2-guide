@@ -50,7 +50,7 @@ T01 delivered the prompt management building blocks; T02 wires them into the liv
 
 One investigation detour: initial stale simulation tampered `headSha` which is pure metadata and doesn't drive staleness detection — staleness compares `manifest.files[dep]` against `recorded.deps[dep]`. Had to tamper a dep SHA instead.
 
-## Verification
+## Verification Evidence
 
 All verification checks passed without failures.
 
