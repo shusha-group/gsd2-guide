@@ -5,11 +5,11 @@ description: "Queue and reorder future milestones — manage execution order, ad
 
 ## What It Does
 
-`/gsd queue` opens the queue management hub for organizing upcoming milestones. It lets you reorder pending milestones by priority, add new milestones via LLM-assisted discussion, and automatically resolves dependency conflicts when you change the order.
+`/gsd queue` is the hub for managing upcoming milestones. It lets you reorder pending milestones by priority, add new milestones through LLM-assisted discussion, and automatically resolve dependency conflicts when you change the order.
 
 The queue is safe to use while auto-mode is running. Queued milestones are picked up naturally when auto-mode advances past the current work — no restart needed. This makes `/gsd queue` the primary way to shape what comes next without interrupting what's happening now.
 
-When you have multiple pending milestones, the hub presents two options: reorder the existing queue or add new work. If only one milestone exists, it skips straight to the add-new-work flow.
+When you have more than one pending milestone (active or queued), the hub presents two options: reorder the existing queue or add new work. If only one milestone exists, it skips straight to the add-new-work flow.
 
 ## Usage
 
@@ -26,21 +26,27 @@ flowchart TD
     Start(["/gsd queue"]) --> Check{.gsd/ exists?}
     Check -->|No| Fail([Error: run /gsd first])
     Check -->|Yes| Load[Load state via deriveState]
-    Load --> Count{Multiple pending<br/>milestones?}
+    Load --> Count{More than one\npending milestone?}
     Count -->|Yes| Hub[Show Queue Management Hub]
     Count -->|No| Add[Show Add New Work flow]
     Hub --> Choice{User choice}
-    Choice -->|Reorder| Reorder[Show drag-reorder UI]
+    Choice -->|Reorder| Reorder[Show keyboard reorder UI]
     Choice -->|Add| Add
-    Choice -->|Cancel| Done([Done])
-    Reorder --> Save[Save QUEUE-ORDER.json]
-    Save --> Deps[Remove conflicting depends_on]
+    Choice -->|Not yet| Done([Done])
+    Reorder --> Confirm[User confirms order]
+    Confirm --> Save[Save QUEUE-ORDER.json]
+    Save --> Deps[Auto-remove would_block depends_on]
     Deps --> Sync[Sync PROJECT.md sequence table]
     Sync --> Commit[Auto-commit changes]
     Commit --> Done
-    Add --> Discuss[LLM discussion — scope new milestone]
-    Discuss --> Context[Write CONTEXT.md for new milestone]
-    Context --> Done
+    Add --> Drafts{Draft milestones\nexist?}
+    Drafts -->|Yes| SurfaceDrafts[Surface drafts for discussion]
+    SurfaceDrafts --> Discuss
+    Drafts -->|No| Discuss[LLM discussion — scope new milestone]
+    Discuss --> Verify[Depth verification per milestone]
+    Verify --> Write[Write CONTEXT.md + slices dir]
+    Write --> UpdateDocs[Update PROJECT.md, QUEUE.md]
+    UpdateDocs --> Done
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -51,31 +57,73 @@ flowchart TD
     style Choice fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Reorder fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Add fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Confirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Deps fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Sync fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Drafts fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style SurfaceDrafts fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Discuss fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Context fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Verify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Write fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UpdateDocs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### State Loading
 
-The command reads the full project state via `deriveState()`, which scans the milestone registry to determine which milestones are complete, active, and pending. It uses this to build the list of reorderable items.
+The command reads the full project state via `deriveState()`, which scans the milestone registry to determine which milestones are complete, active, pending, or parked. It uses this to build the list of reorderable items and to provide context to the add-flow LLM.
 
 ### Reorder Flow
 
-The reorder UI shows all pending milestones in their current execution order. You drag items to set the new sequence. When you confirm:
+The reorder UI shows completed milestones (dimmed) and all pending milestones in their current execution order. Use the keyboard to navigate and reposition items:
 
-1. **QUEUE-ORDER.json** — The new order is saved to `.gsd/QUEUE-ORDER.json` as a simple array of milestone IDs.
-2. **Dependency cleanup** — If reordering puts a milestone before its `depends_on` target, that dependency is removed from the milestone's `CONTEXT.md`. This prevents deadlocks where a milestone waits for something that now comes after it.
-3. **PROJECT.md sync** — The milestone sequence table in `PROJECT.md` is updated to reflect the new order.
-4. **Auto-commit** — All changes are committed with the message `docs: reorder queue`.
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Move cursor |
+| `Space` | Grab / release the cursor item for moving |
+| `↑` / `↓` (while grabbed) | Swap the grabbed item with its neighbor |
+| `d` | Manually remove a `depends_on` from the cursor item |
+| `Enter` | Confirm new order |
+| `Esc` | Cancel |
+
+When you confirm:
+
+1. **QUEUE-ORDER.json** — The new order is saved to `.gsd/QUEUE-ORDER.json` as `{ order: string[], updatedAt: string }`. This file is committed to git and shared across sessions.
+2. **Dependency cleanup** — Any `depends_on` entry that a reorder has made contradictory (a milestone now appears before its dependency) is flagged as `would_block` and automatically removed from the milestone's `CONTEXT.md` frontmatter on confirm. The UI shows these in orange before you hit Enter so you know what will be cleaned up.
+3. **Redundant deps** — Dependencies that are already satisfied by queue position (the dep comes earlier) are shown dimmed as "redundant" — they are not removed, just surfaced for awareness.
+4. **Missing/circular deps** — Dependencies referencing non-existent milestones or forming cycles are shown as errors in the UI.
+5. **PROJECT.md sync** — The milestone sequence table in `PROJECT.md` is updated to reflect the new order.
+6. **Auto-commit** — All changes are committed with the message `docs: reorder queue`.
+
+> **Non-interactive terminals**: If the reorder UI cannot display (RPC mode or headless context), a warning is shown with the current order and reordering is skipped. The add flow still works in all environments.
 
 ### Add Flow
 
-The add flow dispatches an LLM-assisted discussion where you describe the new work. The LLM assesses scope, asks clarifying questions, and writes a `CONTEXT.md` file for the new milestone. No roadmap is created — roadmaps are generated just-in-time when auto-mode reaches that milestone.
+The add flow dispatches an LLM-assisted discussion session. Before asking "What do you want to add?", the LLM checks for any draft milestones — milestones that have a `CONTEXT-DRAFT.md` seed file (created when a prior discussion chose "Needs own discussion" instead of finalizing). If drafts exist, the LLM surfaces them first and offers to either discuss them now (completing the context file) or leave them for later.
+
+Once past any drafts, the discussion flow:
+
+1. **Investigates** — The LLM researches your codebase, relevant libraries, and existing milestones before each question round, so its questions are grounded in reality rather than assumptions.
+2. **Checks for overlap** — Dedup check against existing milestones, extension check for work that belongs with a pending milestone, and dependency check for prerequisites.
+3. **Assesses scope** — Determines whether the work is single-milestone (2–12 slices) or multi-milestone. If multi-milestone, proposes a split for your approval before writing anything.
+4. **Verifies before writing** — For each new milestone, a mandatory depth verification step presents the proposed scope and any technical risks. You confirm or correct before the context file is written. This gate cannot be skipped.
+5. **Writes artifacts** — Uses `gsd_generate_milestone_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, and writes `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
+
+No roadmap is created — roadmaps are generated just-in-time when auto-mode reaches that milestone.
+
+### CONTEXT.md Dependency Frontmatter
+
+When a queued milestone depends on another, its context file gets YAML frontmatter:
+
+```yaml
+---
+depends_on: [M003, M005]
+---
+```
+
+Auto-mode reads this field to enforce execution order. Without it, milestones may execute out of order.
 
 ## What Files It Touches
 
@@ -83,26 +131,33 @@ The add flow dispatches an LLM-assisted discussion where you describe the new wo
 
 | File | Purpose |
 |------|---------|
-| `.gsd/milestones/MXXX/MXXX-CONTEXT.md` | Brief for newly queued milestones |
+| `.gsd/milestones/<ID>/<ID>-CONTEXT.md` | Brief for newly queued milestones |
+| `.gsd/milestones/<ID>/slices/` | Slices directory created alongside each new context file |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | Current project state |
-| `.gsd/milestones/*/` | Milestone registry for status and ordering |
+| `.gsd/milestones/*/` | Milestone registry for status, ordering, and context |
+| `.gsd/PROJECT.md` | Project overview and milestone sequence |
+| `.gsd/DECISIONS.md` | Architectural decisions (for add-flow LLM context) |
+| `.gsd/QUEUE.md` | Previous queue entries (for add-flow LLM context) |
+| `.gsd/QUEUE-ORDER.json` | Current custom execution order |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/QUEUE-ORDER.json` | Persisted milestone execution order |
-| `.gsd/PROJECT.md` | Milestone sequence table updated on reorder |
-| `.gsd/milestones/*/MXXX-CONTEXT.md` | `depends_on` removed when reordering creates conflicts |
+| `.gsd/QUEUE-ORDER.json` | Persisted milestone execution order (reorder only) |
+| `.gsd/PROJECT.md` | Milestone sequence table updated on reorder; new entries added on queue-add |
+| `.gsd/QUEUE.md` | New queue log entries appended after each add |
+| `.gsd/milestones/*/MXXX-CONTEXT.md` | `depends_on` removed when reordering creates `would_block` conflicts |
+| `.gsd/REQUIREMENTS.md` | Updated if new work introduces or promotes requirements |
+| `.gsd/DECISIONS.md` | Appended if the discussion surfaces relevant decisions |
 
 ## Examples
 
-Reordering milestones in a Cookmate project:
+Reordering milestones in a project with three pending:
 
 ```
 > /gsd queue
@@ -110,45 +165,76 @@ Reordering milestones in a Cookmate project:
 ● GSD — Queue Management
   2 complete, 3 pending.
 
-  ❯ Reorder queue
+  ❯ Reorder queue (Recommended)
     Add new work
 
-● Reorder Queue
-  Drag to set execution order:
+● Queue Reorder
+  Completed:
+    ✓ M001  Auth system
+    ✓ M002  Data layer
 
-  1. M003 — API rate limiting
-  2. M004 — Recipe sharing
-  3. M005 — Mobile responsive
+  Queue (space to grab, ↑/↓ to navigate):
+    ❯ 1. M003  API rate limiting
+      2. M004  Recipe sharing
+         ↳ depends_on: M003 (redundant)
+      3. M005  Mobile responsive
 
-  ↕ Move M005 above M003
+  [space — grab M003, move it down]
 
-  New order:
-  1. M005 — Mobile responsive
-  2. M003 — API rate limiting
-  3. M004 — Recipe sharing
+  Queue (space to release, ↑/↓ to move):
+    ▸▸ 1. M003  API rate limiting   ← grabbed
 
-  ✓ Queue reordered: M005 → M003 → M004
-    Removed 1 depends_on (M005 no longer waits for M003)
+  [↓ twice — M003 moves to position 3]
+
+    1. M004  Recipe sharing
+    2. M005  Mobile responsive
+    ▸▸ 3. M003  API rate limiting
+
+  [enter to confirm]
+
+● Queue reordered: M004 → M005 → M003 (removed 1 depends_on)
 ```
 
-Adding new work to the queue:
+Adding new work when only one milestone is pending (skips hub):
 
 ```
 > /gsd queue
 
-● GSD — Queue Management
-  1 complete, 1 pending.
+● What do you want to add?
 
-  ❯ Add new work
+  User: Add push notifications for recipe comments
 
-● Describe the new milestone...
+  ● Investigating codebase and notification landscape...
+    [1-3 question rounds]
 
-  User: Add email notifications for recipe comments
+  ● Depth verification for M006:
+    Scope: Push notifications via Expo Notifications + Supabase edge functions.
+    Risk: Requires APNs/FCM credentials — not yet in project.
+    Ready to queue?
 
-  ● Assessing scope...
-    Created M004 — Email notifications
-    Context written to .gsd/milestones/M004/M004-CONTEXT.md
-    Queued after M003
+  ✓ Queued 1 milestone.
+    Created M006 — Push notifications
+    Context: .gsd/milestones/M006/M006-CONTEXT.md
+
+Queued 1 milestone(s). Auto-mode will pick them up after current work completes.
+```
+
+Surfacing a draft milestone before adding new work:
+
+```
+> /gsd queue
+
+● I found 1 draft milestone from a previous discussion:
+
+  M005 — Analytics dashboard (Draft context available)
+  Seed: "Real-time recipe view counts and user engagement metrics"
+
+  Discuss now (Recommended) — finalize context in this session
+  Leave for later — keep draft, auto-mode will pause when it reaches M005
+
+  [User selects "Discuss now"]
+
+  ● Picking up from draft context for M005...
 ```
 
 ## Related Commands

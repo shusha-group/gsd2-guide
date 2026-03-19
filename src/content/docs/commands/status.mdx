@@ -1,13 +1,13 @@
 ---
 title: "/gsd status"
-description: "Open a real-time TUI dashboard showing milestone, slice, and task progress with timing and cost metrics."
+description: "Open a real-time TUI dashboard showing auto-mode state, milestone progress, task breakdown, and cost metrics."
 ---
 
 ## What It Does
 
-`/gsd status` opens a TUI dashboard overlay that shows the current state of your project at a glance — milestone progress, slice breakdown, task completion status, timing, and cost metrics. It reads the `.gsd/` directory and renders a live progress tree that refreshes every 2 seconds.
+`/gsd status` opens a TUI dashboard overlay that shows the current state of your project at a glance — what auto-mode is doing right now, milestone and slice progress, task breakdown for the active slice, completed units, and cost metrics. The dashboard refreshes every 2 seconds.
 
-The dashboard is read-only. It doesn't modify any files or interrupt a running auto-mode session. You can open it while auto mode is running to monitor progress without disrupting execution.
+The dashboard is read-only. It doesn't modify any files or interrupt a running auto-mode session. You can open it while auto-mode is running to monitor progress without disrupting execution. When no session is active, it still shows project state (phase, milestone, slice, tasks remaining) from the planning files on disk.
 
 ## Usage
 
@@ -19,28 +19,30 @@ Also available via keyboard shortcut: **Ctrl+Alt+G** (toggles the dashboard over
 
 ## How It Works
 
-The dashboard reads the same state files that the dispatch engine uses, then renders them as a structured progress tree.
+The dashboard derives state from planning files on disk and overlays real-time data from the running auto-mode session.
 
 ```mermaid
 flowchart TD
-    Start(["/gsd status"]) --> ReadState[Read .gsd/STATE.md]
-    ReadState --> ReadRoadmap[Read roadmap files]
-    ReadRoadmap --> ReadPlans[Read plan files]
-    ReadPlans --> ReadActivity[Read activity logs]
-    ReadActivity --> Derive[Derive progress tree]
-    Derive --> Render[Render TUI dashboard]
-    Render --> Wait[Refresh every 2s]
-    Wait --> ReadState
-    
-    Dismiss([Escape / Ctrl+Alt+G]) --> Close[Close overlay]
+    Start(["/gsd status or Ctrl+Alt+G"]) --> CheckMilestones{Milestones found?}
+    CheckMilestones -- No --> Notify[Show 'no milestones' message]
+    CheckMilestones -- Yes --> OpenOverlay[Open TUI overlay]
+    OpenOverlay --> FetchLive[Fetch auto-mode dashboard data]
+    FetchLive --> DeriveState[deriveState — read roadmap + plan files]
+    DeriveState --> LoadMetrics[Load metrics ledger]
+    LoadMetrics --> Render[Render dashboard]
+    Render --> Wait[Wait 2s]
+    Wait --> FetchLive
+
+    Dismiss([Escape / Ctrl+Alt+G / Ctrl+C]) --> Close[Close overlay]
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Dismiss fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style ReadState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ReadRoadmap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ReadPlans fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ReadActivity fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Derive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CheckMilestones fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style OpenOverlay fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style FetchLive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DeriveState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadMetrics fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Render fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Wait fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Close fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -48,28 +50,39 @@ flowchart TD
 
 ### State derivation
 
-The dashboard builds its progress tree by reading:
+The dashboard builds its view from two data sources:
 
-1. **`.gsd/STATE.md`** — The quick-glance status file with current milestone, slice, task, and phase.
-2. **Roadmap files** (`M*-ROADMAP.md`) — Slice ordering and completion checkboxes.
-3. **Plan files** (`S*-PLAN.md`) — Task breakdown within each slice.
-4. **Activity logs** (`.gsd/activity/`) — JSONL records of unit execution times, token counts, and costs.
+1. **Planning files** — `deriveState()` reads roadmap and plan files directly from disk to determine current phase, active milestone, active slice, and task completion state. This is the same source-of-truth traversal the dispatch engine uses.
+2. **Live session data** — `getAutoDashboardData()` returns in-memory state from the running auto-mode session: what unit is executing right now, how long it's been running, which units completed this session, and whether the session is active, paused, or idle.
 
-From these, it derives: which units are complete, which is in progress, what's remaining, and aggregate metrics.
+For cost and token metrics, the dashboard reads the metrics ledger (in-memory, populated by the running session) and aggregates it by phase, slice, and model.
 
 ### Dashboard layout
 
-The dashboard shows:
+The overlay renders at 70% of terminal width (minimum 60 columns, maximum 90% of terminal height), anchored to the center. Content wider than 128 columns is capped and centered. It contains these sections:
 
-- **Milestone header** — Name, ID, and overall progress percentage.
-- **Slice breakdown** — Each slice with its completion status (pending, in progress, complete) and task count.
-- **Current unit** — What's actively running, how long it's been executing.
-- **Completed units** — Each finished unit with duration and cost.
-- **Session totals** — Aggregate tokens, cost, and wall-clock time.
+- **Header** — "GSD Dashboard" title, blinking `● AUTO` / `⏸ PAUSED` / `idle` status indicator, elapsed time, and ETA if estimable. Shows the active worktree name when running inside a worktree.
+- **Current unit** — What's actively running (unit type and ID), how long it's been executing. Shows "No unit running · /gsd auto to start" when idle.
+- **Parallel workers** — Visible only when subagent workers are active. Shows batch ID, worker agent, task preview, and elapsed time per worker.
+- **Pending captures badge** — Shown when there are pending captures awaiting triage.
+- **Milestone progress** — Active milestone ID and title, followed by filled progress bars for Tasks (active slice), Slices (current milestone), and Milestones (overall).
+- **Slice breakdown** — Every slice with status icon (✓ done / ▸ active / ○ pending) and risk level. For the active slice, each task is listed with its own status icon.
+- **Completed units** — Last 10 units from this session in reverse order with duration. Units that triggered context-pressure wrap-up are flagged with `→ wrap-up`; truncated units show a section count indicator.
+- **Cost & Usage** — Total cost, tokens, tool calls, and unit count. Token breakdown by input / output / cache-read / cache-write. Cost broken down by phase and by slice. Per-slice cost projection for remaining work (if budget ceiling is configured). Cost broken down by model.
+
+### Keyboard navigation
+
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Scroll up |
+| `↓` / `j` | Scroll down |
+| `g` | Jump to top |
+| `G` | Jump to end |
+| `Escape` / `Ctrl+Alt+G` / `Ctrl+C` | Close the overlay |
 
 ### Live refresh
 
-The dashboard refreshes every 2 seconds by re-reading the `.gsd/` files. This means if auto mode completes a task while the dashboard is open, you'll see it update within a couple of seconds. No manual refresh needed.
+The dashboard polls every 2 seconds. If auto-mode completes a unit while the dashboard is open, you'll see it move to the Completed section within a couple of seconds. The refresh is skipped if a previous refresh is still in flight, preventing pile-up on slow disks. Terminal resize events also trigger an immediate re-render.
 
 ### Overlay behavior
 
@@ -79,46 +92,77 @@ The dashboard renders as a TUI overlay — it floats on top of the current termi
 
 Entirely read-only — the dashboard never writes to any file.
 
-| Reads | Purpose |
-|-------|---------|
-| `.gsd/STATE.md` | Current phase and active units |
-| `M*-ROADMAP.md` | Slice structure and completion |
-| `S*-PLAN.md` | Task structure and completion |
-| `.gsd/activity/*.jsonl` | Execution logs for timing and cost |
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `M*/ROADMAP.md` | Slice structure, ordering, and completion state |
+| `M*/S*/PLAN.md` | Task breakdown within the active slice |
+| `M*/S*/T*/SUMMARY.md` | Completed task summaries (for blocker detection) |
+| Metrics ledger (in-memory) | Token counts, costs, and unit timing from the running session |
 
 ## Examples
 
-Checking progress during a Cookmate milestone:
+Checking progress during an active auto-mode run:
 
 ```
 > /gsd status
 
-  ┌─────────────────────────────────────────────┐
-  │  M001: Core Recipe Platform       62%       │
-  ├─────────────────────────────────────────────┤
-  │                                             │
-  │  ✓ S01: Database schema and auth            │
-  │    ✓ T01  Prisma schema         12m  $0.48  │
-  │    ✓ T02  NextAuth setup        18m  $0.72  │
-  │    ✓ T03  Signup/login pages    22m  $0.91  │
-  │                                             │
-  │  ▶ S02: Recipe CRUD API                     │
-  │    ✓ T01  Recipe model          14m  $0.55  │
-  │    ▶ T02  List endpoint          8m  ...    │
-  │    ○ T03  Delete endpoint                   │
-  │                                             │
-  │  ○ S03: Recipe search and filtering         │
-  │  ○ S04: Image upload pipeline               │
-  │                                             │
-  ├─────────────────────────────────────────────┤
-  │  Session: 1h 14m │ $3.66 │ 127K tokens     │
-  └─────────────────────────────────────────────┘
+  ╭──────────────────────────────────────────────────────────╮
+  │  GSD Dashboard  ● AUTO                        1h 14m     │
+  │                                                           │
+  │  Now: Execute T02  (current: 8m)                         │
+  │                                                           │
+  │  M001: Core Recipe Platform                              │
+  │                                                           │
+  │  Tasks      ████████████░░░░░░░░░░░░░░  50%   1/2        │
+  │  Slices     ████████████████░░░░░░░░░░  62%   5/8        │
+  │  Milestones ████████░░░░░░░░░░░░░░░░░░  25%   1/4        │
+  │                                                           │
+  │  ✓ S01: Database schema and auth           low            │
+  │  ▸ S02: Recipe CRUD API                    medium         │
+  │      ✓ T01: Recipe model                                 │
+  │      ▸ T02: List endpoint                                │
+  │      ○ T03: Delete endpoint                              │
+  │  ○ S03: Recipe search and filtering        low            │
+  │  ○ S04: Image upload pipeline              high           │
+  │                                                           │
+  │  ──────────────────────────────────────────────────────  │
+  │  Completed                                               │
+  │                                                           │
+  │  ✓ Execute T01                                    14m     │
+  │  ✓ Plan S02                                        3m     │
+  │  ✓ Complete S01                                    2m     │
+  │                                                           │
+  │  ──────────────────────────────────────────────────────  │
+  │  Cost & Usage                                            │
+  │                                                           │
+  │  $3.66 total  ·  127K tokens  ·  48 tools  ·  12 units  │
+  │  in: 98K  out: 18K  cache-r: 9K  cache-w: 2K            │
+  │                                                           │
+  │  ──────────────────────────────────────────────────────  │
+  │              ↑↓ scroll · g/G top/end · esc close         │
+  ╰──────────────────────────────────────────────────────────╯
 ```
 
-For a more advanced visualization with dependency graphs, metrics breakdown, and export options, see [`/gsd visualize`](../visualize/).
+Opening the dashboard when auto-mode is idle:
+
+```
+> /gsd status
+
+  ╭───────────────────────────────────────────────────────╮
+  │  GSD Dashboard  idle                                  │
+  │                                                        │
+  │  No unit running · /gsd auto to start                 │
+  │  ...                                                   │
+  ╰───────────────────────────────────────────────────────╯
+```
+
+For a more advanced visualization with dependency graphs, timeline, metrics breakdown, and export options, see [`/gsd visualize`](../visualize/).
 
 ## Related Commands
 
-- [`/gsd visualize`](../visualize/) — Advanced multi-tab visualizer
+- [`/gsd visualize`](../visualize/) — Advanced 10-tab TUI visualizer (progress, timeline, deps, metrics, health, agent, changes, knowledge, captures, export)
 - [`/gsd auto`](../auto/) — Autonomous execution (dashboard monitors it)
+- [`/gsd parallel`](../parallel/) — Parallel milestone orchestration (with its own `status` subcommand)
 - [`/gsd`](../gsd/) — Step mode (check status between units)

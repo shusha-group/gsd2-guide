@@ -7,7 +7,7 @@ description: "Display configured post-unit and pre-dispatch hooks — see what h
 
 `/gsd hooks` displays a read-only summary of all configured hooks in your project. It shows both **post-unit hooks** (run after a unit completes) and **pre-dispatch hooks** (run before a unit dispatches), along with their enabled/disabled status, target unit types, and active cycle counts.
 
-Hooks are GSD's extensibility mechanism for injecting custom agent work into the auto-mode pipeline. A post-unit hook might run a code review after every task. A pre-dispatch hook might prepend security requirements before every slice plan. `/gsd hooks` lets you see what's configured and whether anything is actively running.
+Hooks are GSD's extensibility mechanism for injecting custom agent work into the auto-mode pipeline. A post-unit hook might run a code review after every task. A pre-dispatch hook might prepend security requirements to every task prompt. `/gsd hooks` lets you see what's configured and whether anything is actively running.
 
 ## Usage
 
@@ -19,20 +19,56 @@ No arguments — the command reads hook configuration from preferences and displ
 
 ## How It Works
 
-The command calls `getHookStatus()` from the hook engine, which:
+The command calls `formatHookStatus()` from the hook engine, which internally calls `getHookStatus()` to collect all configured hooks, then formats them for terminal display.
+
+### Data Collection
 
 1. **Reads post-unit hooks** from `resolvePostUnitHooks()` — these are defined in `.gsd/preferences.md` under `post_unit_hooks`. For each hook, it collects the name, enabled state, target unit types (from the `after` field), and any active cycle counts from the in-memory cycle tracker.
 
 2. **Reads pre-dispatch hooks** from `resolvePreDispatchHooks()` — defined under `pre_dispatch_hooks` in preferences. These have a `before` field listing which unit types they intercept.
 
-3. **Formats the output** via `formatHookStatus()`, grouping post-unit and pre-dispatch hooks separately. If no hooks are configured, it shows a message pointing to the preferences file.
+3. **Formats the output**, grouping post-unit and pre-dispatch hooks separately. If no hooks are configured, it shows a message pointing to the preferences file.
+
+### Post-Unit Hook Behaviour
+
+Post-unit hooks fire after a core unit completes. The hook engine prevents infinite chains by never triggering hooks for:
+
+- `hook/*` unit types (hook-on-hook)
+- `triage-captures` units
+- `quick-task` units
+
+Each hook can run multiple times for the same trigger unit, controlled by `max_cycles`. Idempotency is enforced via an `artifact` file — if the artifact already exists at the expected path, the hook is skipped entirely.
+
+If a hook produces a `retry_on` artifact instead of the normal artifact, the hook engine signals the caller to re-dispatch the original trigger unit. This allows a hook to force a task to re-run (e.g., a review hook flags issues → task re-runs → hook fires again).
+
+**Artifact path resolution** is based on the trigger unit's ID depth:
+
+| Unit ID format | Artifact path |
+|----------------|--------------|
+| `M001/S01/T01` | `.gsd/M001/slices/S01/tasks/T01-{artifact}` |
+| `M001/S01` | `.gsd/M001/slices/S01/{artifact}` |
+| `M001` | `.gsd/M001/{artifact}` |
+
+### Pre-Dispatch Hook Behaviour
+
+Pre-dispatch hooks intercept a unit before its prompt is sent. Multiple hooks can fire for the same unit type and compose in order:
+
+- **`modify`** hooks stack — all `prepend`/`append` values are applied sequentially to build up the final prompt.
+- **`skip`** short-circuits — the first matching skip hook cancels the unit entirely. An optional `skip_if` condition file can gate the skip: the unit is only skipped if that file exists at the unit's artifact path.
+- **`replace`** short-circuits — the first matching replace hook swaps the entire unit prompt and optionally overrides the unit type label.
+
+Skip and replace always take precedence over modify hooks.
+
+### Cycle Persistence
+
+Cycle counts survive crashes and restarts. The engine persists them to `.gsd/hook-state.json` after each hook dispatch and on auto-mode pause, then restores them on resume. On a clean stop, the state file is cleared.
 
 ### Hook Types
 
 | Type | When it runs | Configured in | Key fields |
 |------|-------------|---------------|------------|
-| Post-unit | After a unit completes | `post_unit_hooks` in preferences | `name`, `after`, `prompt`, `artifact`, `max_cycles`, `retry_on` |
-| Pre-dispatch | Before a unit dispatches | `pre_dispatch_hooks` in preferences | `name`, `before`, `action` (`modify`, `skip`, `replace`), `prepend`/`append` |
+| Post-unit | After a unit completes | `post_unit_hooks` in preferences | `name`, `after`, `prompt`, `artifact`, `max_cycles`, `retry_on`, `model`, `agent`, `enabled` |
+| Pre-dispatch | Before a unit dispatches | `pre_dispatch_hooks` in preferences | `name`, `before`, `action`, `prepend`, `append`, `prompt`, `unit_type`, `skip_if`, `model`, `enabled` |
 
 ### Display Fields
 
@@ -43,7 +79,7 @@ For each hook, the display shows:
 | Name | The hook identifier (e.g., `code-review`, `security-scan`) |
 | Status | `enabled` or `disabled` — disabled hooks are skipped during dispatch |
 | Targets | Unit types this hook applies to (e.g., `execute-task`, `plan-slice`) |
-| Active cycles | How many trigger+hook pairs are currently in progress (post-unit only) |
+| Active cycles | Number of unique trigger keys with in-progress cycles (post-unit only) |
 
 ## What Files It Touches
 
@@ -69,10 +105,21 @@ Configured Hooks:
 
 Post-Unit Hooks (run after unit completes):
   code-review [enabled] → after: execute-task
-  lint-check [enabled] → after: execute-task, plan-slice (1 active cycle)
+  lint-check [enabled] → after: execute-task, plan-slice (2 active cycles)
 
 Pre-Dispatch Hooks (run before unit dispatches):
   security-context [enabled] → before: execute-task
+```
+
+When a hook is disabled:
+
+```
+> /gsd hooks
+
+Configured Hooks:
+
+Post-Unit Hooks (run after unit completes):
+  code-review [disabled] → after: execute-task
 ```
 
 When no hooks are configured:

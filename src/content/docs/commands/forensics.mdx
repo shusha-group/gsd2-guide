@@ -7,7 +7,7 @@ description: "Post-mortem investigation of auto-mode failures — scans activity
 
 `/gsd forensics` is the deep investigation tool for when auto-mode fails in ways that aren't obvious from the surface. It programmatically scans activity logs, the metrics ledger, crash locks, and doctor diagnostics to build a structured forensic report. It then detects anomalies — stuck loops, cost spikes, timeouts, missing artifacts, error traces — and hands the whole package to the LLM for interactive investigation.
 
-Unlike `/gsd doctor` which checks structural integrity, forensics focuses on *behavioral* anomalies: did a unit run too many times? Did costs spike unexpectedly? Did something time out? Did a completed unit leave missing artifacts?
+Unlike [`/gsd doctor`](../doctor/) which checks structural integrity, forensics focuses on *behavioral* anomalies: did a unit run too many times? Did costs spike unexpectedly? Did something time out? Did a completed unit leave missing artifacts?
 
 Forensics cannot run while auto-mode is active — it needs to inspect the state without interference.
 
@@ -35,7 +35,9 @@ flowchart TD
 
     Prompt --> Build[Build forensic report]
 
-    Build --> Scan1[Scan activity logs<br/>last 5 JSONL files]
+    Build --> State[Derive active milestone<br/>and slice from STATE.md]
+    State --> Worktree[Resolve active<br/>auto-worktree]
+    Worktree --> Scan1[Scan activity logs<br/>worktree + root, top 5 by mtime]
     Build --> Scan2[Load metrics ledger<br/>cost & timing data]
     Build --> Scan3[Check crash lock<br/>stale PID detection]
     Build --> Scan4[Run doctor checks<br/>structural issues]
@@ -49,8 +51,8 @@ flowchart TD
 
     Detect --> D1[Stuck loops<br/>repeated dispatch counts]
     Detect --> D2[Cost spikes<br/>3x average threshold]
-    Detect --> D3[Timeouts<br/>recovery patterns in logs]
-    Detect --> D4[Missing artifacts<br/>completed but unverifiable]
+    Detect --> D3[Timeouts<br/>tool calls + reasoning patterns]
+    Detect --> D4[Missing artifacts<br/>root + worktree checked]
     Detect --> D5[Crashes<br/>dead PID in lock file]
     Detect --> D6[Doctor issues<br/>error-severity structural]
     Detect --> D7[Error traces<br/>errors in activity logs]
@@ -63,9 +65,10 @@ flowchart TD
     D6 --> Report
     D7 --> Report
 
-    Report --> Save[Save to .gsd/forensics/]
-    Save --> Dispatch[Dispatch to LLM<br/>with structured report + source paths]
-    Dispatch --> LLM([LLM investigates interactively])
+    Report --> Redact[Redact paths,<br/>keys, env vars]
+    Redact --> Save[Save to .gsd/forensics/]
+    Save --> Dispatch[Dispatch to LLM<br/>structured report + source paths<br/>truncated at 30KB]
+    Dispatch --> LLM([LLM investigates interactively<br/>offers GitHub issue creation])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Active fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -74,6 +77,8 @@ flowchart TD
     style NoState fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style Prompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Build fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style State fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Worktree fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Scan1 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Scan2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Scan3 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -88,6 +93,7 @@ flowchart TD
     style D6 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style D7 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Report fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Redact fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style LLM fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -97,11 +103,11 @@ flowchart TD
 
 The forensic report builder collects data from five sources:
 
-1. **Activity logs** (`.gsd/activity/*.jsonl`) — The last 5 JSONL files are parsed. Each log records tool calls, reasoning traces, errors, and files written during a unit's execution. The filename encodes sequence number, unit type, and unit ID.
+1. **Activity logs** (`.gsd/activity/*.jsonl`) — Scanned from both the active auto-worktree and the project root. All matching JSONL files are collected, sorted by modification time, and the five most recent are parsed. Each log records tool calls, reasoning traces, errors, and files written during a unit's execution. The filename encodes sequence number, unit type, and unit ID.
 2. **Metrics ledger** (`.gsd/metrics.json`) — Cost, token count, timing, and model data for every completed unit. Used to compute averages and detect spikes.
 3. **Crash lock** (`.gsd/runtime/crash.lock`) — Written at auto-mode startup with PID, unit type, and unit ID. If the PID is dead, it's a crash indicator.
 4. **Doctor checks** — The full doctor scan runs internally. Error-severity issues become forensic anomalies.
-5. **Completed keys** (`.gsd/completed-units.json`) — List of units marked as done. Cross-referenced against expected artifacts to detect stale completions.
+5. **Completed keys** (`.gsd/completed-units.json`) — List of units marked as done. Cross-referenced against expected artifacts in both the project root and the active worktree to detect stale completions.
 
 ### Anomaly Types
 
@@ -109,8 +115,8 @@ The forensic report builder collects data from five sources:
 |------|----------|-----------------|---------|
 | `stuck-loop` | warning/error | Same unit dispatched multiple times | Count ≥ 2 (warning), ≥ 3 (error) |
 | `cost-spike` | warning | Unit cost exceeds 3× the average for its type | Per-unit cost / type average > 3.0 |
-| `timeout` | warning | Timeout recovery patterns in activity logs | `gsd-auto-timeout-recovery` in tool calls or reasoning |
-| `missing-artifact` | error | Completed unit but expected artifact missing or invalid | `verifyExpectedArtifact()` returns false |
+| `timeout` | warning | Timeout patterns in activity logs | `gsd-auto-timeout-recovery` in tool calls, or idle/hard/timeout-recovery keywords in last reasoning |
+| `missing-artifact` | error | Completed unit but expected artifact missing or invalid | `verifyExpectedArtifact()` returns false at both root and worktree |
 | `crash` | error | Crash lock with dead PID | Lock exists and `isLockProcessAlive()` returns false |
 | `doctor-issue` | error | Error-severity structural issue from doctor | Doctor scan finds error-level issues |
 | `error-trace` | warning | Errors recorded in activity log traces | `trace.errors.length > 0` |
@@ -119,9 +125,27 @@ The forensic report builder collects data from five sources:
 
 Every forensic report is saved as a timestamped markdown file in `.gsd/forensics/` (e.g., `report-2026-03-17-14-30-22.md`). This creates an audit trail of investigations. The report includes all anomalies, recent unit history, activity log traces, doctor issues, and crash lock state.
 
+Before writing, the report is redacted: absolute paths are replaced with relative equivalents, home directories are replaced with `~`, and API keys, Bearer tokens, and environment variable values are scrubbed.
+
 ### LLM Dispatch
 
-The report is formatted into a structured prompt and dispatched to the LLM with `triggerTurn: true`. The LLM receives the problem description, all anomalies, recent unit history, and paths to the GSD source code. It can then use standard tools (read files, run commands, edit code) to investigate and resolve issues interactively.
+The report is formatted into a structured prompt (capped at 30KB) and dispatched to the LLM with `triggerTurn: true`. The LLM receives the problem description, all anomalies, recent unit history (top 3 activity traces), and the path to the GSD extension source code. The LLM may read these key files to trace the specific code path that caused the failure:
+
+| File | What it covers |
+|------|---------------|
+| `auto.ts` | Unit dispatch loop, stuck detection, timeout recovery |
+| `session-forensics.ts` | Trace extraction from activity logs |
+| `auto-recovery.ts` | Artifact verification, skip logic |
+| `crash-recovery.ts` | Crash lock lifecycle |
+| `doctor.ts` | State integrity checks |
+
+The LLM follows a structured investigation sequence:
+1. **Analyze** anomalies and trace data
+2. **Clarify** — may ask up to 2 questions if the report is genuinely ambiguous (skipped if the data is sufficient)
+3. **Explain** — what happened, why, and how to recover
+4. **Offer GitHub issue creation** at `gsd-build/gsd-2` with labels `bug, auto-generated`
+
+The issue template includes GSD version, model, the failing unit, reproduction context, forensic findings, and suggested fix areas — automatically redacted of any user-specific data.
 
 ## What Files It Touches
 
@@ -129,18 +153,19 @@ The report is formatted into a structured prompt and dispatched to the LLM with 
 
 | File | Purpose |
 |------|---------|
-| `.gsd/activity/*.jsonl` | Last 5 activity logs for trace extraction |
+| `.gsd/activity/*.jsonl` | Activity logs from project root (top 5 by mtime) |
+| `.gsd/worktrees/<MID>/.gsd/activity/*.jsonl` | Activity logs from active auto-worktree (top 5 by mtime, merged with root) |
 | `.gsd/metrics.json` | Cost and timing metrics for anomaly detection |
 | `.gsd/runtime/crash.lock` | Crash detection |
 | `.gsd/completed-units.json` | Stale completion detection |
-| `.gsd/STATE.md` | Current project state |
+| `.gsd/STATE.md` | Current project state (active milestone and slice) |
 | `.gsd/milestones/*/` | Doctor scan (run internally) |
 
 ### Creates
 
 | File | Purpose |
 |------|---------|
-| `.gsd/forensics/report-*.md` | Timestamped forensic report |
+| `.gsd/forensics/report-*.md` | Timestamped, redacted forensic report |
 
 ## Examples
 
@@ -173,6 +198,17 @@ Investigating a stuck auto-mode session:
     Error: ENOENT: no such file or directory...
 
   Investigating T03 activity log...
+
+  Would you like me to create a GitHub issue for this on gsd-build/gsd-2?
+```
+
+Passing the problem description directly to skip the prompt:
+
+```
+> /gsd forensics crash lock is stale after terminal was killed
+
+● Building forensic report...
+  Forensic report saved: .gsd/forensics/report-2026-03-19-09-12-44.md
 ```
 
 ## Related Commands

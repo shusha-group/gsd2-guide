@@ -1,6 +1,6 @@
 ---
 title: "Skills"
-description: "8 bundled GSD skills — capabilities, triggers, and workflows."
+description: "20 bundled GSD skills — capabilities, triggers, and workflows."
 ---
 
 import skills from '../../../../content/generated/skills.json';
@@ -9,7 +9,7 @@ import ReferenceCard from '../../../../src/components/ReferenceCard.astro';
 export const topLevel = skills.filter(s => !s.parentSkill);
 export const getSubSkills = (name) => skills.filter(s => s.parentSkill === name);
 
-8 bundled skills that extend the agent's capabilities. Skills are auto-detected based on task context and activated when needed. Click any card to expand for details.
+20 bundled skills that extend the agent's capabilities. Skills are auto-detected based on task context and activated when needed. Click any card to expand for details.
 
 {topLevel.map((skill) => (
   <>

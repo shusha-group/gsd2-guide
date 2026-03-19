@@ -1,13 +1,13 @@
 ---
 title: "/gsd visualize"
-description: "Open an advanced TUI visualizer with 7 tabs — progress, dependencies, metrics, timeline, agent info, changelog, and export."
+description: "Open a full TUI visualizer with 10 tabs — progress, timeline, dependencies, metrics, health, agent activity, changelog, knowledge, captures, and export."
 ---
 
 ## What It Does
 
-`/gsd visualize` opens a full-featured TUI visualizer that goes beyond the simple progress dashboard of [`/gsd status`](../status/). It provides 7 tabs, each offering a different view of your project's execution data: progress with filtering, dependency graphs, cost and token metrics, a chronological timeline, agent model information, a changelog of file modifications, and export to JSON or markdown.
+`/gsd visualize` opens a full-featured TUI visualizer that goes far beyond the simple progress dashboard of [`/gsd status`](../status/). It provides 10 tabs, each offering a different view of your project's execution data: a filterable progress overview with risk heatmap, a Gantt timeline, dependency graphs and critical path, cost and token metrics with projections, session health and budget pressure, live agent activity, a changelog of completed slices, the KNOWLEDGE.md knowledge base, pending captures, and export to JSON, markdown, or plain text.
 
-Like the status dashboard, the visualizer is completely read-only. It reads `.gsd/` state files, activity logs, and git history — it never modifies anything.
+The visualizer is completely read-only. It reads `.gsd/` state files, metrics ledger, slice summaries, and preference files — it never modifies anything. It auto-refreshes every 5 seconds while open.
 
 ## Usage
 
@@ -15,126 +15,164 @@ Like the status dashboard, the visualizer is completely read-only. It reads `.gs
 /gsd visualize
 ```
 
-Requires an interactive terminal with sufficient width for the tabbed layout. No flags.
+No flags. Requires an interactive terminal. Works best at 90+ columns wide (enables Gantt view in the Timeline tab).
 
 ## How It Works
 
-The visualizer loads all project data once on startup, then renders the 7-tab interface. Each tab draws from the same underlying data set — different views of the same execution history.
+The visualizer loads all project data on startup, then renders the 10-tab interface. Each tab draws from the same underlying data model. It auto-refreshes every 5 seconds so live execution is visible in real-time.
 
 ```mermaid
 flowchart TD
-    Start(["/gsd visualize"]) --> LoadState[Load .gsd/ state files]
-    LoadState --> LoadActivity[Load activity JSONL logs]
-    LoadActivity --> LoadGit[Load git history]
-    LoadGit --> BuildData[Build unified data model]
-    BuildData --> Tabs
-
-    subgraph Tabs[Tab Views]
-        direction LR
-        T1[Progress]
-        T2[Dependencies]
-        T3[Metrics]
-        T4[Timeline]
-        T5[Agent]
-        T6[Changes]
-        T7[Export]
-    end
-
-    Tabs --> Render[Render active tab]
+    Start(["/gsd visualize"]) --> LoadState[Load .gsd/ state and registry]
+    LoadState --> LoadMetrics[Load metrics ledger]
+    LoadMetrics --> LoadSummaries[Load slice SUMMARY files]
+    LoadSummaries --> LoadExtra[Load knowledge, captures, preferences]
+    LoadExtra --> BuildData[Build unified data model]
+    BuildData --> Render[Render active tab]
     Render --> Input{User input}
     Input -->|Switch tab| Render
+    Input -->|Scroll / filter| Render
+    Input -->|5s timer| BuildData
     Input -->|Escape| Done([Close])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Input fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
     style LoadState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style LoadActivity fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style LoadGit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadMetrics fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadSummaries fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadExtra fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style BuildData fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Render fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style T1 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style T2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style T3 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style T4 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style T5 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style T6 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style T7 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Tabs fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
-### The 7 tabs
+### The 10 tabs
 
-**1. Progress** — A filterable view of milestone, slice, and task progress. Similar to [`/gsd status`](../status/) but with search and filter controls. Filter by status (complete, in-progress, pending), slice, or task type.
+**1. Progress** — A filterable overview of all milestones, slices, and tasks. Leads with a **Risk Heatmap** (color-coded blocks per milestone), a **Feature Snapshot** (missing and recently updated slices), and **Discussion Status** (which milestones have been discussed, drafted, or are still pending). Each slice shows a verification badge (✓/✗/?) and a blocker warning if one was found during verification. The active slice expands to show individual tasks with estimates. Press **Enter** or **Space** to collapse/expand a milestone.
 
-**2. Dependencies** — A graph view showing how slices depend on each other. Slices with `depends:[]` metadata in the roadmap are rendered as a directed graph. Helps identify which slices are blocked and which can proceed independently.
+**2. Timeline** — A Gantt-style view of the last 20 executed units. On terminals ≥ 90 columns wide, renders as a proportional Gantt chart with phase-colored bars (research, planning, execution, summary) and time axis labels. On narrower terminals, falls back to a list view with duration bars. Shows tier tags and model labels per unit.
 
-**3. Metrics** — Cost and token breakdown by unit, slice, and milestone. Shows input tokens, output tokens, estimated cost per unit, and cumulative totals. Useful for understanding which tasks are expensive and where token budget is going.
+**3. Deps** — Dependency graphs at two levels. Milestone-level arrows show which milestones depend on each other. Slice-level arrows show dependencies within the active milestone. Also renders a **Critical Path** section (the longest path through incomplete work, with slack for non-critical nodes) and a **Data Flow** section derived from slice verification metadata (what each slice provides and requires).
 
-**4. Timeline** — A chronological view of all executed units, ordered by start time. Shows duration, gaps between units, and parallel execution when applicable. Gives a clear picture of how the project unfolded over time.
+**4. Metrics** — Cost and token breakdown with bar charts. **By Phase** (research/planning/execution/summary), **By Model**, and **By Tier**. A **Projections** section calculates average cost per completed slice, projects remaining spend, shows burn rate, and draws a sparkline of per-slice cost trends. Displays a warning if projected total exceeds 2× current spend.
 
-**5. Agent** — Information about the models used during execution: which model handled each unit, model switching events, and configuration details. Useful when debugging unexpected behavior or comparing output quality across models.
+**5. Health** — Session health in three sections. **Budget**: visual progress bar against the configured ceiling (if set) and the active token profile. **Pressure**: truncation rate and continue-here rate as color-coded bars (green/yellow/red). **Routing**: tier breakdown with downgrade counts and savings summary. **Session**: raw tool call and message counts.
 
-**6. Changes** — A changelog of files modified during the milestone, grouped by unit. Shows which files each task created, modified, or deleted. Essentially a structured view of the git history filtered to GSD-managed commits.
+**6. Agent** — Live agent activity. Shows current unit type and ID if auto-mode is active, elapsed time, a completion progress bar (completed units vs total slices), units/hr rate, and session cost and token totals. Also surfaces truncation and continue-here rates, and flags any pending captures.
 
-**7. Export** — Export the project data to JSON or markdown format. The JSON export includes the full execution history, metrics, and file changes. The markdown export produces a human-readable project report.
+**7. Changes** — Changelog of all completed slices, ordered by completion date. Each entry shows the slice title, one-liner summary, files modified with descriptions, key decisions, and patterns established (sourced from slice `SUMMARY.md` verification metadata).
+
+**8. Knowledge** — Contents of `.gsd/KNOWLEDGE.md` rendered in three sections: **Rules** (ID, scope, content), **Patterns** (ID, content), and **Lessons Learned** (ID, content). Shows a message if the file doesn't exist yet.
+
+**9. Captures** — All entries from `CAPTURES.md`, grouped by status (pending first, then triaged, then resolved). Shows each capture's ID, status badge, text preview, and classification badge. The tab label shows a live count of pending captures when there are any.
+
+**0. Export** — Three export options: **[m]** Markdown report, **[j]** JSON report, **[s]** Snapshot of the current view as plain text. Exports are written to `.gsd/` with a timestamped filename. The last export path is shown after a successful export.
+
+### Navigation
+
+The visualizer supports full keyboard and mouse navigation:
+
+| Key | Action |
+|-----|--------|
+| `Tab` / `Shift+Tab` | Next / previous tab |
+| `1`–`9`, `0` | Jump to tab directly |
+| `j` / `k`, `↑` / `↓` | Scroll one line |
+| `PgUp` / `PgDn` | Scroll one page |
+| `Ctrl+U` / `Ctrl+D` | Scroll half-page |
+| `g` / `G` | Jump to top / bottom |
+| `/` | Enter filter mode (type to filter, Enter to confirm, Esc to clear) |
+| `f` | Cycle filter field (all / status / risk / keyword on Progress; all / keyword on others) |
+| `Enter` / `Space` | Toggle collapse on focused milestone (Progress tab only) |
+| `?` | Toggle keyboard shortcut help overlay |
+| Mouse wheel | Scroll the active tab |
+| Mouse click on tab | Switch to that tab |
+| `Esc` | Close the visualizer |
 
 ### Data sources
 
-The visualizer pulls from three categories of data:
+The visualizer aggregates from several sources:
 
-- **State files** — `.gsd/STATE.md`, roadmap files, plan files, and summaries. These provide the structural view: what milestones, slices, and tasks exist and their completion status.
-- **Activity logs** — `.gsd/activity/*.jsonl` files containing timestamped records of each unit's execution: start/end times, token counts, cost estimates, model used, and outcome.
-- **Git history** — Commit log filtered to GSD-managed commits (those with structured commit messages from auto-commit). Provides the file-level change data for the Changes tab.
-
-### Overlay behavior
-
-Like the status dashboard, the visualizer renders as a TUI overlay. Navigate between tabs with arrow keys or number keys (1-7). Press **Escape** to close and return to the normal terminal.
+- **State and registry** — `STATE.md` and the milestone registry for current phase, active milestone/slice/task, and milestone status.
+- **Roadmap and plan files** — `*-ROADMAP.md` and `*-PLAN.md` files for slice/task structure, dependencies, and risk levels. Parsed with mtime-based caching to avoid re-reading unchanged files.
+- **Slice summaries** — `*-SUMMARY.md` files for changelog entries, verification results, key decisions, patterns established, and data flow (provides/requires). Also cached by mtime.
+- **Metrics ledger** — In-memory ledger (or disk fallback) containing per-unit records of cost, token counts, model, tier, start/end times. Powers the Metrics, Timeline, Agent, and Health tabs.
+- **Captures** — `.gsd/CAPTURES.md` for all capture entries and pending count.
+- **Knowledge** — `.gsd/KNOWLEDGE.md` for rules, patterns, and lessons.
+- **Preferences** — Project and global GSD preferences for budget ceiling and token profile (shown in Health tab).
+- **Discussion state** — Milestone `*-CONTEXT.md` and `*-CONTEXT-DRAFT.md` files to determine which milestones have been through `/gsd discuss-phase`.
 
 ## What Files It Touches
 
 Entirely read-only.
 
-| Reads | Purpose |
-|-------|---------|
-| `.gsd/STATE.md` | Current project state |
-| `M*-ROADMAP.md` | Slice structure and dependencies |
-| `S*-PLAN.md` | Task structure |
-| `T*-SUMMARY.md` | Unit outcomes |
-| `.gsd/activity/*.jsonl` | Execution logs (timing, cost, tokens) |
-| Git commit history | File changes per unit |
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Current phase, active milestone/slice/task |
+| `M*-ROADMAP.md` | Slice structure, dependencies, risk levels |
+| `S*-PLAN.md` | Task structure and estimates (active slice only) |
+| `S*-SUMMARY.md` | Changelog entries, verification metadata |
+| `M*-CONTEXT.md` / `M*-CONTEXT-DRAFT.md` | Discussion status per milestone |
+| `.gsd/KNOWLEDGE.md` | Rules, patterns, lessons |
+| `.gsd/CAPTURES.md` | Capture entries and pending count |
+| Metrics ledger (in-memory or `.gsd/`) | Per-unit cost, tokens, model, timing |
+| GSD preferences (project + global) | Budget ceiling, token profile |
 
 ## Examples
 
-Opening the visualizer on a Cookmate project with two completed slices:
+Opening the visualizer on a project with multiple milestones:
 
 ```
 > /gsd visualize
 
-  ┌──────────────────────────────────────────────────────┐
-  │ [1]Progress [2]Deps [3]Metrics [4]Timeline           │
-  │ [5]Agent [6]Changes [7]Export                        │
-  ├──────────────────────────────────────────────────────┤
-  │                                                      │
-  │  Tab 3: Metrics                                      │
-  │                                                      │
-  │  Cost by slice                                       │
-  │  ├─ S01: Database schema and auth    $2.11           │
-  │  │  ├─ T01  Research         $0.32   (22K tokens)    │
-  │  │  ├─ T02  Prisma schema    $0.48   (31K tokens)    │
-  │  │  ├─ T03  NextAuth         $0.72   (48K tokens)    │
-  │  │  └─ T04  Summary          $0.59   (39K tokens)    │
-  │  └─ S02: Recipe CRUD API     $1.55                   │
-  │     ├─ T01  Recipe model     $0.55   (36K tokens)    │
-  │     ├─ T02  List endpoint    $0.62   (41K tokens)    │
-  │     └─ T03  Delete endpoint  $0.38   (25K tokens)    │
-  │                                                      │
-  │  Total: $3.66 │ 242K tokens │ 1h 14m                 │
-  │                                                      │
-  └──────────────────────────────────────────────────────┘
+  [1 Progress] [2 Timeline] [3 Deps] [4 Metrics] [5 Health]
+  [6 Agent] [7 Changes] [8 Knowledge] [9 Captures] [0 Export]
+
+  Tab 4: Metrics
+
+  Summary
+    Cost: $3.66  Tokens: 242K  Units: 7
+
+  By Phase
+    research       ████████░░░░░░  $0.41  11.2%  38K
+    planning       ██████████████  $1.22  33.3%  82K
+    execution      ████████████░░  $1.89  51.6%  117K
+    summary        ███░░░░░░░░░░░  $0.14   3.9%   5K
+
+  By Tier
+    opus           ████████████░░  $2.84  77.6%  4 units
+    sonnet         ███░░░░░░░░░░░  $0.82  22.4%  3 units
+    Saved ~$1.10 by routing 3 units to sonnet
+
+  Projections
+    Avg cost/slice: $0.61
+    Projected remaining: $2.44 ($0.61/slice × 4 remaining)
+    Burn rate: $4.80/hr
+    Cost trend: ▄▆▃▇▅
+```
+
+Jumping to the Progress tab and filtering for high-risk slices:
+
+```
+> press 1, then /, type "high", Enter
+
+  [1 Progress ✱] [2 Timeline] ...
+
+  Filter (all): high
+
+  Risk Heatmap
+    M01  ██ ██ ██ ██ ██ ██
+    M02  ██ ██ ██ ██
+
+  M01: Authentication and core data       ● active
+    ● S01: User auth and session mgmt           high
+    ✓ S02: Recipe CRUD                          high
 ```
 
 ## Related Commands
 
-- [`/gsd status`](../status/) — Simpler progress dashboard
+- [`/gsd status`](../status/) — Simpler progress dashboard (no metrics or multi-tab interface)
 - [`/gsd auto`](../auto/) — The execution engine that generates the data this visualizer displays
+- [`/gsd capture`](../capture/) — Add a capture that appears in the Captures tab
+- [`/gsd health`](../health/) — CLI health diagnosis (non-interactive alternative to the Health tab)

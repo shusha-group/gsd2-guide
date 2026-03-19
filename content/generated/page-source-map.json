@@ -859,5 +859,31 @@
   ],
   "reference/index.mdx": [],
   "changelog.mdx": [],
-  "index.mdx": []
+  "index.mdx": [],
+  "commands/keys.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
+  ],
+  "commands/logs.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
+  ],
+  "commands/new-milestone.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
+  ],
+  "commands/skip.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
+  ],
+  "commands/undo.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts",
+    "src/resources/extensions/gsd/undo.ts"
+  ]
 }

@@ -1,15 +1,15 @@
 ---
 title: "/gsd quick"
-description: "Run a one-off task without milestone ceremony — creates a branch, executes, and commits in a single flow."
+description: "Execute a one-off task with GSD guarantees — atomic commits, state tracking — without any milestone ceremony."
 ---
 
 ## What It Does
 
-`/gsd quick` is the lightweight path for small, self-contained changes. Instead of creating a milestone, roadmap, slices, and tasks, it skips the entire hierarchy and dispatches a single task directly.
+`/gsd quick` is the lightweight path for small, self-contained changes. Instead of creating a milestone, roadmap, and slices, it skips the entire planning hierarchy and dispatches a single task directly.
 
-You describe what you want in plain English, and GSD creates a numbered task directory, a dedicated git branch, executes the task, writes a summary, and commits. The full GSD guarantees — atomic commits, state tracking, task summaries — apply, just without the milestone ceremony.
+You describe what you want in plain English, and GSD creates a numbered task directory, a dedicated git branch, and dispatches the task to the agent. The agent executes it, writes a summary, commits the changes, and records the result in `STATE.md`. The full GSD guarantees — atomic commits, state tracking, task summaries — apply, just without the milestone ceremony.
 
-Use `/gsd quick` when the change is small enough that planning overhead isn't worth it: fixing a color, adding a config option, updating a dependency, writing a utility function.
+Use `/gsd quick` when the change is small enough that planning overhead isn't worth it: fixing a bug, adding a config option, updating a dependency, writing a utility function.
 
 ## Usage
 
@@ -17,7 +17,7 @@ Use `/gsd quick` when the change is small enough that planning overhead isn't wo
 /gsd quick <task description>
 ```
 
-The description is a plain-English sentence. Quotes are optional — GSD captures everything after `quick` as the description.
+The description is plain English. Everything after `quick` is captured as the description — quotes are optional.
 
 ```
 /gsd quick fix the login button color
@@ -32,43 +32,91 @@ Quick mode bypasses the milestone/slice/task hierarchy entirely. No roadmap, no 
 ```mermaid
 flowchart TD
     Start(["/gsd quick '...'"]) --> Validate{.gsd/ exists?}
-    Validate -->|No| Fail([Error: run gsd init first])
+    Validate -->|No| Fail([Error: initialize a project first])
     Validate -->|Yes| Slug[Generate slug from description]
-    Slug --> Branch[Create branch gsd/quick/N-slug]
+    Slug --> Num[Determine next task number]
+    Num --> Branch[Create branch gsd/quick/N-slug]
     Branch --> Dir[Create task dir .gsd/quick/N-slug/]
-    Dir --> Execute[Dispatch and execute task]
-    Execute --> Summary[Write task summary]
-    Summary --> Commit[Auto-commit changes]
-    Commit --> Done([Complete])
+    Dir --> Commit[Auto-commit any dirty state]
+    Commit --> Dispatch[Dispatch task to agent]
+    Dispatch --> Execute[Agent executes task]
+    Execute --> Summary[Write N-SUMMARY.md]
+    Summary --> StateUpdate[Update STATE.md quick tasks table]
+    StateUpdate --> Done([Complete])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Validate fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Fail fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style Slug fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Num fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Branch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Dir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style StateUpdate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Setup
 
-1. **Validate `.gsd/`** — Checks that a GSD project exists. If not, tells you to run `gsd init` first. Quick tasks still need the GSD project structure, even though they skip milestones.
-2. **Generate slug** — Converts your description into a URL-safe slug (e.g., "fix the login button color" → `fix-the-login-button-color`).
-3. **Create branch** — Creates a git branch named `gsd/quick/N-slug`, where N is an auto-incrementing number. This keeps quick tasks isolated from your main branch.
-4. **Create task directory** — Creates `.gsd/quick/N-slug/` to hold the task's summary and any artifacts.
+1. **Validate `.gsd/`** — Checks that a GSD project exists. If not, prompts you to initialize a project first. Quick tasks still need the GSD project structure, even though they skip milestones.
+2. **Generate slug** — Converts your description into a URL-safe slug (e.g., `"fix the login button color"` → `fix-the-login-button-color`), truncated to 40 characters.
+3. **Determine task number** — Scans `.gsd/quick/` for existing numbered directories and increments the highest number found.
+4. **Create branch** — Creates a git branch named `gsd/quick/N-slug`, where N is the task number. If your working tree has uncommitted changes, GSD auto-commits them before switching. If branch creation fails for any reason, GSD continues on the current branch with a warning.
+5. **Create task directory** — Creates `.gsd/quick/N-slug/` to hold the task summary.
 
 ### Execution
 
-The task dispatches with a focused prompt that includes the description and relevant project context (KNOWLEDGE.md, DECISIONS.md, and the project brief). The agent executes the task in a single session — no multi-unit dispatch, no research/plan/execute phases.
+The task is dispatched as a focused prompt containing the description, branch name, summary path, and task metadata. The agent:
 
-On completion, a task summary is written to `.gsd/quick/N-slug/` and all changes are committed to the quick branch.
+- Reads relevant code before modifying — no stubs or placeholders
+- Writes or updates tests where appropriate
+- Commits changes atomically using conventional commit messages (`feat:`, `fix:`, `refactor:`, etc.)
+- Writes a structured summary to `.gsd/quick/N-SUMMARY.md`
+- Adds a row to the "Quick Tasks Completed" table in `.gsd/STATE.md`
 
-### After completion
+The agent finishes by saying `"Quick task N complete."` — no multi-unit dispatch, no research/plan/execute phases.
 
-The quick branch is ready to merge. You can review the diff, merge it, or discard it — same as any feature branch. GSD doesn't auto-merge quick branches; that's your call.
+### Summary Format
+
+Each quick task produces a `N-SUMMARY.md` file in its task directory:
+
+```markdown
+# Quick Task: fix the login button color
+
+**Date:** 2026-01-15
+**Branch:** gsd/quick/3-fix-the-login-button-color
+
+## What Changed
+- Updated primary button color token in theme.ts
+- Fixed hover state for disabled buttons
+
+## Files Modified
+- src/styles/theme.ts
+- src/components/Button.tsx
+
+## Verification
+- Ran component tests — all passing
+- Visually verified in Storybook
+```
+
+### STATE.md Tracking
+
+After completion, the agent updates `.gsd/STATE.md` to record the task in a "Quick Tasks Completed" table:
+
+```
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 3 | fix the login button color | 2026-01-15 | a1b2c3d | [3-fix-the-login-button-color](./quick/3-fix-the-login-button-color/) |
+```
+
+If the section doesn't exist yet, the agent creates it after the "Blockers/Concerns" section.
+
+### After Completion
+
+The quick branch is ready to merge. You can review the diff, merge it, or discard it — same as any feature branch. GSD does not auto-merge quick branches; that's your call.
 
 ## What Files It Touches
 
@@ -76,55 +124,74 @@ The quick branch is ready to merge. You can review the diff, merge it, or discar
 
 | File | Purpose |
 |------|---------|
-| `.gsd/quick/N-slug/` | Task directory with summary |
+| `.gsd/quick/N-slug/` | Task directory |
+| `.gsd/quick/N-slug/N-SUMMARY.md` | Summary of what was done |
 | `gsd/quick/N-slug` branch | Git branch for the change |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/PROJECT.md` | Project context for the task prompt |
-| `.gsd/KNOWLEDGE.md` | Patterns and gotchas |
-| `.gsd/DECISIONS.md` | Architectural decisions |
+| `.gsd/quick/` | Scanned to determine the next task number |
+| `.gsd/STATE.md` | Read before updating the quick tasks table |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| Task summary in `.gsd/quick/N-slug/` | Documents what was done |
+| `.gsd/quick/N-slug/N-SUMMARY.md` | Task summary written by agent |
+| `.gsd/STATE.md` | "Quick Tasks Completed" table updated |
 | Application files | Whatever the task requires |
 
 ## Examples
 
-Adding a dark mode toggle to a Cookmate project:
+Adding a dark mode toggle:
 
 ```
 > /gsd quick add dark mode toggle to the settings page
 
-● Generating quick task
-  Slug: add-dark-mode-toggle-to-the-settings-page
-  Branch: gsd/quick/3-add-dark-mode-toggle-to-the-settings-page
-  Task dir: .gsd/quick/3-add-dark-mode-toggle-to-the-settings-page/
-
-● Switched to branch gsd/quick/3-add-dark-mode-toggle-to-the-settings-page
-  ─────────────────────────────────
+● Quick task 3: add dark mode toggle to the settings page
+  Directory: .gsd/quick/3-add-dark-mode-toggle-to-the-settings
+  Branch: gsd/quick/3-add-dark-mode-toggle-to-the-settings
 
   ... agent executes task ...
 
   ✓ Added ThemeToggle component
   ✓ Wired into settings page
   ✓ Dark mode CSS variables added
-  ✓ Task summary written
+  ✓ Summary written to .gsd/quick/3-add-dark-mode-toggle-to-the-settings/3-SUMMARY.md
+  ✓ STATE.md updated
 
-● Quick task complete
-  ┌────────────────────────────────────┐
-  │ Branch: gsd/quick/3-add-dark-...  │
-  │ Files changed: 4                   │
-  │ Ready to merge                     │
-  └────────────────────────────────────┘
+Quick task 3 complete.
+```
+
+Fixing a bug quickly:
+
+```
+> /gsd quick fix null pointer in user profile loader
+
+● Quick task 4: fix null pointer in user profile loader
+  Directory: .gsd/quick/4-fix-null-pointer-in-user-profile-lo
+  Branch: gsd/quick/4-fix-null-pointer-in-user-profile-lo
+
+  ... agent executes task ...
+
+Quick task 4 complete.
+```
+
+Running without a description shows usage:
+
+```
+> /gsd quick
+
+● Usage: /gsd quick <task description>
+
+  Example: /gsd quick fix login button not responding on mobile
 ```
 
 ## Related Commands
 
-- [`/gsd auto`](../auto/) — Full milestone execution with planning ceremony
-- [`/gsd`](../gsd/) — Step mode for milestone-based work
+- [`/gsd capture`](../capture/) — Save a thought for later without executing immediately
+- [`/gsd next`](../next/) — Step through the current milestone one task at a time
+- [`/gsd auto`](../auto/) — Full continuous execution for milestone-based work
+- [`/gsd steer`](../steer/) — Direct override when active work needs redirecting

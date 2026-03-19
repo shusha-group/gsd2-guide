@@ -1,11 +1,11 @@
 ---
 title: "/gsd stop"
-description: "Gracefully terminate GSD auto mode — clears locks, tears down worktrees, and shows a session cost summary."
+description: "Gracefully terminate GSD auto mode — clears the session lock, tears down the worktree, and shows a session cost summary."
 ---
 
 ## What It Does
 
-`/gsd stop` gracefully terminates a running auto-mode session. It clears the session lock, tears down the worktree (while preserving the branch and all commits), closes the metrics database, restores the original model configuration, and displays a session cost summary.
+`/gsd stop` gracefully terminates a running auto-mode session. It clears the session lock at `.gsd/auto.lock`, tears down the worktree (while preserving the branch and all commits), closes the metrics database, and displays a session cost summary.
 
 Unlike [`/gsd pause`](../pause/), which preserves state for later resume, stop is a full teardown. The next `/gsd auto` starts a fresh session.
 
@@ -18,7 +18,7 @@ Unlike [`/gsd pause`](../pause/), which preserves state for later resume, stop i
 No flags. Works in two contexts:
 
 - **Local** — If auto mode is running in the current terminal, stops it directly after the current unit finishes.
-- **Remote** — If auto mode is running in *another* terminal, detects the session lock file and sends a stop signal. The running session picks up the signal and shuts down gracefully.
+- **Remote** — If auto mode is running in *another* terminal, detects the `.gsd/auto.lock` file and sends a stop signal. The running session picks up the signal and shuts down gracefully.
 
 ## How It Works
 
@@ -27,15 +27,14 @@ flowchart TD
     Stop(["/gsd stop"]) --> Running{Auto mode running locally?}
     Running -->|Yes| Finish[Wait for current unit to finish]
     Running -->|No| Remote{Lock file exists?}
-    Remote -->|Yes| Signal[Send stop signal via lock file]
+    Remote -->|Yes| Signal[Send stop signal via auto.lock]
     Remote -->|No| NoOp([Nothing to stop])
     Signal --> Wait[Wait for confirmation]
     Wait --> Done
-    Finish --> Clear[Clear session lock]
-    Clear --> Teardown[Teardown worktree]
-    Teardown --> CloseDB[Close metrics DB]
-    CloseDB --> Restore[Restore original model]
-    Restore --> Summary[Show cost summary]
+    Finish --> Clear[Clear auto.lock]
+    Clear --> Teardown[Tear down worktree]
+    Teardown --> CloseDB[Close gsd.db]
+    CloseDB --> Summary[Show cost summary]
     Summary --> Done([Stopped])
 
     style Stop fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -48,7 +47,6 @@ flowchart TD
     style Clear fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Teardown fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CloseDB fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Restore fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
@@ -56,23 +54,36 @@ flowchart TD
 ### Teardown sequence
 
 1. **Wait for current unit** — If a task is mid-execution, GSD lets it finish rather than interrupting. The unit's work is committed normally.
-2. **Clear session lock** — Removes the lock file from `.gsd/runtime/`, releasing the session for future runs.
-3. **Teardown worktree** — If worktree isolation was active, removes the `.gsd/worktrees/<MID>/` directory. The `milestone/<MID>` branch and all its commits are preserved — only the working copy is removed.
-4. **Close metrics DB** — Flushes pending metrics and closes the database connection.
-5. **Restore model** — If auto mode switched to a different model for execution, restores the original model configuration.
-6. **Cost summary** — Displays total tokens used, estimated cost, wall-clock time, and units completed during the session.
+2. **Clear session lock** — Removes `.gsd/auto.lock`, releasing the session for future runs.
+3. **Tear down worktree** — If worktree isolation was active, removes the `.gsd/worktrees/<MID>/` directory. The `milestone/<MID>` branch and all its commits are preserved — only the working copy is removed.
+4. **Close metrics database** — Flushes pending metrics and closes the SQLite database at `.gsd/gsd.db`.
+5. **Cost summary** — Displays total tokens used, estimated cost, wall-clock time, and units completed during the session.
 
 ### Remote stop
 
-When you run `/gsd stop` in a terminal where auto mode isn't running, GSD checks for a session lock file. If one exists (meaning auto mode is running in another terminal), it writes a stop signal to the lock file. The running session checks for this signal between unit dispatches and shuts down gracefully.
+When you run `/gsd stop` in a terminal where auto mode isn't running, GSD checks for `.gsd/auto.lock`. If it exists (meaning auto mode is running in another terminal), GSD writes a stop signal to the lock file. The running session checks for this signal between unit dispatches and shuts down gracefully after confirming the stop.
 
 ## What Files It Touches
 
-| Action | Files |
-|--------|-------|
-| Reads | `.gsd/runtime/` lock files, metrics DB |
-| Deletes | `.gsd/runtime/` session lock |
-| Removes | `.gsd/worktrees/<MID>/` directory (preserves the branch) |
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/auto.lock` | Detect whether auto mode is running locally or in another session |
+| `.gsd/gsd.db` | Flush and close the metrics database |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/auto.lock` | Write stop signal when targeting a remote session |
+
+### Deletes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/auto.lock` | Cleared on clean shutdown |
+| `.gsd/worktrees/<MID>/` | Worktree working copy removed (branch and commits preserved) |
 
 ## Examples
 
@@ -109,7 +120,17 @@ Remote stop from another terminal:
   ✓ Stop confirmed — session ended
 ```
 
+When no session is active:
+
+```
+> /gsd stop
+
+● Nothing to stop — no active auto-mode session found.
+```
+
 ## Related Commands
 
 - [`/gsd auto`](../auto/) — Start autonomous execution
 - [`/gsd pause`](../pause/) — Suspend instead of terminate
+- [`/gsd status`](../status/) — Monitor a running session without interrupting it
+- [`/gsd next`](../next/) — Execute one unit and pause for input

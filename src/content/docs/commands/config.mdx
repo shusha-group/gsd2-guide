@@ -1,15 +1,15 @@
 ---
 title: "/gsd config"
-description: "Configure API keys for external tools — search providers, document extractors, and voice."
+description: "Configure API keys for external tool integrations — search providers, document extractors, and voice."
 ---
 
 ## What It Does
 
 `/gsd config` opens an interactive wizard for setting API keys for external tool integrations. These are the optional third-party services GSD uses to enhance research, document fetching, and voice input — things like web search providers and context-aware doc lookup.
 
-Running `/gsd config` shows which tools are already configured and which aren't, then lets you paste in keys one tool at a time. Keys are saved to `~/.gsd/agent/auth.json` and immediately activated in the current session — no restart needed. At startup, GSD automatically loads any saved keys from `auth.json` into the environment.
+Running `/gsd config` shows which tools are already configured and which aren't, then lets you paste in keys one tool at a time. Keys are saved to `~/.gsd/agent/auth.json` and immediately activated in the current session — no restart needed. At startup, GSD automatically loads any saved keys from `auth.json` into the environment, but only if the variable isn't already set by other means (shell exports, `.env` files, etc. take precedence).
 
-This command is separate from [`/gsd prefs`](../prefs/), which handles model selection, timeouts, and workflow behavior.
+This command is separate from [`/gsd prefs`](../prefs/), which handles model selection, timeouts, git configuration, and workflow behavior.
 
 ## Usage
 
@@ -31,9 +31,10 @@ flowchart TD
     Save --> Activate[Set env var in current session]
     Activate --> Loop
     Loop -->|done / escape| Changed{Any changes?}
-    Changed -->|yes| Reload[Reload extensions]
-    Changed -->|no| End([Done])
-    Reload --> End
+    Changed -->|yes| Wait[Wait for idle]
+    Wait --> Reload[Reload extensions]
+    Reload --> End([Done])
+    Changed -->|no| End
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Loop fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -43,6 +44,7 @@ flowchart TD
     style Input fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Activate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Wait fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Reload fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style End fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
@@ -54,7 +56,7 @@ flowchart TD
 3. **Select loop** — Presents the tool list as a select menu. Choose a tool to configure it, or press Escape / select "(done)" to exit.
 4. **Key input** — For the selected tool, prompts to paste the API key. Shows the key's dashboard URL as a hint.
 5. **Save and activate** — The key is written to `auth.json` and immediately set as an environment variable in the current session. No restart required.
-6. **Reload** — If any keys changed, GSD reloads its extensions so tools pick up the new credentials immediately.
+6. **Reload** — Once the loop exits, if any keys changed, GSD waits for the agent to be idle then reloads its extensions so tools pick up the new credentials immediately.
 
 ### Configurable Tools
 

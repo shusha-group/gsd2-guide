@@ -1,26 +1,28 @@
 ---
 title: "/gsd prefs"
-description: "Configure GSD preferences — model selection, timeouts, git behavior, skills, budget, and notifications via an interactive category-based wizard."
+description: "Configure GSD preferences — workflow mode, model selection, timeouts, git behavior, skills, budget, and notifications via an interactive category-based wizard."
 ---
 
 ## What It Does
 
-`/gsd prefs` opens an interactive wizard for configuring GSD's behavior. Preferences control model selection per phase, auto-mode timeouts, git commit behavior, skill discovery, budget ceilings, and notification settings. Preferences can be set at two levels:
+`/gsd prefs` opens an interactive wizard for configuring GSD's behavior. Preferences are stored as YAML frontmatter in markdown files and control model selection per phase, auto-mode timeouts, git commit behavior, skill discovery, budget ceilings, and notification settings. Preferences can be set at two levels:
 
 - **Global** (`~/.gsd/preferences.md`) — Applies to all projects. Default when no scope is specified.
 - **Project** (`.gsd/preferences.md`) — Overrides global settings for this project only.
 
-Project preferences take precedence over global when both exist. The wizard shows current values for each category so you can see what's configured before making changes.
+Project preferences take precedence over global when both exist. The wizard shows current values for each category so you can see what's configured before making changes. After saving, extensions are reloaded automatically.
 
 ## Usage
 
 ```
-/gsd prefs                   # Global wizard (default)
-/gsd prefs global            # Explicit global wizard
-/gsd prefs project           # Project-level wizard
-/gsd prefs status            # Show current preference status
-/gsd prefs import-claude     # Import Claude Code settings into global prefs
-/gsd prefs import-claude project  # Import into project prefs
+/gsd prefs                         # Global wizard (default)
+/gsd prefs global                  # Explicit global wizard
+/gsd prefs project                 # Project-level wizard
+/gsd prefs wizard                  # Same as global (alias)
+/gsd prefs setup                   # Same as global (alias)
+/gsd prefs status                  # Show current preference status
+/gsd prefs import-claude           # Import Claude Code settings into global prefs
+/gsd prefs import-claude project   # Import into project prefs
 ```
 
 ## How It Works
@@ -30,17 +32,17 @@ flowchart TD
     Start(["/gsd prefs [args]"]) --> Parse[Parse subcommand]
     Parse --> Route{Subcommand?}
 
-    Route -->|"(none) / global / wizard"| EnsureG[Ensure global prefs file exists]
+    Route -->|"(none) / global / wizard / setup"| EnsureG[Ensure global prefs file exists]
     EnsureG --> WizG[Open wizard — global scope]
 
-    Route -->|project| EnsureP[Ensure project prefs file exists]
+    Route -->|"project / wizard project / setup project"| EnsureP[Ensure project prefs file exists]
     EnsureP --> WizP[Open wizard — project scope]
 
     Route -->|status| LoadBoth[Load global + project prefs]
     LoadBoth --> Resolve[Resolve skill references]
     Resolve --> Display([Show status: paths, skill counts, warnings])
 
-    Route -->|import-claude| Import[Scan Claude Code config]
+    Route -->|import-claude| Import[Run Claude import flow]
     Import --> Merge[Merge into preferences file]
     Merge --> Saved([Preferences saved])
 
@@ -51,10 +53,10 @@ flowchart TD
     Cat -->|Workflow Mode| CfgMode[solo / team / manual]
     Cat -->|Models| CfgModels[Model per phase]
     Cat -->|Timeouts| CfgTime[soft / idle / hard timeout]
-    Cat -->|Git| CfgGit[branch, push, merge strategy]
+    Cat -->|Git| CfgGit[branch, push, isolation, merge strategy]
     Cat -->|Skills| CfgSkills[discovery, UAT dispatch]
-    Cat -->|Budget| CfgBudget[ceiling, enforcement]
-    Cat -->|Notifications| CfgNotify[sound, desktop alerts]
+    Cat -->|Budget| CfgBudget[ceiling, enforcement, context pause]
+    Cat -->|Notifications| CfgNotify[event-based alert toggles]
     Cat -->|Advanced| CfgAdv[unique milestone IDs]
     Cat -->|Save & Exit| Save[Serialize to frontmatter]
 
@@ -101,22 +103,39 @@ flowchart TD
 
 | Category | What It Configures | Key Fields |
 |----------|-------------------|------------|
-| **Workflow Mode** | Solo or team workflow with coordinated defaults | `mode` (solo/team) |
-| **Models** | Model selection per execution phase | `models.research`, `models.plan`, `models.execute`, etc. |
+| **Workflow Mode** | Solo or team workflow with coordinated defaults | `mode` (`solo`/`team`) |
+| **Models** | Model selection per execution phase | `models.research`, `models.planning`, `models.execution`, `models.completion` |
 | **Timeouts** | Auto-mode supervisor timeouts | `auto_supervisor.soft_timeout_minutes`, `idle_timeout_minutes`, `hard_timeout_minutes` |
-| **Git** | Branch naming, push behavior, merge strategy | `git.main_branch`, `git.auto_push`, `git.merge_strategy` |
-| **Skills** | Skill discovery and UAT dispatch behavior | `skill_discovery`, `uat_dispatch`, `always_use_skills`, `prefer_skills`, `avoid_skills` |
-| **Budget** | Cost ceiling and enforcement policy | `budget_ceiling`, `budget_enforcement` (warn/pause/stop) |
-| **Notifications** | Sound and desktop alert behavior | `notifications.sound`, `notifications.desktop` |
-| **Advanced** | Unique milestone IDs and other toggles | `unique_milestone_ids` |
+| **Git** | Branch naming, push behavior, isolation, merge strategy | `git.main_branch`, `git.auto_push`, `git.push_branches`, `git.snapshots`, `git.remote`, `git.pre_merge_check`, `git.commit_type`, `git.merge_strategy`, `git.isolation` |
+| **Skills** | Skill discovery and UAT dispatch behavior | `skill_discovery` (`auto`/`suggest`/`off`), `uat_dispatch` |
+| **Budget** | Cost ceiling, enforcement policy, context pause | `budget_ceiling`, `budget_enforcement` (`warn`/`pause`/`halt`), `context_pause_threshold` |
+| **Notifications** | Event-based alert toggles | `notifications.enabled`, `on_complete`, `on_error`, `on_budget`, `on_milestone`, `on_attention` |
+| **Advanced** | Unique milestone IDs | `unique_milestone_ids` |
+
+### Workflow Mode Defaults
+
+Selecting `solo` or `team` sets a bundle of git defaults as the lowest-priority layer. Explicit values you've set always win.
+
+| Setting | `solo` | `team` |
+|---------|--------|--------|
+| `git.auto_push` | `true` | `false` |
+| `git.push_branches` | `false` | `true` |
+| `git.pre_merge_check` | `false` | `true` |
+| `git.merge_strategy` | `squash` | `squash` |
+| `git.isolation` | `worktree` | `worktree` |
+| `unique_milestone_ids` | `false` | `true` |
 
 ### Status Subcommand
 
-`/gsd prefs status` loads both global and project preference files and reports their paths, whether they exist, and skill resolution status. It shows how many skills resolved successfully vs how many are unresolved, helping diagnose skill reference issues.
+`/gsd prefs status` loads both global and project preference files and reports their paths, whether they exist, and skill resolution status. It shows how many skills resolved successfully vs how many are unresolved, helping diagnose skill reference issues. When the global path is a legacy file (`~/.pi/agent/gsd-preferences.md`), the status notes it as a legacy fallback.
 
 ### Import Claude
 
-`/gsd prefs import-claude` scans your Claude Code configuration (CLAUDE.md files, model settings) and imports relevant settings into GSD preferences. This is useful when migrating from Claude Code to GSD — it carries over model preferences and custom instructions.
+`/gsd prefs import-claude` scans your Claude Code configuration (CLAUDE.md files, model settings) and imports relevant settings into GSD preferences. This is useful when migrating from Claude Code to GSD — it carries over model preferences and custom instructions. If no preferences file exists yet, one is created from the template before the import runs.
+
+### File Format
+
+Preferences are stored as YAML frontmatter in a markdown file. The wizard serializes values in a consistent key order. The body content after the closing `---` delimiter is preserved across saves — you can add documentation notes there without them being overwritten.
 
 ## What Files It Touches
 
@@ -124,9 +143,10 @@ flowchart TD
 
 | File | Purpose |
 |------|---------|
-| `~/.gsd/preferences.md` | Global preferences |
+| `~/.gsd/preferences.md` | Global preferences (canonical path) |
+| `~/.pi/agent/gsd-preferences.md` | Legacy global preferences (fallback) |
 | `.gsd/preferences.md` | Project preferences |
-| Claude Code config files | For import-claude subcommand |
+| Claude Code config files | For `import-claude` subcommand |
 
 ### Writes
 
@@ -134,6 +154,13 @@ flowchart TD
 |------|---------|
 | `~/.gsd/preferences.md` | Updated global preferences |
 | `.gsd/preferences.md` | Updated project preferences |
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `~/.gsd/preferences.md` | Created from template if missing when wizard opens |
+| `.gsd/preferences.md` | Created from template if missing when `project` scope is selected |
 
 ## Examples
 
@@ -145,24 +172,27 @@ Opening the wizard:
 GSD preferences (global) — pick a category to configure.
 
   Workflow Mode   solo
-  Models          research: claude-sonnet-4-20250514, execute: claude-sonnet-4-20250514
+  Models          research: claude-opus-4-6, planning: claude-sonnet-4-5
   Timeouts        soft: 20m, idle: 10m, hard: 30m
   Git             main: main, push: on
   Skills          discovery: auto
-  Budget          $50.00 (warn)
-  Notifications   (defaults)
-  Advanced        unique IDs: false
+  Budget          $50 / warn
+  Notifications   6/6 enabled
+  Advanced        unique IDs: off
   ── Save & Exit ──
 
 ❯ Budget
 
-  Budget ceiling (current: $50.00):
+  Budget ceiling (USD) (current: $50):
   > 100
 
-  Enforcement (current: warn):
-  ❯ warn — notify but continue
-    pause — pause auto-mode at ceiling
-    stop — stop auto-mode at ceiling
+  Budget enforcement (current: warn):
+  ❯ warn
+    pause
+    halt
+
+  Context pause threshold (0-100%, 0=disabled) (current: 0):
+  > 80
 ```
 
 Checking status:
@@ -173,6 +203,15 @@ Checking status:
 GSD skill prefs — global present: ~/.gsd/preferences.md; project present: .gsd/preferences.md
 Skills: 3 resolved, 1 unresolved
 Unresolved: my-custom-skill (not found in any skill directory)
+```
+
+Setting project-scoped preferences:
+
+```
+> /gsd prefs project
+
+● Created project GSD skill preferences at .gsd/preferences.md
+GSD preferences (project) — pick a category to configure.
 ```
 
 ## Related Commands

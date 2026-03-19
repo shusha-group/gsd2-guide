@@ -23,7 +23,7 @@ If auto mode was previously [paused](../pause/), `/gsd` resumes in step mode fro
 
 ## How It Works
 
-Under the hood, `/gsd` calls the same `startAuto()` function as [`/gsd auto`](../auto/), but with `step: true`. This means the full initialization sequence runs — stale worktree cleanup, crash recovery, state derivation, worktree setup — but after each unit completes, execution pauses and a step wizard appears.
+Under the hood, `/gsd` runs the same initialization sequence and dispatch engine as [`/gsd auto`](../auto/), but with `step: true`. After each unit completes, execution pauses and a step wizard appears rather than automatically dispatching the next unit.
 
 ```mermaid
 flowchart TD
@@ -63,7 +63,7 @@ If no milestone exists (fresh project or first run after `gsd init`), `/gsd` doe
 2. Creates a milestone context file from the discussion.
 3. Proceeds to research and planning as the first dispatched units.
 
-This means you can go from zero to a running milestone by just typing `/gsd` and talking.
+This means you can go from zero to a running milestone by just typing `/gsd` and talking. If you already have a milestone in a `needs-discussion` state (a `CONTEXT-DRAFT.md` exists but no roadmap yet), the wizard routes to a milestone-level discussion instead.
 
 ### The step wizard
 
@@ -82,10 +82,10 @@ A unit is the smallest dispatchable piece of work. Depending on the project phas
 - A **research** pass (codebase exploration, documentation study)
 - A **plan** (slice plan with task breakdown and estimates)
 - A **task execution** (implementing a single task from the plan)
-- A **summary** (compressing completed work for future context)
+- A **summary** (compressing completed work and writing acceptance criteria)
 - A **roadmap reassessment** (re-evaluating remaining slices after a slice completes)
 
-The dispatch engine [determines the unit type](../auto/#the-dispatch-loop) by reading the current project state from `.gsd/` files.
+The dispatch engine [determines the unit type](../auto/#the-dispatch-loop) by evaluating a declarative table of 15 ordered dispatch rules against the current project state.
 
 ## What Files It Touches
 
@@ -98,16 +98,16 @@ Same as [`/gsd auto`](../auto/#what-files-it-touches) — the underlying engine 
 | `.gsd/STATE.md` | Current project state |
 | `.gsd/KNOWLEDGE.md` | Accumulated patterns and gotchas |
 | `.gsd/DECISIONS.md` | Architectural decision register |
-| `M*-ROADMAP.md` | Slice ordering and completion status |
-| `S*-PLAN.md` | Task breakdown for the active slice |
-| `T*-SUMMARY.md` | Prior task outcomes |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Slice ordering and completion status |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Task breakdown for the active slice |
+| `.gsd/milestones/<MID>/slices/<SID>/tasks/<TID>-SUMMARY.md` | Prior task outcomes fed as context |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
 | `.gsd/STATE.md` | Updated after each unit |
-| `T*-SUMMARY.md` | Written by task executors |
+| `.gsd/milestones/<MID>/slices/<SID>/tasks/<TID>-SUMMARY.md` | Written by task executors |
 | `.gsd/runtime/` | Session metadata, lock files |
 | `.gsd/activity/` | JSONL execution logs |
 
@@ -164,5 +164,7 @@ First run on a fresh project (smart entry wizard):
 
 - [`/gsd auto`](../auto/) — Continuous execution without pausing between units
 - [`/gsd next`](../next/) — Explicit alias (identical behavior, also supports `--dry-run`)
+- [`/gsd discuss`](../discuss/) — Pre-plan a slice with a guided interview before auto mode runs
 - [`/gsd status`](../status/) — View progress dashboard
+- [`/gsd pause`](../pause/) — Suspend the session with state preservation for later resume
 - [`/gsd stop`](../stop/) — Terminate the session

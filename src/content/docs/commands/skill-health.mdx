@@ -5,9 +5,9 @@ description: "Skill lifecycle dashboard — view usage stats, success rates, tok
 
 ## What It Does
 
-`/gsd skill-health` displays a dashboard of skill usage and performance metrics. It shows which skills are active, how often they're invoked, their success rates, token cost trends, and flags skills with declining performance or staleness. This is a read-only display command — it doesn't modify any files.
+`/gsd skill-health` displays a dashboard of skill usage and performance metrics. It shows which skills are active, how often they're loaded, their success rates, token cost trends, and flags skills with declining performance or long periods of disuse. This is a read-only display command — it doesn't modify any files.
 
-The dashboard helps you decide which skills to keep, avoid, or investigate. If a skill's success rate is dropping or its token costs are climbing, you can dig into the detail view to understand why.
+The dashboard helps you decide which skills to keep, investigate, or archive. If a skill's success rate is dropping or its token costs are climbing, you can run a detail view to see exactly which units were affected. Heal suggestions are generated automatically — proposed fixes that you review before applying.
 
 ## Usage
 
@@ -25,37 +25,31 @@ flowchart TD
     Start(["/gsd skill-health [args]"]) --> Parse[Parse flags & skill name]
     Parse --> Route{Arguments?}
 
-    Route -->|Skill name| Detail[Load telemetry for skill]
-    Detail --> DetailView([Render detail: invocations,<br/>success rate, token trend,<br/>recent executions])
+    Route -->|Skill name| Detail[Load metrics for skill]
+    Detail --> DetailView([Render detail: uses, tokens,<br/>cost, recent unit IDs])
 
     Route -->|--declining| GenReport[Generate full health report]
     GenReport --> FilterDecline[Filter to flagged skills only]
     FilterDecline --> DashDecline([Render declining skills])
 
-    Route -->|--stale N| GenReport2[Generate health report]
-    GenReport2 --> FilterStale[Filter by days since last use]
+    Route -->|--stale N| GenReport2[Generate health report<br/>with custom threshold]
+    GenReport2 --> FilterStale[Detect stale skills]
     FilterStale --> DashStale([Render stale skills])
 
     Route -->|No args| GenFull[Generate full health report]
-    GenFull --> DashFull([Render full dashboard])
+    GenFull --> DashFull([Render full dashboard<br/>with heal suggestions])
 
-    subgraph "Data Sources"
-        Telem[".gsd/skill-telemetry.json<br/>Per-skill invocation records"]
-        Activity[".gsd/activity/*.jsonl<br/>Execution traces with skill usage"]
-        Prefs["preferences.md<br/>Skill configuration"]
+    subgraph "Data Source"
+        Ledger[".gsd/metrics.json<br/>UnitMetrics with skills[] field"]
+        Skills["~/.gsd/agent/skills/<br/>Installed SKILL.md files"]
     end
 
-    Telem -.-> GenReport
-    Telem -.-> GenReport2
-    Telem -.-> GenFull
-    Telem -.-> Detail
-    Activity -.-> GenReport
-    Activity -.-> GenReport2
-    Activity -.-> GenFull
-    Activity -.-> Detail
-    Prefs -.-> GenReport
-    Prefs -.-> GenReport2
-    Prefs -.-> GenFull
+    Ledger -.-> GenReport
+    Ledger -.-> GenReport2
+    Ledger -.-> GenFull
+    Ledger -.-> Detail
+    Skills -.-> GenReport2
+    Skills -.-> GenFull
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Route fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -70,36 +64,69 @@ flowchart TD
     style DashDecline fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DashStale fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DashFull fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Telem fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Activity fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Prefs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Ledger fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Skills fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-### Data Sources
+### Data Source
 
-The health report is derived from three sources:
+All metrics come from a single source: `.gsd/metrics.json`. Each entry in the ledger is a `UnitMetrics` record that includes a `skills` field — the list of skills that were loaded during that unit. Skills are captured at dispatch time (all installed skills) and refined during execution (only those whose `SKILL.md` was explicitly read via the read tool).
 
-1. **Skill telemetry** (`.gsd/skill-telemetry.json`) — Records each skill invocation: skill name, timestamp, success/failure, token count, and duration.
-2. **Activity logs** (`.gsd/activity/*.jsonl`) — Execution traces that include which skills were loaded during each unit.
-3. **Preferences** — Skill configuration (always_use, prefer, avoid lists) provides context for whether a skill is intentionally unused or unexpectedly idle.
+There is no separate `skill-telemetry.json` file. Skill health is derived entirely from the unit metrics ledger.
 
 ### Dashboard Metrics
 
 | Metric | What It Shows |
 |--------|---------------|
-| **Invocations** | Total times the skill was loaded |
-| **Success rate** | Percentage of invocations where the skill's verification passed |
-| **Token trend** | Whether average token usage is increasing, stable, or decreasing |
-| **Last used** | How recently the skill was invoked |
-| **Flagged** | Whether the skill shows declining performance (success rate dropping or token costs rising) |
+| **Uses** | Total units where the skill was loaded |
+| **Success%** | Proxy for quality: units where `toolCalls < assistantMessages × 20` (low retry rate) |
+| **Avg Tokens** | Mean token count across units where the skill was active |
+| **Trend** | Whether recent token usage is `rising`, `declining`, or `stable` (requires 10+ uses) |
+| **Last Used** | Days since the skill appeared in a unit |
+| **Avg Cost** | Mean cost per unit where the skill was loaded |
 
-### Declining Detection
+### Flagging Thresholds
 
-A skill is flagged as declining when its recent success rate is lower than its historical average, or when its recent token costs are significantly higher than the historical average. The `--declining` flag filters the dashboard to show only flagged skills.
+A skill is flagged (`⚠`) when it has at least 5 uses and either:
+
+- **Success rate below 70%** — too many units with excessive tool calls
+- **Token trend rising 20%+** — recent average tokens are significantly higher than the previous window
+
+The `--declining` flag filters the full dashboard to show only flagged skills.
 
 ### Staleness Detection
 
-The `--stale N` flag shows skills that haven't been invoked in N or more days. This helps identify skills that may need updating or removal — a skill unused for 90 days might be for a framework you no longer use.
+The `--stale N` flag shows skills that haven't appeared in any unit within N days. Without a custom threshold, staleness is reported at **60 days**. Staleness is checked against all installed `SKILL.md` files, not just those with usage data — a skill you installed and never ran will appear as stale from day one.
+
+### Heal Suggestions
+
+The health report includes a **Heal Suggestions** section. When a skill is flagged or stale, the report proposes an action:
+
+- **Declining success** — `Review SKILL.md for outdated patterns` (warning or critical by severity)
+- **Rising tokens** — `Skill may be causing inefficient execution patterns` (info)
+- **Stale** — `Consider archiving or updating` (info)
+
+These are display suggestions only. To generate a structured fix proposal, GSD runs a separate heal-skill analysis post-unit (see below).
+
+### Heal-Skill Post-Unit Analysis
+
+After each auto-mode unit, GSD can optionally run a heal-skill analysis. It reads the skill that was loaded, compares actual execution against the skill's guidance, and writes a structured proposal to `.gsd/skill-review-queue.md` — one entry per issue found. The agent never modifies a skill file directly. This human review step is intentional: research shows that curated skills outperform auto-generated ones by +16.2pp.
+
+A review queue entry looks like this:
+
+```markdown
+### frontend-design (flagged 2026-03-14)
+- **Unit:** M002/S02/T03
+- **Issue:** Skill recommends CSS custom properties but agent used inline styles throughout
+- **Root cause:** Outdated pattern — inline styles cause specificity issues with the theme system
+- **Discovery method:** Build error referencing theme override conflicts
+- **Proposed fix:**
+  - File: SKILL.md
+  - Section: Styling Conventions
+  - Current: "Apply styles via the `style` prop for component-level overrides"
+  - Suggested: "Use CSS custom properties via `className` for all theming"
+- **Action:** [ ] Reviewed [ ] Updated [ ] Dismissed
+```
 
 ## What Files It Touches
 
@@ -107,10 +134,14 @@ The `--stale N` flag shows skills that haven't been invoked in N or more days. T
 
 | File | Purpose |
 |------|---------|
-| `.gsd/skill-telemetry.json` | Per-skill invocation history |
-| `.gsd/activity/*.jsonl` | Execution traces for skill usage context |
-| `~/.gsd/preferences.md` | Global skill configuration |
-| `.gsd/preferences.md` | Project skill configuration |
+| `.gsd/metrics.json` | Unit metrics ledger — source of all skill usage data |
+| `~/.gsd/agent/skills/*/SKILL.md` | Installed skills, for staleness checking and detail view path |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/skill-review-queue.md` | Heal suggestions written by post-unit heal-skill analysis (not by this command directly) |
 
 ## Examples
 
@@ -119,39 +150,73 @@ Full dashboard:
 ```
 > /gsd skill-health
 
-GSD Skill Health Dashboard
+Skill Health Report
+════════════════════════════════════════════════════════════
+Generated: 2026-03-19T10:00:00.000Z
+Units with skill data: 34
 
-  Skill               Invocations  Success  Token Trend  Last Used    Status
-  ─────────────────────────────────────────────────────────────────────────────
-  frontend-design     12           92%      stable       2 days ago   ✓
-  test                8            100%     stable       1 day ago    ✓
-  review              6            83%      ↑ rising     3 days ago   ⚠ declining
-  lint                5            100%     stable       1 day ago    ✓
-  swiftui             2            50%      ↑ rising     14 days ago  ⚠ declining
-  debug-like-expert   1            100%     —            30 days ago  stale
+Skill                    Uses  Success%  Avg Tokens  Trend     Last Used
+────────────────────────────────────────────────────────────────────────
+frontend-design          12      92%       28.4k    stable    2 days ago
+test                      8     100%       19.1k    stable    1 day ago
+review                    6      83%       42.0k    rising    3 days ago ⚠
+lint                      5     100%       12.3k    stable    1 day ago
+swiftui                   2      50%       31.0k    stable    14 days ago
+debug-like-expert         1     100%        9.8k    stable    30 days ago
+
+Declining Skills (flagged for review):
+  ⚠  review: Token usage trending upward (20%+ increase)
+
+Heal Suggestions:
+  🟡 review: Token usage trending upward. Skill may be causing inefficient execution patterns.
 ```
 
-Detail view:
+Declining-only view:
+
+```
+> /gsd skill-health --declining
+
+Skill                    Uses  Success%  Avg Tokens  Trend     Last Used
+────────────────────────────────────────────────────────────────────────
+review                    6      83%       42.0k    rising    3 days ago ⚠
+```
+
+Detail view for a specific skill:
 
 ```
 > /gsd skill-health review
 
-Skill: review
-  Invocations: 6
-  Success rate: 83% (5/6)
-  Average tokens: 4,200 (↑ from 3,100 historical)
-  Last used: 3 days ago
-  Status: declining — token costs rising
+Skill Detail: review
+══════════════════════════════════════════════════
+Total uses: 6
+Total tokens: 252.0k
+Total cost: $0.38
+Avg tokens/use: 42.0k
+Avg cost/use: $0.063
 
-  Recent executions:
-    2026-03-14  M002/S02/T03  ✓  3,800 tokens
-    2026-03-12  M002/S02/T01  ✓  4,600 tokens
-    2026-03-10  M002/S01/T04  ✗  5,200 tokens  (verification failed)
-    2026-03-08  M001/S03/T02  ✓  3,400 tokens
+Recent uses:
+  2026-03-14  M002/S02/T03          28.4k tokens  $0.042
+  2026-03-12  M002/S02/T01          46.1k tokens  $0.069
+  2026-03-10  M002/S01/T04          52.0k tokens  $0.078
+  2026-03-08  M001/S03/T02          34.0k tokens  $0.051
+
+SKILL.md: ~/.gsd/agent/skills/review/SKILL.md
+Last modified: 2026-02-10
+```
+
+Stale skills (unused 30+ days):
+
+```
+> /gsd skill-health --stale 30
+
+Stale Skills (unused for 30+ days):
+  ⏸  debug-like-expert
+  ⏸  graphql-patterns
 ```
 
 ## Related Commands
 
-- [`/gsd prefs`](../prefs/) — Configure which skills to use, prefer, or avoid
-- [`/gsd doctor`](../doctor/) — Validates preference file structure including skill references
-- [`/gsd status`](../status/) — Overall project progress (skill-health focuses on skill metrics)
+- [`/gsd prefs`](../prefs/) — Configure skill discovery and `avoid_skills` list
+- [`/gsd hooks`](../hooks/) — View registered post-unit hooks including heal-skill
+- [`/gsd doctor`](../doctor/) — Validates planning directory structure and milestone health
+- [`/gsd visualize`](../visualize/) — Full visualizer including the Health tab with skill metrics

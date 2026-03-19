@@ -1,13 +1,13 @@
 ---
 title: "/gsd next"
-description: "Execute one unit in step mode — identical to bare /gsd, with an optional --dry-run flag to preview without executing."
+description: "Execute one unit in step mode — identical to bare /gsd, with a --dry-run flag to preview the next unit without executing it."
 ---
 
 ## What It Does
 
 `/gsd next` executes one unit of work and pauses for your decision, exactly like bare [`/gsd`](../gsd/). It exists as an explicit alias — when you type `/gsd next`, the intent is clear: "give me the next unit."
 
-The key addition over bare `/gsd` is the `--dry-run` flag, which previews the next unit (type, ID, estimated cost, estimated duration) without actually executing it. Useful when you want to see what's coming before committing.
+The key addition over bare `/gsd` is the `--dry-run` flag, which previews what would be dispatched next — unit type, ID, milestone, phase, estimated cost, estimated duration, budget remaining, and overall progress — without executing anything. Useful when you want to see what's coming before committing, or after making manual edits to plan files.
 
 ## Usage
 
@@ -15,63 +15,89 @@ The key addition over bare `/gsd` is the `--dry-run` flag, which previews the ne
 /gsd next
 /gsd next --dry-run
 /gsd next --verbose
+/gsd next --debug
 ```
 
 | Flag | Effect |
 |------|--------|
 | `--dry-run` | Show what the next unit would be without executing it |
 | `--verbose` | Increase logging detail during dispatch and execution |
+| `--debug` | Enable debug-level tracing and write a debug log to `.gsd/` |
 
 ## How It Works
 
 `/gsd next` calls the same `startAuto()` function with `step: true`. The initialization sequence, dispatch engine, and step wizard are all identical to [`/gsd`](../gsd/). See that page for the full flow.
 
-The `--dry-run` branch is the distinguishing feature. Instead of dispatching the unit for execution, it evaluates the dispatch rules, determines what *would* be dispatched, and shows a preview.
+The `--dry-run` branch is the distinguishing feature. Instead of dispatching a unit for execution, it reads the project's current state and maps the active phase to its corresponding unit type, then displays a richly annotated preview.
 
 ```mermaid
 flowchart TD
-    Start(["/gsd next"]) --> DryRun{--dry-run flag?}
-    DryRun -->|Yes| Derive[Derive project state]
-    DryRun -->|No| StepMode[Enter step mode]
-    StepMode --> Execute[Execute one unit]
-    Execute --> Wizard{Step wizard}
+    Start(["/gsd next"]) --> DryRun{"--dry-run flag?"}
+    DryRun -->|Yes| DeriveState["Derive project state\n(deriveState)"]
+    DryRun -->|No| StepMode["Enter step mode\n(startAuto step:true)"]
+    StepMode --> Execute["Execute one unit"]
+    Execute --> Wizard{"Step wizard"}
     Wizard -->|Continue| Execute
-    Wizard -->|Stop| Done([Session ended])
-    Derive --> Evaluate[Evaluate dispatch rules]
-    Evaluate --> Preview[Show next unit preview]
-    Preview --> Exit([Done — nothing executed])
+    Wizard -->|Stop| Done(["Session ended"])
+    DeriveState --> NoMilestone{"Active milestone?"}
+    NoMilestone -->|No| Noop(["Notify: nothing to dispatch"])
+    NoMilestone -->|Yes| MapPhase["Map phase → unit type"]
+    MapPhase --> LoadMetrics["Load ledger + preferences"]
+    LoadMetrics --> Preview["Show preview with cost,\nduration, budget, progress"]
+    Preview --> Exit(["Done — nothing executed"])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DryRun fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Wizard fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Derive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Evaluate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style NoMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style DeriveState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style MapPhase fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadMetrics fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Preview fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style StepMode fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Exit fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Exit fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Noop fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Dry-run preview
 
 When `--dry-run` is active, GSD:
 
-1. **Derives project state** — Reads all `.gsd/` files to determine the current phase, active milestone, active slice, and next task.
-2. **Evaluates dispatch rules** — Runs the same 13-rule dispatch table used by [`/gsd auto`](../auto/#the-dispatch-loop) to determine what type of unit comes next.
-3. **Shows preview** — Displays the unit type, ID, estimated cost, and estimated duration. Then exits without executing anything.
+1. **Derives project state** — Calls `deriveState()`, which reads all roadmap and plan files under `.gsd/` to determine the active milestone, active slice, active task, and current phase.
+2. **Checks for an active milestone** — If there's no active milestone, it exits with "nothing to dispatch."
+3. **Maps phase to unit type** — Uses a direct phase-to-unit-type mapping (not the full dispatch loop):
 
-This is helpful for checking what auto mode would do next before committing to it — especially after making manual edits to plan files.
+| Phase | Unit type dispatched |
+|-------|----------------------|
+| `pre-planning` | `research-milestone` |
+| `planning` | `plan-slice` |
+| `executing` | `execute-task` |
+| `summarizing` | `complete-slice` |
+| `completing-milestone` | `complete-milestone` |
+| anything else | phase name verbatim |
+
+4. **Loads historical metrics** — Reads the in-memory ledger (or falls back to the ledger on disk) to calculate average cost and duration for units of the same type. Loads preferences to check the budget ceiling.
+5. **Shows preview** — Displays the unit type, ID, milestone, phase, estimated cost and duration (computed as averages over historical units of the same type), total spent, budget remaining, and task/slice progress.
 
 ### Step mode (no --dry-run)
 
-Without `--dry-run`, `/gsd next` behaves identically to [`/gsd`](../gsd/): executes one unit, auto-commits, and presents the step wizard (continue / stop / status).
+Without `--dry-run`, `/gsd next` behaves identically to [`/gsd`](../gsd/): executes one unit, auto-commits, and presents the step wizard (continue / stop / check status).
 
 ## What Files It Touches
 
 ### With --dry-run
 
-Read-only. Reads `.gsd/STATE.md`, roadmap files, and plan files to derive state and evaluate dispatch rules. Writes nothing.
+Read-only. Writes nothing.
+
+| File | Purpose |
+|------|---------|
+| `.gsd/<MID>/ROADMAP.md` | Read to derive active milestone and phase |
+| `.gsd/<MID>/<SID>/PLAN.md` | Read to derive active slice and task |
+| `.gsd/<MID>/<SID>/SUMMARY.md` | Read to determine slice completion |
+| `.gsd/ledger.json` | Read for historical unit cost and duration averages |
+| GSD preferences file | Read for budget ceiling (`budget_ceiling`) |
 
 ### Without --dry-run
 
@@ -84,20 +110,17 @@ Previewing the next unit:
 ```
 > /gsd next --dry-run
 
-● Deriving project state...
-  Active milestone: M001 (Core Recipe Platform)
-  Active slice: S02 (Recipe CRUD API)
-  Phase: executing
+● Dry-run preview:
 
-● Next unit preview
-  ┌────────────────────────────────────┐
-  │ Type:     task-execution           │
-  │ Unit:     T03 (Delete endpoint)    │
-  │ Est. cost:  ~$0.85                 │
-  │ Est. time:  ~20 minutes            │
-  └────────────────────────────────────┘
-
-  Run /gsd next (without --dry-run) to execute.
+  Next unit:     execute-task
+  ID:            M001/S02/T03
+  Milestone:     M001: Core Recipe Platform
+  Phase:         executing
+  Est. cost:     $0.82 (avg of 4 similar)
+  Est. duration: 18m
+  Spent so far:  $6.40
+  Budget left:   $43.60
+  Progress:      8/12 tasks, 1/4 slices
 ```
 
 Running the next unit:
@@ -105,14 +128,12 @@ Running the next unit:
 ```
 > /gsd next
 
-● Dispatching unit: execute T03 (Delete endpoint)
-  Type: task-execution
-  Est: 20 minutes
+● Dispatching unit: execute-task M001/S02/T03
   ─────────────────────────────────
 
-  ... agent executes T03 ...
+  ... agent executes T03 (Delete endpoint) ...
 
-  ✓ T03 complete — 2 files changed
+  ✓ T03 complete — 3 files changed
   ✓ Auto-committed: "T03: Delete endpoint with soft-delete"
 
 ● What next?
@@ -121,9 +142,18 @@ Running the next unit:
     Stop
 ```
 
+When there's nothing to dispatch:
+
+```
+> /gsd next --dry-run
+
+● No active milestone — nothing to dispatch.
+```
+
 ## Related Commands
 
 - [`/gsd`](../gsd/) — Identical behavior (bare entry point)
 - [`/gsd auto`](../auto/) — Continuous execution without pausing
-- [`/gsd stop`](../stop/) — Terminate the session
+- [`/gsd stop`](../stop/) — Terminate the session gracefully
 - [`/gsd status`](../status/) — View progress dashboard
+- [`/gsd history`](../history/) — Review past unit cost and timing data

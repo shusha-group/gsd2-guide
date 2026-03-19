@@ -19,20 +19,24 @@ flowchart LR
     R --> P[Plan]
     P --> E[Execute]
     E --> V[Verify]
-    V --> S[Summarize]
+    V --> U[UAT]
+    U --> S[Summarize]
     S --> A{More slices?}
     A -->|Yes| R2[Research next slice]
     R2 --> P
-    A -->|No| C[Complete Milestone]
+    A -->|No| MV[Validate Milestone]
+    MV --> C[Complete Milestone]
 
     style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style R fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style P fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style V fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style U fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style S fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style A fill:#0d180d,stroke:#39ff14,color:#39ff14
     style C fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style MV fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style R2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
@@ -54,6 +58,7 @@ Run `/gsd` inside any GSD session. What happens depends on context:
 
 - **No `.gsd/` directory** → starts a discussion to capture your project vision
 - **Existing `.gsd/` with work in progress** → shows a wizard with status and next actions
+- **Draft context found** (`CONTEXT-DRAFT.md`) → offers to resume discussion from saved draft material
 - **All milestones complete** → reports completion
 
 For Cookmate, we're starting fresh:
@@ -84,7 +89,8 @@ GSD doesn't start building immediately. The discuss phase is a structured conver
 1. **Reflects back** what it understood — a concrete summary, not a parrot repetition
 2. **Estimates scale** — how many milestones, how many slices in the first one
 3. **Lists capabilities** it heard — so you can catch misunderstandings
-4. **Asks targeted questions** — filling gaps that matter for planning
+4. **Investigates before asking** — scouts the codebase, checks library docs, searches the web
+5. **Asks targeted questions** — filling gaps that matter for planning
 
 ```
 GSD: Here's what I'm hearing:
@@ -122,27 +128,54 @@ The quality of everything auto-mode builds depends on this conversation. See [Di
 
 ### What discussion produces
 
-When discussion finishes, GSD writes two artifacts:
+When discussion finishes, GSD writes several artifacts in a single pass:
 
+- **`PROJECT.md`** — what the project is, current state, and milestone sequence
+- **`REQUIREMENTS.md`** — the capability contract: every requirement with ID, status, ownership, and traceability
 - **`M001-CONTEXT.md`** — the milestone brief: scope, goals, constraints, and decisions from the conversation
-- A **milestone directory** under `.gsd/milestones/`
+- **`M001-ROADMAP.md`** — ordered slices with risk levels, demos, proof strategy, and boundary map
+- **`DECISIONS.md`** — architectural decisions made during discussion, seeded for future reference
+- **`STATE.md`** — derived state cache, written last to signal discussion is complete
 
 ```
 .gsd/
 ├── PROJECT.md
+├── REQUIREMENTS.md
+├── DECISIONS.md
 ├── STATE.md
 └── milestones/
     └── M001/
-        └── M001-CONTEXT.md    ← scope, goals, key decisions
+        ├── M001-CONTEXT.md    ← scope, goals, key decisions
+        └── M001-ROADMAP.md    ← ordered slices with proof strategy
 ```
 
 The context file is the authoritative record of what this milestone should achieve. Every downstream phase reads it.
+
+### Multi-milestone projects
+
+For larger projects spanning multiple milestones, GSD handles each milestone's readiness individually. For each non-primary milestone, you choose:
+
+- **Discuss now** — conduct a focused discussion while context is fresh; produces a full `CONTEXT.md`
+- **Write draft for later** — saves key ideas as `CONTEXT-DRAFT.md`; when auto-mode reaches it, GSD pauses and offers to resume the discussion
+- **Just queue it** — creates the directory without context; auto-mode pauses and prompts you to run `/gsd` when it becomes active
+
+GSD writes a `DISCUSSION-MANIFEST.json` after each gate decision. Auto-mode will not start until all gates are recorded.
+
+For milestones that depend on others, GSD writes `depends_on` frontmatter into each `CONTEXT.md`:
+
+```yaml
+---
+depends_on: [M001]
+---
+
+# M002: Social Features
+```
 
 ---
 
 ## Phase 2: Research
 
-Research happens automatically when you run `/gsd auto` (or GSD dispatches it in step mode). The research agent:
+Research happens automatically when you run `/gsd auto` (or GSD dispatches it). The research agent:
 
 - **Scouts the codebase** — what exists, what patterns are established, what constraints the current code imposes
 - **Checks library docs** — current API shapes, version-specific behavior, known gotchas
@@ -154,11 +187,14 @@ For Cookmate's M001, the researcher might discover:
 - Prisma's relation queries have specific patterns for recipe-ingredient relationships
 - PostgreSQL full-text search with `tsvector` is sufficient — no need for Meilisearch
 
+Milestone-level research is skipped for S01 (the first slice uses it directly). Subsequent slices get their own focused slice research unless `skip_slice_research` is set in preferences.
+
 ### What research produces
 
 ```
 .gsd/
 ├── PROJECT.md
+├── REQUIREMENTS.md
 ├── STATE.md
 └── milestones/
     └── M001/
@@ -184,27 +220,38 @@ The milestone planner reads the context and research, then decomposes work into 
     └── M001/
         ├── M001-CONTEXT.md
         ├── M001-RESEARCH.md
-        └── M001-ROADMAP.md     ← ordered slices with risk levels
+        └── M001-ROADMAP.md     ← ordered slices with risk, depends, demo lines
 ```
 
 A roadmap looks like this:
 
 ```markdown
-# M001 Roadmap: Core Recipe Platform
+# M001: Core Recipe Platform
+
+**Vision:** A recipe-sharing platform where cooks can publish, discover, and save recipes.
+
+## Success Criteria
+
+- User can complete signup → create recipe → upload photo → search end-to-end
+- Full-text search returns relevant results within 500ms
+
+## Slices
 
 - [ ] **S01: Database schema and auth** `risk:high` `depends:[]`
-  Demo: User can sign up, log in, and see their profile.
+  > After this: User can sign up, log in, and see their profile.
 - [ ] **S02: Recipe CRUD** `risk:high` `depends:[S01]`
-  Demo: Logged-in user creates, edits, and deletes a recipe.
+  > After this: Logged-in user creates, edits, and deletes a recipe.
 - [ ] **S03: Image uploads** `risk:medium` `depends:[S02]`
-  Demo: User attaches a photo to a recipe, sees it in the listing.
+  > After this: User attaches a photo to a recipe, sees it in the listing.
 - [ ] **S04: Search and browse** `risk:medium` `depends:[S02]`
-  Demo: User searches "pasta" and gets relevant results.
+  > After this: User searches "pasta" and gets relevant results.
 - [ ] **S05: Favorites** `risk:low` `depends:[S01,S02]`
-  Demo: User bookmarks a recipe, sees it on their favorites page.
+  > After this: User bookmarks a recipe, sees it on their favorites page.
 ```
 
 High-risk slices go first. If auth is broken, nothing else works — so it's S01. Favorites are low-risk and depend on established patterns, so they're last.
+
+The roadmap also includes: key risks, proof strategy (which slice retires which risk), verification classes, milestone definition of done, requirement coverage, and a boundary map of what each slice produces and consumes.
 
 ### Slice Planning
 
@@ -219,6 +266,7 @@ Before each slice executes, a slice planner decomposes it into **tasks** — ind
         ├── M001-ROADMAP.md
         └── slices/
             └── S01/
+                ├── S01-RESEARCH.md      ← slice-specific research (skipped for S01)
                 ├── S01-PLAN.md          ← task breakdown with estimates
                 └── tasks/
                     ├── T01-PLAN.md      ← specific steps for task 1
@@ -242,45 +290,60 @@ This is where code gets written. Run `/gsd auto` and GSD takes over.
 
 ### How auto mode works
 
-Auto mode is a **dispatch state machine**. It reads the `.gsd/` directory structure to determine what phase the project is in, then dispatches the right type of work:
+Auto mode is a **dispatch state machine** — a declarative table of rules evaluated in order. It reads the `.gsd/` directory structure to determine what phase the project is in, then the first matching rule fires:
 
 ```mermaid
 flowchart TD
-    Start([Read disk state]) --> Check{Phase?}
+    Start([Read disk state]) --> OG{Active overrides?}
+    OG -->|Yes| RD[rewrite-docs]
+    OG -->|No| Check{Phase?}
 
+    Check -->|needs-discussion| Stop1[Stop: run /gsd to discuss]
     Check -->|pre-planning| NeedCtx{Has context?}
-    NeedCtx -->|No| Stop1[Stop: run /gsd to discuss]
+    NeedCtx -->|No| Stop2[Stop: run /gsd to discuss]
     NeedCtx -->|Yes| NeedRes{Has research?}
-    NeedRes -->|No| RM[Research milestone]
-    NeedRes -->|Yes| PM[Plan milestone]
+    NeedRes -->|No| RM[research-milestone]
+    NeedRes -->|Yes| PM[plan-milestone]
 
     Check -->|planning| SR{Has slice research?}
-    SR -->|No| RS[Research slice]
-    SR -->|Yes| PS[Plan slice]
+    SR -->|No| RS[research-slice]
+    SR -->|Yes| PS[plan-slice]
 
-    Check -->|executing| ET[Execute task]
+    Check -->|replanning-slice| RP[replan-slice]
 
-    Check -->|summarizing| CS[Complete slice]
-    CS --> RA[Reassess roadmap]
-    RA --> Next([Next slice])
+    Check -->|executing| ET[execute-task]
 
-    Check -->|completing-milestone| CM[Complete milestone]
+    Check -->|summarizing| NeedUAT{Needs UAT?}
+    NeedUAT -->|Yes| UAT[run-uat]
+    NeedUAT -->|No| NeedRA{Needs reassess?}
+    NeedRA -->|Yes| RA[reassess-roadmap]
+    NeedRA -->|No| CS[complete-slice]
+
+    Check -->|validating-milestone| VM[validate-milestone]
+    Check -->|completing-milestone| CM[complete-milestone]
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style OG fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
     style NeedCtx fill:#0d180d,stroke:#39ff14,color:#39ff14
     style NeedRes fill:#0d180d,stroke:#39ff14,color:#39ff14
     style SR fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NeedUAT fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NeedRA fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style RD fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style PM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style PS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RP fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ET fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style CS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UAT fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style VM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Next fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Stop1 fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style Stop2 fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
 ```
 
 The dispatch rules evaluate in order — the first match wins. This is what happens during Cookmate's S01 execution:
@@ -306,6 +369,10 @@ Every task gets a **clean context window**. No accumulated garbage from prior ta
 
 This is how GSD maintains quality across long projects — each unit starts fresh with focused, relevant context instead of degrading as the context window fills up.
 
+### Blocker detection and replan
+
+If an executor discovers a plan-invalidating issue, it sets `blocker_discovered: true` in its summary. On the next dispatch cycle, GSD transitions to `replanning-slice` and dispatches a `replan-slice` agent to rewrite the remaining tasks before execution continues. A `REPLAN.md` file is written to prevent infinite replan loops.
+
 ### What execution looks like on disk
 
 Mid-execution of S01, the `.gsd/` directory looks like this:
@@ -313,6 +380,7 @@ Mid-execution of S01, the `.gsd/` directory looks like this:
 ```
 .gsd/
 ├── PROJECT.md
+├── REQUIREMENTS.md
 ├── STATE.md
 ├── DECISIONS.md                 ← architectural decisions accumulate here
 ├── KNOWLEDGE.md                 ← patterns and gotchas discovered during work
@@ -342,14 +410,19 @@ When the last task in a slice finishes, GSD transitions to the **summarizing** p
 
 ### Slice completion
 
-The completion agent:
+After all tasks are done, GSD runs through a sequence of post-completion steps:
 
-1. **Runs all slice-level verification** — the objective stopping condition defined in the slice plan
-2. **Fixes failures** — if verification doesn't pass, it fixes the issues before proceeding
-3. **Writes the slice summary** — compresses all task summaries into one coherent record
-4. **Writes a UAT script** — concrete test cases derived from what was actually built
-5. **Updates requirements** — moves requirements between Active, Validated, Deferred based on evidence
-6. **Marks the slice done** — checks the box in the roadmap
+1. **Run UAT** — if `uat_dispatch` is enabled and a UAT script exists, executes the acceptance test script
+2. **Reassess roadmap** — checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices (can be skipped via `skip_reassess` preference)
+3. **Complete slice** — writes the slice summary, compresses all task summaries, marks the slice done in the roadmap
+
+The completion agent:
+- Runs all slice-level verification — the objective stopping condition defined in the slice plan
+- Fixes failures before proceeding
+- Writes `S01-SUMMARY.md` — compressed slice record
+- Writes `S01-UAT.md` — concrete test cases derived from what was actually built
+- Updates requirements — moves requirements between Active, Validated, Deferred based on evidence
+- Checks the box in the roadmap
 
 ### Roadmap reassessment
 
@@ -361,14 +434,27 @@ After each slice completes, GSD reassesses the remaining roadmap. Plans made bef
 
 The reassessment either confirms the plan or adjusts it. This is how GSD adapts without losing structure.
 
+### Milestone validation
+
+When all slices are done, GSD enters `validating-milestone` before writing the milestone summary. The validation agent:
+
+1. Reads the milestone's success criteria and definition of done
+2. Verifies the assembled work delivers the milestone goal
+3. Writes `M001-VALIDATION.md` with a verdict: `pass`, `needs-attention`, or `needs-remediation`
+
+If remediation is needed and remediation slices exist in the roadmap, GSD executes them before re-validating. Once the validation is terminal (`pass` or `needs-attention`), GSD proceeds to completion.
+
+:::note[Skipping validation]
+Set `skip_milestone_validation: true` in preferences to write a pass-through validation file and proceed directly to completion. Useful for projects where the milestone definition of done is verified by other means.
+:::
+
 ### Milestone completion
 
-When all slices are done, the milestone completion agent:
+When validation passes, the milestone completion agent:
 
-1. Verifies the assembled work delivers the milestone goal
-2. Writes `M001-SUMMARY.md` — the milestone-level record
-3. Updates `PROJECT.md` with current state
-4. If another milestone exists (M002), GSD continues into its discussion/research cycle
+1. Writes `M001-SUMMARY.md` — the milestone-level record
+2. Updates `PROJECT.md` with current state
+3. If another milestone exists (M002), GSD continues into its discussion/research cycle
 
 ### Final directory structure
 
@@ -414,13 +500,35 @@ GSD derives its state entirely from files on disk. There's no database, no hidde
 The state derivation algorithm:
 
 1. Find all milestone directories (M001, M002, ...)
-2. For each, check if a roadmap exists and if all slices are done
-3. The first incomplete milestone becomes the **active milestone**
-4. Within that milestone, the first incomplete slice (with dependencies met) becomes the **active slice**
-5. Within that slice, the first unchecked task becomes the **active task**
-6. The combination determines the **phase**: `pre-planning`, `planning`, `executing`, `summarizing`, `completing-milestone`, or `complete`
+2. Check milestone-level `depends_on` frontmatter in each `CONTEXT.md` — skip milestones whose dependencies aren't complete
+3. The first incomplete, unblocked milestone becomes the **active milestone**
+4. Within that milestone, check if all slices are done and whether a `VALIDATION` file with a terminal verdict exists
+5. If all slices done but no terminal validation → phase is `validating-milestone`
+6. If all slices done and validation terminal but no summary → phase is `completing-milestone`
+7. Otherwise, find the first incomplete slice (with dependencies met) → **active slice**
+8. If the slice has no plan → phase is `planning`
+9. If all tasks done but slice not marked complete → phase is `summarizing`
+10. If a completed task has `blocker_discovered: true` and no `REPLAN.md` → phase is `replanning-slice`
+11. Otherwise → phase is `executing` with the first incomplete task as the **active task**
+
+### All phases
+
+| Phase | What it means |
+|-------|--------------|
+| `pre-planning` | Active milestone has context but no roadmap yet |
+| `needs-discussion` | Active milestone has a `CONTEXT-DRAFT.md` seed — run `/gsd` to discuss |
+| `planning` | Active slice needs a plan |
+| `executing` | Active task is ready to run |
+| `summarizing` | All tasks done — run UAT, reassess, complete slice |
+| `replanning-slice` | A task discovered a blocker — replan remaining tasks |
+| `validating-milestone` | All slices done — validate before completing |
+| `completing-milestone` | Validation passed — write milestone summary |
+| `blocked` | No eligible slice (dep cycle) or all milestones dep-blocked |
+| `complete` | All milestones done |
 
 This means you can always understand where GSD is by looking at the files. And if something goes wrong, you can fix it by editing the markdown — check a box, rename a file, adjust a plan.
+
+State derivation uses a native Rust batch parser when available, reading all `.gsd/` markdown files in a single pass for speed. It falls back to sequential JS file reads if the native module is absent.
 
 ---
 
@@ -441,9 +549,13 @@ You're never locked out of the process.
 - **Mark a task done manually** — check its box in the plan, and GSD skips it
 - **Add a task** — append it to the plan file, and GSD will execute it in order
 
+### Quick tasks
+
+For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <description>`. Quick tasks live in `.gsd/quick/` and are tracked in `STATE.md`. They get GSD's execution guarantees (atomic commits, verification) without a full slice plan.
+
 ### When things go wrong
 
-- **`/gsd doctor`** — diagnoses issues in your `.gsd/` directory structure
+- **`/gsd doctor`** — diagnoses issues in your `.gsd/` directory structure and optionally fixes them
 - **`/gsd forensics`** — post-mortem analysis of auto-mode failures
 - **Task blockers** — if an executor discovers a plan-invalidating issue, it sets `blocker_discovered: true` in its summary, triggering an automatic replan of the slice
 
@@ -458,6 +570,9 @@ You're never locked out of the process.
 | **Risk-first ordering** | High-risk slices execute first to surface problems early |
 | **Summaries as context** | Each completed unit writes a summary that feeds into the next unit's context |
 | **Reassessment** | After each slice, GSD checks if the remaining plan still makes sense |
+| **Capability contract** | `REQUIREMENTS.md` tracks every requirement with status, ownership, and traceability |
+| **Milestone validation** | Before completing a milestone, GSD verifies the assembled work delivers the goal |
+| **Blocker replanning** | Tasks that discover plan-invalidating issues trigger automatic slice replanning |
 | **Observable artifacts** | Every phase produces readable markdown files — you can always see what happened |
 | **Intervention points** | Stop, pause, steer, edit plans, or fix things manually at any time |
 
@@ -465,7 +580,7 @@ You're never locked out of the process.
 
 ## What's Next
 
-- **[Getting Started](../getting-started/)** — install GSD and run your first project
-- **[Auto Mode](../auto-mode/)** — deep dive into autonomous execution
-- **[Commands Reference](../commands/)** — every command and what it does
-- **[Configuration](../configuration/)** — customize phases, models, and behavior
+- **[Getting Started](../../getting-started/)** — install GSD and run your first project
+- **[Auto Mode](../../auto-mode/)** — deep dive into autonomous execution
+- **[Commands Reference](../../commands/)** — every command and what it does
+- **[Configuration](../../configuration/)** — customize phases, models, and behavior

@@ -1,11 +1,11 @@
 ---
 title: "Recipe: Fix a Bug"
-description: "Step-by-step guide to fixing a bug using the full GSD lifecycle — from report through discussion, planning, execution, and verification."
+description: "Step-by-step guide to fixing a bug using the full GSD lifecycle — from creating a new milestone through discussion, planning, execution, and verification."
 ---
 
 ## When to Use This
 
-A bug has been reported or you've discovered an issue that needs investigation. You want GSD to manage the full lifecycle: discuss the problem, research the codebase, plan a fix, execute it, and verify the result. This recipe walks through a real example using the full milestone flow.
+A bug has been reported or you've discovered an issue that needs investigation. You want GSD to manage the full lifecycle: create a milestone, research the codebase, plan a fix, execute it, and verify the result. This recipe walks through a real example using the full milestone flow.
 
 Use the full lifecycle when the bug might be non-trivial — when you're not sure of the root cause, when the fix might touch multiple files, or when you want GSD's structured verification to confirm the fix works. For simple one-line fixes, consider the [small change recipe](../small-change/) instead.
 
@@ -19,25 +19,28 @@ Use the full lifecycle when the bug might be non-trivial — when you're not sur
 
 **The scenario:** A Cookmate user reports that searching for "Pasta" returns no results, but searching for "pasta" (lowercase) works fine. The search is case-sensitive when it shouldn't be.
 
-### 1. Start a discussion
+### 1. Create a new milestone for the fix
 
-Run `/gsd` to open the GSD wizard. Describe the bug:
+Run `/gsd new-milestone` and describe the bug:
 
 ```
-> /gsd
+> /gsd new-milestone
 
-What's the vision?
-
+What's the goal for this milestone?
 > Users are reporting that search in Cookmate is case-sensitive.
 > Searching for "Pasta" returns nothing, but "pasta" works.
 > This should be a case-insensitive search.
 ```
 
-GSD reflects back what it understood, estimates the scope (likely a single milestone with one slice), and asks clarifying questions — such as whether the issue is in the API query, the database index, or both.
+GSD asks clarifying questions to lock down scope — such as whether the issue is in the API query, the database index, or the frontend — then writes a milestone context file.
+
+:::tip
+If this is your **first ever milestone**, just run `/gsd` instead. The smart entry wizard fires automatically and routes you through the same discussion.
+:::
 
 ### 2. Discussion produces a context file
 
-After the conversation, GSD writes the milestone brief:
+After the conversation, GSD writes the milestone brief to disk:
 
 ```
 .gsd/
@@ -50,11 +53,11 @@ The context file captures what was discussed: the symptoms, the suspected root c
 
 ### 3. Research and planning
 
-Run `/gsd auto` to start autonomous execution. GSD will:
+Run `/gsd auto` to start autonomous execution. GSD dispatches units in sequence:
 
-1. **Research** — scout the codebase for search-related code, check Prisma docs for case-insensitive query options
-2. **Plan the milestone** — create a roadmap (likely a single slice for this fix)
-3. **Plan the slice** — break the slice into tasks (update query, add tests, verify)
+1. **Milestone Research** — scouts the codebase for search-related code, checks Prisma docs for case-insensitive query options
+2. **Slice Research** — zooms in on the specific slice goal and integration points
+3. **Plan the slice** — breaks the slice into tasks (update query, add tests, verify)
 
 ```
 .gsd/
@@ -71,6 +74,10 @@ Run `/gsd auto` to start autonomous execution. GSD will:
                     └── T02-PLAN.md    ← add test cases for mixed-case search
 ```
 
+:::tip
+Want to review decisions before planning begins? Run `/gsd discuss` for a guided interview about the slice — UI, behavior, edge cases — before letting auto mode take over.
+:::
+
 ### 4. Execution
 
 GSD executes each task in a fresh context window. For this bug fix:
@@ -78,16 +85,18 @@ GSD executes each task in a fresh context window. For this bug fix:
 - **T01** updates the Prisma query from `contains: query` to `contains: query, mode: 'insensitive'`
 - **T02** adds test cases verifying that "Pasta", "PASTA", and "pasta" all return the same results
 
-Each task writes a summary when done, documenting what changed and what was verified.
+Each task writes a summary when done, documenting what changed and what was verified. Each summary is automatically committed with a meaningful commit message.
 
 ### 5. Verification and completion
 
-After the last task, GSD runs slice-level verification:
+After the last task, GSD runs slice-level completion:
 
 - Executes the test suite — confirms mixed-case searches return results
 - Writes a slice summary compressing all task work
 - Writes a UAT script with concrete test cases
 - Marks the slice done in the roadmap
+- Reassesses the roadmap — confirms no further slices are needed
+- Validates the milestone against the original success criteria and seals it
 
 ```
 .gsd/
@@ -109,53 +118,59 @@ After the last task, GSD runs slice-level verification:
                     └── T02-SUMMARY.md
 ```
 
-## What Gets Created
+## What Files It Touches
 
-The full `.gsd/` tree after a bug fix milestone:
+### Creates
 
-```
-.gsd/
-├── PROJECT.md                    ← updated with current state
-├── STATE.md                      ← reflects M003 complete
-├── DECISIONS.md                  ← any decisions made during the fix
-├── KNOWLEDGE.md                  ← gotchas discovered (e.g. Prisma mode flag)
-└── milestones/
-    └── M003/
-        ├── M003-CONTEXT.md       ← bug scope and approach
-        ├── M003-RESEARCH.md      ← codebase findings
-        ├── M003-ROADMAP.md       ← slice(s) with checkboxes
-        ├── M003-SUMMARY.md       ← milestone record
-        └── slices/
-            └── S01/
-                ├── S01-PLAN.md
-                ├── S01-SUMMARY.md
-                ├── S01-UAT.md
-                └── tasks/
-                    ├── T01-PLAN.md
-                    ├── T01-SUMMARY.md
-                    ├── T02-PLAN.md
-                    └── T02-SUMMARY.md
-```
+| File | Purpose |
+|------|---------|
+| `.gsd/milestones/M003/M003-CONTEXT.md` | Bug scope, root cause hypothesis, fix approach |
+| `.gsd/milestones/M003/M003-RESEARCH.md` | Codebase findings — what code does what |
+| `.gsd/milestones/M003/M003-ROADMAP.md` | Slice structure with completion checkboxes |
+| `.gsd/milestones/M003/slices/S01/S01-PLAN.md` | Task breakdown for the fix slice |
+| `.gsd/milestones/M003/slices/S01/tasks/T##-PLAN.md` | Individual task plans |
+| `.gsd/milestones/M003/slices/S01/tasks/T##-SUMMARY.md` | Task completion records |
+| `.gsd/milestones/M003/slices/S01/S01-SUMMARY.md` | Compressed slice record |
+| `.gsd/milestones/M003/slices/S01/S01-UAT.md` | Acceptance test script |
+| `.gsd/milestones/M003/M003-SUMMARY.md` | Milestone completion record |
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Current project state to determine next unit |
+| `.gsd/KNOWLEDGE.md` | Accumulated gotchas and patterns |
+| `.gsd/DECISIONS.md` | Architectural decisions that constrain the fix |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Updated after each unit completes |
+| `.gsd/KNOWLEDGE.md` | Any new patterns discovered (e.g., Prisma `mode` flag) |
+| `.gsd/activity/` | JSONL execution logs per session |
+| `.gsd/runtime/` | Session metadata and lock files |
 
 ## Flow Diagram
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a3a1a', 'primaryTextColor': '#e8f4e8', 'primaryBorderColor': '#39ff14', 'lineColor': '#39ff14', 'secondaryColor': '#0d180d', 'tertiaryColor': '#0d180d', 'background': '#0a0e0a', 'mainBkg': '#1a3a1a', 'nodeBorder': '#39ff14', 'clusterBkg': '#0d180d', 'titleColor': '#39ff14', 'edgeLabelBackground': '#0a0e0a'}}}%%
 flowchart TD
-    Start([Bug reported]) --> Discuss["/gsd — discuss the bug"]
-    Discuss --> Context[Context file written]
+    Start([Bug reported]) --> NewMilestone["/gsd new-milestone — describe the bug"]
+    NewMilestone --> Context[Context file written]
     Context --> Auto["/gsd auto"]
     Auto --> Research[Research codebase]
     Research --> Plan[Plan milestone + slice]
-    Plan --> Execute[Execute tasks]
+    Plan --> Execute[Execute tasks in fresh sessions]
     Execute --> Verify{Tests pass?}
-    Verify -->|Yes| Summary[Write summaries]
+    Verify -->|Yes| Summary[Write summaries + UAT]
     Verify -->|No| Fix[Fix and re-verify]
     Fix --> Verify
-    Summary --> Done([Bug fixed ✓])
+    Summary --> Seal[Validate + seal milestone]
+    Seal --> Done([Bug fixed ✓])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Discuss fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style NewMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Context fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Auto fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Research fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -164,5 +179,15 @@ flowchart TD
     style Verify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Fix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Seal fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
+
+## Related Commands
+
+- [`/gsd quick`](../../commands/quick/) — faster path for bugs you already understand
+- [`/gsd discuss`](../../commands/discuss/) — guided interview before a slice executes
+- [`/gsd auto`](../../commands/auto/) — autonomous execution reference
+- [`/gsd doctor`](../../commands/doctor/) — if execution gets stuck or state looks wrong
+- [Recipe: Small Change](../small-change/) — for one-liner fixes without milestone ceremony
+- [Recipe: Recover from Errors](../error-recovery/) — if auto mode crashes mid-execution

@@ -32,6 +32,8 @@ title: "Commands Reference"
 |---------|-------------|
 | [`/gsd prefs`](./prefs/) | Model selection, timeouts, budget ceiling |
 | [`/gsd mode`](./mode/) | Switch workflow mode (solo/team) with coordinated defaults for milestone IDs, git commit behavior, and documentation |
+| [`/gsd config`](./config/) | Re-run the provider setup wizard (LLM provider + tool keys) |
+| [`/gsd keys`](./keys/) | API key manager — list, add, remove, test, rotate, doctor |
 | [`/gsd doctor`](./doctor/) | Runtime health checks (7 checks) with auto-fix for common state corruption issues |
 | [`/gsd skill-health`](./skill-health/) | Skill lifecycle dashboard — usage stats, success rates, token trends, staleness warnings |
 | [`/gsd skill-health <name>`](./skill-health/) | Detailed view for a single skill |
@@ -40,6 +42,17 @@ title: "Commands Reference"
 | [`/gsd hooks`](./hooks/) | Show configured post-unit and pre-dispatch hooks |
 | [`/gsd run-hook`](./run-hook/) | Manually trigger a specific hook |
 | [`/gsd migrate`](./migrate/) | Migrate a v1 `.planning` directory to `.gsd` format |
+
+## Milestone Management
+
+| Command | Description |
+|---------|-------------|
+| [`/gsd new-milestone`](./new-milestone/) | Create a new milestone |
+| [`/gsd skip`](./skip/) | Prevent a unit from auto-mode dispatch |
+| [`/gsd undo`](./undo/) | Revert last completed unit |
+| Park milestone | Available via `/gsd` wizard → "Milestone actions" → "Park" |
+| Unpark milestone | Available via `/gsd` wizard → "Milestone actions" → "Unpark" |
+| Discard milestone | Available via `/gsd` wizard → "Milestone actions" → "Discard" |
 
 ## Parallel Orchestration
 
@@ -86,8 +99,6 @@ See [Parallel Orchestration](../parallel-orchestration/) for full documentation.
 >
 > **Tip:** If `Ctrl+V` is intercepted by your terminal (e.g. Warp), use `Alt+V` instead for clipboard image paste.
 
-See [Keyboard Shortcuts](./keyboard-shortcuts/) for full documentation.
-
 ## CLI Flags
 
 | Flag | Description |
@@ -103,8 +114,6 @@ See [Keyboard Shortcuts](./keyboard-shortcuts/) for full documentation.
 | [`gsd config`](./config/) | Set up global API keys for search and docs tools (saved to `~/.gsd/agent/auth.json`, applies to all projects). See [Global API Keys](../configuration/#global-api-keys-gsd-config). |
 | [`gsd update`](./update/) | Update GSD to the latest version |
 | [`gsd headless new-milestone`](./headless/) | Create a new milestone from a context file (headless — no TUI required) |
-
-See [CLI Flags](./cli-flags/) for full documentation.
 
 ## Headless Mode
 
@@ -149,8 +158,6 @@ echo "Build a CLI tool" | gsd headless new-milestone --context -
 **Exit codes:** `0` = complete, `1` = error or timeout, `2` = blocked.
 
 Any `/gsd` subcommand works as a positional argument — `gsd headless status`, `gsd headless doctor`, `gsd headless dispatch execute`, etc.
-
-See [Headless Mode](./headless/) for full documentation.
 
 ### `gsd headless query`
 
@@ -205,7 +212,7 @@ The server registers all tools from the agent session and maps MCP `tools/list` 
 
 ## In-Session Update
 
-[`/gsd update`](./update/) checks npm for a newer version of GSD and installs it without leaving the session.
+`/gsd update` checks npm for a newer version of GSD and installs it without leaving the session.
 
 ```bash
 /gsd update
@@ -218,7 +225,7 @@ If already up to date, it reports so and takes no action.
 
 ## Export
 
-[`/gsd export`](./export/) generates reports of milestone work.
+`/gsd export` generates reports of milestone work.
 
 ```bash
 # Generate HTML report for the active milestone

@@ -1,6 +1,6 @@
 ---
 title: "Commands"
-description: "All 42 GSD commands — searchable, filterable cheat-sheet cards."
+description: "All GSD commands — searchable, filterable cheat-sheet cards."
 ---
 
 import commands from '../../../../content/generated/commands.json';
@@ -10,17 +10,22 @@ import ReferenceGrid from '../../../../src/components/ReferenceGrid.astro';
 export const categories = [...new Set(commands.map(c => c.category))];
 
 export const commandSlugs = {
-  '/gsd': 'gsd', '/gsd auto': 'auto', '/gsd stop': 'stop', '/gsd pause': 'pause',
+  '/gsd': 'gsd', '/gsd auto': 'auto', '/gsd stop': 'stop',
   '/gsd next': 'next', '/gsd quick': 'quick', '/gsd discuss': 'discuss',
   '/gsd status': 'status', '/gsd visualize': 'visualize', '/gsd queue': 'queue',
   '/gsd steer': 'steer', '/gsd capture': 'capture', '/gsd triage': 'triage',
   '/gsd knowledge': 'knowledge', '/gsd cleanup': 'cleanup', '/gsd doctor': 'doctor',
   '/gsd forensics': 'forensics', '/gsd prefs': 'prefs', '/gsd mode': 'mode',
-  '/gsd skill-health': 'skill-health', '/gsd config': 'config', '/gsd hooks': 'hooks',
-  '/gsd run-hook': 'run-hook', '/gsd migrate': 'migrate',
+  '/gsd skill-health': 'skill-health', '/gsd skill-health <name>': 'skill-health',
+  '/gsd skill-health --declining': 'skill-health', '/gsd skill-health --stale N': 'skill-health',
+  '/gsd config': 'config', '/gsd hooks': 'hooks', '/gsd run-hook': 'run-hook',
+  '/gsd migrate': 'migrate', '/gsd export --html': 'export',
+  '/gsd export --html --all': 'export', '/gsd update': 'update',
+  '/gsd keys': 'keys', '/gsd new-milestone': 'new-milestone',
+  '/gsd skip': 'skip', '/gsd undo': 'undo', '/gsd logs': 'logs',
 };
 
-42 commands across 7 categories. Click any card to expand for details. Use the filter bar to narrow by category.
+{commands.length} commands across {categories.length} categories. Click any card to expand for details. Use the filter bar to narrow by category.
 
 <ReferenceGrid categories={categories}>
   {categories.map((cat) => (

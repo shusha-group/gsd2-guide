@@ -24,7 +24,7 @@ This recipe walks through the recovery process — from recognizing the problem 
 The first sign is usually silence — auto-mode stops producing output. You might also see:
 
 - A stale `auto.lock` file in `.gsd/`
-- `STATE.md` showing a task as `in_progress` with no recent activity
+- `STATE.md` showing an in-progress phase with no recent activity
 - An incomplete task — `T02-PLAN.md` exists but `T02-SUMMARY.md` doesn't
 
 Check the current state:
@@ -32,18 +32,33 @@ Check the current state:
 ```
 > cat .gsd/STATE.md
 
-milestone: M002
-slice: S01
-task: T02
-status: in_progress
+# GSD State
+
+**Active Milestone:** M002: Recipe Image Upload
+**Active Slice:** S01: Storage and Upload API
+**Phase:** executing
+...
 ```
 
-The lock file confirms auto-mode was running and didn't shut down cleanly:
+The `auto.lock` file confirms auto-mode was running and didn't shut down cleanly. It's a JSON file that records the PID, which unit was dispatched, and when:
+
+```json
+{
+  "pid": 48221,
+  "startedAt": "2025-01-15T10:00:00.000Z",
+  "unitType": "execute-task",
+  "unitId": "M002/S01/T02",
+  "unitStartedAt": "2025-01-15T10:24:00.000Z",
+  "completedUnits": 3
+}
+```
+
+The directory structure confirms T02 never finished:
 
 ```
 .gsd/
 ├── auto.lock              ← stale lock — auto-mode crashed
-├── STATE.md               ← shows T02 in_progress
+├── STATE.md               ← shows executing phase, S01 active
 └── milestones/
     └── M002/
         └── slices/
@@ -58,113 +73,189 @@ The lock file confirms auto-mode was running and didn't shut down cleanly:
 
 ### 2. Run `/gsd doctor`
 
-The doctor command scans your `.gsd/` state for inconsistencies and applies automatic fixes:
+Start by scanning for issues without making any changes:
 
 ```
 > /gsd doctor
 ```
 
-Doctor performs deterministic checks first — things it can fix without judgment:
+Doctor runs checks across four categories:
 
-- **Stale locks** — removes `auto.lock` if auto-mode isn't actually running
-- **Missing artifacts** — detects that T02 has a plan but no summary
-- **State inconsistencies** — `STATE.md` says `in_progress` but no process is running
-- **Broken references** — plan files referencing tasks that don't exist
+- **Structure** — Missing summaries, UAT files, unchecked roadmap entries, missing `tasks/` directories
+- **Git health** — Orphaned worktrees, stale milestone branches, corrupt merge or rebase state, runtime files tracked by git
+- **Runtime state** — Stale `auto.lock` (PID check), orphaned completed-unit keys, stale hook state, activity log bloat, STATE.md staleness, gitignore drift
+- **Requirements** — Active requirements without an owning slice, blocked requirements without a reason
 
-After the deterministic scan, doctor may enter heal mode to resolve issues that need more context — like reconstructing what T02 accomplished before it crashed by reading partial output from activity logs.
+The report shows what's wrong before anything is repaired:
 
-### 3. Resume auto-mode
+```
+GSD doctor report.
+Scope: M002/S01
+Issues: 2 total · 1 error(s) · 1 warning(s) · 2 fixable
+Priority issues:
+- [ERROR] project: stale auto.lock — PID 48221 is dead
+- [WARN] M002/S01/T02: summary exists but task not checked in plan
+```
 
-If doctor resolves the issues cleanly, resume execution:
+### 3. Run `/gsd doctor fix`
+
+Once you understand what's wrong, apply automatic repairs:
+
+```
+> /gsd doctor fix
+```
+
+Fix mode repairs everything marked as fixable: removes the stale crash lock, marks T02 done in the plan if a summary now exists, creates placeholder summaries for missing slice artifacts, regenerates STATE.md from current disk state, and more. It only touches issues with `fixable: true` — it won't rewrite plan content or make judgment calls.
+
+```
+GSD doctor report.
+Scope: M002/S01
+Issues: 2 total · 1 error(s) · 1 warning(s) · 2 fixable
+Fixes applied:
+- cleared stale auto.lock
+- marked T02 done in .gsd/milestones/M002/slices/S01/S01-PLAN.md
+```
+
+### 4. Resume auto-mode
+
+If doctor fix resolves the issues cleanly, resume execution:
 
 ```
 > /gsd auto
 ```
 
-Auto-mode picks up where it left off. Since T02 never wrote a summary, GSD re-executes T02 from scratch — it reads T01's summary for context and continues the slice.
+Auto-mode re-derives state from disk on startup. If T02 never wrote a summary, auto-mode re-executes T02 from scratch — it reads T01's summary for context and continues the slice. If T02's summary exists but the plan checkbox was unchecked, doctor already fixed that and auto-mode picks up the next task.
 
-### 4. If doctor isn't enough — run `/gsd forensics`
+Auto-mode also runs lightweight self-healing on every startup: it scans runtime records and clears any where the expected artifact already exists on disk (recovering from incomplete closeouts after prior crashes), and checks for leftover git merge state — finalizing clean merges or aborting conflicted ones.
 
-When the crash is unusual or keeps happening, use forensics for a deeper investigation:
+### 5. If structural issues remain — use heal mode
+
+When auto-fix can't resolve everything (non-fixable issues, missing artifacts that need real content), use heal mode to dispatch remaining issues to the LLM:
 
 ```
-> /gsd forensics
-
-What happened?
-> Auto-mode keeps crashing on T02 of the image upload slice.
-> It stops after about 5 minutes with no error output.
+> /gsd doctor heal
 ```
 
-Forensics gathers a structured report automatically:
+Heal mode first applies all fixable repairs, then filters the remaining issues — all errors plus UAT-related warnings — and dispatches them to the LLM as a structured list. The LLM receives the full doctor report with issue codes, unit IDs, and file paths, and is instructed to generate real artifacts from existing context (task summaries, plan files) rather than leaving placeholders when possible.
 
-- **Activity logs** — the sequence of tool calls and their results from the crashed session
-- **State snapshots** — what `.gsd/` looked like before and after the failure
-- **Error traces** — any error messages or stack traces captured
-- **Environment details** — GSD version, model, system context
+```
+GSD doctor heal prep.
+Scope: M002/S01
+Issues: 1 total · 1 error(s) · 0 warning(s) · 0 fixable
+Doctor heal dispatched 1 issue(s) to the LLM.
 
-The forensics agent then analyzes the report, identifies the root cause (in this case: the agent was making too many sequential tool calls and hitting a rate limit), and explains:
+● Investigating: all_tasks_done_missing_slice_uat for M002/S01...
+  Reading task summaries to build UAT script...
+  Wrote .gsd/milestones/M002/slices/S01/S01-UAT.md
 
-- **What happened** — the failure sequence
-- **Why it happened** — root cause in GSD's logic or the environment
-- **How to recover** — specific steps to fix the immediate problem
+GSD doctor heal complete.
+```
 
-Forensics also offers to create a GitHub issue if the problem is a GSD bug rather than an environmental issue.
+### 6. If the crash is unusual — run `/gsd forensics`
 
-### 5. Manual state repair (last resort)
+When the failure is behavioral (keeps happening, unusual cost spikes, stuck loops) rather than structural, use forensics for a deeper investigation:
 
-If both doctor and forensics can't automatically resolve the state, you can repair manually:
+```
+> /gsd forensics auto-mode keeps crashing on T02 of the image upload slice
+```
 
-1. **Remove the stale lock:** `rm .gsd/auto.lock`
-2. **Reset the task state:** Edit `STATE.md` to reflect reality — if T02 made no progress, leave it as the current task
-3. **Clean partial artifacts:** If T02 left behind half-written files in the project, review and remove them
-4. **Resume:** Run `/gsd auto` to restart execution
+Forensics gathers a structured report from five data sources:
+
+- **Activity logs** — Tool calls, reasoning traces, and errors from the crashed session
+- **Metrics ledger** — Cost and timing data to detect spikes or excessive retries
+- **Crash lock** — PID liveness to confirm the crash
+- **Doctor checks** — Full structural scan run internally
+- **Completed keys** — Cross-referenced against expected artifacts to find stale completions
+
+Forensics then detects anomalies — stuck loops, cost spikes, timeouts, missing artifacts, error traces — and dispatches the full report to the LLM for interactive root-cause analysis. The LLM explains what happened, why it happened, and how to recover. It also offers to create a GitHub issue at `gsd-build/gsd-2` if the problem is a GSD bug.
+
+Every forensic report is saved as a timestamped file in `.gsd/forensics/` for future reference.
+
+### 7. Manual state repair (last resort)
+
+If both doctor and forensics can't automatically resolve the state, you can repair manually. When auto-mode detects a stuck loop, it provides concrete remediation steps — for example, for a stuck `execute-task`:
+
+1. **Write the task summary** — Even a partial summary in `T02-SUMMARY.md` is sufficient to unblock the pipeline
+2. **Mark the task done** — Change `- [ ] **T02:` → `- [x] **T02:` in the slice plan
+3. **Reconcile state** — Run `/gsd doctor fix` to rebuild STATE.md and clear any stale runtime records
+4. **Resume** — Run `/gsd auto` to restart execution from the next task
+
+For a stuck `complete-slice`:
+
+1. Write the slice summary and UAT file
+2. Mark the slice `[x]` in the milestone roadmap
+3. Run `/gsd doctor fix`
+4. Resume auto-mode
 
 ## What Gets Created
 
 The recovery process may produce:
 
-```
-.gsd/
-├── STATE.md                ← updated to reflect recovered state
-└── milestones/
-    └── M002/
-        └── slices/
-            └── S01/
-                └── tasks/
-                    ├── T01-SUMMARY.md     ← untouched — completed before crash
-                    ├── T02-PLAN.md        ← untouched — will be re-executed
-                    └── T02-SUMMARY.md     ← written after successful re-execution
-```
+### From `/gsd doctor fix`
 
-Doctor's fixes are applied directly to the `.gsd/` state. Forensics saves a detailed report locally for future reference.
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Regenerated from current disk state |
+| `.gsd/auto.lock` | Removed (stale lock cleared) |
+| `.gsd/milestones/*/slices/*/tasks/*-SUMMARY.md` | Stub summary if task was done but summary missing |
+| `.gsd/milestones/*/slices/*/S*-PLAN.md` | Task checkbox updated if summary exists |
+| `.gsd/milestones/*/M*-ROADMAP.md` | Slice checkbox updated if all tasks done |
+
+### From `/gsd doctor heal`
+
+| File | Purpose |
+|------|---------|
+| `.gsd/milestones/*/slices/*/S*-SUMMARY.md` | Reconstructed from task summaries |
+| `.gsd/milestones/*/slices/*/S*-UAT.md` | Generated from slice plan and task context |
+
+### From `/gsd forensics`
+
+| File | Purpose |
+|------|---------|
+| `.gsd/forensics/report-*.md` | Timestamped, redacted forensic report |
 
 ## Flow Diagram
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a3a1a', 'primaryTextColor': '#e8f4e8', 'primaryBorderColor': '#39ff14', 'lineColor': '#39ff14', 'secondaryColor': '#0d180d', 'tertiaryColor': '#0d180d', 'background': '#0a0e0a', 'mainBkg': '#1a3a1a', 'nodeBorder': '#39ff14', 'clusterBkg': '#0d180d', 'titleColor': '#39ff14', 'edgeLabelBackground': '#0a0e0a'}}}%%
 flowchart TD
-    Start([Auto-mode stopped]) --> Detect[Check STATE.md and locks]
-    Detect --> Doctor["/gsd doctor"]
-    Doctor --> Healed{Issues resolved?}
-    Healed -->|Yes| Resume["/gsd auto — resume"]
-    Healed -->|No| Forensics["/gsd forensics"]
+    Start([Auto-mode stopped]) --> Detect[Check STATE.md and auto.lock]
+    Detect --> Doctor["/gsd doctor — scan"]
+    Doctor --> Fix["/gsd doctor fix — auto-repair"]
+    Fix --> Fixed{All fixable<br/>issues resolved?}
+    Fixed -->|Yes| Resume["/gsd auto — resume"]
+    Fixed -->|No| Heal["/gsd doctor heal — LLM repair"]
+    Heal --> Healed{Issues resolved?}
+    Healed -->|Yes| Resume
+    Healed -->|No| Forensics["/gsd forensics — behavioral investigation"]
     Forensics --> Analyze[Root cause identified]
     Analyze --> CanFix{Fixable?}
-    CanFix -->|Yes| Fix[Apply fix and resume]
+    CanFix -->|Yes| ApplyFix[Apply fix and resume]
     CanFix -->|No| Manual[Manual state repair]
     Manual --> Resume
-    Fix --> Resume
+    ApplyFix --> Resume
     Resume --> Done([Execution continues ✓])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Detect fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Doctor fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Healed fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Fix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Fixed fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Resume fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Heal fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Healed fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Forensics fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Analyze fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style CanFix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Fix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CanFix fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ApplyFix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Manual fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
+
+## Related Commands
+
+- [`/gsd doctor`](../../commands/doctor/) — Structural health checks, auto-repair, and LLM-assisted heal mode
+- [`/gsd forensics`](../../commands/forensics/) — Behavioral investigation of stuck loops, cost spikes, and crash analysis
+- [`/gsd status`](../../commands/status/) — View current project state
+- [`/gsd auto`](../../commands/auto/) — Resume auto-mode after recovery
+- [`/gsd skip`](../../commands/skip/) — Skip a stuck unit and advance the pipeline

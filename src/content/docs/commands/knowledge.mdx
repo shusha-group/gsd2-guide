@@ -5,11 +5,11 @@ description: "Add persistent project knowledge — record rules, patterns, and l
 
 ## What It Does
 
-`/gsd knowledge` appends a knowledge entry to `.gsd/KNOWLEDGE.md`. This file is read at the start of every execution unit, so rules, patterns, and lessons you add here influence all future agent work without needing to repeat them.
+`/gsd knowledge` appends an entry to `.gsd/KNOWLEDGE.md`. This file is injected into the system prompt for every agent session, so rules, patterns, and lessons you add here influence all future agent work without needing to repeat them.
 
-Each entry is typed as a `rule`, `pattern`, or `lesson` and scoped to the active milestone/slice. The scope helps future agents understand the context where the knowledge was discovered.
+Each entry is typed as a `rule`, `pattern`, or `lesson` and assigned an auto-incrementing ID (`K001`, `P001`, `L001`) scoped to the active milestone and slice. The scope helps future agents understand the context where the knowledge was discovered.
 
-Use `/gsd knowledge` when you discover something that would save time if the next agent knew it — a recurring gotcha, a non-obvious pattern in the codebase, or a rule that should always be followed.
+Use `/gsd knowledge` when you discover something that would save time if the next agent knew it — a recurring gotcha, a non-obvious pattern in the codebase, or a constraint that should always be respected.
 
 ## Usage
 
@@ -36,46 +36,88 @@ Where `<type>` is one of:
 ### Entry Flow
 
 1. **Parse arguments** — Extracts the type (`rule`, `pattern`, or `lesson`) and the description text. Shows usage help if either is missing or the type is invalid.
-2. **Derive scope** — Reads the current project state to determine the active milestone and slice. The scope is formatted as `M001/S02` or `global` if no milestone is active.
-3. **Append to KNOWLEDGE.md** — Calls `appendKnowledge()` which adds a structured entry to the file with the type, description, scope, and timestamp.
+2. **Derive scope** — Reads the current project state to determine the active milestone and slice. The scope is formatted as `M001/S02`, `M001`, or `global` if no milestone is active.
+3. **Append to KNOWLEDGE.md** — Calls `appendKnowledge()` which inserts a new table row with an auto-incrementing ID into the appropriate section of the file.
 
-### Entry Format
+### File Structure
 
-Entries in `KNOWLEDGE.md` follow a consistent structure that agents can parse:
+`KNOWLEDGE.md` is organized into three typed sections, each with its own table schema. When the file doesn't exist yet, all three sections are created together on first write:
 
 ```markdown
-## <type>: <description>
+# Project Knowledge
 
-**Context:** <scope>
+Append-only register of project-specific rules, patterns, and lessons learned.
+Agents read this before every unit. Add entries when you discover something worth remembering.
+
+## Rules
+
+| # | Scope | Rule | Why | Added |
+|---|-------|------|-----|-------|
+| K001 | M001/S02 | Always use parameterized queries | — | manual |
+
+## Patterns
+
+| # | Pattern | Where | Notes |
+|---|---------|-------|-------|
+| P001 | API endpoints follow controller-service-repository layering | — | M001 |
+
+## Lessons Learned
+
+| # | What Happened | Root Cause | Fix | Scope |
+|---|--------------|------------|-----|-------|
+| L001 | CI runner has 4GB RAM — large test suites need splitting | — | — | M001/S03 |
 ```
 
-The file is append-only — entries are never removed or modified. If a rule becomes obsolete, add a new entry that supersedes it rather than editing the old one.
+### ID Scheme
+
+Each type has its own auto-incrementing ID prefix:
+
+| Type | Prefix | Example IDs |
+|------|--------|-------------|
+| `rule` | `K` | K001, K002, K003 |
+| `pattern` | `P` | P001, P002, P003 |
+| `lesson` | `L` | L001, L002, L003 |
+
+The implementation scans existing entries for the highest current ID and increments by one. IDs never reuse.
+
+### Append-Only Design
+
+Entries are never removed or modified. If a rule becomes obsolete, add a new entry that supersedes it rather than editing the old one. This preserves the full history of what was learned and when.
 
 ### How Knowledge Is Used
 
-`KNOWLEDGE.md` is injected into the system prompt for every execution unit (task execution, slice planning, milestone research, etc.). This means:
+`KNOWLEDGE.md` is injected into the system prompt for every agent session — task execution, slice planning, milestone research, and everything else. This means:
 
 - Rules are enforced automatically — the agent sees them as constraints
 - Patterns guide implementation choices — the agent follows established approaches
 - Lessons prevent repeated mistakes — the agent knows about gotchas in advance
 
+The file is only injected if it exists. If no knowledge has been added yet, the block is simply omitted.
+
 ## What Files It Touches
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.gsd/KNOWLEDGE.md` | Created on first entry if it doesn't exist, with all three section headers |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | Derive active milestone/slice for scope |
+| `.gsd/` directory | Derives active milestone/slice scope via `deriveState()` |
+| `.gsd/KNOWLEDGE.md` | Existing content to find the highest ID and append the new row |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/KNOWLEDGE.md` | New entry appended |
+| `.gsd/KNOWLEDGE.md` | New table row inserted into the appropriate section |
 
 ## Examples
 
-Adding a rule to a Cookmate project:
+Adding a rule:
 
 ```
 > /gsd knowledge rule Always use parameterized queries for database access
@@ -99,13 +141,21 @@ Adding a lesson:
 ● Added lesson to KNOWLEDGE.md: "The Stripe webhook needs idempotency keys — duplicate events cause double charges"
 ```
 
-Invalid usage:
+Invalid type — shows usage hint:
 
 ```
 > /gsd knowledge fix the tests
 
 ● Usage: /gsd knowledge <rule|pattern|lesson> <description>
   Example: /gsd knowledge rule Use real DB for integration tests
+```
+
+Missing description — shows per-type hint:
+
+```
+> /gsd knowledge rule
+
+● Usage: /gsd knowledge rule <description>
 ```
 
 ## Related Commands

@@ -1,168 +1,168 @@
 {
   "commands/auto.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/auto.ts": "4342b3e7e2435769c0a49344af79a68c9e993352",
-      "src/resources/extensions/gsd/auto-dispatch.ts": "8cd4e2ce699cdafaeba71d151dea9dab29b4a2df",
-      "src/resources/extensions/gsd/auto-recovery.ts": "f142d95e117d1f2d915e07b0f9fc097da94d06ee",
-      "src/resources/extensions/gsd/auto-worktree.ts": "ff99389458bf43542debba019a2cee5740c2b0d7",
-      "src/resources/extensions/gsd/auto-prompts.ts": "6f1b376c4d221d3266f66f516da7b8e711562599",
-      "src/resources/extensions/gsd/auto-supervisor.ts": "05e0713fb2c92a0c192bc28a31c04297b2b61899",
-      "src/resources/extensions/gsd/auto-dashboard.ts": "3f2ed8a524722f5dee5f95aa7a30dccca9ab4da8",
-      "src/resources/extensions/gsd/unit-runtime.ts": "8384ea401307f7c0c68e06707507eeaed00342f7"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/auto.ts": "dcb4881d8d8290d519c5ecafa55b7a7475297660",
+      "src/resources/extensions/gsd/auto-dispatch.ts": "e1c5061274c82c6ce3d2cd8985063f6c6278ff4d",
+      "src/resources/extensions/gsd/auto-recovery.ts": "119589c315d639ff0d0017d85845d660d4ab03e9",
+      "src/resources/extensions/gsd/auto-worktree.ts": "bf856593ce87de9970bf82d4ce813e899fdc0068",
+      "src/resources/extensions/gsd/auto-prompts.ts": "8e9dc6d62b4ab1f4f1bd576e0e420c4434543a1a",
+      "src/resources/extensions/gsd/auto-supervisor.ts": "4e794e0debcf5f9032b048ccb60fde8843915ac5",
+      "src/resources/extensions/gsd/auto-dashboard.ts": "d2aeb519366790024afa2784f64ac09a27c4b239",
+      "src/resources/extensions/gsd/unit-runtime.ts": "04c027d5e78274bda515d686c504fc988c2a75a2"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/capture.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/captures.ts": "2c18a987c1771d174d2ac369f4b7be1ec95cc81a",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/captures.ts": "9837cb907bd331849cd49795fe64fb9c868a74f0",
       "src/resources/extensions/gsd/prompts/triage-captures.md": "60dd5ca95cf8312f36dcfc659e68a88530db33ae"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/cleanup.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/worktree-manager.ts": "191676ccfb7980958100c12401b3bcfadf7b8c6b",
-      "src/resources/extensions/gsd/worktree.ts": "7669aa9db355e41e885ed1e1341aaeaf405de2f2",
-      "src/resources/extensions/gsd/git-service.ts": "d3b3f0a094bcf19fbb0a6da6080d5b3210c7ceab"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/worktree-manager.ts": "e10f2707f810fb7a6fd3e90b51a696e84a242b98",
+      "src/resources/extensions/gsd/worktree.ts": "3a2c28826a3ba5b90cbd8bd78fbabc4de734e844",
+      "src/resources/extensions/gsd/git-service.ts": "4e57c4f257b271c3e446a24558613d9a0c1a4b52"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/cli-flags.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/config.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/preferences.ts": "85ca4b6c7064b65ae85a8d05cff07761ca7906ce",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/preferences.ts": "e4a5725b8178a4a936f0e640862d0fb44bcd48a3",
       "src/resources/extensions/gsd/prompts/system.md": "dc441f40cb4f77c5fc597ef30ec99aaa42eeb34f"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/discuss.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/prompts/discuss.md": "282c8aaa4242a568dee8b94135666faed3cfd70f"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/prompts/discuss.md": "346bd9436feb800174773e90920dd3e7172c8ce5"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/doctor.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/doctor.ts": "c83c6e51e9f7fc2c32f7a11267eca4f4e736edcf",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/doctor.ts": "2138a158626efdf48d98c8128c7966be1edd0e01",
       "src/resources/extensions/gsd/doctor-proactive.ts": "29fabd288b8b755ffab1bef4f45f65547deeec9a",
       "src/resources/extensions/gsd/prompts/doctor-heal.md": "3270ae07048a6bba432823fbb0bb459386ed624e"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/export.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/export.ts": "b87f25825456bb0422b9f854e7ad0a2fa315ccc9"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/export.ts": "94a8131134f63e552c754cd5920a80dadd9338c3"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/forensics.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/forensics.ts": "2bf83ebffd2fa5115c2ff291d442df912da5d71f",
-      "src/resources/extensions/gsd/session-forensics.ts": "f389b6ad5523362e51c8b6f88f61506ef4c823ec",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/forensics.ts": "2b76b2d5a3c18ec7b6201e865a7a76f186d3b1d6",
+      "src/resources/extensions/gsd/session-forensics.ts": "04894fe1f3ec56851fad8b424cede7c6468dceb0",
       "src/resources/extensions/gsd/prompts/forensics.md": "a3922e8e86fdb47a5f884403d037022dcbd1ec11"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/gsd.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/guided-flow.ts": "e2f1b6c264956e5235386fef4b152bc92c152bcf",
-      "src/resources/extensions/gsd/prompts/discuss.md": "282c8aaa4242a568dee8b94135666faed3cfd70f",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/guided-flow.ts": "a89cdca505ebf72fdeb69704105c889bf35fc610",
+      "src/resources/extensions/gsd/prompts/discuss.md": "346bd9436feb800174773e90920dd3e7172c8ce5",
       "src/resources/extensions/gsd/prompts/system.md": "dc441f40cb4f77c5fc597ef30ec99aaa42eeb34f"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/headless.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/prompts/discuss-headless.md": "4a12447045400017881f21c09e5cdc316e1c53f3"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/prompts/discuss-headless.md": "b6b814064b02a45c6e6f376364edbe75e6e3179a"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/hooks.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/post-unit-hooks.ts": "649566259ff26e685cd03afc0088d4749fea6ec1",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/post-unit-hooks.ts": "0dd2a4d9294ac0ad9fa1f4929ebe71e5866bdbfc",
       "src/resources/extensions/gsd/prompts/execute-task.md": "888f917d44b9ebf9df794911b1e57a39dd0026c1"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/keyboard-shortcuts.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/knowledge.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
       "src/resources/extensions/gsd/prompts/system.md": "dc441f40cb4f77c5fc597ef30ec99aaa42eeb34f",
       "src/resources/extensions/gsd/files.ts": "a444deadc284fd5fdedffff6b269e16a724382c2"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/migrate.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/migrate/command.ts": "a13739535ecaedc490ede2dd4ac221aee91b0aba",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/migrate/command.ts": "233ab61f3db9edd169e3551e14d3406d39e46386",
       "src/resources/extensions/gsd/migrate/index.ts": "fa1e1e4949a0c5c377bca6d2e48e872a1e0697d4",
       "src/resources/extensions/gsd/migrate/parser.ts": "937464aaf394dfd4336fc1a33dcace84fef29823",
       "src/resources/extensions/gsd/migrate/parsers.ts": "4241b007974f818bae513dc186f57fbf47d17742",
@@ -170,241 +170,241 @@
       "src/resources/extensions/gsd/migrate/transformer.ts": "b1661c0e07afc43f17f68323af4ac1dd6e13307b",
       "src/resources/extensions/gsd/migrate/types.ts": "7b083b63d4672b136e029e72814e5761235b0fb2",
       "src/resources/extensions/gsd/migrate/validator.ts": "82be20054545c9f4b803ec94a3a1868b86660fc3",
-      "src/resources/extensions/gsd/migrate/writer.ts": "4fa12eaf92f640e84952547d49777e86ccd86cce"
+      "src/resources/extensions/gsd/migrate/writer.ts": "698a3290fba909dfefd1264ace2bf561a665cd3b"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/mode.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/guided-flow.ts": "e2f1b6c264956e5235386fef4b152bc92c152bcf",
-      "src/resources/extensions/gsd/preferences.ts": "85ca4b6c7064b65ae85a8d05cff07761ca7906ce"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/guided-flow.ts": "a89cdca505ebf72fdeb69704105c889bf35fc610",
+      "src/resources/extensions/gsd/preferences.ts": "e4a5725b8178a4a936f0e640862d0fb44bcd48a3"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/next.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/prefs.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/preferences.ts": "85ca4b6c7064b65ae85a8d05cff07761ca7906ce"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/preferences.ts": "e4a5725b8178a4a936f0e640862d0fb44bcd48a3"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/queue.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/queue-order.ts": "de8ef6cf9aec0702fee8223159a9655a68dbc927",
-      "src/resources/extensions/gsd/queue-reorder-ui.ts": "b07fefa5f7dce8c50460d88077be3d139d3bdb74",
-      "src/resources/extensions/gsd/prompts/queue.md": "69bdf5316f5bbc1508664ed17f6c1dd2f79fd9f6"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/queue-order.ts": "fa87a1a801e3d07bea7c73813f0d54f7529e644b",
+      "src/resources/extensions/gsd/queue-reorder-ui.ts": "e578b20fe1c59d163495f8cae3b2573677add744",
+      "src/resources/extensions/gsd/prompts/queue.md": "a2b0ca9c5366c4bdcf10cf662a1c925f65a25a90"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/quick.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/quick.ts": "69bbc8ecc9c3d8b73817a4dda54f0c9918d0dc87"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/quick.ts": "299b48a2a1e554109a6782837e161f72c38a7e72"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.061Z"
   },
   "commands/run-hook.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/post-unit-hooks.ts": "649566259ff26e685cd03afc0088d4749fea6ec1"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/post-unit-hooks.ts": "0dd2a4d9294ac0ad9fa1f4929ebe71e5866bdbfc"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "commands/skill-health.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
       "src/resources/extensions/gsd/skill-health.ts": "e08ce335237fa80b5d59ae370ee8cf8f857d21bd",
       "src/resources/extensions/gsd/skill-telemetry.ts": "ac99e4e83234d2b8269db824e8f565641f556918",
       "src/resources/extensions/gsd/skill-discovery.ts": "f623c1a21419131443f018d45823574be172161d",
       "src/resources/extensions/gsd/prompts/heal-skill.md": "6388bfb9b2e5b98b89cc04e64d7015ab0bb111d4"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "commands/status.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/session-status-io.ts": "452d7201fc3e08453f19961298581a888268439e"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/session-status-io.ts": "7d8558a594b0209e26af6e42dfcbde51638f41cc"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "commands/steer.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/prompts/discuss.md": "282c8aaa4242a568dee8b94135666faed3cfd70f",
-      "src/resources/extensions/gsd/guided-flow.ts": "e2f1b6c264956e5235386fef4b152bc92c152bcf"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/prompts/discuss.md": "346bd9436feb800174773e90920dd3e7172c8ce5",
+      "src/resources/extensions/gsd/guided-flow.ts": "a89cdca505ebf72fdeb69704105c889bf35fc610"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "commands/stop.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "commands/triage.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
       "src/resources/extensions/gsd/triage-ui.ts": "ebf73bc2685b77fac6299e836562b3eefbb72eb9",
-      "src/resources/extensions/gsd/triage-resolution.ts": "8ddc4a6bae5c77788b1d1864c14ec74456394199",
+      "src/resources/extensions/gsd/triage-resolution.ts": "3765c63dd0ef37067406d668a3c0c333e3ea7025",
       "src/resources/extensions/gsd/prompts/triage-captures.md": "60dd5ca95cf8312f36dcfc659e68a88530db33ae"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "commands/update.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa"
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "commands/visualize.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/visualizer-data.ts": "f3a0d465f68c8a4c9848411af40295134c216fc3",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/visualizer-data.ts": "587a3d4a657e2cf4e218c891a0572b69b3f727ad",
       "src/resources/extensions/gsd/visualizer-overlay.ts": "196b2f8ecc4b143a18d1bb3367708230ff2e7367",
-      "src/resources/extensions/gsd/visualizer-views.ts": "67721af30cdceaa33842a9f440916824e92e6b8a"
+      "src/resources/extensions/gsd/visualizer-views.ts": "30e45939070baee8ca1408f083649342c5b52b45"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "recipes/new-milestone.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/prompts/discuss.md": "282c8aaa4242a568dee8b94135666faed3cfd70f",
+      "src/resources/extensions/gsd/prompts/discuss.md": "346bd9436feb800174773e90920dd3e7172c8ce5",
       "src/resources/extensions/gsd/prompts/research-milestone.md": "b67516e3b9f4199614e41a21b283cffb0bdea9af",
-      "src/resources/extensions/gsd/prompts/plan-milestone.md": "6b4b331abc79c141d248ba4169d807c0895494c8",
+      "src/resources/extensions/gsd/prompts/plan-milestone.md": "4d166d792dabcb9cdbc581ba5154e27ae9f75acf",
       "src/resources/extensions/gsd/templates/roadmap.md": "4fbb7d79d990fafa0c846ae485e98fa92f83cadf",
       "src/resources/extensions/gsd/templates/project.md": "381a85ffb474c24da9214c5e68440107aa3ca018"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "recipes/fix-a-bug.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/prompts/discuss.md": "282c8aaa4242a568dee8b94135666faed3cfd70f",
+      "src/resources/extensions/gsd/prompts/discuss.md": "346bd9436feb800174773e90920dd3e7172c8ce5",
       "src/resources/extensions/gsd/prompts/execute-task.md": "888f917d44b9ebf9df794911b1e57a39dd0026c1",
-      "src/resources/extensions/gsd/doctor.ts": "c83c6e51e9f7fc2c32f7a11267eca4f4e736edcf"
+      "src/resources/extensions/gsd/doctor.ts": "2138a158626efdf48d98c8128c7966be1edd0e01"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "recipes/small-change.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
-      "src/resources/extensions/gsd/quick.ts": "69bbc8ecc9c3d8b73817a4dda54f0c9918d0dc87",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
+      "src/resources/extensions/gsd/quick.ts": "299b48a2a1e554109a6782837e161f72c38a7e72",
       "src/resources/extensions/gsd/prompts/quick-task.md": "8c161cad21ff80de110b1b45f3bd6ff1abfb00f4"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "recipes/error-recovery.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/auto-recovery.ts": "f142d95e117d1f2d915e07b0f9fc097da94d06ee",
+      "src/resources/extensions/gsd/auto-recovery.ts": "119589c315d639ff0d0017d85845d660d4ab03e9",
       "src/resources/extensions/gsd/crash-recovery.ts": "e1ff26c9c409cdf340ba459259ad16601c375259",
-      "src/resources/extensions/gsd/doctor.ts": "c83c6e51e9f7fc2c32f7a11267eca4f4e736edcf",
+      "src/resources/extensions/gsd/doctor.ts": "2138a158626efdf48d98c8128c7966be1edd0e01",
       "src/resources/extensions/gsd/prompts/doctor-heal.md": "3270ae07048a6bba432823fbb0bb459386ed624e"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "recipes/uat-failures.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/prompts/run-uat.md": "f00d2cb4cc4f499751eb21a43b1d3eb0ad35faf6",
-      "src/resources/extensions/gsd/unit-runtime.ts": "8384ea401307f7c0c68e06707507eeaed00342f7",
+      "src/resources/extensions/gsd/prompts/run-uat.md": "3af709b6368ec2841c724dbb92ca4f5a0b6f5168",
+      "src/resources/extensions/gsd/unit-runtime.ts": "04c027d5e78274bda515d686c504fc988c2a75a2",
       "src/resources/extensions/gsd/prompts/replan-slice.md": "3922024e06faa4086b230bc251b9bd1a4c77f4c2"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "recipes/working-in-teams.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "src/resources/extensions/gsd/worktree.ts": "7669aa9db355e41e885ed1e1341aaeaf405de2f2",
-      "src/resources/extensions/gsd/worktree-manager.ts": "191676ccfb7980958100c12401b3bcfadf7b8c6b",
-      "src/resources/extensions/gsd/git-service.ts": "d3b3f0a094bcf19fbb0a6da6080d5b3210c7ceab",
+      "src/resources/extensions/gsd/worktree.ts": "3a2c28826a3ba5b90cbd8bd78fbabc4de734e844",
+      "src/resources/extensions/gsd/worktree-manager.ts": "e10f2707f810fb7a6fd3e90b51a696e84a242b98",
+      "src/resources/extensions/gsd/git-service.ts": "4e57c4f257b271c3e446a24558613d9a0c1a4b52",
       "src/resources/extensions/gsd/prompts/worktree-merge.md": "65f865f21ad84542dfa96f416f3af6cc58a4df4f"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "user-guide/developing-with-gsd.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
       "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
-      "src/resources/extensions/gsd/auto.ts": "4342b3e7e2435769c0a49344af79a68c9e993352",
-      "src/resources/extensions/gsd/auto-dispatch.ts": "8cd4e2ce699cdafaeba71d151dea9dab29b4a2df",
-      "src/resources/extensions/gsd/guided-flow.ts": "e2f1b6c264956e5235386fef4b152bc92c152bcf",
-      "src/resources/extensions/gsd/preferences.ts": "85ca4b6c7064b65ae85a8d05cff07761ca7906ce",
-      "src/resources/extensions/gsd/doctor.ts": "c83c6e51e9f7fc2c32f7a11267eca4f4e736edcf",
-      "src/resources/extensions/gsd/quick.ts": "69bbc8ecc9c3d8b73817a4dda54f0c9918d0dc87",
-      "src/resources/extensions/gsd/prompts/discuss.md": "282c8aaa4242a568dee8b94135666faed3cfd70f",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/auto.ts": "dcb4881d8d8290d519c5ecafa55b7a7475297660",
+      "src/resources/extensions/gsd/auto-dispatch.ts": "e1c5061274c82c6ce3d2cd8985063f6c6278ff4d",
+      "src/resources/extensions/gsd/guided-flow.ts": "a89cdca505ebf72fdeb69704105c889bf35fc610",
+      "src/resources/extensions/gsd/preferences.ts": "e4a5725b8178a4a936f0e640862d0fb44bcd48a3",
+      "src/resources/extensions/gsd/doctor.ts": "2138a158626efdf48d98c8128c7966be1edd0e01",
+      "src/resources/extensions/gsd/quick.ts": "299b48a2a1e554109a6782837e161f72c38a7e72",
+      "src/resources/extensions/gsd/prompts/discuss.md": "346bd9436feb800174773e90920dd3e7172c8ce5",
       "src/resources/extensions/gsd/prompts/system.md": "dc441f40cb4f77c5fc597ef30ec99aaa42eeb34f",
       "src/resources/extensions/gsd/prompts/execute-task.md": "888f917d44b9ebf9df794911b1e57a39dd0026c1",
-      "src/resources/extensions/gsd/prompts/plan-milestone.md": "6b4b331abc79c141d248ba4169d807c0895494c8",
+      "src/resources/extensions/gsd/prompts/plan-milestone.md": "4d166d792dabcb9cdbc581ba5154e27ae9f75acf",
       "src/resources/extensions/gsd/prompts/research-milestone.md": "b67516e3b9f4199614e41a21b283cffb0bdea9af",
       "src/resources/extensions/gsd/templates/roadmap.md": "4fbb7d79d990fafa0c846ae485e98fa92f83cadf",
       "src/resources/extensions/gsd/templates/project.md": "381a85ffb474c24da9214c5e68440107aa3ca018"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "reference/commands.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "docs/commands.md": "09d8f7c235a89fb7f168642adf6252c3bda28f83"
+      "docs/commands.md": "7a1932ac3fdec9c63255c0cbbb82f9b10f96a9d6"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "reference/skills.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
       "src/resources/skills/accessibility/SKILL.md": "702e93e378244ec95d99a9ecfed7700c65baa230",
       "src/resources/skills/accessibility/references/WCAG.md": "a2b7c9827dd5571add7186715e84937e84d95df3",
@@ -462,7 +462,7 @@
       "src/resources/skills/make-interfaces-feel-better/surfaces.md": "eb8ab67dcb5f74e292769d7419be36569dbce6bb",
       "src/resources/skills/make-interfaces-feel-better/typography.md": "12b8db307dabebaac3ebe3d082260cd64f7408b7",
       "src/resources/skills/react-best-practices/README.md": "f283e1c0c21c5b13c848452528c3949ff544846c",
-      "src/resources/skills/react-best-practices/SKILL.md": "1ad7750e572f8e28ce21090dc1049fa7eecd8cae",
+      "src/resources/skills/react-best-practices/SKILL.md": "823a8fa1db49940329aaacbddc56a8034300d78c",
       "src/resources/skills/react-best-practices/metadata.json": "3bec38b176cc71d105895ec4678bbe79305dcb4c",
       "src/resources/skills/react-best-practices/rules/_sections.md": "4d20c144bc3b9265fc5976c704a8dd60ed3a806a",
       "src/resources/skills/react-best-practices/rules/_template.md": "1e9e70703485021e0b969f5731f38c8b9f8694db",
@@ -702,10 +702,10 @@
       "src/resources/skills/web-quality-audit/SKILL.md": "a3cc80c60e208615e4f01099a5ad2bb6c998fdd8",
       "src/resources/skills/web-quality-audit/scripts/analyze.sh": "37bedf7bfa0c85f66c73384c8084bb60b4c80854"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "reference/agents.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
       "src/resources/agents/javascript-pro.md": "30e8e50161ac01e0f28193df7e46b2c4cc4001c0",
       "src/resources/agents/researcher.md": "3c34ea0e3399d867c3ad00d6473e407a57901d3a",
@@ -713,10 +713,10 @@
       "src/resources/agents/typescript-pro.md": "cbffd97ae7520d2d7ed9ca097de04b89767e74bc",
       "src/resources/agents/worker.md": "fe1aff305cd87951e93fc34f18fb1a1aca17b1a9"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "reference/extensions.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
       "src/resources/extensions/ask-user-questions.ts": "b14697667b1a9c8ae5bebcb079aa66eb3064743d",
       "src/resources/extensions/async-jobs/async-bash-tool.ts": "a4f4f5cfae933cc1da24bf3f67458191ad3b01a3",
@@ -731,12 +731,12 @@
       "src/resources/extensions/bg-shell/interaction.ts": "9fcac657def30067769fb99d5528fdc9aa12d623",
       "src/resources/extensions/bg-shell/output-formatter.ts": "eaec252afbf0539dca4cb07b0d1eb28b889195f1",
       "src/resources/extensions/bg-shell/overlay.ts": "ddaf744bb3a3ee33efb54a04411c798ffc9eaaac",
-      "src/resources/extensions/bg-shell/process-manager.ts": "95ee6ccd9fef93f0613de21594115f8206f7b73d",
+      "src/resources/extensions/bg-shell/process-manager.ts": "42ff4bb3def8a5023d402087b424d17310b07bd7",
       "src/resources/extensions/bg-shell/readiness-detector.ts": "e1e923fdc8186fede18c8aeae41b2c39fdfcc310",
       "src/resources/extensions/bg-shell/types.ts": "fa5131bd489e857399c38b56c4b40a689497c1ef",
       "src/resources/extensions/bg-shell/utilities.ts": "9b17c130f909cc9a3212e62cea65d0cd2825c6b3",
       "src/resources/extensions/browser-tools/BROWSER-TOOLS-V2-PROPOSAL.md": "d8c1b2aef88a5540716e4777eba40126f41f8c9a",
-      "src/resources/extensions/browser-tools/capture.ts": "24dd890dfc7060226ad0ce0ee25cfaf5d9217559",
+      "src/resources/extensions/browser-tools/capture.ts": "0c980b87132f7e67245973046de316b2a4cc5890",
       "src/resources/extensions/browser-tools/core.ts": "7fd031fd5e62c7cef07f6c7ec9faa4e0df0dc366",
       "src/resources/extensions/browser-tools/evaluate-helpers.ts": "911ff7e7fe7fb6b41010e9d4be33ecb6dd5c9886",
       "src/resources/extensions/browser-tools/index.ts": "79de059c8238ec00bf52f064e5ce86ec3c419acb",
@@ -760,7 +760,7 @@
       "src/resources/extensions/browser-tools/tools/pages.ts": "dcaeef47e374e83472e5ddfa00b885ee4f20079c",
       "src/resources/extensions/browser-tools/tools/pdf.ts": "5808aa0d3ae03b50e5e273e6a4067403377d0a7d",
       "src/resources/extensions/browser-tools/tools/refs.ts": "1534f8bb3662ae3b978f05780af7f06f268f0f3b",
-      "src/resources/extensions/browser-tools/tools/screenshot.ts": "7515d91b76eb964e7755e2ae815c8be0e1bfcf55",
+      "src/resources/extensions/browser-tools/tools/screenshot.ts": "344911883990d2da6a9629af9c26d536f7a4fe86",
       "src/resources/extensions/browser-tools/tools/session.ts": "19ef2cb2069cec510ba017d54d593f45f6cb0db3",
       "src/resources/extensions/browser-tools/tools/state-persistence.ts": "792284ffdb9714127052b464aa571ef4ebfb8349",
       "src/resources/extensions/browser-tools/tools/visual-diff.ts": "760ba824415716f0f8053f7cec7d93cc921a5eef",
@@ -770,67 +770,66 @@
       "src/resources/extensions/context7/index.ts": "779ad5a966bbce864efd1e9a7d8f3973b319e565",
       "src/resources/extensions/context7/package.json": "e41728a6da503242ce46adee3c56a3851ea115b5",
       "src/resources/extensions/get-secrets-from-user.ts": "9cb13c7ce1a8014947a427bf1ed60acb0be7a84f",
-      "src/resources/extensions/google-search/index.ts": "f06eabd93002b7a243dfc1894628810a931c3368",
+      "src/resources/extensions/google-search/index.ts": "3f74fc3e12ad3ca1ca53cef6d3ed8c792c15280f",
       "src/resources/extensions/google-search/package.json": "6375e1c43c500d8f029b58383d3e4681afe3990b",
       "src/resources/extensions/gsd/activity-log.ts": "932f28e2e285ee2bcc3949180b932f7afd595e22",
       "src/resources/extensions/gsd/atomic-write.ts": "a202c3d687b248cbc9b4bfbe248ba45bbdb47237",
       "src/resources/extensions/gsd/auto-budget.ts": "290f336f09a8df39f8cf3471b76710d977096de4",
-      "src/resources/extensions/gsd/auto-dashboard.ts": "3f2ed8a524722f5dee5f95aa7a30dccca9ab4da8",
-      "src/resources/extensions/gsd/auto-direct-dispatch.ts": "1aac353dbb6f1c2fb8230d7192c2917a8e413da6",
-      "src/resources/extensions/gsd/auto-dispatch.ts": "8cd4e2ce699cdafaeba71d151dea9dab29b4a2df",
+      "src/resources/extensions/gsd/auto-dashboard.ts": "d2aeb519366790024afa2784f64ac09a27c4b239",
+      "src/resources/extensions/gsd/auto-direct-dispatch.ts": "2888acb9ec78e2fdc6dd89949ad9968d5ad64afa",
+      "src/resources/extensions/gsd/auto-dispatch.ts": "e1c5061274c82c6ce3d2cd8985063f6c6278ff4d",
       "src/resources/extensions/gsd/auto-model-selection.ts": "70be376711968386ab48f6c951fe96c06f3bc5a8",
       "src/resources/extensions/gsd/auto-observability.ts": "ddcc0bf3d018748bb0b6d062cbe97543c2ae7663",
-      "src/resources/extensions/gsd/auto-prompts.ts": "6f1b376c4d221d3266f66f516da7b8e711562599",
-      "src/resources/extensions/gsd/auto-recovery.ts": "f142d95e117d1f2d915e07b0f9fc097da94d06ee",
-      "src/resources/extensions/gsd/auto-supervisor.ts": "05e0713fb2c92a0c192bc28a31c04297b2b61899",
+      "src/resources/extensions/gsd/auto-prompts.ts": "8e9dc6d62b4ab1f4f1bd576e0e420c4434543a1a",
+      "src/resources/extensions/gsd/auto-recovery.ts": "119589c315d639ff0d0017d85845d660d4ab03e9",
+      "src/resources/extensions/gsd/auto-supervisor.ts": "4e794e0debcf5f9032b048ccb60fde8843915ac5",
       "src/resources/extensions/gsd/auto-timeout-recovery.ts": "c559db243e6cc4bcbad1e64695bed33a1f3ebde2",
       "src/resources/extensions/gsd/auto-tool-tracking.ts": "469f2174dd56512812cb7a1995b2cf6be0951843",
       "src/resources/extensions/gsd/auto-unit-closeout.ts": "8d5bf4f94b4fb6e344df60e3dc5db008bc9156e6",
-      "src/resources/extensions/gsd/auto-worktree-sync.ts": "f13b7631da0561fb4b57660d3c8f215b1f490683",
-      "src/resources/extensions/gsd/auto-worktree.ts": "ff99389458bf43542debba019a2cee5740c2b0d7",
-      "src/resources/extensions/gsd/auto.ts": "4342b3e7e2435769c0a49344af79a68c9e993352",
-      "src/resources/extensions/gsd/auto/session.ts": "70c6e8b659018b081af1c7828e93b754c9ba9f5e",
+      "src/resources/extensions/gsd/auto-worktree.ts": "bf856593ce87de9970bf82d4ce813e899fdc0068",
+      "src/resources/extensions/gsd/auto.ts": "dcb4881d8d8290d519c5ecafa55b7a7475297660",
+      "src/resources/extensions/gsd/auto/session.ts": "12d7e54f862f27f65d15da8de52fc88300e26fb6",
       "src/resources/extensions/gsd/cache.ts": "93eb05215b59e55b027ab44bd214ce17e82f0cfd",
-      "src/resources/extensions/gsd/captures.ts": "2c18a987c1771d174d2ac369f4b7be1ec95cc81a",
+      "src/resources/extensions/gsd/captures.ts": "9837cb907bd331849cd49795fe64fb9c868a74f0",
       "src/resources/extensions/gsd/claude-import.ts": "fd17bb57a2b4d014951f8b9b171be1c42b49efe9",
       "src/resources/extensions/gsd/collision-diagnostics.ts": "09ec44c12a5c1ceb460429de9f2152027f8d41ec",
-      "src/resources/extensions/gsd/commands.ts": "e8424bad1e363c5343ff6c4d7041a80f416f71e5",
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
       "src/resources/extensions/gsd/complexity-classifier.ts": "03ca0049eb30afcb2fda2dd4dce988a6568a507f",
       "src/resources/extensions/gsd/constants.ts": "636f2d808628ee45047162b1ea29b67e9c5d820d",
       "src/resources/extensions/gsd/context-budget.ts": "29bf038360402cd762c1c6629f66b62b06bb0999",
       "src/resources/extensions/gsd/context-store.ts": "2ea66256a238fd70d5c5dc392e4fac8a60a40ea8",
       "src/resources/extensions/gsd/crash-recovery.ts": "e1ff26c9c409cdf340ba459259ad16601c375259",
-      "src/resources/extensions/gsd/dashboard-overlay.ts": "48917f9418b10bff5069dededfaab508a83789f9",
+      "src/resources/extensions/gsd/dashboard-overlay.ts": "9c4ca6bdbdee796537dd90595c04904b9fcf4e3c",
       "src/resources/extensions/gsd/db-writer.ts": "8d49761d63c8c3b3c38da050009d79c3fb8a3762",
       "src/resources/extensions/gsd/debug-logger.ts": "df1ef9b4e5d59327d3ae2c9412d40c367ba7d5d3",
-      "src/resources/extensions/gsd/detection.ts": "5e3e1776b7a1b529843eff274ec95cba9d17ef01",
+      "src/resources/extensions/gsd/detection.ts": "813e47461e9d39702da5ca5f17ba6a5440a2227f",
       "src/resources/extensions/gsd/diff-context.ts": "637679c94016b62045a04d60b0663b1cfa050e9e",
-      "src/resources/extensions/gsd/dispatch-guard.ts": "28d901e51e38a3b8faaa986c282851f634a1414f",
+      "src/resources/extensions/gsd/dispatch-guard.ts": "94e9a550b53c0520b46bd96cb35ea5d2dba3f786",
       "src/resources/extensions/gsd/doctor-proactive.ts": "29fabd288b8b755ffab1bef4f45f65547deeec9a",
-      "src/resources/extensions/gsd/doctor.ts": "c83c6e51e9f7fc2c32f7a11267eca4f4e736edcf",
+      "src/resources/extensions/gsd/doctor.ts": "2138a158626efdf48d98c8128c7966be1edd0e01",
       "src/resources/extensions/gsd/errors.ts": "f6ee5090ff25de8fcfc7af52d82daaf85b1ae9dd",
       "src/resources/extensions/gsd/exit-command.ts": "0cb9e0216bafd49d3dc8346815a1ac58d08cd786",
       "src/resources/extensions/gsd/export-html.ts": "18c367aaf3e0fb5f43774ae07f897e50a1d60b3b",
-      "src/resources/extensions/gsd/export.ts": "b87f25825456bb0422b9f854e7ad0a2fa315ccc9",
+      "src/resources/extensions/gsd/export.ts": "94a8131134f63e552c754cd5920a80dadd9338c3",
       "src/resources/extensions/gsd/file-watcher.ts": "98928ed6225520b346a34e7b8030d70e1169661b",
       "src/resources/extensions/gsd/files.ts": "a444deadc284fd5fdedffff6b269e16a724382c2",
-      "src/resources/extensions/gsd/forensics.ts": "2bf83ebffd2fa5115c2ff291d442df912da5d71f",
+      "src/resources/extensions/gsd/forensics.ts": "2b76b2d5a3c18ec7b6201e865a7a76f186d3b1d6",
       "src/resources/extensions/gsd/git-constants.ts": "7213798ca4fee2efb22be8c64f2354f2e451f1a0",
       "src/resources/extensions/gsd/git-self-heal.ts": "efe8d894d39a55e6b60f827c301d407fbfbc4961",
-      "src/resources/extensions/gsd/git-service.ts": "d3b3f0a094bcf19fbb0a6da6080d5b3210c7ceab",
-      "src/resources/extensions/gsd/gitignore.ts": "1784365aebbdc109d5897aaea8c6baf3cb490c0d",
-      "src/resources/extensions/gsd/gsd-db.ts": "518f6946f737d562bdb91880348d551cc0050aa8",
-      "src/resources/extensions/gsd/guided-flow.ts": "e2f1b6c264956e5235386fef4b152bc92c152bcf",
+      "src/resources/extensions/gsd/git-service.ts": "4e57c4f257b271c3e446a24558613d9a0c1a4b52",
+      "src/resources/extensions/gsd/gitignore.ts": "14ca2632863a0dbfc52e53f249e77dd9f7c9ca15",
+      "src/resources/extensions/gsd/gsd-db.ts": "be32bee0b8a48874e1b5d57a1872277f6151d9ba",
+      "src/resources/extensions/gsd/guided-flow.ts": "a89cdca505ebf72fdeb69704105c889bf35fc610",
       "src/resources/extensions/gsd/history.ts": "79da6782eac7d007b419607fb97d0b1013aca3da",
-      "src/resources/extensions/gsd/index.ts": "d5ce75951b09f33da69ae879878366d04287b430",
-      "src/resources/extensions/gsd/init-wizard.ts": "bd8fb53f6cc3c377f981695376de37a4c75784a3",
+      "src/resources/extensions/gsd/index.ts": "b92317a7f001aaf769524469fc9c24c88f75079d",
+      "src/resources/extensions/gsd/init-wizard.ts": "555139b81b0b1dd2919bdf028cabb23bf477bd71",
       "src/resources/extensions/gsd/jsonl-utils.ts": "4e0de6112c3994a66d53fdad934f67fffb511796",
       "src/resources/extensions/gsd/marketplace-discovery.ts": "cc8a16468e79d629acb55ce7489a4500ba5fae07",
-      "src/resources/extensions/gsd/md-importer.ts": "195eb99227e5dcad775d59d9c4eb13a0ca0a389f",
+      "src/resources/extensions/gsd/md-importer.ts": "29705a0c916eebad64a62434a148197fb56b2295",
       "src/resources/extensions/gsd/memory-extractor.ts": "c63a385a5b2f080ff26f1dff2b1fbb0b1a32bea5",
       "src/resources/extensions/gsd/memory-store.ts": "b7d0094d4879672498931b8126087f998a4994ab",
-      "src/resources/extensions/gsd/metrics.ts": "85dc89f384522e4e732268869003e3f80c987b1b",
-      "src/resources/extensions/gsd/migrate/command.ts": "a13739535ecaedc490ede2dd4ac221aee91b0aba",
+      "src/resources/extensions/gsd/metrics.ts": "197763e0b0c885e92e12d89da89d99ed890cd5df",
+      "src/resources/extensions/gsd/migrate/command.ts": "233ab61f3db9edd169e3551e14d3406d39e46386",
       "src/resources/extensions/gsd/migrate/index.ts": "fa1e1e4949a0c5c377bca6d2e48e872a1e0697d4",
       "src/resources/extensions/gsd/migrate/parser.ts": "937464aaf394dfd4336fc1a33dcace84fef29823",
       "src/resources/extensions/gsd/migrate/parsers.ts": "4241b007974f818bae513dc186f57fbf47d17742",
@@ -838,7 +837,7 @@
       "src/resources/extensions/gsd/migrate/transformer.ts": "b1661c0e07afc43f17f68323af4ac1dd6e13307b",
       "src/resources/extensions/gsd/migrate/types.ts": "7b083b63d4672b136e029e72814e5761235b0fb2",
       "src/resources/extensions/gsd/migrate/validator.ts": "82be20054545c9f4b803ec94a3a1868b86660fc3",
-      "src/resources/extensions/gsd/migrate/writer.ts": "4fa12eaf92f640e84952547d49777e86ccd86cce",
+      "src/resources/extensions/gsd/migrate/writer.ts": "698a3290fba909dfefd1264ace2bf561a665cd3b",
       "src/resources/extensions/gsd/model-cost-table.ts": "82be7930d34d9204f5b5716ede36198e808ba5ed",
       "src/resources/extensions/gsd/model-router.ts": "fd76d53cae1500e76ee6f586bcbb4221d66989c9",
       "src/resources/extensions/gsd/namespaced-registry.ts": "ec6f050894f7f49e5f67b5d606308bcaae0097bf",
@@ -851,23 +850,22 @@
       "src/resources/extensions/gsd/parallel-eligibility.ts": "b02a8f0dbaa3cf83019bff209b3e9e2906da1577",
       "src/resources/extensions/gsd/parallel-merge.ts": "9df8751800ddeb6e45dc0a5acfec60ad9ab6daf2",
       "src/resources/extensions/gsd/parallel-orchestrator.ts": "0760b78cf910f974643849788b3f8ffd3ac06471",
-      "src/resources/extensions/gsd/paths.ts": "df9ae1062d708ce7b4d6b9152ada6992a6a8c0d4",
+      "src/resources/extensions/gsd/paths.ts": "4c523837a9b90e5b2a95ee58f6bf843cad826cfe",
       "src/resources/extensions/gsd/plugin-importer.ts": "7a8fbe29e40cacdd36f7630aea8434e5a5bc4e52",
-      "src/resources/extensions/gsd/post-unit-hooks.ts": "649566259ff26e685cd03afc0088d4749fea6ec1",
-      "src/resources/extensions/gsd/preferences-hooks.ts": "ed99d5c29e15b007fa873ce7000c2abbd2d7b37f",
-      "src/resources/extensions/gsd/preferences-models.ts": "e61debf2cba0b6e2716524364fd5bc2439d41832",
+      "src/resources/extensions/gsd/post-unit-hooks.ts": "0dd2a4d9294ac0ad9fa1f4929ebe71e5866bdbfc",
+      "src/resources/extensions/gsd/preferences-models.ts": "1eeb3c0fe1c1942a81682b44347a634e86fb5eb9",
       "src/resources/extensions/gsd/preferences-skills.ts": "b449af8b48a1590d462817aec78d6839cfe0f485",
-      "src/resources/extensions/gsd/preferences.ts": "85ca4b6c7064b65ae85a8d05cff07761ca7906ce",
+      "src/resources/extensions/gsd/preferences.ts": "e4a5725b8178a4a936f0e640862d0fb44bcd48a3",
       "src/resources/extensions/gsd/prompt-loader.ts": "3a4f67b6e0399f1138354d95061a406916704d6a",
       "src/resources/extensions/gsd/prompts/complete-milestone.md": "0018fe787367a804f339132d546089d8e4d2ddd4",
       "src/resources/extensions/gsd/prompts/complete-slice.md": "72c51e9473e8a36e43369f7d0ea09048c8d04630",
-      "src/resources/extensions/gsd/prompts/discuss-headless.md": "4a12447045400017881f21c09e5cdc316e1c53f3",
-      "src/resources/extensions/gsd/prompts/discuss.md": "282c8aaa4242a568dee8b94135666faed3cfd70f",
+      "src/resources/extensions/gsd/prompts/discuss-headless.md": "b6b814064b02a45c6e6f376364edbe75e6e3179a",
+      "src/resources/extensions/gsd/prompts/discuss.md": "346bd9436feb800174773e90920dd3e7172c8ce5",
       "src/resources/extensions/gsd/prompts/doctor-heal.md": "3270ae07048a6bba432823fbb0bb459386ed624e",
       "src/resources/extensions/gsd/prompts/execute-task.md": "888f917d44b9ebf9df794911b1e57a39dd0026c1",
       "src/resources/extensions/gsd/prompts/forensics.md": "a3922e8e86fdb47a5f884403d037022dcbd1ec11",
       "src/resources/extensions/gsd/prompts/guided-complete-slice.md": "d663a18f0479dcab77e7502eebbb0165b5cf65a7",
-      "src/resources/extensions/gsd/prompts/guided-discuss-milestone.md": "1805740180a375a7b95406bf28c6aedc2d1fcd51",
+      "src/resources/extensions/gsd/prompts/guided-discuss-milestone.md": "2c272c98ff86db0d2a46ab7575934d50b94ca69b",
       "src/resources/extensions/gsd/prompts/guided-discuss-slice.md": "8bc9dadd69d41c92a28b4134da74f45889d8efd5",
       "src/resources/extensions/gsd/prompts/guided-execute-task.md": "4faa6606d32a6ec945373638acf994eda510824e",
       "src/resources/extensions/gsd/prompts/guided-plan-milestone.md": "9da857c1b4513c64feee4d7b49b5037e54d3cf64",
@@ -875,9 +873,9 @@
       "src/resources/extensions/gsd/prompts/guided-research-slice.md": "0707d879b07c9ae336659190e2bf5f53af7b3c7a",
       "src/resources/extensions/gsd/prompts/guided-resume-task.md": "65133deb07c6a61aa9356729a3b6819adc68ddf5",
       "src/resources/extensions/gsd/prompts/heal-skill.md": "6388bfb9b2e5b98b89cc04e64d7015ab0bb111d4",
-      "src/resources/extensions/gsd/prompts/plan-milestone.md": "6b4b331abc79c141d248ba4169d807c0895494c8",
-      "src/resources/extensions/gsd/prompts/plan-slice.md": "69197ceacaa0cb3966ec1bf894d46bcc0b94fba3",
-      "src/resources/extensions/gsd/prompts/queue.md": "69bdf5316f5bbc1508664ed17f6c1dd2f79fd9f6",
+      "src/resources/extensions/gsd/prompts/plan-milestone.md": "4d166d792dabcb9cdbc581ba5154e27ae9f75acf",
+      "src/resources/extensions/gsd/prompts/plan-slice.md": "4db1914dad20c7a7c83a57e440718ec95bb02552",
+      "src/resources/extensions/gsd/prompts/queue.md": "a2b0ca9c5366c4bdcf10cf662a1c925f65a25a90",
       "src/resources/extensions/gsd/prompts/quick-task.md": "8c161cad21ff80de110b1b45f3bd6ff1abfb00f4",
       "src/resources/extensions/gsd/prompts/reassess-roadmap.md": "48843d321a3182587e9add77092d8679e411f65c",
       "src/resources/extensions/gsd/prompts/replan-slice.md": "3922024e06faa4086b230bc251b9bd1a4c77f4c2",
@@ -885,21 +883,21 @@
       "src/resources/extensions/gsd/prompts/research-slice.md": "c440851e19cecae9acedd7781124137be9af3d2e",
       "src/resources/extensions/gsd/prompts/review-migration.md": "8dc8cb9a002da4e57cb230e6d77e295b1f639e7d",
       "src/resources/extensions/gsd/prompts/rewrite-docs.md": "a9106265855ffb914dd208d8ac89309da949d912",
-      "src/resources/extensions/gsd/prompts/run-uat.md": "f00d2cb4cc4f499751eb21a43b1d3eb0ad35faf6",
+      "src/resources/extensions/gsd/prompts/run-uat.md": "3af709b6368ec2841c724dbb92ca4f5a0b6f5168",
       "src/resources/extensions/gsd/prompts/system.md": "dc441f40cb4f77c5fc597ef30ec99aaa42eeb34f",
       "src/resources/extensions/gsd/prompts/triage-captures.md": "60dd5ca95cf8312f36dcfc659e68a88530db33ae",
       "src/resources/extensions/gsd/prompts/validate-milestone.md": "37f555c246ad74c2621073681e63a8ededaa18f5",
       "src/resources/extensions/gsd/prompts/worktree-merge.md": "65f865f21ad84542dfa96f416f3af6cc58a4df4f",
       "src/resources/extensions/gsd/provider-error-pause.ts": "a470df0a668c05eda76a54f8ac71ba6d9dfd7326",
-      "src/resources/extensions/gsd/queue-order.ts": "de8ef6cf9aec0702fee8223159a9655a68dbc927",
-      "src/resources/extensions/gsd/queue-reorder-ui.ts": "b07fefa5f7dce8c50460d88077be3d139d3bdb74",
-      "src/resources/extensions/gsd/quick.ts": "69bbc8ecc9c3d8b73817a4dda54f0c9918d0dc87",
+      "src/resources/extensions/gsd/queue-order.ts": "fa87a1a801e3d07bea7c73813f0d54f7529e644b",
+      "src/resources/extensions/gsd/queue-reorder-ui.ts": "e578b20fe1c59d163495f8cae3b2573677add744",
+      "src/resources/extensions/gsd/quick.ts": "299b48a2a1e554109a6782837e161f72c38a7e72",
       "src/resources/extensions/gsd/reports.ts": "4f4adc60a5015fb5fb1b4b8c175e7bbfbad51b6d",
-      "src/resources/extensions/gsd/roadmap-slices.ts": "ad326c01fc7c20a3130c72112e5bf132241837bc",
-      "src/resources/extensions/gsd/routing-history.ts": "a4fe81ea76887ca416d3fd5e45e3293c0dce1dc7",
+      "src/resources/extensions/gsd/roadmap-slices.ts": "5b3b09fecafe51a8ded83fc1a3e9b8c384bb2728",
+      "src/resources/extensions/gsd/routing-history.ts": "ceeed6f328df1c1b9642eff5a3a7b8988fc76243",
       "src/resources/extensions/gsd/safe-fs.ts": "8872b8b28d98329b6dd6b9ccc77f6f0b3e3db1b2",
-      "src/resources/extensions/gsd/session-forensics.ts": "f389b6ad5523362e51c8b6f88f61506ef4c823ec",
-      "src/resources/extensions/gsd/session-status-io.ts": "452d7201fc3e08453f19961298581a888268439e",
+      "src/resources/extensions/gsd/session-forensics.ts": "04894fe1f3ec56851fad8b424cede7c6468dceb0",
+      "src/resources/extensions/gsd/session-status-io.ts": "7d8558a594b0209e26af6e42dfcbde51638f41cc",
       "src/resources/extensions/gsd/skill-discovery.ts": "f623c1a21419131443f018d45823574be172161d",
       "src/resources/extensions/gsd/skill-health.ts": "e08ce335237fa80b5d59ae370ee8cf8f857d21bd",
       "src/resources/extensions/gsd/skill-telemetry.ts": "ac99e4e83234d2b8269db824e8f565641f556918",
@@ -914,7 +912,7 @@
       "src/resources/extensions/gsd/templates/milestone-summary.md": "254db7d4c49e265ffe328087645a0974f6d686ed",
       "src/resources/extensions/gsd/templates/milestone-validation.md": "20cfdc3025163ef18bf6ce6d01b90de2c7fd7d83",
       "src/resources/extensions/gsd/templates/plan.md": "bc2ad602597dd0ddcc37c247cf97f7eeb616609a",
-      "src/resources/extensions/gsd/templates/preferences.md": "54df573b4bba9afaddf24f62938b6d15866e4a6f",
+      "src/resources/extensions/gsd/templates/preferences.md": "feb81c7afb9f5fb84b9888d5c3e9621ec1e6f9ca",
       "src/resources/extensions/gsd/templates/project.md": "381a85ffb474c24da9214c5e68440107aa3ca018",
       "src/resources/extensions/gsd/templates/reassessment.md": "ec7b59f825305fe125797f74643dcf055c5ae4f2",
       "src/resources/extensions/gsd/templates/requirements.md": "72cf7b82f102e171423488773d191d802236639c",
@@ -928,36 +926,35 @@
       "src/resources/extensions/gsd/templates/task-summary.md": "eda12a9dfcaa31f1d6a79a1081bcea911b31960e",
       "src/resources/extensions/gsd/templates/uat.md": "18e5b0e39acb0381aced6298d9aa2b03e1134eee",
       "src/resources/extensions/gsd/token-counter.ts": "46590d710486f60adaa2347737fc2906b8d19e27",
-      "src/resources/extensions/gsd/triage-resolution.ts": "8ddc4a6bae5c77788b1d1864c14ec74456394199",
+      "src/resources/extensions/gsd/triage-resolution.ts": "3765c63dd0ef37067406d668a3c0c333e3ea7025",
       "src/resources/extensions/gsd/triage-ui.ts": "ebf73bc2685b77fac6299e836562b3eefbb72eb9",
-      "src/resources/extensions/gsd/types.ts": "1e611008787888515c53203b31496af5073399fa",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
       "src/resources/extensions/gsd/undo.ts": "bf6f5f39ad70eff0907cf5b8364f72ba370ea0ce",
-      "src/resources/extensions/gsd/unit-runtime.ts": "8384ea401307f7c0c68e06707507eeaed00342f7",
-      "src/resources/extensions/gsd/verification-evidence.ts": "0918b40f10ae4ca53f2594089ab592ab1c279e67",
-      "src/resources/extensions/gsd/verification-gate.ts": "22af55f925acd510c5fa1840b6659a457a2e8520",
-      "src/resources/extensions/gsd/visualizer-data.ts": "f3a0d465f68c8a4c9848411af40295134c216fc3",
+      "src/resources/extensions/gsd/unit-runtime.ts": "04c027d5e78274bda515d686c504fc988c2a75a2",
+      "src/resources/extensions/gsd/verification-evidence.ts": "0d801013a030e62b3ec51d48c0c3d90bf58f8b8c",
+      "src/resources/extensions/gsd/verification-gate.ts": "3a5ac64a7968c536b3c95bc8a355929db9c12bb7",
+      "src/resources/extensions/gsd/visualizer-data.ts": "587a3d4a657e2cf4e218c891a0572b69b3f727ad",
       "src/resources/extensions/gsd/visualizer-overlay.ts": "196b2f8ecc4b143a18d1bb3367708230ff2e7367",
-      "src/resources/extensions/gsd/visualizer-views.ts": "67721af30cdceaa33842a9f440916824e92e6b8a",
+      "src/resources/extensions/gsd/visualizer-views.ts": "30e45939070baee8ca1408f083649342c5b52b45",
       "src/resources/extensions/gsd/workspace-index.ts": "f3c3be47a3ba454630d0e5636d4c9193a1afdd52",
-      "src/resources/extensions/gsd/worktree-command.ts": "4e3801149c719442dc33085b8820fe2f049faaa9",
-      "src/resources/extensions/gsd/worktree-manager.ts": "191676ccfb7980958100c12401b3bcfadf7b8c6b",
-      "src/resources/extensions/gsd/worktree.ts": "7669aa9db355e41e885ed1e1341aaeaf405de2f2",
+      "src/resources/extensions/gsd/worktree-command.ts": "84281ab0eebd76748ab4f6dd145b9b22104ceb75",
+      "src/resources/extensions/gsd/worktree-manager.ts": "e10f2707f810fb7a6fd3e90b51a696e84a242b98",
+      "src/resources/extensions/gsd/worktree.ts": "3a2c28826a3ba5b90cbd8bd78fbabc4de734e844",
       "src/resources/extensions/mac-tools/index.ts": "40dae2b869ff94ba73906e78f57748c9eb907cbf",
       "src/resources/extensions/mac-tools/swift-cli/.gitignore": "30bcfa4ed5ccf1f8ec2345e2662ac64067336180",
       "src/resources/extensions/mac-tools/swift-cli/Package.swift": "fe4767257bdf5baaf7acc04b38b628cc77711f21",
       "src/resources/extensions/mac-tools/swift-cli/Sources/main.swift": "6d832e5e7bc5e65324cde8ab62a3ad1f5e070fa8",
-      "src/resources/extensions/mcporter/index.ts": "f5d2657b30c38f5c37cea31f77fe1273e692c058",
       "src/resources/extensions/remote-questions/config.ts": "7e977e45807bbe230029e663570a10ea76774eb9",
-      "src/resources/extensions/remote-questions/discord-adapter.ts": "199e003869ce9ffb2b50ba59f797bde3fd8dc0a4",
+      "src/resources/extensions/remote-questions/discord-adapter.ts": "f41e052c7e55c8e165248e3b7a7adbe4a9cdedb9",
       "src/resources/extensions/remote-questions/format.ts": "c7560af46a9818bd8672b35545372a7db4c30d26",
       "src/resources/extensions/remote-questions/manager.ts": "a1e1d10f7dd881914293338cb7c1de9e5998261a",
-      "src/resources/extensions/remote-questions/mod.ts": "547f18098f1269ca97d56dfdd1262a75b6ab4112",
+      "src/resources/extensions/remote-questions/mod.ts": "4e4758cd01b3fc9558a4745dc4144eabe4a49240",
       "src/resources/extensions/remote-questions/remote-command.ts": "93ccfdeeeac77d5a48054c6e16fb279b3bc73904",
-      "src/resources/extensions/remote-questions/slack-adapter.ts": "d56023bf9b3a742742ee48bd7d8fbaea70bf58e7",
+      "src/resources/extensions/remote-questions/slack-adapter.ts": "f55f7e811fce0b375502d6665067a64b997afe1e",
       "src/resources/extensions/remote-questions/status.ts": "dd4593488a96f8803cfbc796e93882f410a15faa",
       "src/resources/extensions/remote-questions/store.ts": "83c80dcd0864699c29c48308c98e73d078541a9b",
-      "src/resources/extensions/remote-questions/telegram-adapter.ts": "65bc88b24db21a811315dcf9987e57ba4035d7be",
-      "src/resources/extensions/remote-questions/types.ts": "6f13876fdde237d8bb79ffe97ef613cd3e767182",
+      "src/resources/extensions/remote-questions/telegram-adapter.ts": "9079098121431e0d6e1f18d22dcac97001cfaba0",
+      "src/resources/extensions/remote-questions/types.ts": "cb6e5ea195a5ab764d188bd4342506abc1376944",
       "src/resources/extensions/search-the-web/cache.ts": "57232207f8c97fe4f9434171d049a01944e204ad",
       "src/resources/extensions/search-the-web/command-search-provider.ts": "ee6520e7d356c56253900d6c49d71c892a7fc253",
       "src/resources/extensions/search-the-web/format.ts": "0c4123faad7f1c39b0faf39f7ee90478e0100e05",
@@ -971,16 +968,14 @@
       "src/resources/extensions/search-the-web/tool-search.ts": "ba39b1332c1191b56808cce43bb38c9bcf96b810",
       "src/resources/extensions/search-the-web/url-utils.ts": "24b3caeddfa1a10932f84bef8bf750fe1cba30d6",
       "src/resources/extensions/shared/confirm-ui.ts": "da5fc16758f923ce9d7265e630ffec37de5c64c1",
-      "src/resources/extensions/shared/format-utils.ts": "9aefd48a8222634949761b559119733ce11c27f2",
+      "src/resources/extensions/shared/format-utils.ts": "62e18abf14768845fdb052db474765825d40b3f4",
       "src/resources/extensions/shared/frontmatter.ts": "38a34ea022b3340e14a7afc6a7f4cf2b77238d11",
       "src/resources/extensions/shared/interview-ui.ts": "8235683303e25694e8815dfc986b325efd8e1376",
-      "src/resources/extensions/shared/mod.ts": "5da977543688a06269663489347f7456a7959f82",
+      "src/resources/extensions/shared/mod.ts": "c092375aafec097dc7618803f768a681be09cfa2",
       "src/resources/extensions/shared/next-action-ui.ts": "42d582005d4725ed51dd920ed2b5a683bd2abe3d",
       "src/resources/extensions/shared/path-display.ts": "90df43c5a277b93198ce86188864a746e89cd0d5",
-      "src/resources/extensions/shared/progress-widget.ts": "97af216bfc8cc7500d8a95de79b2c264b2758135",
       "src/resources/extensions/shared/sanitize.ts": "e9aa6eec760315bcb5285a9b73ba9c8c0e15b7cc",
       "src/resources/extensions/shared/terminal.ts": "5c6f0f889a8835c3f7bb22f2278c5f0889bfc4d1",
-      "src/resources/extensions/shared/thinking-widget.ts": "d1f3bc1e2c33ca802745eb939272acea3b11a3e1",
       "src/resources/extensions/shared/ui.ts": "7c2e1323961c80feecbd8b4c2613c92ecdf2c430",
       "src/resources/extensions/shared/wizard-ui.ts": "ed0c951631057fd0ed1b0fee6cd9763dd4482572",
       "src/resources/extensions/slash-commands/audit.ts": "b5f3bf85c732a4d50c00210ca41c9b4795a8a218",
@@ -1008,28 +1003,74 @@
       "src/resources/extensions/voice/speech-recognizer.py": "27e5bb92b6d145b84663ba19eec6c653d05da2bb",
       "src/resources/extensions/voice/speech-recognizer.swift": "e1408f507ef7bbaa1fac060d616320755d26a4d4"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "reference/shortcuts.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {
-      "docs/commands.md": "09d8f7c235a89fb7f168642adf6252c3bda28f83"
+      "docs/commands.md": "7a1932ac3fdec9c63255c0cbbb82f9b10f96a9d6"
     },
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "reference/index.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {},
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "changelog.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {},
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   },
   "index.mdx": {
-    "headSha": "64cf722b7283d9b0b00e73658602e59cf56605dc",
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
     "deps": {},
-    "stampedAt": "2026-03-18T11:00:54.182Z"
+    "stampedAt": "2026-03-19T00:13:27.062Z"
+  },
+  "commands/keys.mdx": {
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
+    "deps": {
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
+      "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
+    },
+    "stampedAt": "2026-03-19T00:13:27.062Z"
+  },
+  "commands/logs.mdx": {
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
+    "deps": {
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
+      "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
+    },
+    "stampedAt": "2026-03-19T00:13:27.062Z"
+  },
+  "commands/new-milestone.mdx": {
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
+    "deps": {
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
+      "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
+    },
+    "stampedAt": "2026-03-19T00:13:27.062Z"
+  },
+  "commands/skip.mdx": {
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
+    "deps": {
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
+      "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309"
+    },
+    "stampedAt": "2026-03-19T00:13:27.062Z"
+  },
+  "commands/undo.mdx": {
+    "headSha": "392f611bd85b70063d6382737811d5a63fd2dfb9",
+    "deps": {
+      "src/resources/extensions/gsd/commands.ts": "bd8ea6bac7975a08cb5ee4c703319a8873a36fe3",
+      "src/resources/extensions/gsd/state.ts": "3f0b31c98c11bcf10327873f100246ca8d027266",
+      "src/resources/extensions/gsd/types.ts": "d8105bd46c41ab31c6725a61489c0f66595b6309",
+      "src/resources/extensions/gsd/undo.ts": "bf6f5f39ad70eff0907cf5b8364f72ba370ea0ce"
+    },
+    "stampedAt": "2026-03-19T00:13:27.062Z"
   }
 }

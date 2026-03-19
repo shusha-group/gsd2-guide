@@ -53,16 +53,18 @@ Share planning artifacts while keeping runtime state local:
 .gsd/completed-units.json
 .gsd/STATE.md
 .gsd/metrics.json
+.gsd/gsd.db
 .gsd/activity/
 .gsd/runtime/
 .gsd/worktrees/
+.gsd/DISCUSSION-MANIFEST.json
 .gsd/milestones/**/continue.md
 .gsd/milestones/**/*-CONTINUE.md
 ```
 
-**What gets shared** (committed): `preferences.md`, `PROJECT.md`, `REQUIREMENTS.md`, `DECISIONS.md`, `KNOWLEDGE.md`, and all milestone plans, roadmaps, and summaries.
+**What gets shared** (committed): `preferences.md`, `PROJECT.md`, `REQUIREMENTS.md`, `DECISIONS.md`, `KNOWLEDGE.md`, `QUEUE.md`, and all milestone plans, roadmaps, and summaries.
 
-**What stays local** (gitignored): lock files, state cache, activity logs, and worktrees.
+**What stays local** (gitignored): lock files, SQLite cache, state cache, activity logs, runtime records, and worktrees.
 
 ```
 > git add .gsd/preferences.md .gitignore
@@ -83,12 +85,13 @@ What's the vision?
 > /gsd auto
 ```
 
-GSD creates a milestone with a unique ID and works in an isolated worktree:
+GSD creates a milestone with a unique ID and works in an isolated worktree on a single branch. All execution — research, planning, implementation — happens via sequential commits on `milestone/M001-eh88as`. No per-slice branches are created:
 
 ```
 .gsd/
 ├── worktrees/
 │   └── M001-eh88as/          ← Alice's worktree (gitignored)
+│       └── (sequential commits on milestone/M001-eh88as)
 └── milestones/
     └── M001-eh88as/
         ├── M001-eh88as-CONTEXT.md
@@ -98,7 +101,17 @@ GSD creates a milestone with a unique ID and works in an isolated worktree:
                 └── ...
 ```
 
-Her work happens on the `milestone/M001-eh88as` branch, isolated from main.
+Her work builds up as tagged commits on the milestone branch:
+
+```
+feat(M001/S01): research
+feat(M001/S01): plan
+feat(M001/S01/T01): implement signup endpoint
+feat(M001/S01/T02): implement session handling
+feat(M001/S01): summary + UAT
+feat(M001/S02): research
+...
+```
 
 ### 4. Bob starts his milestone (concurrently)
 
@@ -129,7 +142,7 @@ The unique ID suffixes (`eh88as`, `k4m9px`) prevent collisions — even if both 
 
 ### 5. Milestones complete and merge
 
-When Alice's milestone finishes, GSD squash-merges her `milestone/M001-eh88as` branch to main. Pre-merge checks verify that:
+When Alice's milestone finishes, GSD squash-merges her `milestone/M001-eh88as` branch to main. If `main` has diverged (e.g., another milestone merged first), GSD rebases before the squash to avoid conflicts. Pre-merge checks verify that:
 
 - All slices are marked complete
 - No orphaned tasks or missing summaries
@@ -175,6 +188,7 @@ main branch:
 ├── PROJECT.md                 ← updated by both milestones
 ├── DECISIONS.md               ← decisions from both milestones
 ├── KNOWLEDGE.md               ← learnings from both milestones
+├── QUEUE.md                   ← work queue
 └── milestones/
     ├── M001-eh88as/           ← Alice's completed milestone
     │   ├── M001-eh88as-SUMMARY.md
@@ -184,7 +198,7 @@ main branch:
         └── slices/...
 ```
 
-Worktrees are cleaned up after merge. Planning artifacts remain in `milestones/` as a historical record.
+Worktrees are cleaned up after merge. Planning artifacts remain in `milestones/` as a historical record. Because planning artifacts are tracked in git (not gitignored), they travel with each milestone branch and merge cleanly to `main` as part of the squash commit.
 
 ## Flow Diagram
 
@@ -194,12 +208,12 @@ flowchart TD
     Start([Enable team mode]) --> Setup["Configure preferences + .gitignore"]
     Setup --> DevA["Alice: /gsd auto — M001"]
     Setup --> DevB["Bob: /gsd auto — M002"]
-    DevA --> WorkA[Worktree + branch for M001]
-    DevB --> WorkB[Worktree + branch for M002]
+    DevA --> WorkA["Worktree + branch milestone/M001\nsequential commits, no slice branches"]
+    DevB --> WorkB["Worktree + branch milestone/M002\nsequential commits, no slice branches"]
     WorkA --> CompleteA[M001 complete]
     WorkB --> CompleteB[M002 complete]
-    CompleteA --> MergeA[Pre-merge check → squash to main]
-    CompleteB --> MergeB[Pre-merge check → squash to main]
+    CompleteA --> MergeA["Pre-merge check → rebase if needed\n→ squash to main"]
+    CompleteB --> MergeB["Pre-merge check → rebase if needed\n→ squash to main"]
     MergeA --> Done([Both milestones merged ✓])
     MergeB --> Done
 

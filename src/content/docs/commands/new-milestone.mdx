@@ -1,0 +1,197 @@
+---
+title: "/gsd new-milestone"
+description: "Create a milestone from a specification document — the headless entry point for non-interactive milestone creation."
+---
+
+## What It Does
+
+`/gsd new-milestone` is the headless entry point for milestone creation from a specification document. It's the command that `gsd headless new-milestone --context brief.md` dispatches to the RPC session — the headless runner writes your spec to `.gsd/runtime/headless-context.md`, then `/gsd new-milestone` picks it up, bootstraps the project if needed, and runs the full milestone planning pipeline without any interactive Q&A rounds.
+
+When run directly in a TUI session with no headless context file present, the command falls back to interactive smart entry — the same discussion flow you get from running `/gsd` with no active milestone.
+
+The non-interactive path uses the `discuss-headless` prompt, which processes the spec document and writes all milestone artifacts in a single pass: `CONTEXT.md`, `ROADMAP.md`, and the milestone directory structure. After writing, auto-mode starts automatically — you don't need to run `/gsd auto` separately.
+
+## Usage
+
+This command is primarily invoked via the headless runner, not typed directly:
+
+```bash
+# Create a milestone from a file and start auto-mode
+gsd headless new-milestone --context brief.md --auto
+
+# Create from inline text
+gsd headless new-milestone --context-text "Build a REST API with JWT auth"
+
+# Pipe from stdin
+echo "Add social features: follow, feed, comments" | gsd headless new-milestone --context -
+```
+
+If you run it directly in a TUI session, GSD checks for a pending headless context file. If none exists, it falls back to the interactive flow — identical to running `/gsd` with no active milestone.
+
+```
+/gsd new-milestone
+```
+
+See the [Headless Mode](../headless/) page for the full flag reference and CI integration patterns.
+
+## How It Works
+
+### Dispatch Path Selection
+
+When `/gsd new-milestone` fires, it checks for `.gsd/runtime/headless-context.md`:
+
+- **File exists** → headless path: reads the spec, deletes the file, bootstraps the project, and dispatches the `discuss-headless` prompt.
+- **File missing** → interactive fallback: runs `showSmartEntry`, the standard milestone discussion flow used by `/gsd` when no milestone is active.
+
+```mermaid
+flowchart TD
+    Cmd(["/gsd new-milestone"]) --> Check{headless-context.md\nexists?}
+    Check -->|Yes| Read[Read spec content\ndelete file]
+    Read --> Bootstrap[Bootstrap .gsd/\nif missing]
+    Bootstrap --> NextId[Generate next\nmilestone ID]
+    NextId --> MkDir[Create milestone\ndirectory]
+    MkDir --> Dispatch[Dispatch\ndiscuss-headless prompt]
+    Dispatch --> Write[Write CONTEXT.md\nROADMAP.md]
+    Write --> AutoStart[Auto-mode\nstarts automatically]
+    Check -->|No| SmartEntry[showSmartEntry —\ninteractive discussion flow]
+    SmartEntry --> AutoStart
+
+    style Cmd fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Read fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Bootstrap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style NextId fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style MkDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Write fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AutoStart fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+### Headless Path
+
+The headless runner writes your spec to `.gsd/runtime/headless-context.md` before dispatching `/gsd new-milestone` to the RPC session. When the command fires:
+
+1. **Read spec** — reads the seed context from `headless-context.md`.
+2. **Delete file** — removes `headless-context.md` immediately (non-fatal if deletion fails).
+3. **Bootstrap project** — calls `bootstrapGsdProject`: ensures `.gsd/milestones/` and `.gsd/runtime/` directories exist, initializes a git repo if missing, ensures `.gitignore` and preferences files exist, and untracks runtime files from git.
+4. **Generate milestone ID** — finds existing milestone IDs and increments to the next one (e.g., `M001` if no milestones exist, `M003` if `M001` and `M002` are present). Respects the `unique_milestone_ids` preference for suffix generation.
+5. **Create milestone directory** — makes `.gsd/milestones/MXXX/slices/`.
+6. **Build prompt** — loads the `discuss-headless` prompt template, inlining all GSD document templates (project, requirements, context, roadmap, decisions) directly into the prompt so the agent can write everything in one pass.
+7. **Arm auto-start** — registers a `pendingAutoStart` hook so auto-mode fires as soon as the agent reports "Milestone X ready."
+8. **Dispatch** — sends the prompt to the active session.
+
+### `discuss-headless` vs Interactive Discussion
+
+The normal discussion flow (`showSmartEntry`) runs multiple adaptive Q&A rounds before writing any files. The `discuss-headless` prompt skips all interactive rounds — it processes the spec document directly and produces all milestone artifacts in a single session. The spec document substitutes for the Q&A: the richer the spec, the better the output.
+
+This means headless milestone creation is faster but produces plans that are only as detailed as the spec you supply. Vague specs produce shallower roadmaps; detailed specs with constraints, user stories, and known trade-offs produce richer ones.
+
+### Project Bootstrapping
+
+If `.gsd/` doesn't exist yet (a fresh project), `bootstrapGsdProject` initializes the full structure before creating the milestone:
+
+- Initializes a git repo (using the `git.main_branch` preference, defaulting to `main`) if the directory is not already a repo.
+- Creates `.gsd/milestones/` and `.gsd/runtime/` directory trees.
+- Writes `.gitignore` entries for GSD runtime files.
+- Writes a default preferences file if none exists.
+- Adds `.gsd/runtime/` to git's untracked list so session files don't appear in status.
+
+This makes `gsd headless new-milestone` usable in a completely empty directory — no manual setup required.
+
+## What Files It Touches
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/runtime/headless-context.md` | Spec document written by the headless runner — consumed and deleted on read |
+| `.gsd/milestones/` | Scanned to determine the next milestone ID |
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.gsd/milestones/MXXX/slices/` | Milestone directory created before dispatching the prompt |
+| `.gsd/milestones/MXXX/MXXX-CONTEXT.md` | Milestone scope, goals, and constraints — written by the dispatched agent |
+| `.gsd/milestones/MXXX/MXXX-ROADMAP.md` | Slice plan with risk ordering, success criteria, and boundary map — written by the dispatched agent |
+
+### Creates (bootstrap only, if missing)
+
+| File | Purpose |
+|------|---------|
+| `.gsd/` | Root GSD directory — created if project is uninitialized |
+| `.gsd/milestones/` | Milestones container |
+| `.gsd/runtime/` | Runtime files directory (not tracked in git) |
+| `.gitignore` | Updated with GSD runtime entries |
+| `.gsd/preferences.json` | Default preferences file |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/STATE.md` | Written by the agent as the final step — triggers auto-mode start |
+
+## Examples
+
+**Create a milestone from a spec document and immediately start execution:**
+
+```bash
+gsd headless new-milestone --context brief.md --auto
+```
+
+Where `brief.md` might contain:
+
+```markdown
+# v2 Social Features
+
+Add social capabilities to Cookmate:
+- Users can follow other cooks
+- Activity feed showing new recipes from followed users
+- Comment on recipes (threaded, not nested)
+- Share recipes via link (no auth required to view)
+
+Constraints:
+- Supabase for all backend (no new services)
+- Feed must work on cached data, not real-time at launch
+- Mobile-first — all interactions touch-friendly
+```
+
+GSD reads this spec and produces a full milestone plan without any questions.
+
+**Create from inline text:**
+
+```bash
+gsd headless new-milestone --context-text "Build a CLI tool for managing dotfiles with profiles and sync"
+```
+
+**Pipe from a generation script:**
+
+```bash
+cat product-brief.md | sed 's/## Internal Notes.*//' | \
+  gsd headless new-milestone --context -
+```
+
+**Run in CI after pushing a spec file:**
+
+```yaml
+# .github/workflows/plan.yml
+- name: Plan new milestone
+  run: |
+    gsd headless new-milestone \
+      --context .gsd/specs/next-milestone.md \
+      --timeout 600000 \
+      --auto
+```
+
+**Run directly (falls back to interactive):**
+
+If no `headless-context.md` file exists, running `/gsd new-milestone` in a TUI session starts the same discussion flow as `/gsd` — GSD asks "What's the vision?" and proceeds with adaptive Q&A.
+
+## Related Commands
+
+- [`/gsd`](../gsd/) — Interactive entry point — routes to discussion when no milestone is active
+- [Headless Mode](../headless/) — Full CLI reference for `gsd headless new-milestone` flags and CI patterns
+- [`/gsd queue`](../queue/) — Queue additional future milestones before or after planning
+- [`/gsd discuss`](../discuss/) — Re-open discussion for the current milestone
+- [`/gsd auto`](../auto/) — Start auto-mode manually if it didn't fire automatically

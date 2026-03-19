@@ -5,27 +5,67 @@ description: "Switch between solo and team workflow modes — sets coordinated d
 
 ## What It Does
 
-`/gsd mode` is a quick toggle between solo and team workflow modes. Each mode sets coordinated defaults for several preferences at once, saving you from configuring them individually. It's a shortcut for the Workflow Mode category in `/gsd prefs`.
+`/gsd mode` is a quick toggle between solo and team workflow modes. Each mode records a single `mode` key in your preferences file and applies a coordinated set of defaults at runtime — saving you from configuring git, isolation, and ID settings individually.
 
 Solo mode is optimized for individual developers — it auto-pushes, uses simple sequential milestone IDs, and keeps documentation lightweight. Team mode is designed for shared repositories — it uses unique milestone IDs to avoid collisions, pushes branches for review, and enables pre-merge checks.
+
+Mode defaults are the **lowest-priority layer**. Any value you've explicitly set in your preferences file overrides the mode default. This means you can use a mode as a starting point and customize individual settings without losing the rest.
 
 ## Usage
 
 ```
-/gsd mode                # Toggle mode (opens selection prompt)
-/gsd mode solo           # Switch to solo mode directly
-/gsd mode team           # Switch to team mode directly
+/gsd mode              # Set workflow mode (global scope)
+/gsd mode global       # Set workflow mode at global level (same as above)
+/gsd mode project      # Set workflow mode at project level only
 ```
+
+In all cases, a selection prompt opens to choose between solo, team, (none), or keep current.
 
 ## How It Works
 
-The command presents a selection prompt with three options:
+### Selection Flow
 
-1. **Solo** — Personal projects, single developer
-2. **Team** — Shared repos, multiple contributors
-3. **Manual** — No mode defaults, configure everything individually
+```mermaid
+flowchart TD
+    A["/gsd mode"] --> B{scope arg?}
+    B -- "project" --> C[Load .gsd/preferences.md]
+    B -- "global or none" --> D[Load ~/.gsd/preferences.md]
+    C --> E[Show mode select prompt]
+    D --> E
+    E --> F{Choice}
+    F -- solo --> G["Write mode: solo"]
+    F -- team --> H["Write mode: team"]
+    F -- none --> I["Remove mode key"]
+    F -- keep current --> J[No change]
+    G --> K[Save preferences file]
+    H --> K
+    I --> K
 
-When you select a mode, it writes the coordinated defaults to your preferences file and reloads extensions so changes take effect immediately.
+    style A fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style B fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style F fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style C fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+The command presents four options:
+
+1. **solo** — auto-push, squash, simple IDs (personal projects)
+2. **team** — unique IDs, push branches, pre-merge checks (shared repos)
+3. **(none)** — no mode defaults, configure everything individually
+4. **(keep current)** — exit without changes
+
+When you select a mode, only the `mode` key is written to your preferences file (`mode: solo` or `mode: team`). The individual git and ID settings are **not written** — they are resolved at runtime via `applyModeDefaults`, which merges mode defaults as the lowest-priority layer. Any explicitly set preference value wins over the mode default.
+
+### Scope
+
+By default, `/gsd mode` writes to the **global** preferences at `~/.gsd/preferences.md`. Pass `project` to write to `.gsd/preferences.md` in the current project instead. Project-scope preferences take priority over global preferences during merge, so you can have a different mode per project.
 
 ### Mode Comparison
 
@@ -37,7 +77,7 @@ When you select a mode, it writes the coordinated defaults to your preferences f
 | `merge_strategy` | `squash` | `squash` |
 | `isolation` | `worktree` | `worktree` |
 | `commit_docs` | `true` | `true` |
-| `unique_milestone_ids` | `false` — simple `M001`, `M002` | `true` — `M001-eh88as`, `M002-k4m9xz` (prevents ID collisions across branches) |
+| `unique_milestone_ids` | `false` — simple `M001`, `M002` | `true` — `M001-eh88as`, `M002-k4m9xz` (prevents ID collisions) |
 
 ### Unique Milestone IDs
 
@@ -54,25 +94,26 @@ The unique ID format affects directory names (`.gsd/milestones/M001-eh88as/`), b
 | File | Purpose |
 |------|---------|
 | `~/.gsd/preferences.md` | Current global preferences |
-| `.gsd/preferences.md` | Current project preferences |
+| `.gsd/preferences.md` | Current project preferences (when `project` scope) |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `~/.gsd/preferences.md` or `.gsd/preferences.md` | Updated mode and coordinated defaults |
+| `~/.gsd/preferences.md` | Updated `mode` key (global scope, default) |
+| `.gsd/preferences.md` | Updated `mode` key (project scope, when `project` arg passed) |
 
 ## Examples
 
-Switching to team mode:
+Switching to team mode globally:
 
 ```
 > /gsd mode
 
-Workflow mode (current: solo):
+Workflow mode:
   ❯ solo — auto-push, squash, simple IDs (personal projects)
     team — unique IDs, push branches, pre-merge checks (shared repos)
-    (none) — configure everything manually
+    (none) — no mode defaults, configure individually
     (keep current)
 
   → team
@@ -80,12 +121,38 @@ Workflow mode (current: solo):
 Mode: team — defaults: auto_push=false, push_branches=true,
   pre_merge_check=true, merge_strategy=squash, isolation=worktree,
   commit_docs=true, unique_milestone_ids=true
+```
 
-Saved global preferences to ~/.gsd/preferences.md
+Switching to project-level solo mode (overrides global team mode for this repo):
+
+```
+> /gsd mode project
+
+Workflow mode (current: team):
+  ❯ solo — auto-push, squash, simple IDs (personal projects)
+    team — unique IDs, push branches, pre-merge checks (shared repos)
+    (none) — no mode defaults, configure individually
+    (keep current)
+
+  → solo
+
+Mode: solo — defaults: auto_push=true, push_branches=false,
+  pre_merge_check=false, merge_strategy=squash, isolation=worktree,
+  commit_docs=true, unique_milestone_ids=false
+```
+
+Removing mode defaults entirely (configure each preference manually):
+
+```
+> /gsd mode
+
+  → (none)
+
+(mode key removed from preferences)
 ```
 
 ## Related Commands
 
-- [`/gsd prefs`](../prefs/) — Full preference wizard (mode is one category)
+- [`/gsd prefs`](../prefs/) — Full preference wizard (mode is one category alongside models, timeouts, git, and skills)
 - [`/gsd config`](../config/) — Configure tool API keys
 - [`/gsd doctor`](../doctor/) — Validates preference file structure
