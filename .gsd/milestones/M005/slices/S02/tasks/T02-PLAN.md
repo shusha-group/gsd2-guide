@@ -103,6 +103,23 @@ Wire prompt pages into the source-map pipeline so staleness detection works for 
 - `python3 -c "import json; d=json.load(open('content/generated/page-source-map.json')); print(len([k for k in d if k.startswith('prompts/')]))"` → 32
 - `npm run build` exits 0
 
+## Observability Impact
+
+**What signals change:**
+- `node scripts/lib/build-page-map.mjs` stdout now reports `80 pages mapped` (up from 48); this is the primary health signal for the source-map generator.
+- `content/generated/page-source-map.json` gains 32 new `prompts/*.mdx` keys — inspectable with `python3 -c "import json; d=json.load(open('content/generated/page-source-map.json')); print(len(d))"`.
+- `node --test tests/page-map.test.mjs` now runs 11 test assertions (up from 8); all must pass with 0 failures.
+
+**How a future agent inspects this task:**
+- Run `python3 -c "import json; d=json.load(open('content/generated/page-source-map.json')); print(len([k for k in d if k.startswith('prompts/')]))"` → should return `32`.
+- Run `node --test tests/page-map.test.mjs` → should pass with 0 failures and show `"includes all 32 prompt pages"` in the output.
+- Run `node scripts/lib/build-page-map.mjs` → stdout should say `80 pages mapped`.
+
+**Failure state visibility:**
+- If `prompts.json` is missing or malformed, the `fs.existsSync` guard silently skips Section 6, resulting in 48 mapped pages instead of 80 — the test will catch this via the `"has exactly 80 page entries"` assertion.
+- If a prompt source dep (`src/resources/extensions/gsd/prompts/{name}.md`) is absent from manifest.json, `build-page-map.mjs` emits a `WARNING: Missing source path...` line and exits 1 — surfaced immediately via the `"generates without warnings"` test.
+- Build count regression: if prompt MDX pages are present but not in the map, S05's staleness detector will never mark them stale, causing silent doc drift — the test suite is the guard against this.
+
 ## Inputs
 
 - `content/generated/prompts.json` — 32-entry JSON array with `name` and `slug` fields (produced by S01)

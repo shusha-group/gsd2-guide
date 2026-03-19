@@ -41,7 +41,7 @@
   - Verify: `ls src/content/docs/prompts/*.mdx | wc -l` → 32; sidebar in `astro.config.mjs` has 4 sub-groups with 32 total entries
   - Done when: 32 MDX files exist with valid frontmatter and the sidebar has all 4 sub-groups with correct slugs
 
-- [ ] **T02: Extend build-page-map with prompt entries, fix and extend tests, verify build** `est:25m`
+- [x] **T02: Extend build-page-map with prompt entries, fix and extend tests, verify build** `est:25m`
   - Why: Prompt pages need source-map entries for the staleness detection pipeline (S05 depends on this). The test suite needs fixing (pre-existing count mismatch: 43→48) and extending for prompt pages.
   - Files: `scripts/lib/build-page-map.mjs`, `content/generated/page-source-map.json`, `tests/page-map.test.mjs`
   - Do: Add Section 6 to `build-page-map.mjs` that reads `prompts.json` and calls `addPage()` for each prompt. Regenerate `page-source-map.json`. Fix `COMMAND_SLUGS` (add 5 missing: keys, logs, new-milestone, skip, undo), update page count assertion from 43 to 80, and add prompt page test assertions. Run `npm run build` to verify everything works.
