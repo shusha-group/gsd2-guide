@@ -3,6 +3,100 @@ title: "Building a Rhythm"
 description: "Weekly cadence, retrospectives, and the graduation path."
 ---
 
-This section covers how to sustain GSD 2 as a daily practice — a suggested weekly cycle, using `/gsd queue` for task organisation, running retrospectives with `/gsd export`, and the graduation path from vibe coding through structured development to custom multi-agent workflows.
+Getting a first milestone shipped with GSD 2 is one thing. Sustaining it as a daily practice is another. The difference isn't discipline — it's structure. A solo builder who returns to a project after a long weekend and immediately knows what to work on, what happened last week, and where the complexity lives is not especially organised by nature. They've built a rhythm: a small set of repeating habits that keep the project moving without cognitive overhead. This section is about what that rhythm looks like.
 
-Content is being written and will appear here shortly.
+→ gsd2-guide: [Section 1: Why GSD 2](../why-gsd/)
+
+---
+
+## A weekly shape
+
+There's no single right way to run a weekly GSD cycle, but a simple three-part shape works well for most solo builders: Monday orientation, daily execution, Friday retrospective.
+
+**Monday: orient and load.** The beginning of the week is the right time to assess where the project is and what the coming week's work looks like. Pull up `/gsd status` to see which milestones are active, which slices are complete, and what tasks remain. If you finished last week mid-milestone, this is the moment to re-read the last task summary and re-orient before the next run. If you're starting a new milestone, this is the discussion session — describing the cluster of work to the planning pipeline and reviewing the resulting plan before you commit to it.
+
+→ gsd2-guide: [/gsd status](../../commands/status/)
+
+**Daily: run, review, steer.** On an active build day, auto mode does the execution. Your job is to read summaries after each task run, check the diff for anything near hard-limit areas, and decide whether the direction is still right. That's usually 5–10 minutes of review per task, not per line. The `/gsd queue` command is useful here too — when you notice something mid-session that doesn't belong in the current milestone but shouldn't be lost, capture it immediately rather than trying to hold it in memory. The `/gsd quick` command handles fast tactical work that doesn't warrant a full slice.
+
+→ gsd2-guide: [/gsd quick](../../commands/quick/)
+
+→ gsd2-guide: [/gsd queue](../../commands/queue/)
+
+**Friday: retrospect and maintain.** The end of the week is the right time to consolidate. Run `/gsd export` to generate a retrospective report for the milestone (or the week's work if you're mid-milestone). Review what was decided. Update `agent-instructions.md` with anything that changed. Add any lessons to `KNOWLEDGE.md`. This maintenance session is short — 20–30 minutes — but it's what prevents the project from accumulating invisible debt in the form of stale context.
+
+---
+
+## Using /gsd queue
+
+The queue is a capture surface for ideas, issues, and scope that arise while you're focused on something else. It's not a task board and not a backlog — it's a lightweight staging area designed to receive things mid-session without interrupting the current work.
+
+The pattern is: notice something, capture it immediately, triage it later. During a build session, if you see something that should be fixed but isn't in scope for the current milestone, `/gsd queue add` takes it. If a new idea occurs to you mid-discussion, the same command. If you're not sure whether something belongs in the next milestone or should be discarded, capture it first and decide later — the cost of capturing something that doesn't make it to a milestone is zero; the cost of losing a useful insight is higher.
+
+Triage happens during planning discussions. Before you start the discussion for the next milestone, review the queue with `/gsd queue list`. Each item is a candidate: does it fit the cluster of work you're planning? Does it belong in a later milestone? Is it actually not worth doing? The queue is input to the discussion, not output from it — the planning pipeline won't automatically pull everything from the queue into scope.
+
+→ gsd2-guide: [/gsd queue](../../commands/queue/)\
+→ gsd2-guide: [/gsd capture](../../commands/capture/)
+
+The queue is also useful for capturing things that aren't tasks — observations about the codebase, decisions you made informally, patterns you noticed. These can be converted to KNOWLEDGE.md entries or DECISIONS.md entries after the fact. The discipline of capturing rather than discarding is more important than the destination.
+
+The distinction between the queue and a backlog is intentional. A backlog accumulates indefinitely and creates its own maintenance burden. The queue is reviewed and cleared at each milestone boundary — items either make it into scope, get deferred with a note, or get discarded. Keeping it short and regularly reviewed means the queue stays useful rather than becoming another inbox to feel guilty about.
+
+---
+
+## Retrospectives with /gsd export
+
+At the end of a milestone, `/gsd export` generates a consolidated retrospective report covering the full milestone: every slice, every task summary, every decision recorded, and a cost breakdown by phase and model. It's the closest thing GSD has to a milestone changelog.
+
+What the export contains: task summaries in order, the verification evidence for each task, architectural decisions made during the milestone, cost per slice, and the total API spend. The format is readable prose, not a raw dump — it's designed to be reviewed in 15–20 minutes and to surface the things worth carrying forward.
+
+How to review it: read the decision entries first. Decisions are where the substantive architectural choices live — they're more important to carry forward than the task-by-task detail. Then scan the verification evidence table for any tasks that completed with known failing checks — those are the ones that need follow-up. Finally, check the cost breakdown: if a particular slice or phase consumed a disproportionate share, that's a signal to adjust token profile or model routing for the next milestone.
+
+→ gsd2-guide: [/gsd export](../../commands/export/)
+
+What to carry forward: any decision that affects future development belongs in `agent-instructions.md` if it constrains behaviour, or stays in `DECISIONS.md` if it's architectural context. Any lesson learned — a gotcha, a non-obvious behaviour, a workaround that worked — belongs in `KNOWLEDGE.md` via `/gsd knowledge`. The retrospective isn't the end of the milestone; it's the handoff to the next one.
+
+Running a retrospective at the end of every milestone, even a short one, builds the discipline of active project maintenance. The compounding effect is real: a project where every milestone ends with a clean handoff is substantially easier to pick up after a break, to hand off to a collaborator, or to extend in a new direction.
+
+---
+
+## Evolving agent-instructions.md
+
+Section 5 covers the mechanics of `agent-instructions.md` — what it contains, how it's structured, how it shapes every agent session. This section is the longitudinal view: how the document changes across milestones, and how to maintain it without letting it become stale.
+
+→ gsd2-guide: [Section 5: What You Write vs What GSD Writes](../context-engineering/)
+
+The document at the start of Milestone 1 is a starting position. By Milestone 4 it should look substantially different — more specific, more precise, with rules and limits that reflect what you've actually encountered rather than what you anticipated encountering. That evolution is healthy. A document that never changes is either perfectly calibrated (rare) or not being maintained (common).
+
+The evolution follows a predictable pattern in both directions. Rules get added as you encounter edge cases: a pattern that kept getting violated, a file that turned out to be more fragile than it looked, a convention that the agent kept misreading. Rules also get removed or relaxed as things stabilise: a section that was protected during a risky refactor can be opened up once the refactor is complete. A hard limit that was set for Milestone 2 may be irrelevant for Milestone 5.
+
+The practical discipline is: review `agent-instructions.md` before each new discussion session. Ask two questions. First: are the current hard limits still the right ones? Has anything graduated from "fragile, leave alone" to "stable and safe"? Second: does the new milestone scope introduce an area that isn't protected but should be? Ten minutes of deliberate review before the discussion is worth more than steering corrections mid-execution.
+
+→ gsd2-guide: [Configuration](../../configuration/)
+
+One useful signal: if you find yourself writing the same steering correction more than once in the same milestone ("don't touch the auth layer" again), that correction belongs in `agent-instructions.md`, not in the next discussion. The document's job is to prevent the need for repeated steering — if the same issue keeps surfacing, the document isn't capturing it adequately.
+
+---
+
+## The graduation path
+
+GSD 2 sits in the middle of a continuum. At one end is vibe coding: fast, exploratory, powerful for contained problems, degrading on sustained work. At the other end is fully custom multi-agent infrastructure: multiple agents with specialised roles, automated pipelines, orchestration layers built for a specific domain. GSD is the structured middle — structured enough to sustain a growing project, flexible enough to be run by a solo builder without an infrastructure team.
+
+The graduation path isn't a single transition. It's a series of compounding capabilities.
+
+Vibe coding is where most builders start, and it stays useful throughout. Quick experiments, exploratory prototyping, checking whether an idea is viable before formalising it into a milestone — these are vibe coding tasks even when you're running a structured GSD project alongside them. The [SolveIt philosophy](https://solve.it.com/) applies here: understanding what you're building matters more than the speed of generation. Vibe coding and structured development aren't opponents; they're different tools for different phases of the same project.
+
+The transition to GSD 2 is the transition from session-level coherence to project-level coherence. The `.gsd/` directory is your project's memory. Each milestone's decisions, instructions, and patterns accumulate there — not as dead artifacts, but as active context injected into every subsequent session. This is the compounding asset principle that [Daniel Priestley describes in *24 Assets*](https://danielpriestley.com/24assets/): each structured output you create — a well-reasoned decision, a precise pattern rule, a lesson learned — is an asset that works for you in every future session without additional effort. A project running on Milestone 6 with a well-maintained `.gsd/` directory is running more effectively than the same project on Milestone 1 — not because the code is better, but because the context is richer.
+
+→ gsd2-guide: [/gsd knowledge](../../commands/knowledge/)\
+→ gsd2-guide: [Auto Mode](../../auto-mode/)
+
+The next stage beyond GSD 2 is custom multi-agent workflows: pipelines built for a specific domain, multiple specialised agents running in parallel, orchestration tuned to your exact delivery pattern. Getting there requires having built something substantial enough to justify the infrastructure investment — and the builders who get there fastest are usually the ones who ran structured GSD projects long enough to develop precise intuitions about what their particular workflow needs. GSD 2 is the training ground.
+
+The graduation path isn't rushed. The right time to extend beyond GSD is when the constraints become visible — when you find yourself repeatedly wanting something the framework doesn't provide, or when the project's scale makes a custom pipeline obviously worth building. Until then, the rhythm you're building now is the right one. Most projects never need more — the compounding value of a well-maintained GSD workflow surprises even experienced builders.
+
+→ gsd2-guide: [Section 4: The Daily Mix](../daily-mix/)
+
+---
+
+*This is Section 8 of the GSD 2 Solo Guide.*

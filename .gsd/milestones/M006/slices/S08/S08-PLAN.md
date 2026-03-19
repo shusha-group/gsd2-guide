@@ -31,6 +31,22 @@
 - `npm run check-links` → exit 0, 0 broken links
 - `diff <(git show HEAD:content/generated/page-source-map.json) content/generated/page-source-map.json` → empty (pipeline uncontaminated)
 - `npm run update` → exit 0 (full pipeline including deploy)
+- `npm run build 2>&1 | grep -i "error\|warn" | head -20` → no MDX parse errors (failure-path diagnostic — non-empty output requires investigation before proceeding)
+
+## Observability / Diagnostics
+
+This slice produces only static MDX content — there is no runtime service. The inspectable signals are:
+
+- **Build output:** `npm run build 2>&1` — line count and page count visible; any broken import or MDX parse error surfaces here with a file/line reference.
+- **Link checker output:** `npm run check-links` — lists every broken relative or absolute link with status code and source file. Failure state is machine-readable.
+- **Line count surface:** `wc -l src/content/docs/solo-guide/building-rhythm.mdx` — a fast sanity check; values ≤100 indicate the stub was not replaced.
+- **Spelling surface:** `grep -i "organize\|recognize\|behavior\|color[^:]" src/content/docs/solo-guide/building-rhythm.mdx` — non-empty output is a failure signal.
+- **Cross-reference surface:** `grep -c "→ gsd2-guide:" src/content/docs/solo-guide/building-rhythm.mdx` — count <5 is a failure signal.
+- **Pipeline contamination surface:** `diff <(git show HEAD:content/generated/page-source-map.json) content/generated/page-source-map.json` — any output means the extraction pipeline was accidentally modified.
+
+**Failure visibility:** If `npm run build` exits non-zero, the full stderr will contain the offending file, line number, and error type. If `npm run check-links` exits non-zero, it prints each broken URL with its source location. Both are designed to be re-run interactively for diagnosis.
+
+**Redaction:** No secrets or credentials are involved in this slice.
 
 ## Integration Closure
 
@@ -40,7 +56,7 @@
 
 ## Tasks
 
-- [ ] **T01: Write Section 8 content — weekly cadence, queue, retrospectives, evolution, graduation** `est:25m`
+- [x] **T01: Write Section 8 content — weekly cadence, queue, retrospectives, evolution, graduation** `est:25m`
   - Why: The stub file has 8 lines. R069 requires substantive content covering all five topics. This is the last section needed to complete the guide.
   - Files: `src/content/docs/solo-guide/building-rhythm.mdx`
   - Do: Replace the stub with ~120 lines covering: (1) weekly cycle — Monday planning, daily execution, Friday retrospective; (2) `/gsd queue` for capturing and triaging work; (3) `/gsd export` for retrospectives; (4) evolving agent-instructions.md across milestones; (5) graduation path from vibe coding → GSD 2 → custom multi-agent workflows. Use `→ gsd2-guide:` cross-reference notation (D070). Cite Daniel Priestley's 24 Assets and reference SolveIt briefly (D071). Australian spelling throughout. End with `*This is Section 8 of the GSD 2 Solo Guide.*` consistent with sibling sections. Use `---` separators between major sections per D072.

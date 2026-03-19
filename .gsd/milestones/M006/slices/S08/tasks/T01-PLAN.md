@@ -70,6 +70,18 @@ This follows the established authoring patterns from sibling sections (controlli
   - `../daily-mix/` — Section 4
   - `../why-gsd/` — Section 1
 
+## Observability Impact
+
+This task writes a single static MDX file. There are no runtime services affected. Future agents can inspect the following signals:
+
+- **Build pages count:** `npm run build 2>&1 | grep "pages"` — the page count must remain at 113; a different count indicates an MDX syntax error or a missing/extra page.
+- **Link validity:** `npm run check-links` — any non-zero exit indicates a broken cross-reference introduced by this file. The tool prints the broken URL, the source file, and an HTTP status.
+- **Australian spelling gate:** `grep -i "organize\|recognize\|behavior\|color[^:]" src/content/docs/solo-guide/building-rhythm.mdx` — non-empty output identifies a US-spelling violation with the line number.
+- **Cross-reference count gate:** `grep -c "→ gsd2-guide:" src/content/docs/solo-guide/building-rhythm.mdx` — a count below 5 means cross-reference density is insufficient.
+- **Citation presence gate:** `grep "Priestley\|24 Assets" src/content/docs/solo-guide/building-rhythm.mdx` and `grep "SolveIt\|solve.it" src/content/docs/solo-guide/building-rhythm.mdx` — no output means a required citation is missing.
+
+**Failure state:** MDX parse failures surface in `npm run build` stderr with file path and line number — fully inspectable without a running server. Link failures appear in `npm run check-links` stdout.
+
 ## Expected Output
 
 - `src/content/docs/solo-guide/building-rhythm.mdx` — 100–140 lines of substantive content covering all five R069 topics with cross-references, external citations, and Australian spelling. Build and link check pass.
