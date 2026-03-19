@@ -804,7 +804,7 @@ This file is the explicit capability and coverage contract for the project.
 
 - Active requirements: 1
 - Mapped to slices: 1
-- Validated: 59 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056, R057, R058, R059, R060, R061, R062, R063, R064, R065, R066, R067, R068, R069, R070, R071, R072)
+- Validated: 65 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056, R057, R058, R059, R060, R061, R062, R063, R064, R065, R066, R067, R068, R069, R070, R071, R072)
 - Unmapped active requirements: 0
 
 ### R061 — Solo Builder's Guide landing page and sidebar navigation
@@ -842,13 +842,13 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R064 — Section 2: Your First Project walkthrough
 - Class: primary-user-loop
-- Status: active
+- Status: validated
 - Description: Complete annotated walkthrough of starting a new GSD 2 project — discussion phase, roadmap reading, auto mode first run, verification, and completion. Written as narrative, not command reference.
 - Why it matters: The onboarding section that converts curious readers into active users.
 - Source: user
 - Primary owning slice: M006/S04
 - Supporting slices: none
-- Validation: unmapped
+- Validation: first-project.mdx — 148 lines covering all five GSD lifecycle phases (before you start, discussion, reading the roadmap, auto mode first run, verification and completion); 2 external citations (Addy Osmani and Esteban Torres); 9 cross-references using → gsd2-guide: notation; Australian spelling throughout; npm run build exits 0 at 113 pages; npm run check-links exits 0 at 12,288 links.
 - Notes: References Addy Osmani's spec-first workflow and the Esteban Torres first-person GSD account. Cross-references gsd2-guide's developing-with-gsd walkthrough.
 
 ### R065 — Section 3: Brownfield Reality
