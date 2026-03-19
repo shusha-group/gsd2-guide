@@ -37,19 +37,24 @@ const COMMAND_SLUGS = [
   "headless",
   "hooks",
   "keyboard-shortcuts",
+  "keys",
   "knowledge",
+  "logs",
   "migrate",
   "mode",
+  "new-milestone",
   "next",
   "prefs",
   "queue",
   "quick",
   "run-hook",
   "skill-health",
+  "skip",
   "status",
   "steer",
   "stop",
   "triage",
+  "undo",
   "update",
   "visualize",
 ];
@@ -72,16 +77,28 @@ const REFERENCE_SLUGS = [
   "skills",
 ];
 
+const PROMPT_SLUGS = [
+  "complete-milestone", "complete-slice", "discuss", "discuss-headless",
+  "doctor-heal", "execute-task", "forensics", "guided-complete-slice",
+  "guided-discuss-milestone", "guided-discuss-slice", "guided-execute-task",
+  "guided-plan-milestone", "guided-plan-slice", "guided-research-slice",
+  "guided-resume-task", "heal-skill", "plan-milestone", "plan-slice",
+  "queue", "quick-task", "reassess-roadmap", "replan-slice",
+  "research-milestone", "research-slice", "review-migration",
+  "rewrite-docs", "run-uat", "system", "triage-captures",
+  "validate-milestone", "workflow-start", "worktree-merge",
+];
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("page-source-map", () => {
-  it("has exactly 43 page entries", () => {
+  it("has exactly 80 page entries", () => {
     const pageCount = Object.keys(map).length;
-    assert.equal(pageCount, 43, `Expected 43 pages, got ${pageCount}`);
+    assert.equal(pageCount, 80, `Expected 80 pages, got ${pageCount}`);
   });
 
-  it("includes all 28 command pages", () => {
-    assert.equal(COMMAND_SLUGS.length, 28, "Sanity: 28 command slugs defined");
+  it("includes all 33 command pages", () => {
+    assert.equal(COMMAND_SLUGS.length, 33, "Sanity: 33 command slugs defined");
     for (const slug of COMMAND_SLUGS) {
       const key = `commands/${slug}.mdx`;
       assert.ok(
@@ -171,5 +188,39 @@ describe("page-source-map", () => {
       0,
       `Build had ${warnings.length} warnings:\n  ${warnings.join("\n  ")}`
     );
+  });
+
+  it("includes all 32 prompt pages", () => {
+    assert.equal(PROMPT_SLUGS.length, 32, "Sanity: 32 prompt slugs defined");
+    for (const slug of PROMPT_SLUGS) {
+      const key = `prompts/${slug}.mdx`;
+      assert.ok(key in map, `Missing prompt page: ${key}`);
+    }
+  });
+
+  it("prompt pages each have exactly 1 .md source dep", () => {
+    for (const slug of PROMPT_SLUGS) {
+      const key = `prompts/${slug}.mdx`;
+      const deps = map[key];
+      const mdFiles = deps.filter((d) => d.endsWith(".md"));
+      assert.equal(
+        mdFiles.length,
+        1,
+        `${key} has ${mdFiles.length} .md deps, expected exactly 1`
+      );
+    }
+  });
+
+  it("prompt source deps point to prompts/ directory", () => {
+    for (const slug of PROMPT_SLUGS) {
+      const key = `prompts/${slug}.mdx`;
+      const deps = map[key];
+      for (const dep of deps) {
+        assert.ok(
+          dep.startsWith("src/resources/extensions/gsd/prompts/"),
+          `${key} dep "${dep}" does not start with src/resources/extensions/gsd/prompts/`
+        );
+      }
+    }
   });
 });

@@ -1,6 +1,6 @@
 /**
- * build-page-map.mjs — Generate the page-source-map that maps all 42 authored
- * doc pages to their gsd-pi source file dependencies.
+ * build-page-map.mjs — Generate the page-source-map that maps all doc pages
+ * to their gsd-pi source file dependencies (48 core + 32 prompt pages = 80 total).
  *
  * Exports: buildPageSourceMap(manifestPath?)
  * CLI:     node scripts/lib/build-page-map.mjs
@@ -361,6 +361,17 @@ export function buildPageSourceMap(manifestPath) {
   // ─── 5. Other pages (2) ─────────────────────────────────────────────
   addPage("changelog.mdx", []);
   addPage("index.mdx", []);
+
+  // ─── 6. Prompt pages (32) ─────────────────────────────────────────
+  const promptsJsonPath = path.join(ROOT, "content/generated/prompts.json");
+  if (fs.existsSync(promptsJsonPath)) {
+    const promptsJson = JSON.parse(fs.readFileSync(promptsJsonPath, "utf-8"));
+    for (const prompt of promptsJson) {
+      addPage(`prompts/${prompt.slug}.mdx`, [
+        `src/resources/extensions/gsd/prompts/${prompt.name}.md`,
+      ]);
+    }
+  }
 
   // ─── Validation summary ─────────────────────────────────────────────
   const totalPages = Object.keys(map).length;

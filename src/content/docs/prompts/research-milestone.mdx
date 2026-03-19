@@ -1,0 +1,50 @@
+---
+title: "research-milestone"
+description: "Opens the auto-mode pipeline by scouting the codebase and producing a research document that informs how the milestone will be sliced and sequenced."
+---
+
+## What It Does
+
+`research-milestone` is the first agent dispatched when a new milestone begins. Its job is to explore the codebase, understand what already exists, identify technology constraints, and assess where the real risks lie — then write a structured research document that the milestone planner reads to make decomposition decisions.
+
+The researcher operates without any assumption about the milestone's complexity. It calibrates effort to actual uncertainty: a small feature addition might warrant a targeted look at a handful of relevant files, while a milestone introducing new technology or spanning multiple unfamiliar subsystems demands broad exploration, library lookups, and alternative-approach investigation. The output is advisory — it surfaces candidate requirements and risks, but does not automatically expand scope.
+
+Downstream agents depend heavily on this output. The `plan-milestone` agent reads the research document in a fresh context with no memory of the exploration phase. If the research doc is vague, the planner will waste context re-exploring code the researcher already read. If it is precise — specifying which files exist, what patterns are already established, where the natural seams are — the planner can decompose immediately and confidently.
+
+## Pipeline Position
+
+```mermaid
+flowchart TD
+    Start(["Milestone queued"]) --> ResearchMilestone["research-milestone"]
+    ResearchMilestone --> PlanMilestone["plan-milestone"]
+    PlanMilestone --> ResearchSlice["research-slice"]
+    ResearchSlice --> PlanSlice["plan-slice"]
+    PlanSlice --> ExecuteTask["execute-task"]
+
+    style ResearchMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Start fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PlanMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ResearchSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PlanSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ExecuteTask fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+This prompt fires at the very beginning of the auto-mode pipeline, after a milestone context file exists but before any planning has occurred. The dispatcher evaluates the project state, determines that no research document exists for the active milestone, and dispatches `research-milestone`. Once the research document is written, the dispatcher moves on to [`plan-milestone`](../plan-milestone/).
+
+This stage can be skipped entirely via the `skip_research` preference, in which case `plan-milestone` fires directly with no prior research context.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `milestoneId` | Current milestone identifier to research | Yes |
+| `milestoneTitle` | Human-readable title of the milestone being researched | Yes |
+| `workingDirectory` | Absolute path to the project working directory | Yes |
+| `inlinedContext` | Pre-assembled context block containing existing project state and relevant prior research | Yes |
+| `skillDiscoveryMode` | Mode string controlling how skill discovery is performed ('auto', 'manual', 'skip') | Yes |
+| `skillDiscoveryInstructions` | Instructions for the researcher on how to discover and evaluate relevant skills | Yes |
+| `outputPath` | File path where the research document should be written | Yes |
+
+## Used By
+
+- [`/gsd auto`](../../commands/auto/) — dispatched as the first pipeline stage when a milestone enters `pre-planning` phase

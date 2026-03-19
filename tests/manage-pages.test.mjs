@@ -20,6 +20,11 @@ import {
   removeFromPageMap,
   createNewPages,
   removePages,
+  detectNewAndRemovedPrompts,
+  addPromptSidebarEntry,
+  removePromptSidebarEntry,
+  createNewPromptPages,
+  removePromptPages,
 } from "../scripts/lib/manage-pages.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -842,5 +847,499 @@ describe("Full round-trip: detect → create → remove", () => {
 
     // Verify temp file is gone
     assert.ok(!fs.existsSync(path.join(commandsDir, "roundtrip-test.mdx")));
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Prompt page management tests
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Prompt fixture helpers ──────────────────────────────────────────────────
+
+/**
+ * Minimal prompts.json matching the real structure, using one slug from each group.
+ * Accepts extraPrompts to add additional entries.
+ */
+function makePromptsJson(extraPrompts = []) {
+  return [
+    { slug: "execute-task", name: "Execute Task", group: "auto-mode-pipeline" },
+    { slug: "plan-milestone", name: "Plan Milestone", group: "auto-mode-pipeline" },
+    { slug: "guided-execute-task", name: "Guided Execute Task", group: "guided-variants" },
+    { slug: "discuss", name: "Discuss", group: "commands" },
+    { slug: "system", name: "System", group: "foundation" },
+    ...extraPrompts,
+  ];
+}
+
+// ─── detectNewAndRemovedPrompts tests ────────────────────────────────────────
+
+describe("detectNewAndRemovedPrompts", () => {
+  /** @type {string} */
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-prompts-detect-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function setup({ sourceMdFiles = [], pagesMdxFiles = [] }) {
+    const sourceDir = path.join(tmpDir, "source-prompts");
+    const pageDir = path.join(tmpDir, "prompts");
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.mkdirSync(pageDir, { recursive: true });
+
+    for (const f of sourceMdFiles) {
+      fs.writeFileSync(path.join(sourceDir, f), "# Prompt content\n");
+    }
+    for (const f of pagesMdxFiles) {
+      fs.writeFileSync(path.join(pageDir, f), "---\ntitle: Test\n---\n");
+    }
+
+    return { promptsSourceDir: sourceDir, promptsPageDir: pageDir };
+  }
+
+  it("detects a new prompt when source .md exists but no .mdx page", () => {
+    const { promptsSourceDir, promptsPageDir } = setup({
+      sourceMdFiles: ["execute-task.md", "new-prompt.md"],
+      pagesMdxFiles: ["execute-task.mdx"],
+    });
+
+    const result = detectNewAndRemovedPrompts({ promptsSourceDir, promptsPageDir });
+    assert.ok(result.newPrompts.includes("new-prompt"), "new-prompt should be detected");
+    assert.deepEqual(result.removedPrompts, []);
+  });
+
+  it("detects a removed prompt when .mdx page exists but no source .md", () => {
+    const { promptsSourceDir, promptsPageDir } = setup({
+      sourceMdFiles: ["execute-task.md"],
+      pagesMdxFiles: ["execute-task.mdx", "old-prompt.mdx"],
+    });
+
+    const result = detectNewAndRemovedPrompts({ promptsSourceDir, promptsPageDir });
+    assert.ok(result.removedPrompts.includes("old-prompt"), "old-prompt should be detected");
+    assert.deepEqual(result.newPrompts, []);
+  });
+
+  it("returns empty arrays when all prompts match pages", () => {
+    const { promptsSourceDir, promptsPageDir } = setup({
+      sourceMdFiles: ["execute-task.md", "discuss.md"],
+      pagesMdxFiles: ["execute-task.mdx", "discuss.mdx"],
+    });
+
+    const result = detectNewAndRemovedPrompts({ promptsSourceDir, promptsPageDir });
+    assert.deepEqual(result.newPrompts, []);
+    assert.deepEqual(result.removedPrompts, []);
+  });
+
+  it("returns sorted arrays", () => {
+    const { promptsSourceDir, promptsPageDir } = setup({
+      sourceMdFiles: ["zebra.md", "alpha.md", "middle.md"],
+      pagesMdxFiles: [],
+    });
+
+    const result = detectNewAndRemovedPrompts({ promptsSourceDir, promptsPageDir });
+    assert.deepEqual(result.newPrompts, ["alpha", "middle", "zebra"]);
+  });
+
+  it("detects both new and removed simultaneously", () => {
+    const { promptsSourceDir, promptsPageDir } = setup({
+      sourceMdFiles: ["execute-task.md", "brand-new.md"],
+      pagesMdxFiles: ["execute-task.mdx", "old-removed.mdx"],
+    });
+
+    const result = detectNewAndRemovedPrompts({ promptsSourceDir, promptsPageDir });
+    assert.ok(result.newPrompts.includes("brand-new"));
+    assert.ok(result.removedPrompts.includes("old-removed"));
+  });
+});
+
+// ─── addPromptSidebarEntry tests ─────────────────────────────────────────────
+
+describe("addPromptSidebarEntry", () => {
+  /** @type {string} */
+  let tmpDir;
+  /** @type {string} */
+  let configPath;
+  /** @type {string} */
+  let promptsJsonPath;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-prompt-sidebar-"));
+    configPath = path.join(tmpDir, "astro.config.mjs");
+    promptsJsonPath = path.join(tmpDir, "prompts.json");
+    fs.writeFileSync(configPath, makeAstroConfig());
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(makePromptsJson()));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("inserts into the Auto-mode Pipeline sub-group for an auto-mode-pipeline prompt", () => {
+    const promos = makePromptsJson([
+      { slug: "test-auto-prompt", name: "Test Auto Prompt", group: "auto-mode-pipeline" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    const result = addPromptSidebarEntry("test-auto-prompt", { configPath, promptsJsonPath });
+    assert.equal(result.added, true);
+    assert.equal(result.group, "Auto-mode Pipeline");
+
+    const content = fs.readFileSync(configPath, "utf-8");
+    assert.ok(
+      content.includes("link: '/prompts/test-auto-prompt/'"),
+      "Link should be present in config"
+    );
+
+    const lines = content.split("\n");
+    const autoModeIdx = lines.findIndex((l) => l.includes("'Auto-mode Pipeline'"));
+    const entryIdx = lines.findIndex((l) => l.includes("/prompts/test-auto-prompt/"));
+    const guidedIdx = lines.findIndex((l) => l.includes("'Guided Variants'"));
+    assert.ok(entryIdx > autoModeIdx, "Entry should be after Auto-mode Pipeline label");
+    assert.ok(entryIdx < guidedIdx, "Entry should be before Guided Variants label");
+  });
+
+  it("inserts into the Commands sub-group for a commands prompt", () => {
+    const promos = makePromptsJson([
+      { slug: "test-cmd-prompt", name: "Test Cmd Prompt", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    addPromptSidebarEntry("test-cmd-prompt", { configPath, promptsJsonPath });
+    const content = fs.readFileSync(configPath, "utf-8");
+    assert.ok(content.includes("link: '/prompts/test-cmd-prompt/'"));
+
+    const lines = content.split("\n");
+    const cmdSectionIdx = lines.findIndex((l) => l.includes("label: 'Commands'"));
+    const entryIdx = lines.findIndex((l) => l.includes("/prompts/test-cmd-prompt/"));
+    const foundationIdx = lines.findIndex((l) => l.includes("'Foundation'"));
+    assert.ok(entryIdx > cmdSectionIdx, "Entry should be after Commands label");
+    assert.ok(entryIdx < foundationIdx, "Entry should be before Foundation label");
+  });
+
+  it("inserts into the Foundation sub-group for a foundation prompt", () => {
+    const promos = makePromptsJson([
+      { slug: "new-foundation-prompt", name: "New Foundation", group: "foundation" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    addPromptSidebarEntry("new-foundation-prompt", { configPath, promptsJsonPath });
+    const content = fs.readFileSync(configPath, "utf-8");
+    assert.ok(content.includes("link: '/prompts/new-foundation-prompt/'"));
+  });
+
+  it("maintains alphabetical order within the sub-group", () => {
+    const promos = makePromptsJson([
+      { slug: "aaa-prompt", name: "AAA", group: "commands" },
+      { slug: "zzz-prompt", name: "ZZZ", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    addPromptSidebarEntry("zzz-prompt", { configPath, promptsJsonPath });
+    addPromptSidebarEntry("aaa-prompt", { configPath, promptsJsonPath });
+
+    const content = fs.readFileSync(configPath, "utf-8");
+    const lines = content.split("\n");
+    const aaaIdx = lines.findIndex((l) => l.includes("/prompts/aaa-prompt/"));
+    const zzzIdx = lines.findIndex((l) => l.includes("/prompts/zzz-prompt/"));
+    assert.ok(aaaIdx < zzzIdx, "aaa-prompt should appear before zzz-prompt");
+  });
+
+  it("uses 16-space indentation", () => {
+    const promos = makePromptsJson([
+      { slug: "indent-test-prompt", name: "Indent Test", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    addPromptSidebarEntry("indent-test-prompt", { configPath, promptsJsonPath });
+    const content = fs.readFileSync(configPath, "utf-8");
+    const line = content.split("\n").find((l) => l.includes("/prompts/indent-test-prompt/"));
+    assert.ok(line, "Line should exist");
+    assert.ok(line.startsWith("                "), "Should have 16-space indent");
+    assert.ok(!line.startsWith("                 "), "Should not have 17-space indent");
+  });
+
+  it("has correct label/link format", () => {
+    const promos = makePromptsJson([
+      { slug: "format-test-prompt", name: "Format Test", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    addPromptSidebarEntry("format-test-prompt", { configPath, promptsJsonPath });
+    const content = fs.readFileSync(configPath, "utf-8");
+    assert.ok(
+      content.includes("{ label: 'format-test-prompt', link: '/prompts/format-test-prompt/' },"),
+      "Label/link format should match expected pattern"
+    );
+  });
+
+  it("throws when slug is not found in prompts.json", () => {
+    assert.throws(
+      () => addPromptSidebarEntry("nonexistent-slug", { configPath, promptsJsonPath }),
+      /not found in prompts\.json/
+    );
+  });
+});
+
+// ─── removePromptSidebarEntry tests ──────────────────────────────────────────
+
+describe("removePromptSidebarEntry", () => {
+  /** @type {string} */
+  let tmpDir;
+  /** @type {string} */
+  let configPath;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-prompt-sidebar-rm-"));
+    configPath = path.join(tmpDir, "astro.config.mjs");
+    fs.writeFileSync(configPath, makeAstroConfig());
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("removes an entry from the Auto-mode Pipeline sub-group", () => {
+    const before = fs.readFileSync(configPath, "utf-8");
+    assert.ok(before.includes("/prompts/execute-task/"), "Sanity: execute-task exists");
+
+    const result = removePromptSidebarEntry("execute-task", { configPath });
+    assert.deepEqual(result, { removed: true, slug: "execute-task" });
+
+    const after = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!after.includes("/prompts/execute-task/"), "execute-task should be removed");
+    assert.ok(after.includes("/prompts/complete-milestone/"), "complete-milestone should remain");
+  });
+
+  it("removes an entry from the Commands sub-group", () => {
+    const before = fs.readFileSync(configPath, "utf-8");
+    assert.ok(before.includes("/prompts/discuss/"), "Sanity: discuss exists");
+
+    const result = removePromptSidebarEntry("discuss", { configPath });
+    assert.deepEqual(result, { removed: true, slug: "discuss" });
+
+    const after = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!after.includes("/prompts/discuss/"), "discuss should be removed");
+  });
+
+  it("removes an entry from the Foundation sub-group", () => {
+    const result = removePromptSidebarEntry("system", { configPath });
+    assert.deepEqual(result, { removed: true, slug: "system" });
+
+    const after = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!after.includes("/prompts/system/"), "system should be removed");
+  });
+
+  it("returns removed: false for nonexistent slug", () => {
+    const result = removePromptSidebarEntry("nonexistent-prompt", { configPath });
+    assert.deepEqual(result, { removed: false, slug: "nonexistent-prompt", reason: "not found" });
+  });
+
+  it("does not affect command sidebar entries", () => {
+    removePromptSidebarEntry("discuss", { configPath });
+    const after = fs.readFileSync(configPath, "utf-8");
+    assert.ok(after.includes("/commands/auto/"), "Command entries should remain");
+    assert.ok(after.includes("'Keyboard Shortcuts'"), "Keyboard Shortcuts should remain");
+  });
+});
+
+// ─── createNewPromptPages tests ───────────────────────────────────────────────
+
+describe("createNewPromptPages", () => {
+  /** @type {string} */
+  let tmpDir;
+  /** @type {string} */
+  let configPath;
+  /** @type {string} */
+  let promptsJsonPath;
+  /** @type {string} */
+  let promptsDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-create-prompts-"));
+    configPath = path.join(tmpDir, "astro.config.mjs");
+    promptsJsonPath = path.join(tmpDir, "prompts.json");
+    promptsDir = path.join(tmpDir, "prompts");
+
+    fs.writeFileSync(configPath, makeAstroConfig());
+    fs.mkdirSync(promptsDir);
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("creates a scaffold MDX file and sidebar entry for a new prompt", () => {
+    const promos = makePromptsJson([
+      { slug: "test-create-prompt", name: "Test Create", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    const result = createNewPromptPages(["test-create-prompt"], {
+      configPath,
+      promptsJsonPath,
+      promptsDir,
+    });
+
+    assert.equal(result.created, 1);
+    assert.equal(result.failed, 0);
+
+    const entry = result.results[0];
+    assert.equal(entry.slug, "test-create-prompt");
+    assert.ok(entry.sidebar?.added, "Sidebar entry should be added");
+
+    const pagePath = path.join(promptsDir, "test-create-prompt.mdx");
+    assert.ok(fs.existsSync(pagePath), "Scaffold .mdx file should exist");
+
+    const content = fs.readFileSync(pagePath, "utf-8");
+    assert.ok(content.startsWith("---\n"), "Should have frontmatter");
+    assert.ok(content.includes('title: "test-create-prompt"'), "Should have title");
+    assert.ok(content.includes("Prompt reference: test-create-prompt"), "Should have description");
+    assert.ok(content.includes("scaffold"), "Should indicate scaffold status");
+
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(sidebarContent.includes("/prompts/test-create-prompt/"), "Sidebar should have the link");
+  });
+
+  it("does NOT add to page-source-map (handled by build-page-map.mjs)", () => {
+    const promos = makePromptsJson([
+      { slug: "test-no-map-prompt", name: "Test No Map", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    const result = createNewPromptPages(["test-no-map-prompt"], {
+      configPath,
+      promptsJsonPath,
+      promptsDir,
+    });
+
+    assert.equal(result.created, 1);
+    assert.ok(!result.results[0].map, "Should have no map entry in result");
+  });
+
+  it("skips all writes in dryRun mode", () => {
+    const promos = makePromptsJson([
+      { slug: "test-dryrun-prompt", name: "Test Dry Run", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    const result = createNewPromptPages(["test-dryrun-prompt"], {
+      dryRun: true,
+      configPath,
+      promptsJsonPath,
+      promptsDir,
+    });
+
+    assert.equal(result.created, 1);
+    assert.equal(result.results[0].sidebar, null, "Sidebar should not be updated in dryRun");
+
+    assert.ok(
+      !fs.existsSync(path.join(promptsDir, "test-dryrun-prompt.mdx")),
+      "Scaffold file should NOT exist in dryRun"
+    );
+
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!sidebarContent.includes("test-dryrun-prompt"), "Sidebar should be unchanged");
+  });
+
+  it("processes multiple new prompts", () => {
+    const promos = makePromptsJson([
+      { slug: "multi-prompt-a", name: "Multi A", group: "commands" },
+      { slug: "multi-prompt-b", name: "Multi B", group: "commands" },
+    ]);
+    fs.writeFileSync(promptsJsonPath, JSON.stringify(promos));
+
+    const result = createNewPromptPages(["multi-prompt-a", "multi-prompt-b"], {
+      configPath,
+      promptsJsonPath,
+      promptsDir,
+    });
+
+    assert.equal(result.created, 2);
+    assert.equal(result.failed, 0);
+
+    assert.ok(fs.existsSync(path.join(promptsDir, "multi-prompt-a.mdx")));
+    assert.ok(fs.existsSync(path.join(promptsDir, "multi-prompt-b.mdx")));
+
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(sidebarContent.includes("/prompts/multi-prompt-a/"));
+    assert.ok(sidebarContent.includes("/prompts/multi-prompt-b/"));
+  });
+});
+
+// ─── removePromptPages tests ──────────────────────────────────────────────────
+
+describe("removePromptPages", () => {
+  /** @type {string} */
+  let tmpDir;
+  /** @type {string} */
+  let configPath;
+  /** @type {string} */
+  let promptsDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "manage-pages-remove-prompts-"));
+    configPath = path.join(tmpDir, "astro.config.mjs");
+    promptsDir = path.join(tmpDir, "prompts");
+
+    fs.writeFileSync(configPath, makeAstroConfig());
+    fs.mkdirSync(promptsDir);
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("deletes file and removes sidebar entry", () => {
+    fs.writeFileSync(
+      path.join(promptsDir, "discuss.mdx"),
+      "---\ntitle: discuss\n---\n"
+    );
+
+    const result = removePromptPages(["discuss"], { configPath, promptsDir });
+
+    assert.equal(result.removed, 1);
+    assert.equal(result.failed, 0);
+
+    const entry = result.results[0];
+    assert.equal(entry.slug, "discuss");
+    assert.equal(entry.fileDeleted, true);
+    assert.ok(entry.sidebar?.removed, "Sidebar entry should be removed");
+
+    assert.ok(!fs.existsSync(path.join(promptsDir, "discuss.mdx")));
+
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!sidebarContent.includes("/prompts/discuss/"));
+  });
+
+  it("handles missing file gracefully and still removes sidebar entry", () => {
+    const result = removePromptPages(["discuss"], { configPath, promptsDir });
+
+    assert.equal(result.removed, 1, "Should still count as removed");
+    assert.equal(result.results[0].fileDeleted, false, "File was not deleted (didn't exist)");
+    assert.ok(result.results[0].sidebar?.removed, "Sidebar entry should be removed");
+  });
+
+  it("processes multiple removals", () => {
+    fs.writeFileSync(path.join(promptsDir, "discuss.mdx"), "---\ntitle: discuss\n---\n");
+    fs.writeFileSync(path.join(promptsDir, "execute-task.mdx"), "---\ntitle: execute-task\n---\n");
+
+    const result = removePromptPages(["discuss", "execute-task"], {
+      configPath,
+      promptsDir,
+    });
+
+    assert.equal(result.removed, 2);
+    assert.equal(result.failed, 0);
+
+    assert.ok(!fs.existsSync(path.join(promptsDir, "discuss.mdx")));
+    assert.ok(!fs.existsSync(path.join(promptsDir, "execute-task.mdx")));
+
+    const sidebarContent = fs.readFileSync(configPath, "utf-8");
+    assert.ok(!sidebarContent.includes("/prompts/discuss/"));
+    assert.ok(!sidebarContent.includes("/prompts/execute-task/"));
   });
 });

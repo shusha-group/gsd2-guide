@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectChanges, resolveStalePages } from './lib/diff-sources.mjs';
-import { detectNewAndRemovedCommands, createNewPages, removePages } from './lib/manage-pages.mjs';
+import { detectNewAndRemovedCommands, createNewPages, removePages, detectNewAndRemovedPrompts, createNewPromptPages, removePromptPages } from './lib/manage-pages.mjs';
 import { regeneratePage, findClaude } from './lib/regenerate-page.mjs';
 import { getStalePages, stampPages } from './check-page-freshness.mjs';
 
@@ -129,6 +129,36 @@ export async function runManageCommands() {
   }
 }
 
+// ── Manage prompts step (async — calls detect + create/remove) ──────
+export async function runManagePrompts() {
+  const detection = detectNewAndRemovedPrompts();
+
+  console.log(`  New prompts: ${detection.newPrompts.length}`);
+  console.log(`  Removed prompts: ${detection.removedPrompts.length}`);
+
+  if (detection.newPrompts.length > 0) {
+    console.log(`  Creating ${detection.newPrompts.length} new prompt page(s)...`);
+    const createResult = createNewPromptPages(detection.newPrompts);
+    for (const r of createResult.results) {
+      const status = r.error ? `✗ ${r.error}` : '✓ scaffold created';
+      console.log(`    ${status}: ${r.slug}`);
+    }
+  }
+
+  if (detection.removedPrompts.length > 0) {
+    console.log(`  Removing ${detection.removedPrompts.length} prompt page(s)...`);
+    const removeResult = removePromptPages(detection.removedPrompts);
+    for (const r of removeResult.results) {
+      const status = r.error ? `✗ ${r.error}` : '✓ removed';
+      console.log(`    ${status}: ${r.slug}`);
+    }
+  }
+
+  if (detection.newPrompts.length === 0 && detection.removedPrompts.length === 0) {
+    console.log('  ✓ All prompts in sync — no changes needed.');
+  }
+}
+
 // ── Regenerate stale pages step ─────────────────────────────────────
 async function runRegenerateStale() {
   const { stalePages, freshCount } = getStalePages();
@@ -198,6 +228,7 @@ export const steps = [
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
   { name: 'diff report', fn: runDiffReport },
   { name: 'manage commands', fn: runManageCommands },
+  { name: 'manage prompts', fn: runManagePrompts },
   { name: 'regenerate',  fn: runRegenerateStale },
   { name: 'build',      cmd: 'npm run build', capture: false },
   { name: 'check-links', cmd: 'node scripts/check-links.mjs', capture: false },

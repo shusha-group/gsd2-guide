@@ -1,0 +1,42 @@
+---
+title: "guided-execute-task"
+description: "The interactive counterpart to execute-task — runs a task with user checkpoints rather than headlessly, letting the user observe and steer each step."
+---
+
+## What It Does
+
+`guided-execute-task` is the interactive counterpart to [`execute-task`](../execute-task/). Where the auto-mode version runs headlessly — the agent executes and writes a summary with no opportunity for user input — the guided version invites collaboration at key decision points. The agent reads the task plan, loads relevant context, and works through implementation steps, but pauses to surface tradeoffs, surface unexpected findings, and let the user steer before committing to a direction.
+
+This is a compact dispatch wrapper — the guided session loads the same templates as auto-mode but adds interactive checkpoints. The source file is 3 lines, delegating directly to the same task plan and artifact conventions that `execute-task` uses. All must-haves, verification steps, and summary requirements are identical.
+
+## Pipeline Position
+
+```mermaid
+flowchart TD
+    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
+    SelectUnit --> GuidedExecuteTask["guided-execute-task"]
+    GuidedExecuteTask --> UserInteraction["user-interaction"]
+    UserInteraction --> ArtifactWritten["artifact-written"]
+
+    style GuidedExecuteTask fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+The `/gsd` command dispatches `guided-execute-task` when the user selects a task to run interactively. After the session, the same task summary artifact is written to disk and the checkbox is marked done.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `taskId` | Current task identifier within the slice (e.g. T01) | Yes |
+| `taskTitle` | Human-readable title of the task being executed | Yes |
+| `sliceId` | Current slice identifier within the milestone (e.g. S01) | Yes |
+| `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
+| `inlinedTemplates` | Output template content inlined directly into the prompt | Yes |
+
+## Used By
+
+- [`/gsd`](../../commands/gsd/) — dispatched when the user selects a task to execute in guided (interactive) mode

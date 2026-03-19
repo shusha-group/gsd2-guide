@@ -1,0 +1,51 @@
+---
+title: "workflow-start"
+description: "Templated workflow initialization prompt — loads a selected workflow template, instantiates it with the provided parameters, and guides the user through each phase in sequence."
+---
+
+## What It Does
+
+`workflow-start` initializes a templated GSD workflow — a structured, multi-phase process defined in a reusable template. Where milestones are GSD's primary vehicle for product work, workflows are purpose-built sequences for recurring processes like incident response, dependency upgrades, or architecture reviews. This prompt loads the selected template, binds it to the user's context (issue reference, branch, artifact directory, complexity level), and begins executing the phases defined in the workflow definition.
+
+The execution contract is phase-gated: each phase is completed before the next begins, and after every phase the prompt summarizes what was done and asks the user to confirm before advancing. This gate-by-gate approach prevents the agent from racing ahead when a phase requires human review or external action. The artifact directory receives all planning and summary documents produced during execution, and code changes are committed atomically after each meaningful change using conventional commit format. The complexity level — `simple`, `standard`, or `complex` — calibrates how much ceremony the agent applies; a simple workflow shouldn't be over-engineered, and a complex one shouldn't be under-delivered.
+
+The full workflow definition is provided inline via `workflowContent`, which contains the actual phase specifications, acceptance criteria, and completion conditions the agent must follow. The prompt does not improvise beyond what the template defines — the template is the authoritative contract, and the agent's role is to execute it faithfully while maintaining clear communication with the user at each gate.
+
+## Pipeline Position
+
+```mermaid
+flowchart LR
+    WorkflowInvoke["workflow triggered internally"] --> WorkflowStart["workflow-start"]
+    WorkflowStart --> Phase1["phase 1: execute + gate"]
+    Phase1 --> Phase2["phase 2: execute + gate"]
+    Phase2 --> PhaseN["... remaining phases"]
+    PhaseN --> Complete["workflow complete"]
+
+    style WorkflowStart fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style WorkflowInvoke fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Phase1 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Phase2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PhaseN fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Complete fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+`workflow-start` is not directly invoked by a user-facing command — it is triggered internally by GSD workflows when a workflow template is instantiated. The triggering mechanism is internal to the GSD workflow system rather than exposed as a direct slash command.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `templateName` | Human-readable name of the workflow template | Yes |
+| `templateId` | Identifier of the workflow template being instantiated | Yes |
+| `description` | Plain-language description of the workflow to start | Yes |
+| `issueRef` | GitHub issue reference associated with this workflow (e.g. '#123') | Yes |
+| `date` | Current date string for temporal context in the workflow prompt | Yes |
+| `branch` | Git branch name for the workflow being started | Yes |
+| `artifactDir` | Directory path where workflow artifacts (templates, outputs) should be stored | Yes |
+| `phases` | Structured list of phases defining the workflow execution plan | Yes |
+| `complexity` | Complexity level of the workflow ('simple', 'standard', 'complex') | Yes |
+| `workflowContent` | Full content of the workflow template being used to start this workflow | Yes |
+
+## Used By
+
+Not directly invoked by a user-facing command — triggered internally by GSD workflows when a workflow template is instantiated.

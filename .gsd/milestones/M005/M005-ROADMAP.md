@@ -50,19 +50,19 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Prompt metadata extraction** `risk:high` `depends:[]`
+- [x] **S01: Prompt metadata extraction** `risk:high` `depends:[]`
   > After this: `content/generated/prompts.json` exists with all 32 prompts — name, slug, group, variables list, pipeline position, and command backlinks. Verified by running `scripts/extract.mjs` and inspecting the output.
 
-- [ ] **S02: Page scaffold, sidebar, and source map** `risk:medium` `depends:[S01]`
+- [x] **S02: Page scaffold, sidebar, and source map** `risk:medium` `depends:[S01]`
   > After this: 32 stub MDX pages exist in `src/content/docs/prompts/`, all 4 sidebar groups are registered in `astro.config.mjs`, and `page-source-map.json` has 32 new entries. `npm run build` succeeds (stubs, no real content yet).
 
-- [ ] **S03: Prompt page content generation** `risk:medium` `depends:[S01,S02]`
+- [x] **S03: Prompt page content generation** `risk:medium` `depends:[S01,S02]`
   > After this: All 32 prompt pages have real authored content — prose description, Mermaid pipeline diagram, variable table, "Used by commands" section. `npm run build` and `npm run check-links` pass.
 
-- [ ] **S04: Command page backlinks** `risk:low` `depends:[S02]`
+- [x] **S04: Command page backlinks** `risk:low` `depends:[S02]`
   > After this: 15 command pages have a "Prompts used" section with links to the prompt pages that command invokes. All cross-links validated by `npm run check-links`.
 
-- [ ] **S05: Pipeline integration** `risk:low` `depends:[S02,S04]`
+- [x] **S05: Pipeline integration** `risk:low` `depends:[S02,S04]`
   > After this: `manage-pages.mjs` extended for prompt directory. `npm run update` end-to-end detects a prompt page as stale when its `.md` source changes and regenerates it via `claude -p`. Full pipeline exits 0.
 
 <!--

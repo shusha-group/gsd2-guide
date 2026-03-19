@@ -1,0 +1,49 @@
+---
+title: "complete-slice"
+description: "Verifies that all tasks in a slice actually deliver the slice goal, then compresses all task summaries into a slice summary and UAT script for downstream agents."
+---
+
+## What It Does
+
+`complete-slice` is the closer. After all tasks in a slice are marked complete, this prompt dispatches an agent that verifies the assembled work actually delivers what the slice promised — not just that individual tasks finished, but that the whole slice goal is met end-to-end. If any slice-level verification checks fail, the closer fixes them before declaring the slice done.
+
+Beyond verification, the closer has two primary outputs: a slice summary and a UAT script. The slice summary compresses all task summaries into a concise record of what the slice actually delivered — written not just for archival purposes but for the `reassess-roadmap` agent that reads it next, and for future slice researchers who depend on this slice. The slice summary's **Forward Intelligence** section is particularly important: it captures hard-won knowledge about what's fragile, what assumptions changed, and what downstream slices need to watch out for.
+
+The UAT script is a concrete set of test cases derived from the slice plan and task summaries — numbered steps with preconditions and expected outcomes tailored to what this slice actually built. It is not a generic template. After writing both artifacts, the closer marks the slice `[x]` in the roadmap, which signals to the dispatcher that `reassess-roadmap` should be fired next.
+
+## Pipeline Position
+
+```mermaid
+flowchart TD
+    ExecuteTask["execute-task"] --> CompleteSlice["complete-slice"]
+    CompleteSlice --> ReassessRoadmap["reassess-roadmap"]
+    ReassessRoadmap --> MoreSlices{"more slices?"}
+    MoreSlices -->|"yes"| ResearchSlice["research-slice"]
+    MoreSlices -->|"no"| ValidateMilestone["validate-milestone"]
+
+    style CompleteSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ExecuteTask fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ReassessRoadmap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style MoreSlices fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ResearchSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ValidateMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` but the slice itself is not yet marked `[x]` in the roadmap. The closer must write both the slice summary and the UAT file before marking the slice done — the dispatcher checks for both artifacts. If requirements tracking is active, the closer also updates requirement status based on what was actually proved during execution.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `sliceId` | Current slice identifier within the milestone (e.g. S01) | Yes |
+| `sliceTitle` | Human-readable title of the slice being completed | Yes |
+| `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
+| `workingDirectory` | Absolute path to the project working directory | Yes |
+| `inlinedContext` | Pre-assembled context block containing relevant task summaries, slice plan, and dependency artifacts for the completion agent | Yes |
+| `sliceSummaryPath` | File path where the slice completion summary should be written | Yes |
+| `sliceUatPath` | File path to the UAT (user acceptance testing) results for this slice | Yes |
+| `roadmapPath` | File path to the project roadmap document | Yes |
+
+## Used By
+
+- [`/gsd auto`](../../commands/auto/) — dispatched when all tasks in a slice are complete but the slice is not yet marked done in the roadmap

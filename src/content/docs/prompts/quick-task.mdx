@@ -1,0 +1,45 @@
+---
+title: "quick-task"
+description: "Lightweight task execution prompt — runs a standalone focused task outside the milestone system, committing changes and writing a summary artifact when done."
+---
+
+## What It Does
+
+`quick-task` is GSD's escape hatch for work that doesn't warrant the full milestone-slice-task ceremony. It runs when the user invokes `/gsd quick` to handle a focused, self-contained task — a targeted bug fix, a specific code change, a small exploration — without creating planning artifacts or touching the roadmap. The task is described entirely in the `description` variable, and the prompt executes it as a complete, professional deliverable with the same standards as any auto-mode task.
+
+The execution contract is straightforward: read the task description, follow any `GSD Skill Preferences` from the system context, read relevant code before modifying it, and build the real thing rather than stubs or placeholders. Error cases and edge cases get the same attention as the happy path. When the implementation is done, changes are committed atomically using conventional commit format — logical changes in separate commits, never secrets or runtime files staged.
+
+Every quick task ends by writing a structured Markdown summary to the path provided in `summaryPath`. The summary covers what changed, which files were modified, and what was verified. This gives the user an audit trail even for informal work, and the summary path is organized by the `taskNum` variable so multiple quick tasks in a session stay organized. The session closes with `"Quick task {taskNum} complete."` — signaling successful completion to the command layer.
+
+## Pipeline Position
+
+```mermaid
+flowchart LR
+    QuickCommand["/gsd quick"] --> QuickTask["quick-task"]
+    QuickTask --> Implementation["read → implement → verify"]
+    Implementation --> Commit["atomic commit"]
+    Commit --> Summary["summary written"]
+
+    style QuickTask fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style QuickCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Implementation fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+`quick-task` runs entirely outside the auto-mode pipeline — there is no slice plan, no task plan document, and no requirement to update roadmap artifacts. It is the most lightweight execution context in GSD, useful for one-off tasks that would be over-engineered by the full milestone system.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `description` | Plain-language description of the quick task to be executed | Yes |
+| `taskDir` | File system directory where quick task artifacts should be placed | Yes |
+| `branch` | Git branch name where the quick task output should be committed | Yes |
+| `summaryPath` | File path where the quick task summary should be written | Yes |
+| `date` | Current date string for temporal context in the quick task prompt | Yes |
+| `taskNum` | Sequential number identifying this quick task within the session | Yes |
+
+## Used By
+
+- [`/gsd quick`](../../commands/quick/) — invoked for standalone focused tasks outside the milestone system; assembles task context and dispatches this prompt directly

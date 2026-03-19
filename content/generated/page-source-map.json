@@ -93,12 +93,22 @@
     "src/resources/extensions/gsd/state.ts",
     "src/resources/extensions/gsd/types.ts"
   ],
+  "commands/keys.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
+  ],
   "commands/knowledge.mdx": [
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
     "src/resources/extensions/gsd/types.ts",
     "src/resources/extensions/gsd/prompts/system.md",
     "src/resources/extensions/gsd/files.ts"
+  ],
+  "commands/logs.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
   ],
   "commands/migrate.mdx": [
     "src/resources/extensions/gsd/commands.ts",
@@ -120,6 +130,11 @@
     "src/resources/extensions/gsd/types.ts",
     "src/resources/extensions/gsd/guided-flow.ts",
     "src/resources/extensions/gsd/preferences.ts"
+  ],
+  "commands/new-milestone.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
   ],
   "commands/next.mdx": [
     "src/resources/extensions/gsd/commands.ts",
@@ -161,6 +176,11 @@
     "src/resources/extensions/gsd/skill-discovery.ts",
     "src/resources/extensions/gsd/prompts/heal-skill.md"
   ],
+  "commands/skip.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
+  ],
   "commands/status.mdx": [
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
@@ -186,6 +206,12 @@
     "src/resources/extensions/gsd/triage-ui.ts",
     "src/resources/extensions/gsd/triage-resolution.ts",
     "src/resources/extensions/gsd/prompts/triage-captures.md"
+  ],
+  "commands/undo.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts",
+    "src/resources/extensions/gsd/undo.ts"
   ],
   "commands/update.mdx": [
     "src/resources/extensions/gsd/commands.ts",
@@ -292,6 +318,53 @@
     "src/resources/skills/code-optimizer/references/security-performance.md",
     "src/resources/skills/core-web-vitals/SKILL.md",
     "src/resources/skills/core-web-vitals/references/LCP.md",
+    "src/resources/skills/create-gsd-extension/SKILL.md",
+    "src/resources/skills/create-gsd-extension/references/compaction-session-control.md",
+    "src/resources/skills/create-gsd-extension/references/custom-commands.md",
+    "src/resources/skills/create-gsd-extension/references/custom-rendering.md",
+    "src/resources/skills/create-gsd-extension/references/custom-tools.md",
+    "src/resources/skills/create-gsd-extension/references/custom-ui.md",
+    "src/resources/skills/create-gsd-extension/references/events-reference.md",
+    "src/resources/skills/create-gsd-extension/references/extension-lifecycle.md",
+    "src/resources/skills/create-gsd-extension/references/extensionapi-reference.md",
+    "src/resources/skills/create-gsd-extension/references/extensioncontext-reference.md",
+    "src/resources/skills/create-gsd-extension/references/key-rules-gotchas.md",
+    "src/resources/skills/create-gsd-extension/references/mode-behavior.md",
+    "src/resources/skills/create-gsd-extension/references/model-provider-management.md",
+    "src/resources/skills/create-gsd-extension/references/packaging-distribution.md",
+    "src/resources/skills/create-gsd-extension/references/remote-execution-overrides.md",
+    "src/resources/skills/create-gsd-extension/references/state-management.md",
+    "src/resources/skills/create-gsd-extension/references/system-prompt-modification.md",
+    "src/resources/skills/create-gsd-extension/templates/extension-skeleton.ts",
+    "src/resources/skills/create-gsd-extension/templates/stateful-tool-skeleton.ts",
+    "src/resources/skills/create-gsd-extension/workflows/add-capability.md",
+    "src/resources/skills/create-gsd-extension/workflows/create-extension.md",
+    "src/resources/skills/create-gsd-extension/workflows/debug-extension.md",
+    "src/resources/skills/create-skill/SKILL.md",
+    "src/resources/skills/create-skill/references/api-security.md",
+    "src/resources/skills/create-skill/references/be-clear-and-direct.md",
+    "src/resources/skills/create-skill/references/common-patterns.md",
+    "src/resources/skills/create-skill/references/core-principles.md",
+    "src/resources/skills/create-skill/references/executable-code.md",
+    "src/resources/skills/create-skill/references/gsd-skill-ecosystem.md",
+    "src/resources/skills/create-skill/references/iteration-and-testing.md",
+    "src/resources/skills/create-skill/references/recommended-structure.md",
+    "src/resources/skills/create-skill/references/skill-structure.md",
+    "src/resources/skills/create-skill/references/use-xml-tags.md",
+    "src/resources/skills/create-skill/references/using-scripts.md",
+    "src/resources/skills/create-skill/references/using-templates.md",
+    "src/resources/skills/create-skill/references/workflows-and-validation.md",
+    "src/resources/skills/create-skill/templates/router-skill.md",
+    "src/resources/skills/create-skill/templates/simple-skill.md",
+    "src/resources/skills/create-skill/workflows/add-reference.md",
+    "src/resources/skills/create-skill/workflows/add-script.md",
+    "src/resources/skills/create-skill/workflows/add-template.md",
+    "src/resources/skills/create-skill/workflows/add-workflow.md",
+    "src/resources/skills/create-skill/workflows/audit-skill.md",
+    "src/resources/skills/create-skill/workflows/create-new-skill.md",
+    "src/resources/skills/create-skill/workflows/get-guidance.md",
+    "src/resources/skills/create-skill/workflows/upgrade-to-router.md",
+    "src/resources/skills/create-skill/workflows/verify-skill.md",
     "src/resources/skills/debug-like-expert/SKILL.md",
     "src/resources/skills/debug-like-expert/references/debugging-mindset.md",
     "src/resources/skills/debug-like-expert/references/hypothesis-testing.md",
@@ -568,11 +641,14 @@
     "src/resources/extensions/async-jobs/async-bash-tool.ts",
     "src/resources/extensions/async-jobs/await-tool.ts",
     "src/resources/extensions/async-jobs/cancel-job-tool.ts",
+    "src/resources/extensions/async-jobs/extension-manifest.json",
     "src/resources/extensions/async-jobs/index.ts",
     "src/resources/extensions/async-jobs/job-manager.ts",
+    "src/resources/extensions/aws-auth/index.ts",
     "src/resources/extensions/bg-shell/bg-shell-command.ts",
     "src/resources/extensions/bg-shell/bg-shell-lifecycle.ts",
     "src/resources/extensions/bg-shell/bg-shell-tool.ts",
+    "src/resources/extensions/bg-shell/extension-manifest.json",
     "src/resources/extensions/bg-shell/index.ts",
     "src/resources/extensions/bg-shell/interaction.ts",
     "src/resources/extensions/bg-shell/output-formatter.ts",
@@ -585,6 +661,7 @@
     "src/resources/extensions/browser-tools/capture.ts",
     "src/resources/extensions/browser-tools/core.ts",
     "src/resources/extensions/browser-tools/evaluate-helpers.ts",
+    "src/resources/extensions/browser-tools/extension-manifest.json",
     "src/resources/extensions/browser-tools/index.ts",
     "src/resources/extensions/browser-tools/lifecycle.ts",
     "src/resources/extensions/browser-tools/package.json",
@@ -613,26 +690,34 @@
     "src/resources/extensions/browser-tools/tools/wait.ts",
     "src/resources/extensions/browser-tools/tools/zoom.ts",
     "src/resources/extensions/browser-tools/utils.ts",
+    "src/resources/extensions/context7/extension-manifest.json",
     "src/resources/extensions/context7/index.ts",
     "src/resources/extensions/context7/package.json",
     "src/resources/extensions/get-secrets-from-user.ts",
+    "src/resources/extensions/google-search/extension-manifest.json",
     "src/resources/extensions/google-search/index.ts",
     "src/resources/extensions/google-search/package.json",
     "src/resources/extensions/gsd/activity-log.ts",
     "src/resources/extensions/gsd/atomic-write.ts",
     "src/resources/extensions/gsd/auto-budget.ts",
+    "src/resources/extensions/gsd/auto-constants.ts",
     "src/resources/extensions/gsd/auto-dashboard.ts",
     "src/resources/extensions/gsd/auto-direct-dispatch.ts",
     "src/resources/extensions/gsd/auto-dispatch.ts",
+    "src/resources/extensions/gsd/auto-idempotency.ts",
     "src/resources/extensions/gsd/auto-model-selection.ts",
     "src/resources/extensions/gsd/auto-observability.ts",
+    "src/resources/extensions/gsd/auto-post-unit.ts",
     "src/resources/extensions/gsd/auto-prompts.ts",
     "src/resources/extensions/gsd/auto-recovery.ts",
+    "src/resources/extensions/gsd/auto-start.ts",
+    "src/resources/extensions/gsd/auto-stuck-detection.ts",
     "src/resources/extensions/gsd/auto-supervisor.ts",
     "src/resources/extensions/gsd/auto-timeout-recovery.ts",
+    "src/resources/extensions/gsd/auto-timers.ts",
     "src/resources/extensions/gsd/auto-tool-tracking.ts",
     "src/resources/extensions/gsd/auto-unit-closeout.ts",
-    "src/resources/extensions/gsd/auto-worktree-sync.ts",
+    "src/resources/extensions/gsd/auto-verification.ts",
     "src/resources/extensions/gsd/auto-worktree.ts",
     "src/resources/extensions/gsd/auto.ts",
     "src/resources/extensions/gsd/auto/session.ts",
@@ -640,6 +725,14 @@
     "src/resources/extensions/gsd/captures.ts",
     "src/resources/extensions/gsd/claude-import.ts",
     "src/resources/extensions/gsd/collision-diagnostics.ts",
+    "src/resources/extensions/gsd/commands-config.ts",
+    "src/resources/extensions/gsd/commands-extensions.ts",
+    "src/resources/extensions/gsd/commands-handlers.ts",
+    "src/resources/extensions/gsd/commands-inspect.ts",
+    "src/resources/extensions/gsd/commands-logs.ts",
+    "src/resources/extensions/gsd/commands-maintenance.ts",
+    "src/resources/extensions/gsd/commands-prefs-wizard.ts",
+    "src/resources/extensions/gsd/commands-workflow-templates.ts",
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/complexity-classifier.ts",
     "src/resources/extensions/gsd/constants.ts",
@@ -652,12 +745,19 @@
     "src/resources/extensions/gsd/detection.ts",
     "src/resources/extensions/gsd/diff-context.ts",
     "src/resources/extensions/gsd/dispatch-guard.ts",
+    "src/resources/extensions/gsd/doctor-checks.ts",
+    "src/resources/extensions/gsd/doctor-environment.ts",
+    "src/resources/extensions/gsd/doctor-format.ts",
     "src/resources/extensions/gsd/doctor-proactive.ts",
+    "src/resources/extensions/gsd/doctor-providers.ts",
+    "src/resources/extensions/gsd/doctor-types.ts",
     "src/resources/extensions/gsd/doctor.ts",
+    "src/resources/extensions/gsd/error-utils.ts",
     "src/resources/extensions/gsd/errors.ts",
     "src/resources/extensions/gsd/exit-command.ts",
     "src/resources/extensions/gsd/export-html.ts",
     "src/resources/extensions/gsd/export.ts",
+    "src/resources/extensions/gsd/extension-manifest.json",
     "src/resources/extensions/gsd/file-watcher.ts",
     "src/resources/extensions/gsd/files.ts",
     "src/resources/extensions/gsd/forensics.ts",
@@ -666,16 +766,22 @@
     "src/resources/extensions/gsd/git-service.ts",
     "src/resources/extensions/gsd/gitignore.ts",
     "src/resources/extensions/gsd/gsd-db.ts",
+    "src/resources/extensions/gsd/guided-flow-queue.ts",
     "src/resources/extensions/gsd/guided-flow.ts",
+    "src/resources/extensions/gsd/health-widget.ts",
     "src/resources/extensions/gsd/history.ts",
     "src/resources/extensions/gsd/index.ts",
     "src/resources/extensions/gsd/init-wizard.ts",
+    "src/resources/extensions/gsd/json-persistence.ts",
     "src/resources/extensions/gsd/jsonl-utils.ts",
+    "src/resources/extensions/gsd/key-manager.ts",
     "src/resources/extensions/gsd/marketplace-discovery.ts",
     "src/resources/extensions/gsd/md-importer.ts",
+    "src/resources/extensions/gsd/mechanical-completion.ts",
     "src/resources/extensions/gsd/memory-extractor.ts",
     "src/resources/extensions/gsd/memory-store.ts",
     "src/resources/extensions/gsd/metrics.ts",
+    "src/resources/extensions/gsd/migrate-external.ts",
     "src/resources/extensions/gsd/migrate/command.ts",
     "src/resources/extensions/gsd/migrate/index.ts",
     "src/resources/extensions/gsd/migrate/parser.ts",
@@ -685,6 +791,8 @@
     "src/resources/extensions/gsd/migrate/types.ts",
     "src/resources/extensions/gsd/migrate/validator.ts",
     "src/resources/extensions/gsd/migrate/writer.ts",
+    "src/resources/extensions/gsd/milestone-actions.ts",
+    "src/resources/extensions/gsd/milestone-ids.ts",
     "src/resources/extensions/gsd/model-cost-table.ts",
     "src/resources/extensions/gsd/model-router.ts",
     "src/resources/extensions/gsd/namespaced-registry.ts",
@@ -700,11 +808,16 @@
     "src/resources/extensions/gsd/paths.ts",
     "src/resources/extensions/gsd/plugin-importer.ts",
     "src/resources/extensions/gsd/post-unit-hooks.ts",
-    "src/resources/extensions/gsd/preferences-hooks.ts",
     "src/resources/extensions/gsd/preferences-models.ts",
     "src/resources/extensions/gsd/preferences-skills.ts",
+    "src/resources/extensions/gsd/preferences-types.ts",
+    "src/resources/extensions/gsd/preferences-validation.ts",
     "src/resources/extensions/gsd/preferences.ts",
+    "src/resources/extensions/gsd/progress-score.ts",
+    "src/resources/extensions/gsd/prompt-cache-optimizer.ts",
+    "src/resources/extensions/gsd/prompt-compressor.ts",
     "src/resources/extensions/gsd/prompt-loader.ts",
+    "src/resources/extensions/gsd/prompt-ordering.ts",
     "src/resources/extensions/gsd/prompts/complete-milestone.md",
     "src/resources/extensions/gsd/prompts/complete-slice.md",
     "src/resources/extensions/gsd/prompts/discuss-headless.md",
@@ -735,16 +848,21 @@
     "src/resources/extensions/gsd/prompts/system.md",
     "src/resources/extensions/gsd/prompts/triage-captures.md",
     "src/resources/extensions/gsd/prompts/validate-milestone.md",
+    "src/resources/extensions/gsd/prompts/workflow-start.md",
     "src/resources/extensions/gsd/prompts/worktree-merge.md",
     "src/resources/extensions/gsd/provider-error-pause.ts",
     "src/resources/extensions/gsd/queue-order.ts",
     "src/resources/extensions/gsd/queue-reorder-ui.ts",
     "src/resources/extensions/gsd/quick.ts",
+    "src/resources/extensions/gsd/repo-identity.ts",
     "src/resources/extensions/gsd/reports.ts",
+    "src/resources/extensions/gsd/resource-version.ts",
     "src/resources/extensions/gsd/roadmap-slices.ts",
     "src/resources/extensions/gsd/routing-history.ts",
     "src/resources/extensions/gsd/safe-fs.ts",
+    "src/resources/extensions/gsd/semantic-chunker.ts",
     "src/resources/extensions/gsd/session-forensics.ts",
+    "src/resources/extensions/gsd/session-lock.ts",
     "src/resources/extensions/gsd/session-status-io.ts",
     "src/resources/extensions/gsd/skill-discovery.ts",
     "src/resources/extensions/gsd/skill-health.ts",
@@ -754,6 +872,8 @@
     "src/resources/extensions/gsd/skills/gsd-headless/references/commands.md",
     "src/resources/extensions/gsd/skills/gsd-headless/references/multi-session.md",
     "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/structured-data-formatter.ts",
+    "src/resources/extensions/gsd/summary-distiller.ts",
     "src/resources/extensions/gsd/templates/context.md",
     "src/resources/extensions/gsd/templates/decisions.md",
     "src/resources/extensions/gsd/templates/knowledge.md",
@@ -778,26 +898,43 @@
     "src/resources/extensions/gsd/triage-ui.ts",
     "src/resources/extensions/gsd/types.ts",
     "src/resources/extensions/gsd/undo.ts",
+    "src/resources/extensions/gsd/unit-id.ts",
     "src/resources/extensions/gsd/unit-runtime.ts",
+    "src/resources/extensions/gsd/validate-directory.ts",
     "src/resources/extensions/gsd/verification-evidence.ts",
     "src/resources/extensions/gsd/verification-gate.ts",
     "src/resources/extensions/gsd/visualizer-data.ts",
     "src/resources/extensions/gsd/visualizer-overlay.ts",
     "src/resources/extensions/gsd/visualizer-views.ts",
+    "src/resources/extensions/gsd/workflow-templates.ts",
+    "src/resources/extensions/gsd/workflow-templates/bugfix.md",
+    "src/resources/extensions/gsd/workflow-templates/dep-upgrade.md",
+    "src/resources/extensions/gsd/workflow-templates/full-project.md",
+    "src/resources/extensions/gsd/workflow-templates/hotfix.md",
+    "src/resources/extensions/gsd/workflow-templates/refactor.md",
+    "src/resources/extensions/gsd/workflow-templates/registry.json",
+    "src/resources/extensions/gsd/workflow-templates/security-audit.md",
+    "src/resources/extensions/gsd/workflow-templates/small-feature.md",
+    "src/resources/extensions/gsd/workflow-templates/spike.md",
     "src/resources/extensions/gsd/workspace-index.ts",
     "src/resources/extensions/gsd/worktree-command.ts",
     "src/resources/extensions/gsd/worktree-manager.ts",
     "src/resources/extensions/gsd/worktree.ts",
+    "src/resources/extensions/mac-tools/extension-manifest.json",
     "src/resources/extensions/mac-tools/index.ts",
     "src/resources/extensions/mac-tools/swift-cli/.gitignore",
     "src/resources/extensions/mac-tools/swift-cli/Package.swift",
     "src/resources/extensions/mac-tools/swift-cli/Sources/main.swift",
-    "src/resources/extensions/mcporter/index.ts",
+    "src/resources/extensions/mcp-client/index.ts",
+    "src/resources/extensions/mcporter/extension-manifest.json",
     "src/resources/extensions/remote-questions/config.ts",
     "src/resources/extensions/remote-questions/discord-adapter.ts",
+    "src/resources/extensions/remote-questions/extension-manifest.json",
     "src/resources/extensions/remote-questions/format.ts",
+    "src/resources/extensions/remote-questions/http-client.ts",
     "src/resources/extensions/remote-questions/manager.ts",
     "src/resources/extensions/remote-questions/mod.ts",
+    "src/resources/extensions/remote-questions/notify.ts",
     "src/resources/extensions/remote-questions/remote-command.ts",
     "src/resources/extensions/remote-questions/slack-adapter.ts",
     "src/resources/extensions/remote-questions/status.ts",
@@ -806,6 +943,7 @@
     "src/resources/extensions/remote-questions/types.ts",
     "src/resources/extensions/search-the-web/cache.ts",
     "src/resources/extensions/search-the-web/command-search-provider.ts",
+    "src/resources/extensions/search-the-web/extension-manifest.json",
     "src/resources/extensions/search-the-web/format.ts",
     "src/resources/extensions/search-the-web/http.ts",
     "src/resources/extensions/search-the-web/index.ts",
@@ -823,26 +961,28 @@
     "src/resources/extensions/shared/mod.ts",
     "src/resources/extensions/shared/next-action-ui.ts",
     "src/resources/extensions/shared/path-display.ts",
-    "src/resources/extensions/shared/progress-widget.ts",
     "src/resources/extensions/shared/sanitize.ts",
     "src/resources/extensions/shared/terminal.ts",
-    "src/resources/extensions/shared/thinking-widget.ts",
     "src/resources/extensions/shared/ui.ts",
     "src/resources/extensions/shared/wizard-ui.ts",
     "src/resources/extensions/slash-commands/audit.ts",
     "src/resources/extensions/slash-commands/clear.ts",
     "src/resources/extensions/slash-commands/create-extension.ts",
     "src/resources/extensions/slash-commands/create-slash-command.ts",
+    "src/resources/extensions/slash-commands/extension-manifest.json",
     "src/resources/extensions/slash-commands/index.ts",
     "src/resources/extensions/subagent/agents.ts",
+    "src/resources/extensions/subagent/extension-manifest.json",
     "src/resources/extensions/subagent/index.ts",
     "src/resources/extensions/subagent/isolation.ts",
     "src/resources/extensions/subagent/worker-registry.ts",
+    "src/resources/extensions/ttsr/extension-manifest.json",
     "src/resources/extensions/ttsr/index.ts",
     "src/resources/extensions/ttsr/rule-loader.ts",
     "src/resources/extensions/ttsr/ttsr-interrupt.md",
     "src/resources/extensions/ttsr/ttsr-manager.ts",
     "src/resources/extensions/universal-config/discovery.ts",
+    "src/resources/extensions/universal-config/extension-manifest.json",
     "src/resources/extensions/universal-config/format.ts",
     "src/resources/extensions/universal-config/index.ts",
     "src/resources/extensions/universal-config/package.json",
@@ -850,6 +990,7 @@
     "src/resources/extensions/universal-config/tools.ts",
     "src/resources/extensions/universal-config/types.ts",
     "src/resources/extensions/voice/.gitignore",
+    "src/resources/extensions/voice/extension-manifest.json",
     "src/resources/extensions/voice/index.ts",
     "src/resources/extensions/voice/speech-recognizer.py",
     "src/resources/extensions/voice/speech-recognizer.swift"
@@ -860,30 +1001,100 @@
   "reference/index.mdx": [],
   "changelog.mdx": [],
   "index.mdx": [],
-  "commands/keys.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
+  "prompts/complete-milestone.mdx": [
+    "src/resources/extensions/gsd/prompts/complete-milestone.md"
   ],
-  "commands/logs.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
+  "prompts/complete-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/complete-slice.md"
   ],
-  "commands/new-milestone.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
+  "prompts/discuss.mdx": [
+    "src/resources/extensions/gsd/prompts/discuss.md"
   ],
-  "commands/skip.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
+  "prompts/discuss-headless.mdx": [
+    "src/resources/extensions/gsd/prompts/discuss-headless.md"
   ],
-  "commands/undo.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/undo.ts"
+  "prompts/doctor-heal.mdx": [
+    "src/resources/extensions/gsd/prompts/doctor-heal.md"
+  ],
+  "prompts/execute-task.mdx": [
+    "src/resources/extensions/gsd/prompts/execute-task.md"
+  ],
+  "prompts/forensics.mdx": [
+    "src/resources/extensions/gsd/prompts/forensics.md"
+  ],
+  "prompts/guided-complete-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-complete-slice.md"
+  ],
+  "prompts/guided-discuss-milestone.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-discuss-milestone.md"
+  ],
+  "prompts/guided-discuss-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-discuss-slice.md"
+  ],
+  "prompts/guided-execute-task.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-execute-task.md"
+  ],
+  "prompts/guided-plan-milestone.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-plan-milestone.md"
+  ],
+  "prompts/guided-plan-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-plan-slice.md"
+  ],
+  "prompts/guided-research-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-research-slice.md"
+  ],
+  "prompts/guided-resume-task.mdx": [
+    "src/resources/extensions/gsd/prompts/guided-resume-task.md"
+  ],
+  "prompts/heal-skill.mdx": [
+    "src/resources/extensions/gsd/prompts/heal-skill.md"
+  ],
+  "prompts/plan-milestone.mdx": [
+    "src/resources/extensions/gsd/prompts/plan-milestone.md"
+  ],
+  "prompts/plan-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/plan-slice.md"
+  ],
+  "prompts/queue.mdx": [
+    "src/resources/extensions/gsd/prompts/queue.md"
+  ],
+  "prompts/quick-task.mdx": [
+    "src/resources/extensions/gsd/prompts/quick-task.md"
+  ],
+  "prompts/reassess-roadmap.mdx": [
+    "src/resources/extensions/gsd/prompts/reassess-roadmap.md"
+  ],
+  "prompts/replan-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/replan-slice.md"
+  ],
+  "prompts/research-milestone.mdx": [
+    "src/resources/extensions/gsd/prompts/research-milestone.md"
+  ],
+  "prompts/research-slice.mdx": [
+    "src/resources/extensions/gsd/prompts/research-slice.md"
+  ],
+  "prompts/review-migration.mdx": [
+    "src/resources/extensions/gsd/prompts/review-migration.md"
+  ],
+  "prompts/rewrite-docs.mdx": [
+    "src/resources/extensions/gsd/prompts/rewrite-docs.md"
+  ],
+  "prompts/run-uat.mdx": [
+    "src/resources/extensions/gsd/prompts/run-uat.md"
+  ],
+  "prompts/system.mdx": [
+    "src/resources/extensions/gsd/prompts/system.md"
+  ],
+  "prompts/triage-captures.mdx": [
+    "src/resources/extensions/gsd/prompts/triage-captures.md"
+  ],
+  "prompts/validate-milestone.mdx": [
+    "src/resources/extensions/gsd/prompts/validate-milestone.md"
+  ],
+  "prompts/workflow-start.mdx": [
+    "src/resources/extensions/gsd/prompts/workflow-start.md"
+  ],
+  "prompts/worktree-merge.mdx": [
+    "src/resources/extensions/gsd/prompts/worktree-merge.md"
   ]
 }

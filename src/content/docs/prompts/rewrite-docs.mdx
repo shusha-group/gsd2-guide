@@ -1,0 +1,46 @@
+---
+title: "rewrite-docs"
+description: "Documentation refresh prompt — rewrites a list of documentation files to reflect current implementation state, dispatched by auto-mode or /auto steer when an override changes a fundamental decision."
+---
+
+## What It Does
+
+`rewrite-docs` is the consistency enforcement prompt for GSD planning artifacts. It runs when auto-mode or the `/gsd auto` steer command detects that an override has changed a fundamental decision or approach, and that change needs to propagate across active planning documents before execution continues. Rather than letting task plans and roadmaps drift out of sync, the dispatcher immediately rewrites the affected documents so future tasks execute against a consistent description of what needs to be built.
+
+The prompt receives an explicit list of documents to review and a description of what changed. For each document it identifies all references to the overridden decision, then rewrites those references to reflect the new direction. The rewriting rules are document-specific: completed tasks (marked `[x]`) are never touched — they are historical record; incomplete tasks (`[ ]`) get rewritten to align with the override, and tasks that are no longer needed are removed; `DECISIONS.md` gets a new entry documenting the override without deleting prior decisions, which are annotated as superseded; `REQUIREMENTS.md` descriptions are updated if the override changes what "done" means, but requirements themselves are never removed.
+
+After updating all listed documents, the prompt marks the override as resolved by changing `**Scope:** active` to `**Scope:** resolved` in the overrides file. It does not commit manually — the system auto-commits the changes after the unit completes. The session closes with "Override applied across all documents."
+
+## Pipeline Position
+
+```mermaid
+flowchart LR
+    Override["override issued by user"] --> Dispatcher["auto-mode dispatcher"]
+    Dispatcher --> RewriteDocs["rewrite-docs"]
+    RewriteDocs --> UpdatedDocs["planning artifacts updated"]
+    UpdatedDocs --> Resolved["override marked resolved"]
+    Resolved --> NextTask["next task dispatched"]
+
+    style RewriteDocs fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Override fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Dispatcher fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UpdatedDocs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Resolved fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style NextTask fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+`rewrite-docs` is dispatched by auto-mode rather than the main research-plan-execute pipeline. It fires when an active override needs propagation, pausing normal task execution until planning artifacts are consistent. This ensures downstream tasks never execute against stale or contradictory specifications.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `milestoneId` | Current milestone identifier providing context for the documentation rewrite | Yes |
+| `milestoneTitle` | Human-readable title of the milestone for documentation context | Yes |
+| `overrideContent` | Override content or specific rewrite instructions that supersede the default rewrite behavior | Yes |
+| `documentList` | List of documentation files to be rewritten in this pass | Yes |
+| `overridesPath` | File path to an overrides document providing custom rewrite directives | Yes |
+
+## Used By
+
+- [`/gsd auto`](../../commands/auto/) — dispatched when an active override requires propagation across planning documents before execution continues

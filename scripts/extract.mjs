@@ -13,6 +13,7 @@ import { extractLocal } from "./lib/extract-local.mjs";
 import { extractGithubDocs } from "./lib/extract-github-docs.mjs";
 import { extractReleases } from "./lib/extract-releases.mjs";
 import { extractCommands } from "./lib/extract-commands.mjs";
+import { extractPrompts } from "./lib/extract-prompts.mjs";
 import { buildManifest } from "./lib/manifest.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -176,10 +177,11 @@ async function main() {
   // Phase 1: Run local + GitHub extraction in parallel (independent)
   console.log("── Phase 1: Parallel extraction ──────────────────────────────\n");
 
-  const [localResult, docsResult, releasesResult] = await Promise.all([
+  const [localResult, docsResult, releasesResult, promptsResult] = await Promise.all([
     extractLocal(extractOpts),
     extractGithubDocs(extractOpts),
     extractReleases(extractOpts),
+    extractPrompts(extractOpts),
   ]);
 
   // Phase 2: Command extraction (depends on docs being downloaded)
@@ -200,6 +202,7 @@ async function main() {
     localResult.extensions.length +
     commandsResult.count +
     releasesResult.count +
+    promptsResult.count +
     Object.keys(manifestResult.manifest.files).length +
     docsResult.docsCount +
     (docsResult.readmePath ? 1 : 0);
@@ -208,6 +211,7 @@ async function main() {
   console.log(`  Skills:     ${localResult.skills.length}`);
   console.log(`  Agents:     ${localResult.agents.length}`);
   console.log(`  Extensions: ${localResult.extensions.length}`);
+  console.log(`  Prompts:    ${promptsResult.count}`);
   console.log(`  Commands:   ${commandsResult.count}`);
   console.log(`  Releases:   ${releasesResult.count}`);
   console.log(`  Docs:       ${docsResult.docsCount} files`);

@@ -1,0 +1,42 @@
+---
+title: "review-migration"
+description: "GSD workspace migration review prompt — audits a newly migrated .gsd directory for structural correctness, content quality, and readiness for auto-mode execution."
+---
+
+## What It Does
+
+`review-migration` runs after the `/gsd migrate` command has written a new `.gsd/` directory from an older `.planning` workspace. The migration command itself handles the mechanical file transformation. This prompt takes over for the quality gate — systematically auditing the output to confirm it meets GSD-2 standards before the user starts working with it.
+
+The review follows a six-item checklist. Structure validation confirms that `deriveState()` returns a coherent phase and that active milestone, slice, and task identifiers are sensible. Roadmap quality checks that slice titles are meaningful rather than file paths or garbled text, completion markers match the old roadmap, and the vision statement is present. A content spot-check reads two or three of the densest slices to confirm task descriptions carried over meaningfully and summary files contain real content. Requirements, `PROJECT.md`, and `DECISIONS.md` each get their own targeted check.
+
+For each item the prompt reports PASS, FAIL, or SKIP with specific details, and applies in-place fixes where possible. The final output follows a fixed format — "Migration Review: [project name]" header, per-section verdicts, overall status (PASS / PASS WITH NOTES / FAIL), and lists of issues found and fixes applied. A FAIL result directs the user to what needs manual attention; PASS WITH NOTES explains what is imperfect but acceptable; PASS confirms the workspace is ready for GSD-2 auto-mode.
+
+## Pipeline Position
+
+```mermaid
+flowchart LR
+    MigrateCommand["/gsd migrate"] --> MigrationWrite[".gsd directory written"]
+    MigrationWrite --> ReviewMigration["review-migration"]
+    ReviewMigration --> Verdict["PASS / FAIL / PASS WITH NOTES"]
+    Verdict --> AutoReady["workspace ready for auto-mode"]
+
+    style ReviewMigration fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style MigrateCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style MigrationWrite fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Verdict fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AutoReady fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+`review-migration` runs once at the end of a migration session, invoked by the `/gsd migrate` command. It is not part of the auto-mode pipeline — it runs as a terminal quality gate to confirm the workspace is in a valid state before handing off to the user.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `sourcePath` | File system path to the source GSD workspace being migrated | Yes |
+| `gsdPath` | File system path to the .gsd directory being migrated | Yes |
+| `previewStats` | Summary statistics of the migration preview showing what will change | Yes |
+
+## Used By
+
+- [`/gsd migrate`](../../commands/migrate/) — invoked after the mechanical migration pass to audit and validate the newly written `.gsd` directory

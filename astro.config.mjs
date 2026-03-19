@@ -68,6 +68,63 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Prompts',
+          items: [
+            {
+              label: 'Auto-mode Pipeline',
+              items: [
+                { label: 'complete-milestone', link: '/prompts/complete-milestone/' },
+                { label: 'complete-slice', link: '/prompts/complete-slice/' },
+                { label: 'execute-task', link: '/prompts/execute-task/' },
+                { label: 'plan-milestone', link: '/prompts/plan-milestone/' },
+                { label: 'plan-slice', link: '/prompts/plan-slice/' },
+                { label: 'reassess-roadmap', link: '/prompts/reassess-roadmap/' },
+                { label: 'replan-slice', link: '/prompts/replan-slice/' },
+                { label: 'research-milestone', link: '/prompts/research-milestone/' },
+                { label: 'research-slice', link: '/prompts/research-slice/' },
+                { label: 'validate-milestone', link: '/prompts/validate-milestone/' },
+              ],
+            },
+            {
+              label: 'Guided Variants',
+              items: [
+                { label: 'guided-complete-slice', link: '/prompts/guided-complete-slice/' },
+                { label: 'guided-discuss-milestone', link: '/prompts/guided-discuss-milestone/' },
+                { label: 'guided-discuss-slice', link: '/prompts/guided-discuss-slice/' },
+                { label: 'guided-execute-task', link: '/prompts/guided-execute-task/' },
+                { label: 'guided-plan-milestone', link: '/prompts/guided-plan-milestone/' },
+                { label: 'guided-plan-slice', link: '/prompts/guided-plan-slice/' },
+                { label: 'guided-research-slice', link: '/prompts/guided-research-slice/' },
+                { label: 'guided-resume-task', link: '/prompts/guided-resume-task/' },
+              ],
+            },
+            {
+              label: 'Commands',
+              items: [
+                { label: 'discuss', link: '/prompts/discuss/' },
+                { label: 'discuss-headless', link: '/prompts/discuss-headless/' },
+                { label: 'doctor-heal', link: '/prompts/doctor-heal/' },
+                { label: 'forensics', link: '/prompts/forensics/' },
+                { label: 'heal-skill', link: '/prompts/heal-skill/' },
+                { label: 'queue', link: '/prompts/queue/' },
+                { label: 'quick-task', link: '/prompts/quick-task/' },
+                { label: 'review-migration', link: '/prompts/review-migration/' },
+                { label: 'rewrite-docs', link: '/prompts/rewrite-docs/' },
+                { label: 'run-uat', link: '/prompts/run-uat/' },
+                { label: 'triage-captures', link: '/prompts/triage-captures/' },
+                { label: 'workflow-start', link: '/prompts/workflow-start/' },
+                { label: 'worktree-merge', link: '/prompts/worktree-merge/' },
+              ],
+            },
+            {
+              label: 'Foundation',
+              items: [
+                { label: 'system', link: '/prompts/system/' },
+              ],
+            },
+          ],
+        },
+        {
           label: 'Recipes',
           items: [
             { label: 'Fix a Bug', link: '/recipes/fix-a-bug/' },

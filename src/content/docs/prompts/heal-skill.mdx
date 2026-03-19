@@ -1,0 +1,43 @@
+---
+title: "heal-skill"
+description: "Skill drift analysis prompt — compares what an agent did during a unit against the loaded SKILL.md guidance and flags outdated or incorrect skill instructions for human review."
+---
+
+## What It Does
+
+`heal-skill` is a lightweight post-execution analyzer, not a direct code fixer. It runs after a GSD unit completes and a skill health check flags potential drift between what the agent did and what the loaded SKILL.md recommended. Its purpose is to surface genuine errors in skill guidance — outdated API patterns, incorrect conventions, references to removed commands — so human reviewers can update the skill files with confidence.
+
+The analysis begins by identifying which SKILL.md was loaded during the unit. If no skill was loaded, the prompt writes "No skill loaded — skipping heal analysis" and stops. If a skill was loaded, it reads the SKILL.md content and compares it against the agent's actual tool calls, patterns, and error-handling choices. Drift is classified into three tiers: None (agent followed the skill correctly), Minor (agent found a better approach but the skill isn't wrong), and Significant (the skill has outdated or incorrect guidance that caused problems). Only Significant findings produce output.
+
+When significant drift is detected, the prompt appends a structured entry to `.gsd/skill-review-queue.md` — never directly modifying the skill file. Each entry includes the unit ID, a one-to-two sentence issue description, the root cause, how the agent discovered the problem, and a proposed fix with the specific file, section, current text, and suggested replacement. This keeps the review process human-gated: the SkillsBench research (Feb 2026) shows curated skills outperform auto-generated ones by over 16 percentage points, and that advantage comes from human oversight of the update cycle.
+
+## Pipeline Position
+
+```mermaid
+flowchart LR
+    UnitComplete["unit completes"] --> SkillHealthCheck["skill-health check"]
+    SkillHealthCheck --> HealSkill["heal-skill"]
+    HealSkill --> ReviewQueue[".gsd/skill-review-queue.md"]
+    ReviewQueue --> HumanReview["human review"]
+
+    style HealSkill fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style UnitComplete fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SkillHealthCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ReviewQueue fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style HumanReview fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+`heal-skill` is invoked by the skill-health system after each unit, not as part of the main auto-mode pipeline. It runs as an observability layer — surfacing skill quality issues without interrupting execution. The findings it produces in the review queue are acted on separately, either manually by the user or through a dedicated skill update pass.
+
+## Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `unitId` | Identifier of the GSD unit (milestone/slice/task) where the skill health issue was detected | Yes |
+| `healArtifact` | Path or content of the healing artifact produced by the skill health check that triggered this heal | Yes |
+| `skillName` | Name of the skill being healed (e.g. 'lint', 'test') | Yes |
+| `date` | Current date string injected into the skill healing prompt for temporal context | Yes |
+
+## Used By
+
+- [`/gsd skill-health`](../../commands/skill-health/) — invoked after a unit completes and the skill health check detects potential drift between execution behavior and SKILL.md guidance

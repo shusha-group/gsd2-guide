@@ -102,3 +102,13 @@ When the user says "update gsd-guide", execute the full pipeline with no confirm
 **Context:** Merging a worktree branch (e.g., `milestone/M004`) into main when both have `.gsd/milestones/` files.
 
 The worktree branch tracks files in `.gsd/milestones/M004/slices/` but the main checkout may have the same paths as untracked files (created by the GSD system during planning/research). Git refuses to merge when tracked files from the branch would overwrite untracked files on main. Fix: `rm -rf .gsd/milestones/M004/slices/` on main before merging. Also stash any dirty working tree state on main first, then discard the stash after merge since the branch versions supersede main's local changes.
+
+## MDX curly-brace escaping for template variable strings in docs pages
+
+**Context:** Authoring MDX pages that quote GSD prompt template syntax (e.g. `"Milestone {{milestoneId}} ready."`).
+
+MDX treats `{expression}` as a JSX expression at render time. Double curly braces `{{foo}}` become `{foo}` after one level of escaping, which MDX still interprets as a JSX variable — causing a build-time `ReferenceError: foo is not defined`.
+
+**Fix:** Wrap any `{{variable}}` literal in backticks so it renders as code: `` `{milestoneId}` `` or `` `"Milestone {milestoneId} ready."` ``. Alternatively use HTML entities `>/dev/null 2>&1 &#123;>/dev/null 2>&1 &#123;variable>/dev/null 2>&1 &#125;>/dev/null 2>&1 &#125;` for inline prose, though backtick wrapping is cleaner and more readable.
+
+**Detection:** The error surfaces at `npm run build` time, not at MDX parse time, so the file passes lint/type checks. Look for `ReferenceError: X is not defined` in build output with a `.mjs` prerender chunk stack trace.
