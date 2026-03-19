@@ -556,6 +556,50 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: findClaude('/nonexistent/claude') returns false. update.mjs logs 'claude CLI not available' and skips regeneration. Build proceeds with existing content. Verified by unit test and manual check.
 - Notes: Check with `which claude` or `execSync('claude --version')` before attempting regeneration.
 
+### R057 — Per-prompt deep-dive pages for all 32 GSD prompts, grouped by role (Auto-mode pipeline, Guided variants, Commands, Foundation), each with a Mermaid pipeline position diagram
+- Class: core-capability
+- Status: validated
+- Description: One MDX page per prompt file in `extensions/gsd/prompts/`, grouped into 4 role-based sidebar sections. Each page shows what the prompt does, where it sits in the auto-mode pipeline (Mermaid flowchart), what variables it receives, and which commands invoke it.
+- Why it matters: Prompts are the core behavioral contracts of GSD auto-mode. Without documentation, users and contributors have no way to understand what each agent session is instructed to do, what context it receives, or how the pipeline sequences.
+- Source: user
+- Primary owning slice: M005/S03
+- Supporting slices: M005/S01, M005/S02
+- Validation: 32 prompt MDX pages exist in src/content/docs/prompts/. All 4 sidebar sub-groups (Auto-mode Pipeline, Guided Variants, Commands, Foundation) registered in astro.config.mjs with 32 entries. Mermaid diagrams on all 32 pages. npm run build exits 0 at 104 pages. npm run check-links exits 0 at 10380 links.
+- Notes: 32 prompts total. Grouped: Auto-mode pipeline (10), Guided variants (8), Commands (13), Foundation (1 — system.md). Mermaid diagrams use terminal-native styling matching existing command pages.
+
+### R058 — Each prompt page shows the variables it receives, with descriptions of what context each variable carries
+- Class: core-capability
+- Status: validated
+- Description: A structured table on every prompt page listing each `{{variable}}` the prompt declares, a plain-language description of what it contains, and whether it's always present or conditional.
+- Why it matters: Variables are how the pipeline injects context into each agent session. Understanding what data the agent has available is essential for understanding what it can do and why it behaves as it does.
+- Source: user
+- Primary owning slice: M005/S03
+- Supporting slices: M005/S01
+- Validation: grep -l "## Variables" src/content/docs/prompts/*.mdx | wc -l → 32. Variable tables populated from prompts.json VARIABLE_DESCRIPTIONS static map (290+ entries). system.mdx correctly uses prose note (zero template variables). npm run check-links exits 0.
+- Notes: Variable descriptions authored from studying auto-prompts.ts builder functions. Not extracted verbatim from source.
+
+### R059 — Bidirectional linking between prompt pages and command pages
+- Class: core-capability
+- Status: validated
+- Description: Prompt pages link to the commands that invoke them. Command pages that use prompts get a "Prompts used by this command" section with links to those prompt pages.
+- Why it matters: Users arriving from a command page need to find the prompt that command uses. Users on a prompt page need to know which commands invoke it.
+- Source: user
+- Primary owning slice: M005/S04
+- Supporting slices: M005/S02
+- Validation: grep -l "## Used By" src/content/docs/prompts/*.mdx | wc -l → 32. grep -rl "## Prompts Used" src/content/docs/commands/*.mdx | wc -l → 16. npm run check-links exits 0 (10380 links, 0 broken) confirming all prompt↔command cross-links resolve.
+- Notes: 16 command pages updated (roadmap said 15; migrate correctly included as 16th). Reverse mapping derived from prompts.json usedByCommands field.
+
+### R060 — Prompt pages wired into the `npm run update` regeneration pipeline with source dependency tracking
+- Class: operability
+- Status: validated
+- Description: Prompt pages appear in `page-source-map.json` with their source `.md` files as dependencies. When a prompt file changes, the pipeline detects staleness and regenerates the affected page.
+- Why it matters: Prompts change frequently with gsd-pi releases. Without pipeline integration, prompt pages would silently go stale.
+- Source: inferred
+- Primary owning slice: M005/S05
+- Supporting slices: M005/S02
+- Validation: page-source-map.json has 80 entries (32 prompt pages, 1 dep each). page-versions.json stamped with 80 pages. manage-pages.mjs has 5 prompt lifecycle functions. update.mjs is a 10-step pipeline with "manage prompts" step. Stale detection proven end-to-end in S05 (dep SHA tamper → exit 1 → re-stamp → exit 0).
+- Notes: Each prompt page maps to its single .md source file. build-page-map.mjs Section 6 and manage-pages.mjs extended for prompts/ directory.
+
 ## Deferred
 
 ### R022 — Ability to view documentation as it was at any specific version.
@@ -686,50 +730,10 @@ This file is the explicit capability and coverage contract for the project.
 | R054 | constraint | validated | M004/S02 | none | `grep -r "@anthropic-ai/sdk" scripts/ tests/ package.json` returns nothing. SDK removed from devDependencies. `ANTHROPIC_API_KEY` references removed from update.mjs regeneration path. Replaced by findClaude() guard. |
 | R055 | operability | validated | M004/S02 | none | Fast path proven: `npm run update` with all 43 pages current logged "All 43 pages are current — no regeneration needed" and completed pipeline logic in 8.7s (regenerate step: 2ms). Under the 15s target. Total wall-clock 20.7s includes network fetch for `npm i -g gsd-pi@latest` (~12s). Decision D054 defines pipeline-logic time as the R055 metric. |
 | R056 | operability | validated | M004/S01 | M004/S02 | findClaude('/nonexistent/claude') returns false. update.mjs logs 'claude CLI not available' and skips regeneration. Build proceeds with existing content. Verified by unit test and manual check. |
-
-### R057 — Per-prompt deep-dive pages for all 32 GSD prompts, grouped by role (Auto-mode pipeline, Guided variants, Commands, Foundation), each with a Mermaid pipeline position diagram
-- Class: core-capability
-- Status: active
-- Description: One MDX page per prompt file in `extensions/gsd/prompts/`, grouped into 4 role-based sidebar sections. Each page shows what the prompt does, where it sits in the auto-mode pipeline (Mermaid flowchart), what variables it receives, and which commands invoke it.
-- Why it matters: Prompts are the core behavioral contracts of GSD auto-mode. Without documentation, users and contributors have no way to understand what each agent session is instructed to do, what context it receives, or how the pipeline sequences.
-- Source: user
-- Primary owning slice: M005/S03
-- Supporting slices: M005/S01, M005/S02
-- Validation: unmapped
-- Notes: 32 prompts total. Grouped: Auto-mode pipeline (10), Guided variants (7), Commands (14), Foundation (1 — system.md). Mermaid diagrams use terminal-native styling matching existing command pages.
-
-### R058 — Each prompt page shows the variables it receives, with descriptions of what context each variable carries
-- Class: core-capability
-- Status: active
-- Description: A structured table on every prompt page listing each `{{variable}}` the prompt declares, a plain-language description of what it contains, and whether it's always present or conditional.
-- Why it matters: Variables are how the pipeline injects context into each agent session. Understanding what data the agent has available is essential for understanding what it can do and why it behaves as it does.
-- Source: user
-- Primary owning slice: M005/S03
-- Supporting slices: M005/S01
-- Validation: unmapped
-- Notes: Variable descriptions are authored from studying `auto-prompts.ts` builder functions where each variable is assembled. Not extracted verbatim from source.
-
-### R059 — Bidirectional linking between prompt pages and command pages
-- Class: core-capability
-- Status: active
-- Description: Prompt pages link to the commands that invoke them. Command pages that use prompts get a "Prompts used by this command" section with links to those prompt pages.
-- Why it matters: Users arriving from a command page need to find the prompt that command uses. Users on a prompt page need to know which commands invoke it.
-- Source: user
-- Primary owning slice: M005/S04
-- Supporting slices: M005/S02
-- Validation: unmapped
-- Notes: 15 command pages are affected. Reverse mapping derivable from `page-source-map.json`.
-
-### R060 — Prompt pages wired into the `npm run update` regeneration pipeline with source dependency tracking
-- Class: operability
-- Status: active
-- Description: Prompt pages appear in `page-source-map.json` with their source `.md` files as dependencies. When a prompt file changes, the pipeline detects staleness and regenerates the affected page.
-- Why it matters: Prompts change frequently with gsd-pi releases. Without pipeline integration, prompt pages would silently go stale.
-- Source: inferred
-- Primary owning slice: M005/S05
-- Supporting slices: M005/S02
-- Validation: unmapped
-- Notes: Each prompt page maps to its single `.md` source file. `build-page-map.mjs` and `manage-pages.mjs` need to be extended to cover the `prompts/` directory.
+| R057 | core-capability | validated | M005/S03 | M005/S01, M005/S02 | 32 prompt MDX pages in src/content/docs/prompts/ with 4-section content. All 4 sidebar sub-groups registered. npm run build exits 0 at 104 pages. npm run check-links exits 0 at 10380 links. Mermaid diagrams on all 32 pages. |
+| R058 | core-capability | validated | M005/S03 | M005/S01 | grep -l "## Variables" src/content/docs/prompts/*.mdx | wc -l → 32. Variable tables populated from prompts.json VARIABLE_DESCRIPTIONS (290+ entries). system.mdx uses prose note (zero template variables). npm run check-links exits 0. |
+| R059 | core-capability | validated | M005/S04 | M005/S02 | grep -l "## Used By" src/content/docs/prompts/*.mdx | wc -l → 32. grep -rl "## Prompts Used" src/content/docs/commands/*.mdx | wc -l → 16. npm run check-links exits 0 (10380 links, 0 broken). |
+| R060 | operability | validated | M005/S05 | M005/S02 | page-source-map.json has 80 entries (32 prompt pages, 1 dep each). page-versions.json stamped with 80 pages. manage-pages.mjs has 5 prompt lifecycle functions. update.mjs is 10-step pipeline with "manage prompts" step. Stale detection proven end-to-end (dep SHA tamper → exit 1 → re-stamp → exit 0). |
 
 ## Traceability
 
@@ -791,14 +795,14 @@ This file is the explicit capability and coverage contract for the project.
 | R054 | constraint | validated | M004/S02 | none | `grep -r "@anthropic-ai/sdk" scripts/ tests/ package.json` returns nothing. SDK removed from devDependencies. `ANTHROPIC_API_KEY` references removed from update.mjs regeneration path. Replaced by findClaude() guard. |
 | R055 | operability | validated | M004/S02 | none | Fast path proven: `npm run update` with all 43 pages current logged "All 43 pages are current — no regeneration needed" and completed pipeline logic in 8.7s (regenerate step: 2ms). Under the 15s target. Total wall-clock 20.7s includes network fetch for `npm i -g gsd-pi@latest` (~12s). Decision D054 defines pipeline-logic time as the R055 metric. |
 | R056 | operability | validated | M004/S01 | M004/S02 | findClaude('/nonexistent/claude') returns false. update.mjs logs 'claude CLI not available' and skips regeneration. Build proceeds with existing content. Verified by unit test and manual check. |
-| R057 | core-capability | active | M005/S03 | M005/S01, M005/S02 | unmapped |
-| R058 | core-capability | active | M005/S03 | M005/S01 | unmapped |
-| R059 | core-capability | active | M005/S04 | M005/S02 | unmapped |
-| R060 | operability | active | M005/S05 | M005/S02 | unmapped |
+| R057 | core-capability | validated | M005/S03 | M005/S01, M005/S02 | 32 prompt MDX pages in src/content/docs/prompts/ with 4-section content. All 4 sidebar sub-groups registered. npm run build exits 0 at 104 pages. npm run check-links exits 0 at 10380 links. Mermaid diagrams on all 32 pages. |
+| R058 | core-capability | validated | M005/S03 | M005/S01 | grep -l "## Variables" src/content/docs/prompts/*.mdx | wc -l → 32. Variable tables populated from prompts.json VARIABLE_DESCRIPTIONS (290+ entries). system.mdx uses prose note (zero template variables). npm run check-links exits 0. |
+| R059 | core-capability | validated | M005/S04 | M005/S02 | grep -l "## Used By" src/content/docs/prompts/*.mdx | wc -l → 32. grep -rl "## Prompts Used" src/content/docs/commands/*.mdx | wc -l → 16. npm run check-links exits 0 (10380 links, 0 broken). |
+| R060 | operability | validated | M005/S05 | M005/S02 | page-source-map.json has 80 entries (32 prompt pages, 1 dep each). page-versions.json stamped with 80 pages. manage-pages.mjs has 5 prompt lifecycle functions. update.mjs is 10-step pipeline with "manage prompts" step. Stale detection proven end-to-end (dep SHA tamper → exit 1 → re-stamp → exit 0). |
 
 ## Coverage Summary
 
-- Active requirements: 5
-- Mapped to slices: 5
-- Validated: 49 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056)
+- Active requirements: 1
+- Mapped to slices: 1
+- Validated: 53 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056, R057, R058, R059, R060)
 - Unmapped active requirements: 0
