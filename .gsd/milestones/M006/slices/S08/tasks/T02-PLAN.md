@@ -64,3 +64,23 @@ No files are modified in this task — it is purely verification and deployment.
 - No files modified — this task is verification and deployment only
 - Full pipeline run proven via `npm run update` exit 0
 - Changes pushed to main triggering GitHub Actions deploy
+
+## Observability Impact
+
+This task produces no runtime service — all signals are static build artefacts and git history.
+
+**What changes after this task runs:**
+- `git log --oneline -1` shows the M006 deploy commit (the visible proof of successful deploy)
+- GitHub Actions triggers a Pages deployment visible at the repo's Deployments tab
+- `npm run build` stdout shows page count (113 pages expected) confirming no regression
+
+**How a future agent inspects this task:**
+- `git log --oneline -5` — confirm the milestone commit is present in history
+- `npm run build 2>&1 | grep "pages"` — re-verify the page count hasn't regressed
+- `npm run check-links` — re-run link check to confirm 0 broken links still holds
+- `diff <(git show HEAD:content/generated/page-source-map.json) content/generated/page-source-map.json` — confirm pipeline is still uncontaminated post-update
+
+**Failure state visibility:**
+- If `npm run update` exits non-zero, the chained command that failed will be the last non-empty stderr line — look for `Error:` or a non-zero exit in the npm script output
+- If GitHub Actions fails, the Pages deploy will not appear in the Deployments tab; check the Actions log for the failing step
+- If `page-source-map.json` has a diff, the extraction pipeline was accidentally triggered — revert using `git checkout HEAD -- content/generated/page-source-map.json`

@@ -112,3 +112,13 @@ MDX treats `{expression}` as a JSX expression at render time. Double curly brace
 **Fix:** Wrap any `{{variable}}` literal in backticks so it renders as code: `` `{milestoneId}` `` or `` `"Milestone {milestoneId} ready."` ``. Alternatively use HTML entities `>/dev/null 2>&1 &#123;>/dev/null 2>&1 &#123;variable>/dev/null 2>&1 &#125;>/dev/null 2>&1 &#125;` for inline prose, though backtick wrapping is cleaner and more readable.
 
 **Detection:** The error surfaces at `npm run build` time, not at MDX parse time, so the file passes lint/type checks. Look for `ReferenceError: X is not defined` in build output with a `.mjs` prerender chunk stack trace.
+
+## npm run update AI page regeneration takes ~40 minutes for 39 stale pages
+
+**Context:** Running `npm run update` after a gsd-pi upstream release that changes commands.ts, auto.ts, or other core source files.
+
+The `regenerate` step invokes `claude -p` for each stale page in sequence. Each invocation takes 100–240 seconds (LLM API call). 39 stale pages × ~160s average = ~104 minutes total. The step runs sequentially, not in parallel.
+
+**Implications for agent execution:** Do NOT run `npm run update` inside a task with a 300s or 900s timeout when there are stale pages. Instead: (1) run `npm run build` and `npm run check-links` independently to verify the core deliverable, and (2) run `npm run update` as a standalone terminal command with no timeout for the full pipeline. The stale pages are in `commands/`, `recipes/`, and `reference/extensions.mdx` — all upstream gsd-pi content, never solo-guide authored content.
+
+**Detection:** `npm run update` diff report step logs `Stale pages: N` — if N > 0 and the agent is time-constrained, skip to independent build/link verification.

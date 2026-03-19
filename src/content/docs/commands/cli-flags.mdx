@@ -20,7 +20,6 @@ Getting help:
 
 ```bash
 gsd --help
-gsd <subcommand> --help
 ```
 
 ## How It Works
@@ -48,16 +47,16 @@ gsd <subcommand> --help
 | [`gsd config`](../config/) | Re-run the interactive setup wizard to configure LLM providers, API keys, and tool integrations. |
 | `gsd update` | Update GSD to the latest version via npm (`npm install -g gsd-pi@latest`). |
 | `gsd sessions` | Interactive session picker — list all saved sessions for the current directory and choose one to resume. |
-| `gsd worktree <cmd>` | Manage isolated git worktrees (list, merge, clean, remove). |
+| `gsd worktree <cmd>` | Manage isolated git worktrees (list, merge, clean, remove). Alias: `gsd wt`. |
 | [`gsd headless`](../headless/) | Run `/gsd` commands without a TUI — for CI, cron jobs, and scripted automation. |
 
 ### Worktree Subcommands
 
-`gsd worktree` manages the full lifecycle of isolated git worktrees. The `-w` flag on the main `gsd` command creates or resumes a worktree for interactive sessions; `gsd worktree` sub-subcommands operate on existing worktrees from outside a session.
+`gsd worktree` (alias: `gsd wt`) manages the full lifecycle of isolated git worktrees. The `-w` flag on the main `gsd` command creates or resumes a worktree for interactive sessions; `gsd worktree` sub-subcommands operate on existing worktrees from outside a session.
 
 | Command | Description |
 |---------|-------------|
-| `list` | List all worktrees with status (files changed, commits ahead, dirty state) |
+| `list` | List all worktrees with status (files changed, commits ahead, dirty state). Default if no subcommand given. |
 | `merge [name]` | Squash-merge a worktree into main and remove it. If only one worktree exists, merges it automatically. |
 | `clean` | Remove all worktrees that have been merged or are empty (no changes). |
 | `remove <name>` | Remove a specific worktree. Use `--force` to remove even with unmerged changes. |
@@ -72,7 +71,7 @@ Typical worktree lifecycle:
 
 ### Headless Subcommands
 
-`gsd headless` accepts its own subcommands and flags. The default command is `auto`.
+`gsd headless` accepts its own subcommands and flags. The default command is `auto`. All subcommands (except `query`) are translated to `/gsd <command>` and dispatched via RPC to a child session.
 
 | Command | Description |
 |---------|-------------|
@@ -106,7 +105,7 @@ Headless flags:
 
 Exit codes for `gsd headless`: `0` = complete, `1` = error or timeout, `2` = blocked.
 
-On crash or error, `gsd headless` automatically restarts with exponential backoff (up to 30 seconds) until `--max-restarts` is reached.
+On crash or error, `gsd headless` automatically restarts with exponential backoff (up to 30 seconds) until `--max-restarts` is reached. Sending `SIGINT` or `SIGTERM` cancels the restart loop immediately.
 
 ## What Files It Touches
 

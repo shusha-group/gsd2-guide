@@ -63,7 +63,7 @@ This slice produces only static MDX content — there is no runtime service. The
   - Verify: `wc -l` >100; `grep -c "→ gsd2-guide:"` ≥5; Australian spelling grep returns no US spellings; `npm run build` exits 0 at 113 pages; `npm run check-links` exits 0
   - Done when: File has >100 lines of substantive content, build passes, all links resolve
 
-- [ ] **T02: Full milestone verification and deploy to GitHub Pages** `est:15m`
+- [x] **T02: Full milestone verification and deploy to GitHub Pages** `est:15m`
   - Why: S08 is the final integration slice. The milestone is not done until `npm run update` deploys successfully and all 9 solo-guide files are confirmed substantive.
   - Files: none modified — verification and deploy only
   - Do: (1) Verify all 9 solo-guide files have >100 lines each. (2) Verify `page-source-map.json` is unchanged. (3) Run `npm run update` which chains: npm update → extract → diff report → regenerate → manage commands → build → check-links. (4) Commit any pending changes. (5) Push to main. (6) Confirm the push succeeds.
