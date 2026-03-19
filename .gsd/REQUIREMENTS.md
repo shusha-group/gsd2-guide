@@ -809,13 +809,13 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R061 — Solo Builder's Guide landing page and sidebar navigation
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: A "Solo Builder's Guide" sidebar group with index/landing page and links to all 8 sections. Navigation works end-to-end; all pages are reachable from the sidebar.
 - Why it matters: Without navigation scaffolding, individual sections can't be found or linked to from the existing gsd2-guide site.
 - Source: user
 - Primary owning slice: M006/S01
 - Supporting slices: M006/S02–S08
-- Validation: unmapped
+- Validation: 9 MDX files created in src/content/docs/solo-guide/. Sidebar group "Solo Builder's Guide" registered in astro.config.mjs with 9 entries. npm run build exits 0 at 113 pages. page-source-map.json unchanged (no pipeline contamination). All 6 verification checks passed.
 - Notes: Hand-authored MDX files in src/content/docs/solo-guide/. Not pipeline-generated. Sidebar registered in astro.config.mjs.
 
 ### R062 — Section 4: The Daily Mix decision framework
@@ -939,7 +939,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Use standard Markdown tables with pipe-separated columns. Avoid HTML table tags.
 
-| R061 | core-capability | active | M006/S01 | M006/S02–S08 | unmapped |
+| R061 | core-capability | validated | M006/S01 | M006/S02–S08 | 9 MDX files + sidebar group; npm run build exits 0 at 113 pages; pipeline uncontaminated |
 | R062 | primary-user-loop | active | M006/S02 | none | unmapped |
 | R063 | failure-visibility | active | M006/S03 | none | unmapped |
 | R064 | primary-user-loop | active | M006/S04 | none | unmapped |

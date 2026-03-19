@@ -52,7 +52,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Guide Structure & Navigation** `risk:low` `depends:[]`
+- [x] **S01: Guide Structure & Navigation** `risk:low` `depends:[]`
   > After this: A "Solo Builder's Guide" sidebar group exists with a landing/index page. `npm run build` passes. The pipeline is unaffected.
 
 - [ ] **S02: Section 4 — The Daily Mix** `risk:medium` `depends:[S01]`
