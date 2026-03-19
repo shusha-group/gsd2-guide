@@ -1,7 +1,7 @@
 # GSD State
 
 **Active Milestone:** M005: Prompt Reference Section
-**Active Slice:** S03: Prompt page content generation
+**Active Slice:** S04: Command page backlinks
 **Phase:** executing
 **Requirements Status:** 1 active · 49 validated · 5 deferred · 1 out of scope
 
@@ -19,4 +19,4 @@
 - None
 
 ## Next Action
-Execute T01 of S03 (Author auto-mode pipeline prompt pages — 10 pages).
+Execute slice S04 T01 (Add "Prompts Used" sections to 16 command pages).
