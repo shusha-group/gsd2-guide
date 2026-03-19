@@ -3,6 +3,102 @@ title: "Why GSD 2"
 description: "The context window ceiling, what context engineering means, and why structure beats prompting."
 ---
 
-This section explains why vibe coding hits a ceiling and how GSD 2's structured approach breaks through it. It covers the context window problem, the cost comparison between platforms, and the mental model shift from "prompting an AI" to "directing a junior developer."
+You've shipped something with a vibe coding tool. Maybe Cursor, maybe Replit, maybe just Claude or ChatGPT in a browser tab. It worked — fast iteration, low friction, ideas turning into working code in minutes. That experience is real, and anyone who tells you it isn't doesn't understand what these tools have made possible.
 
-Content is being written and will appear here shortly.
+But at some point the project grew. You added a feature, then another. You started a new session and the AI seemed to have forgotten what you'd decided two sessions ago. You asked it to fix a bug and it reintroduced a different one. You described the architecture and it gave you code that contradicted it. The tool that felt like a superpower started feeling like a liability.
+
+That ceiling is what this section is about — and why GSD 2 exists to break through it.
+
+The five topics below are the argument: where the ceiling comes from, how context engineering addresses it, how to think about cost, what mental model makes this work, and what GSD 2 is in concrete terms. By the end, you'll have enough to decide whether this approach fits where you are right now.
+
+---
+
+## The ceiling
+
+Vibe coding works brilliantly on contained problems: a single component, a new API endpoint, a feature that can be explained in one prompt. The AI has enough context to hold the whole problem in its head, and its output is remarkably good.
+
+The ceiling arrives around the 10–15 component mark, when the project becomes too large to fit in a single context window. From that point, every new session requires you to re-explain what you've already built. Every conversation forgets the architectural decisions made in previous ones. The AI starts contradicting itself — suggesting approaches you explicitly ruled out, reintroducing patterns you'd moved away from, generating code that's locally correct but globally incoherent.
+
+This isn't a bug, and it won't be fixed by a better model. It's structural. [As the Shareuhack vibe coding guide documents](https://www.shareuhack.com/en/posts/vibe-coding-guide-2026), the very thing that makes conversational AI fast — a fresh, stateless context — is the thing that makes it unreliable on sustained work. Each session starts clean. What you built before isn't carried forward unless you explicitly load it in.
+
+The practical symptom is session degradation: early sessions feel productive, later sessions feel like managing a developer who keeps forgetting what they agreed to last week. You spend more time correcting drift than building forward. At some point the cognitive overhead of maintaining coherence yourself exceeds the productivity gain from AI generation.
+
+The ceiling isn't about the AI getting worse. It's about the distance between what the AI knows and what it needs to know growing faster than any single conversation can bridge. Without a structured mechanism for loading the right context into each session, the gap only widens.
+
+---
+
+## Context engineering
+
+The solution isn't a better AI — it's better context management.
+
+Context engineering is the practise of deliberately shaping what enters an AI's context window, rather than letting it accumulate organically through an ever-growing conversation. It's a discipline, not a feature — and it's what separates sustainable AI-assisted development from the boom-and-bust cycle of vibe coding.
+
+Think of a desk analogy. When you work on a complicated problem over multiple sessions, you have two options. You can leave everything from the last session on the desk — notes, printouts, half-finished diagrams — and add today's work on top. The desk fills up. Eventually you can't see the thing you're actually working on. Or you can clear the desk at the end of each session, note what matters in a structured summary, and pull out only what's relevant at the start of the next one.
+
+GSD's model is the second approach. Each task gets a fresh context window loaded with exactly what that task needs: the relevant source files, the architectural decisions that constrain it, the summaries from prior tasks in the slice. Nothing more. The AI isn't managing a growing accumulation — it's working from a clean desk, re-loaded for the specific job.
+
+This is what "context engineering" means in practice: deliberately controlling what enters a context window, rather than letting it fill up organically. [The New Stack documented this pattern](https://thenewstack.io/beating-the-rot-and-getting-stuff-done/) as the primary way to combat "context rot" — the degradation that happens when a conversation grows stale with accumulated noise, contradictions, and outdated state. GSD addresses context rot structurally, not by asking you to be cleverer with prompts.
+
+The mechanism that makes this work is the `.gsd/` directory: requirements, roadmap, decisions, and task summaries all written to disk after each task completes. The next task reads only what it needs. Sessions can be interrupted and resumed without losing coherence. The project's memory lives in files, not in a conversation history that expires.
+
+→ gsd2-guide: [Auto Mode](../../auto-mode/)\
+→ gsd2-guide: [Section 5: Context Engineering](../context-engineering/)
+
+---
+
+## The cost question
+
+Any honest comparison of AI coding tools has to address money.
+
+Flat-rate platforms like Cursor, Replit, and Lovable give you a predictable monthly bill. That simplicity is genuinely valuable — you know what you'll pay, and you don't have to think about model costs during a build. The trade-off is that usage limits exist, you have less visibility into what's happening under the hood, and you work within the model choices the platform has made for you.
+
+Claude Code with the Anthropic API is pay-per-use. The bill varies with usage, and on a busy build it can be meaningful. What you get in return is full control: you choose which model runs which task, you can run lighter models for mechanical work and heavier ones for complex reasoning, and you see exactly where the tokens go. There's no artificial session limit. The methodology can steer cheaper models at routine tasks and reserve more capable ones for the decisions that matter.
+
+Claude Max — Anthropic's flat-rate subscription — is a middle ground. It gives you higher usage limits on Claude's consumer interface without per-token billing, but without the programmatic access that GSD requires for structured task execution.
+
+The cost profile of GSD on the Claude API tends to be efficient precisely because of the fresh-context approach: each task uses only what it needs, rather than dragging a full conversation history through every request. But efficient doesn't mean free, and the right choice depends on your budget, your risk tolerance, and how much you value control over predictability.
+
+→ gsd2-guide: [Cost Management](../../cost-management/)\
+→ gsd2-guide: [Section 6: Controlling Costs](../controlling-costs/)
+
+---
+
+## The technical director mindset
+
+The most important shift GSD asks you to make isn't technical — it's conceptual.
+
+When you use a vibe coding tool in free-form mode, you're in a collaborative improvisation with the AI. You react to what it produces; it adapts to your reactions. That works well for exploration. It breaks down on sustained delivery, because improvisation doesn't produce the kind of coherent, defensible architecture that a growing project needs.
+
+GSD asks you to step into a different role: the technical director. You're not prompting an AI — you're directing a junior developer. You write the brief (requirements). You set the constraints (architecture decisions). You review the output (verification). You course-correct when the direction is wrong (steer). The AI writes code; you make decisions. The quality of your brief determines the quality of the output.
+
+This is the [SolveIt philosophy](https://solve.it.com/) applied to software development: understanding what you're building matters more than the speed of generation. A vague requirement produces vague code. A precise requirement, with explicit constraints and clear acceptance criteria, produces code that does exactly what was asked — and nothing more, which is equally important.
+
+The mental model shift has a practical consequence. In vibe coding mode, a session that feels productive often is: you got something working. In technical director mode, a session that produces a precise brief and a clear plan is productive even if no code was written yet — because the plan determines whether the code that follows is right or wrong. Upfront investment in clarity pays downstream dividends in coherence.
+
+---
+
+## What GSD 2 actually is
+
+GSD 2 is a context engineering layer on top of Claude Code.
+
+It's not a replacement for Claude Code, and it doesn't change what the AI is capable of. What it does is manage the structure that makes Claude Code effective on projects larger than a weekend hack: the `.gsd/` directory with its requirements, roadmap, decisions, and task summaries; the orchestration loop that breaks a milestone into slices and tasks; the verification gates that catch drift before it compounds; and the continuity mechanism that lets you stop, resume, and hand off work without losing coherence.
+
+The core workflow is: discuss what you're building → GSD produces a structured plan → auto mode executes it one task at a time, verifying as it goes → you review, steer, and maintain the vision. You don't need to understand every line of generated code to use this effectively. You do need to be precise about what you want, attentive to the direction, and willing to intervene when something is going wrong.
+
+The distinction between GSD and a plain Claude Code session isn't the AI — it's the scaffold around it. The `.gsd/` directory is persistent memory. The slice-and-task structure is a repeatable execution rhythm. The verification gates are the check that what was built matches what was asked. Together they make the difference between a project that delivers and a project that drifts.
+
+→ gsd2-guide: [Getting Started](../../getting-started/)\
+→ gsd2-guide: [Architecture](../../architecture/)\
+→ gsd2-guide: [Configuration](../../configuration/)
+
+If you're starting a new project from scratch, the next section walks you through the complete first-project lifecycle — from the initial discussion through to a completed milestone. The discussion phase, reading the roadmap, and running auto mode for the first time are all covered in detail, with examples of what GSD produces at each stage.
+
+→ gsd2-guide: [Section 2: Your First Project](../first-project/)
+
+If you're bringing GSD to an existing codebase, the brownfield section covers how to introduce structure to a project that predates it, without disrupting work in progress.
+
+→ gsd2-guide: [Section 3: The Daily Mix](../daily-mix/)
+
+---
+
+*This is Section 1 of the GSD 2 Solo Guide.*

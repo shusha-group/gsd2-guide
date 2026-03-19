@@ -25,7 +25,7 @@
 
 ## Tasks
 
-- [ ] **T01: Write Section 1 — Why GSD 2 content** `est:30m`
+- [x] **T01: Write Section 1 — Why GSD 2 content** `est:30m`
   - Why: This is the entire slice — replace the 7-line stub with the full Section 1 content. Single-file change with no dependencies beyond S01's scaffold.
   - Files: `src/content/docs/solo-guide/why-gsd.mdx`
   - Do: Overwrite the stub with substantive content following the five-section structure from research (vibe coding ceiling → context engineering → cost comparison → technical director mindset → what GSD 2 is). Follow `first-project.mdx` patterns: opening prose with no heading, `---` separators, `## Topic` headings, inline external citations, `→ gsd2-guide:` cross-reference notation. Use Australian spelling throughout. Include external citations to The New Stack, SolveIt, and Shareuhack. Cross-reference `../../getting-started/`, `../../auto-mode/`, `../../architecture/`, `../../configuration/`, `../../cost-management/` for gsd2-guide pages and `../first-project/`, `../daily-mix/`, `../controlling-costs/`, `../context-engineering/` for solo-guide siblings.
@@ -35,3 +35,14 @@
 ## Files Likely Touched
 
 - `src/content/docs/solo-guide/why-gsd.mdx`
+
+## Observability / Diagnostics
+
+This slice is pure content authoring — there are no runtime processes, API calls, or background workers. Diagnostics are limited to build-time signals:
+
+- **Build output:** `npm run build` is the primary signal. Astro will print MDX parse errors inline if any curly-brace or syntax issues exist. A successful build shows `113 page(s) built`.
+- **Inspection surface:** Read `src/content/docs/solo-guide/why-gsd.mdx` directly to verify content quality. The file is human-readable MDX.
+- **Failure visibility:** MDX parse errors appear as Astro build errors scoped to the file path. The build exits non-zero and prints the offending line.
+- **Spelling check:** `grep -i "behavior\|color\|recognize\|organize"` against the output file is the canonical American-spelling detector. Exit 1 = no matches = clean.
+- **Cross-reference audit:** `grep -c '../../'` counts gsd2-guide links; `grep -c '../'` counts sibling links. These can be run independently without a build.
+- **No redaction needed:** this file contains no secrets, tokens, or PII.

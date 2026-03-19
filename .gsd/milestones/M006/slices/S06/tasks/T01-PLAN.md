@@ -104,3 +104,12 @@ The content follows the exact patterns established by `first-project.mdx` (D071,
 ## Expected Output
 
 - `src/content/docs/solo-guide/why-gsd.mdx` — substantive Section 1 content (~120–180 lines) covering all five topics with external citations, cross-references, Australian spelling, and `---` section separators. Build passes at 113 pages.
+
+## Observability Impact
+
+This task produces no runtime signals — it writes a static MDX content file. The observable outcomes are:
+
+- **Build success:** `npm run build` exits 0 with exactly 113 pages. Failure shows as a non-zero exit and an Astro MDX parse error message.
+- **Page rendering:** The `/solo-guide/why-gsd/` route is now substantive content rather than a stub. Inspectable in the built `dist/solo-guide/why-gsd/index.html`.
+- **Content quality signals:** `wc -l` on the source file; `grep -c 'https://'` for external citations; `grep -c '../../'` for gsd2-guide links; American-spelling grep returns exit 1 (no matches).
+- **Future agent inspection:** Any agent reading this file can determine the content's structure from the `---` separators and `##` headings. No additional metadata is written to `.gsd/` by this task beyond the T01-SUMMARY.md.
