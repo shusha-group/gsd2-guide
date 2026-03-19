@@ -53,7 +53,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Prompt metadata extraction** `risk:high` `depends:[]`
   > After this: `content/generated/prompts.json` exists with all 32 prompts — name, slug, group, variables list, pipeline position, and command backlinks. Verified by running `scripts/extract.mjs` and inspecting the output.
 
-- [ ] **S02: Page scaffold, sidebar, and source map** `risk:medium` `depends:[S01]`
+- [x] **S02: Page scaffold, sidebar, and source map** `risk:medium` `depends:[S01]`
   > After this: 32 stub MDX pages exist in `src/content/docs/prompts/`, all 4 sidebar groups are registered in `astro.config.mjs`, and `page-source-map.json` has 32 new entries. `npm run build` succeeds (stubs, no real content yet).
 
 - [ ] **S03: Prompt page content generation** `risk:medium` `depends:[S01,S02]`
