@@ -99,3 +99,20 @@ The writing patterns are established by two completed sections:
 ## Expected Output
 
 - `src/content/docs/solo-guide/first-project.mdx` — complete Section 2 (~200–250 lines) with all five lifecycle phases, two external citations, ≥5 cross-references, and Australian spelling
+
+## Observability Impact
+
+**What changes when this task runs:**
+- `first-project.mdx` grows from ~6 lines (stub) to ~200–250 lines; page count in the build stays at 113 (Astro already included the stub)
+- `npm run check-links` now exercises all internal cross-references added to the file; any path typo becomes a visible link failure with file + line detail
+
+**How a future agent inspects this task's output:**
+- `wc -l src/content/docs/solo-guide/first-project.mdx` — fastest check; stub = 6 lines, complete = >100
+- `grep "→ gsd2-guide" src/content/docs/solo-guide/first-project.mdx` — enumerates all cross-references written into the file
+- `grep "addyosmani.com\|estebantorr.es" src/content/docs/solo-guide/first-project.mdx` — confirms both external citations are present
+- `npm run build 2>&1 | grep -i "error"` — any MDX parse issue from curly braces or bad JSX surfaces here
+
+**Failure state visibility:**
+- Build errors from this file are tagged with the file path in Astro's output, making them easy to isolate
+- `check-links` exit code 1 with a broken path message is the canonical signal that a cross-reference path was mistyped
+- A stub-level line count after the task "completes" means the write step silently failed — the summary should note this as a blocker

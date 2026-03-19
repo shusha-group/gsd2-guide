@@ -26,7 +26,7 @@
 
 ## Tasks
 
-- [ ] **T01: Write the full Section 2 walkthrough with external citations** `est:45m`
+- [x] **T01: Write the full Section 2 walkthrough with external citations** `est:45m`
   - Why: This is the entire slice — replace the stub `first-project.mdx` with a complete annotated walkthrough covering all five GSD lifecycle phases, with external citations and cross-references.
   - Files: `src/content/docs/solo-guide/first-project.mdx`
   - Do: Write ~200–250 lines of MDX prose following the established patterns from `daily-mix.mdx` and `when-things-go-wrong.mdx`. Cover discussion, roadmap reading, auto mode, verification, and completion phases. Include Addy Osmani spec-first citation in the discussion section and Esteban Torres first-person account in the auto mode section. Use `→ gsd2-guide:` cross-reference notation for ≥5 links to reference pages. Forward-link to Section 4 and Section 7. Australian spelling throughout.
@@ -36,3 +36,22 @@
 ## Files Likely Touched
 
 - `src/content/docs/solo-guide/first-project.mdx`
+
+## Observability / Diagnostics
+
+**Runtime signals:**
+- `npm run build 2>&1 | grep "pages"` — page count tells you the file was picked up and compiled; if the count drops or errors appear the MDX has a parse problem
+- `npm run check-links` stdout — lists every broken link with file and line number; exit code 0 is the authoritative pass signal
+- `wc -l src/content/docs/solo-guide/first-project.mdx` — fast stub-replacement guard; <100 lines means the stub is still in place
+
+**Inspection surfaces:**
+- The built file at `.astro/` (or `dist/`) after `npm run build` renders the full HTML; open locally with `npm run dev` to visually verify formatting, callout rendering, and link targets
+- `grep "→ gsd2-guide" src/content/docs/solo-guide/first-project.mdx` — lists every cross-reference; count and inspect targets manually if `check-links` is noisy
+
+**Failure visibility:**
+- MDX curly-brace syntax errors surface as `[ERROR]` lines in the build output; grep for `error` (case-insensitive) after `npm run build`
+- A broken external URL won't fail `check-links` (external links are not checked by default); verify external URLs resolve by hand if needed
+- Missing frontmatter title or description causes Astro to warn or skip the page in the sitemap
+
+**Redaction:**
+- No secrets or credentials involved; all content is static prose

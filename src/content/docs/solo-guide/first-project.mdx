@@ -3,6 +3,146 @@ title: "Your First Project"
 description: "A complete walkthrough from blank directory to working milestone."
 ---
 
-This section walks through starting a new project with GSD 2 — from the initial discussion phase through roadmap generation, auto mode execution, verification, and completion. You'll see the actual files GSD creates and what each one means.
+The first time you run GSD on a real project is different from reading the docs. You're committing. You're saying: this is the work, these are the constraints, and I want the system to hold the structure while I hold the vision. That shift — from curious to committed — is the moment GSD becomes useful.
 
-Content is being written and will appear here shortly.
+GSD asks for more upfront investment than most tools. Before a single line of code is written, it wants to have a conversation about what you're building, why, and what "done" looks like. That investment isn't overhead — it's the spec-writing that would have happened anyway, either explicitly at the start or implicitly (and expensively) mid-build. Doing it first, in a structured way, is the core of the methodology.
+
+This section walks through each phase of that first project: the discussion, reading what GSD produces, running auto mode for the first time, understanding verification, and recognising when a milestone is genuinely done. You'll see the actual files, the actual terminal output patterns, and the decisions you'll need to make along the way.
+
+---
+
+## Before you start
+
+You'll need three things: `gsd-pi` installed globally, an LLM provider API key (Anthropic Claude is recommended for the best results), and a project directory — even an empty one works. If you haven't done the initial setup, work through the getting-started guide first. Configuration — choosing your provider, setting your preferences, adjusting budget ceilings — is covered in its own reference page.
+
+→ gsd2-guide: [Getting Started](../../getting-started/)\
+→ gsd2-guide: [Configuration](../../configuration/)
+
+---
+
+## Phase 1: The discussion
+
+Run `/gsd` in your project directory. On a fresh project with no existing `.gsd/` directory, GSD enters discussion mode automatically.
+
+The discussion isn't a freeform chatbot session — it has a protocol. GSD asks a structured sequence of questions: What are you building? Who is it for? What are the technical constraints? What does success look like at the end of the first milestone? What would a failed version look like? Your answers shape three artifacts that drive everything downstream:
+
+- **REQUIREMENTS.md** — the capability contract. A numbered list of what the finished project must do, each tagged with a status and validation criteria. This is the authoritative reference for verification throughout the build.
+- **CONTEXT.md** — the brief. Background, constraints, non-goals, and the key decisions made during the discussion. Future agents read this to understand *why* things are the way they are.
+- **ROADMAP.md** — the execution plan. Milestones broken into slices, with risk ratings, dependencies, and demo lines that describe what "done" looks like at each stage.
+
+The discussion phase is the highest-leverage moment in a GSD project. What you put in determines what comes out. Vague answers produce vague requirements, which produce vague plans, which produce code that technically builds but misses the point. Being specific here — about scope, about constraints, about what you *don't* want — pays dividends for every task that follows.
+
+This is the pattern [Addy Osmani advocates for AI-assisted development](https://addyosmani.com/blog/ai-coding-workflow/): start with a spec, not code. The discussion phase is exactly that spec-writing step, automated and structured so you get a useful artifact instead of a vague prompt. The spec becomes the contract; the contract becomes the plan; the plan becomes the work.
+
+→ gsd2-guide: [Discussing a Milestone](../../user-guide/discussing-a-milestone/)
+
+---
+
+## Phase 2: Reading the roadmap
+
+After discussion, GSD writes the three artifacts to disk and shows you a summary. Before you let auto mode run, read what was produced.
+
+**ROADMAP.md** is the document to scrutinise first. It shows the milestone structure: each milestone has a goal, a set of slices, and a demo line. Each slice has a risk rating (`low`, `medium`, `high`) and a depends column. The depends column tells you which slices must complete before the current one can start — this is the execution order GSD will follow.
+
+What to check:
+
+| Question | What to look for |
+|---|---|
+| Are the slices in the right order? | Dependencies flow correctly; nothing depends on something that comes later |
+| Is the scope right? | Each slice is bounded; you can describe its outcome in one sentence |
+| Is anything missing? | No critical capability is buried inside a later milestone that should be in the first |
+| Are the risk ratings calibrated? | High-risk slices should be front-loaded where possible, not saved for last |
+| Does the demo line make sense? | The "After this:" line describes something you could actually show someone |
+
+**REQUIREMENTS.md** should match what you said during the discussion. Read it top to bottom. If something is wrong or missing, this is the moment to correct it — before auto mode turns requirements into code. You can edit the file directly, or run `/gsd discuss` to reopen the conversation on a specific requirement.
+
+**CONTEXT.md** is for later. It captures decisions and constraints for future agents. Skim it to confirm the non-goals are right (the things GSD should *not* build), then leave it alone.
+
+When you're satisfied with all three, you're ready to run.
+
+→ gsd2-guide: [Developing with GSD](../../user-guide/developing-with-gsd/)
+
+---
+
+## Phase 3: Auto mode — the first run
+
+Run `/gsd auto` to start.
+
+Auto mode works one slice at a time, and within each slice, one task at a time. For each task it runs a four-phase loop: **research** (read relevant code and context), **plan** (write a task plan), **execute** (write the code or content), and **verify** (run the task's verification checks). When a task completes, it writes a summary to `.gsd/` and moves to the next. When a slice completes, it runs the slice's UAT checks against the built output before proceeding.
+
+In the terminal you'll see:
+
+```
+[M001/S01/T01] Research phase — reading context
+[M001/S01/T01] Plan written → .gsd/milestones/M001/slices/S01/tasks/T01-PLAN.md
+[M001/S01/T01] Executing…
+[M001/S01/T01] Verification: npm test → PASS
+[M001/S01/T01] Summary written → T01-SUMMARY.md
+[M001/S01] UAT: npm run build → PASS (113 pages)
+[M001/S01] Slice complete — advancing to S02
+```
+
+The phase transitions are the thing to watch. If a phase takes much longer than expected, that's signal — either the task is harder than planned, or something has gone wrong. You don't need to intervene immediately, but it's worth noting.
+
+**When to let it run:** if verification is passing and the direction looks right, trust the loop. Auto mode will surface its own problems — UAT failures trigger automatic replanning, not silent continuation. The system is designed to catch its own mistakes; your job is to catch the cases where the direction itself is wrong.
+
+**When to intervene:**
+- The approach is wrong: run `/gsd steer` with a specific correction. "Use the existing auth middleware instead of rolling a custom one" is actionable; "fix this" is not.
+- A thought arrives mid-session: run `/gsd capture` to save it without interrupting execution.
+- The task is stuck and shouldn't proceed: `/gsd stop` cleanly halts everything so you can reassess.
+
+The first run of auto mode is often the most surprising. You watch code appear, tests get written and pass, documentation gets generated — all from the spec you wrote in the discussion. [Esteban Torres documented exactly this experience](https://estebantorr.es/blog/2026/2026-02-03-a-gsd-system-for-claude-code/): the transition from writing a brief to watching a system execute against it is a qualitatively different way of working with AI. The output is shaped by the quality of the spec, not the quality of individual prompts.
+
+→ gsd2-guide: [Auto Mode](../../auto-mode/)
+
+---
+
+## Phase 4: Verification and completion
+
+Each slice has UAT checks — concrete assertions that the output meets the slice's acceptance criteria. Auto mode runs these automatically after each slice completes. If they fail, GSD replans the slice with targeted remediation tasks before advancing. You can watch this happen in real time; it's not a failure state, it's the verification loop working as designed.
+
+At the end of the milestone, GSD validates against the success criteria in REQUIREMENTS.md. Every requirement that has a validation check gets exercised. The output of this final validation is written to `.gsd/milestones/M001/MILESTONE-SUMMARY.md`.
+
+To see the current state at any point, run `/gsd status`. It shows:
+
+- The active milestone and current slice
+- Which tasks are complete vs in progress
+- Auto mode state (running, paused, stopped)
+- Any open captures waiting for triage
+- The last UAT result
+
+When a milestone is fully complete, the `.gsd/` directory has a predictable structure:
+
+```
+.gsd/
+  milestones/
+    M001/
+      MILESTONE-SUMMARY.md   ← written on completion
+      slices/
+        S01/
+          S01-PLAN.md
+          tasks/
+            T01-PLAN.md
+            T01-SUMMARY.md   ← written per task
+            T02-SUMMARY.md
+  STATE.md                   ← reflects completed milestone
+```
+
+If any task summary is missing, the milestone isn't done — even if auto mode stopped. `STATE.md` is the authoritative record; check it if you're unsure.
+
+→ gsd2-guide: [/gsd status](../../commands/status/)\
+→ gsd2-guide: [Recipe: New Milestone](../../recipes/new-milestone/)
+
+---
+
+## What you've built (and what you haven't)
+
+You've completed the full GSD lifecycle once: discuss → research → plan → execute → verify. That loop is the unit of work in GSD. Everything else — quick tasks, captures, steer corrections, cost management — is either a shortcut for smaller changes or a recovery tool for when the loop goes sideways.
+
+What you haven't learned yet is rhythm. Running one milestone to completion is a demonstration. Using GSD every day — knowing when to use a full milestone versus a quick task, how to manage work across days and interruptions, how to keep the `.gsd/` directory healthy over time — is a different kind of knowledge. That's what Section 4 covers.
+
+→ gsd2-guide: [Section 4: The Daily Mix](../daily-mix/)
+
+And the first time something doesn't go as expected — auto mode goes quiet, a task loops, the build breaks on a UAT you didn't anticipate — the recovery patterns are in Section 7. Not every first project run goes cleanly, and that's fine. The failure modes are known and the recovery procedures are specific.
+
+→ gsd2-guide: [Section 7: When Things Go Wrong](../when-things-go-wrong/)
