@@ -61,7 +61,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Section 7 — When Things Go Wrong** `risk:medium` `depends:[S01]`
   > After this: Failure modes (stuck detection, crash recovery, loose must-haves, state repair, timeouts) are documented in plain English with clear recovery steps.
 
-- [ ] **S04: Section 2 — Your First Project** `risk:high` `depends:[S01]`
+- [x] **S04: Section 2 — Your First Project** `risk:high` `depends:[S01]`
   > After this: The complete annotated new-project walkthrough is live — discussion phase, roadmap reading, auto mode first run, verification, and completion — with external citations to Addy Osmani and Esteban Torres.
 
 - [ ] **S05: Section 3 — Brownfield Reality** `risk:medium` `depends:[S01]`
