@@ -76,6 +76,25 @@ The authoring pattern is identical to S02/T01 (daily-mix.mdx): companion voice, 
 - `npm run build 2>&1 | grep -A5 "solo-guide"` → no output (no MDX parse errors)
 - `grep -iE "recognize|behavior|organize" src/content/docs/solo-guide/when-things-go-wrong.mdx` → no output (no American spellings)
 
+## Observability Impact
+
+**What signals change:**
+- `wc -l src/content/docs/solo-guide/when-things-go-wrong.mdx` changes from ~7 lines (stub) to 150+ lines
+- `grep -c "→ gsd2-guide:" ...` changes from 0 to ≥8
+- `grep -c "../../commands/" ...` changes from 0 to ≥6
+- `npm run build 2>&1 | grep "pages"` continues to show 113 pages (content page, not a new page)
+
+**How a future agent inspects this task:**
+- Read `when-things-go-wrong.mdx` directly — the file is the artifact
+- Run `grep -c "→ gsd2-guide:" ...` to count cross-references
+- Run `npm run check-links` to verify all relative paths resolve
+- Compare line count with `wc -l` — below 150 means the stub wasn't fully replaced
+
+**Failure state visibility:**
+- If the task wrote incorrect frontmatter, the sidebar title changes — visible in `npm run build` output or the rendered site
+- Broken cross-reference paths surface immediately in `npm run check-links` with exact URLs
+- American spelling regressions caught by `grep -iE "recognize|behavior|organize" ...`
+
 ## Inputs
 
 - `src/content/docs/solo-guide/when-things-go-wrong.mdx` — current 7-line stub from S01; preserve its frontmatter fields

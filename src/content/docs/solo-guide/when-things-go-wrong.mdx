@@ -1,8 +1,183 @@
 ---
 title: "When Things Go Wrong"
-description: "Failure modes, stuck detection, and recovery steps for common problems."
+description: "How to recognise and recover from the 8 most common failure scenarios you'll hit as a solo builder using GSD."
 ---
 
-This section documents the failure modes you'll actually hit as a solo builder — stuck detection, auto mode crashes, loose must-haves, orientation after time away, full state repair, and timeout management. Each failure mode has a clear recovery path.
+Things will go wrong. Auto mode goes quiet, costs spike unexpectedly, you come back after a few days and have no idea what's running. These are not catastrophes — they're predictable, recoverable situations. This section gives you the mental model for each one: what you're seeing, what's actually happening, and what to do first. For the full step-by-step procedures, each scenario links to the relevant reference.
 
-Content is being written and will appear here shortly.
+## Quick lookup
+
+| What you're seeing | What's happening | What to do |
+|---|---|---|
+| No output, no progress | Stale lock or crashed process | `/gsd doctor fix`, then `/gsd auto` |
+| Same task dispatching repeatedly | Stuck loop, 3-dispatch limit reached | Write the artifact manually, then `/gsd doctor fix` |
+| Status shows "replan in progress" | UAT failed — GSD is correcting course | Wait; use `/gsd steer` only if direction is wrong |
+| Budget ceiling pause or unexpected spend | Cost spike or runaway token use | `/gsd stop`, review token profile, adjust ceiling |
+| You don't know what's running | Orientation problem after time away | `/gsd status`, then `/gsd next` |
+| Output is valid but wrong approach | Agent went the wrong direction | `/gsd undo --force` or `/gsd steer` if still running |
+| Pause with retry countdown | Rate limit or provider outage | Usually self-resolves; check credentials for auth errors |
+| Every command fails | State corruption in `.gsd/` | `/gsd doctor heal`, then `/gsd forensics` if needed |
+
+---
+
+### Auto-mode went quiet
+
+**What you're seeing:** The terminal has gone silent. No output, no progress indicator, no error message — just nothing. You might have walked away and come back to a screen that hasn't changed.
+
+**What's happening:** Auto mode tracks its running state with a lock file at `.gsd/auto.lock`. When a session crashes (context limit, API timeout, network drop), the process exits without cleaning up. The lock file stays behind, and `STATE.md` still shows an in-progress phase.
+
+**What to do:**
+
+1. Run `/gsd doctor fix` — this detects and removes the stale lock, marks any completed tasks that were never checked off, and regenerates `STATE.md` from disk state.
+2. Run `/gsd auto` — auto mode reads the repaired state and picks up from the next uncompleted unit.
+
+If the same task was interrupted mid-execution with no summary written, auto mode re-executes it from scratch, reading prior context from sibling task summaries.
+
+→ gsd2-guide: [Error recovery recipe](../../recipes/error-recovery/) — the full recovery ladder flowchart\
+→ gsd2-guide: [/gsd doctor](../../commands/doctor/) — complete reference for scan, fix, and heal modes
+
+---
+
+### The same unit keeps failing
+
+**What you're seeing:** Auto mode dispatches a task, the agent runs, but the task never completes cleanly. The cycle repeats. You might see repeated dispatch log entries for the same unit ID.
+
+**What's happening:** GSD has built-in stuck detection. If the same unit dispatches multiple times without producing the expected artifact, auto mode stops and tells you exactly which file it expected. This is the safety valve — it prevents infinite loops from consuming budget.
+
+**What to do:**
+
+1. Check what the task expected. Auto mode's stuck message includes the file path it was waiting for.
+2. If the task is genuinely blocked (ambiguous requirements, missing dependency), write a minimal artifact manually to unblock the pipeline — even a stub summary is enough.
+3. Run `/gsd doctor fix` to reconcile state, then `/gsd auto` to resume.
+4. If the task truly cannot be completed as specified, use `/gsd skip` to advance past it.
+
+The key question: is this task stuck because of an execution problem, or because the task itself is wrong? If the latter, `/gsd skip` is the right move, not repeated retries.
+
+→ gsd2-guide: [Troubleshooting](../../troubleshooting/) — diagnosing stuck loops and repeated failures\
+→ gsd2-guide: [/gsd skip](../../commands/skip/) — advancing past a unit that can't complete
+
+---
+
+### UAT failed and the slice is replanning
+
+**What you're seeing:** `/gsd status` shows "replan in progress" or auto mode output mentions a UAT failure and replanning.
+
+**What's happening:** After each slice completes, GSD runs the UAT script against the built output. If verification fails, GSD doesn't just stop — it replans the failing slice, adds remediation tasks, and continues. This is GSD working correctly. A UAT failure is the system catching a gap before it compounds.
+
+**What to do:**
+
+Wait. The replan typically completes within a few minutes and produces a revised slice plan with targeted fix tasks. You don't need to intervene unless the replan direction is wrong.
+
+If the replan is heading somewhere you disagree with — wrong approach, overly broad remediation, addressing the symptom rather than the cause — use `/gsd steer` to correct it before the new tasks execute.
+
+→ gsd2-guide: [UAT failures recipe](../../recipes/uat-failures/) — how UAT failures trigger replanning and how to shape the outcome\
+→ gsd2-guide: [/gsd steer](../../commands/steer/) — redirecting execution mid-pipeline
+
+---
+
+### Costs are spiking
+
+**What you're seeing:** Auto mode has paused with a budget ceiling message, or you've checked the dashboard and seen unexpected spend — costs much higher than the work seemed to warrant.
+
+**What's happening:** A few common causes: the token profile is set to `quality` mode (which inlines maximum context per unit), the model routing is sending simple tasks to expensive models, or a stuck loop dispatched the same unit many times before hitting the limit.
+
+**What to do:**
+
+1. Run `/gsd stop` to halt execution cleanly.
+2. Check the cost breakdown in the dashboard (`/gsd status`) — it shows per-unit spend, so you can see which task burned the budget.
+3. If the token profile is the issue, switch to `balanced` or `budget` in preferences.
+4. If model routing is the issue, enable dynamic routing to route simple units to cheaper models.
+5. If a stuck loop caused the spike, follow the stuck-unit recovery steps above before resuming.
+6. Adjust your budget ceiling if needed, then run `/gsd auto` to resume.
+
+→ gsd2-guide: [Cost management](../../cost-management/) — budget ceilings, token profiles, and dynamic model routing\
+→ gsd2-guide: [Section 6: Controlling Costs](../controlling-costs/) — the solo builder's guide to keeping spend predictable
+
+---
+
+### Coming back after time away — where am I?
+
+**What you're seeing:** You haven't opened the project in days (or weeks). You know something was running, but you're not sure of the current state, what's been completed, or what to do next.
+
+**What's happening:** This is an orientation problem, not a technical failure. Nothing is broken — you've just lost the mental context of where you were. GSD maintains full state on disk, so the information exists; you just need to read it.
+
+**What to do:**
+
+1. Run `/gsd status` — this shows the active milestone, current slice, which tasks are complete, auto mode state, and any pending captures. Read it completely before doing anything else.
+2. Run `/gsd next` — this tells you the single recommended action: resume auto mode, triage a capture, review a completed slice, or start a new milestone.
+
+If auto mode was running when you left and is now stopped, follow the "auto-mode went quiet" steps above. If everything looks clean, a single `/gsd auto` resumes from where it left off.
+
+→ gsd2-guide: [/gsd status](../../commands/status/) — reading the full project state\
+→ gsd2-guide: [/gsd next](../../commands/next/) — the recommended action for your current situation
+
+---
+
+### The agent wrote the wrong thing
+
+**What you're seeing:** The task completed — there's a summary, the files exist, the build passes — but the output is wrong. The agent went in the wrong direction: wrong abstraction, wrong scope, technically valid but not what you wanted.
+
+**What's happening:** The agent executed faithfully against an underspecified brief or made a reasonable-but-wrong judgement call at a decision point. This is the most common quality issue in agent-driven development, and it's recoverable.
+
+**What to do:**
+
+If the task has already completed and auto mode has moved on:
+
+1. Run `/gsd undo --force` to roll back the committed changes. This reverses the agent's work so you can restart with a clearer brief.
+2. Revise the task plan or add constraints via `/gsd steer` to the now-replanned unit.
+3. Re-run the affected slice.
+
+If the agent is still executing and you catch it mid-task:
+
+1. Run `/gsd steer` with a precise correction — "use X approach instead of Y", "limit scope to file Z".
+2. The correction is picked up at the next phase boundary; you don't need to stop and restart.
+
+The key: be specific about what was wrong. "Wrong approach" is too vague for a steer — say what approach you wanted instead.
+
+→ gsd2-guide: [/gsd undo](../../commands/undo/) — rolling back agent-committed changes\
+→ gsd2-guide: [/gsd steer](../../commands/steer/) — mid-execution course correction
+
+---
+
+### Provider errors (rate limits, outages)
+
+**What you're seeing:** Auto mode has paused. The output shows a retry countdown ("resuming in 60s"), or a harder stop with an auth or billing message.
+
+**What's happening:** GSD classifies provider errors and handles them automatically where it can. Rate limits and transient server errors trigger automatic resume after a cooldown period. Auth errors and billing problems require manual intervention because GSD can't fix your credentials for you.
+
+**What to do:**
+
+For rate limits and server errors: wait. GSD resumes automatically after the retry delay. You don't need to do anything — the session will continue once the provider recovers or the rate window resets.
+
+For auth errors ("unauthorized", "invalid key", "billing"): GSD pauses indefinitely. Check your API credentials and billing status with the provider, then run `/gsd auto` to resume once the auth issue is resolved.
+
+For persistent outages: if a provider is down for an extended period and you need to keep working, switch to a different model in preferences and resume.
+
+→ gsd2-guide: [Troubleshooting](../../troubleshooting/) — provider error classification and manual recovery steps
+
+---
+
+### Full state corruption — nothing works
+
+**What you're seeing:** Multiple commands fail in unexpected ways. `STATE.md` shows inconsistent state. The project's `.gsd/` directory looks wrong — missing files, wrong structure, or commands that error on basic operations.
+
+**What's happening:** Something has corrupted the project state — possibly a hard crash mid-write, a manual edit gone wrong, or git operations that conflicted with `.gsd/` files. This is rare, but when it happens it needs structured recovery rather than ad hoc fixes.
+
+**What to do:**
+
+1. Run `/gsd doctor heal` — this runs all automatic fixes first, then dispatches any remaining structural issues to the LLM, which reconstructs missing artifacts (slice summaries, UAT files) from existing context.
+2. If heal doesn't resolve it — or if the failure is behavioural rather than structural (keeps crashing, unusual outputs) — run `/gsd forensics` with a description of the symptoms. Forensics inspects activity logs, crash locks, and state files to identify the root cause, then offers a repair path.
+3. Manual repair is the last resort. If both doctor and forensics can't resolve it, the forensics report gives you the exact files that need attention and what each one should contain.
+
+→ gsd2-guide: [Error recovery recipe](../../recipes/error-recovery/) — the full recovery ladder, including manual repair procedures\
+→ gsd2-guide: [/gsd doctor](../../commands/doctor/) — fix and heal modes for structural repair\
+→ gsd2-guide: [/gsd forensics](../../commands/forensics/) — behavioural investigation and root-cause analysis
+
+---
+
+## When none of these fit
+
+For anything not covered by the eight scenarios above, start with the recovery ladder in the error-recovery recipe — it provides a structured path from symptom to resolution, including when to escalate from automatic repair to manual intervention.
+
+→ gsd2-guide: [Error recovery recipe](../../recipes/error-recovery/) — the definitive flowchart for any GSD failure\
+→ gsd2-guide: [Troubleshooting index](../../troubleshooting/) — exhaustive reference for all known failure modes and their fixes

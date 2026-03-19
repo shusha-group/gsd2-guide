@@ -26,12 +26,32 @@
 
 ## Tasks
 
-- [ ] **T01: Write Section 7 failure guide with recovery scenarios and cross-references** `est:30m`
+- [x] **T01: Write Section 7 failure guide with recovery scenarios and cross-references** `est:30m`
   - Why: This is the entire slice — replace the stub with the full Section 7 content covering 8 failure scenarios, each with symptom recognition, recovery steps, and cross-references to reference documentation.
   - Files: `src/content/docs/solo-guide/when-things-go-wrong.mdx`
   - Do: Rewrite the stub with 8 failure scenarios in companion voice (see T01-PLAN.md for full content structure, cross-reference targets, and style constraints). Include a summary table at the top. Follow daily-mix.mdx patterns for cross-reference notation, prose style, and Australian spelling.
   - Verify: `npm run build` exits 0 at 113 pages; `npm run check-links` exits 0; 150+ lines; ≥6 command cross-refs; ≥8 "→ gsd2-guide:" callouts; no American spellings; no build errors referencing solo-guide
   - Done when: All 7 verification commands in the slice verification section pass
+
+## Observability / Diagnostics
+
+**Runtime signals:**
+- `npm run build 2>&1 | grep "pages"` — confirms 113 pages rendered (no new pages added, no regressions)
+- `wc -l src/content/docs/solo-guide/when-things-go-wrong.mdx` — line count gate for content depth
+- `grep -c "→ gsd2-guide:" ...` — counts cross-reference callouts; failure means companion voice is incomplete
+- `npm run check-links` — broken relative paths surface here; any exit non-zero means a cross-ref target path is wrong
+
+**Inspection surfaces:**
+- The built site at `dist/` after `npm run build` — rendered HTML confirms MDX parsed correctly
+- `npm run build 2>&1 | grep -A5 "solo-guide"` — MDX parse errors for solo-guide pages surface here
+
+**Failure visibility:**
+- A missing or wrong cross-reference path will cause `npm run check-links` to fail with the exact broken URL
+- American spellings are caught by the grep command — no runtime failure, purely static check
+- If the stub frontmatter is accidentally overwritten, the build may produce a page with a different title or missing from the sidebar
+
+**Redaction constraints:**
+- None — this slice produces only documentation content; no secrets, tokens, or PII involved
 
 ## Files Likely Touched
 
