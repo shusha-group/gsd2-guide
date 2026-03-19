@@ -16,6 +16,8 @@ A single source of truth for GSD 2 documentation that stays current with the pro
 
 **M003+M004 complete.** Documentation regeneration pipeline replaces `@anthropic-ai/sdk` with `claude -p` subprocess (full tool access, no API key). `npm run update` detects stale pages via SHA-based dependency hashing, regenerates them via Claude Code, builds, link-checks, stamps, and deploys to GitHub Pages — zero intervention. 20 tests pass, 65 pages built, 4036 links verified. Fast path (no stale pages) completes pipeline logic in 8.7s.
 
+**M005/S01 complete.** `content/generated/prompts.json` exists with all 32 prompts: name, slug, group (4-group D057 taxonomy), variables with descriptions, pipeline positions, and command backlinks. `extractPrompts()` wired into extract.mjs Phase 1. 48 tests pass (9 new prompts extraction tests). Group distribution: 10 auto-mode-pipeline + 8 guided-variants + 13 commands + 1 foundation.
+
 ## Architecture / Key Patterns
 
 - **Astro 6 + Starlight 0.38** — Static site generator purpose-built for documentation, zero client JS by default, Pagefind search

@@ -50,7 +50,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Prompt metadata extraction** `risk:high` `depends:[]`
+- [x] **S01: Prompt metadata extraction** `risk:high` `depends:[]`
   > After this: `content/generated/prompts.json` exists with all 32 prompts — name, slug, group, variables list, pipeline position, and command backlinks. Verified by running `scripts/extract.mjs` and inspecting the output.
 
 - [ ] **S02: Page scaffold, sidebar, and source map** `risk:medium` `depends:[S01]`
