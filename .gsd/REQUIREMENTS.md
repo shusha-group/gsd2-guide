@@ -820,14 +820,14 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R062 — Section 4: The Daily Mix decision framework
 - Class: primary-user-loop
-- Status: active
+- Status: validated
 - Description: A practical decision framework explaining when to use direct git commits, /gsd quick, /gsd quick --research, /gsd quick --full, or a full milestone. Includes a printable decision table, flag explanations in plain English, and guidance on handling interruptions mid-auto-mode.
 - Why it matters: This is the section the reader uses every working day. Getting it right is the core value proposition of the entire guide.
 - Source: user
 - Primary owning slice: M006/S02
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Build first — before onboarding sections. Most valuable, least documented content in the GSD ecosystem.
+- Validation: daily-mix.mdx — 129 lines, 8-row decision table, 6 subsections covering the full spectrum (three paths, decision table, what /gsd quick does, when quick isn't enough, handling interruptions, daily rhythm). 6 command cross-references (quick, capture, steer, queue, status, next) plus auto-mode, git-strategy, captures-triage, and sibling solo-guide pages. npm run build exits 0 at 113 pages; npm run check-links validates 12,288 internal links with 0 broken. Australian spelling confirmed. No MDX parse errors.
+- Notes: Decision table has 8 rows (plan required ≥6). Extra rows for exploratory work and infrastructure/deployment changes added for practical coverage. The "→ gsd2-guide:" cross-reference notation (D070) applied at scale in this section.
 
 ### R063 — Section 7: When Things Go Wrong
 - Class: failure-visibility
@@ -940,7 +940,7 @@ This file is the explicit capability and coverage contract for the project.
 - Notes: Use standard Markdown tables with pipe-separated columns. Avoid HTML table tags.
 
 | R061 | core-capability | validated | M006/S01 | M006/S02–S08 | 9 MDX files + sidebar group; npm run build exits 0 at 113 pages; pipeline uncontaminated |
-| R062 | primary-user-loop | active | M006/S02 | none | unmapped |
+| R062 | primary-user-loop | validated | M006/S02 | none | daily-mix.mdx — 129 lines, 8-row decision table, 6 command cross-references; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links |
 | R063 | failure-visibility | active | M006/S03 | none | unmapped |
 | R064 | primary-user-loop | active | M006/S04 | none | unmapped |
 | R065 | core-capability | active | M006/S05 | none | unmapped |
@@ -948,6 +948,6 @@ This file is the explicit capability and coverage contract for the project.
 | R067 | core-capability | active | M006/S07 | none | unmapped |
 | R068 | operability | active | M006/S07 | none | unmapped |
 | R069 | continuity | active | M006/S08 | none | unmapped |
-| R070 | integration | active | M006/S01 | M006/S02–S08 | unmapped |
+| R070 | integration | active | M006/S01 | M006/S02–S08 | S02: 6 command cross-refs + root-level + sibling links in daily-mix.mdx — pattern proven, check-links validated |
 | R071 | integration | active | M006/S04 | M006/S06 | unmapped |
 | R072 | quality-attribute | active | M006/S01 | M006/S02–S08 | unmapped |

@@ -55,7 +55,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Guide Structure & Navigation** `risk:low` `depends:[]`
   > After this: A "Solo Builder's Guide" sidebar group exists with a landing/index page. `npm run build` passes. The pipeline is unaffected.
 
-- [ ] **S02: Section 4 — The Daily Mix** `risk:medium` `depends:[S01]`
+- [x] **S02: Section 4 — The Daily Mix** `risk:medium` `depends:[S01]`
   > After this: The decision framework, flag explanations in plain English, and the decision table are live. `npm run check-links` passes with Section 4's cross-references.
 
 - [ ] **S03: Section 7 — When Things Go Wrong** `risk:medium` `depends:[S01]`
