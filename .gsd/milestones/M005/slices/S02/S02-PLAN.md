@@ -19,6 +19,13 @@
 - `python3 -c "import json; d=json.load(open('content/generated/page-source-map.json')); print(len([k for k in d if k.startswith('prompts/')]))"` → 32
 - `npm run build` exits 0 (80+ pages, 0 errors)
 
+## Observability / Diagnostics
+
+- **Runtime signals:** `npm run build` stdout shows page count (look for "80+ pages built" in Astro output). Build failures surface as non-zero exit with Astro diagnostics naming the offending MDX file.
+- **Inspection surfaces:** `ls src/content/docs/prompts/*.mdx | wc -l` confirms file count; `grep -c "'/prompts/" astro.config.mjs` confirms sidebar entry count; `python3 -c "import json; d=json.load(open('content/generated/page-source-map.json')); print(len([k for k in d if k.startswith('prompts/')]))"` confirms source-map entries.
+- **Failure visibility:** Missing MDX files produce Astro build errors naming the absent slug. Sidebar mis-wiring is invisible at build time but manifests as 404s when navigating sidebar links in the dev server. Test suite failures from `node --test tests/page-map.test.mjs` show which assertion failed and expected vs actual counts.
+- **Redaction constraints:** No secrets or sensitive data in this slice — all content is static MDX stubs and config wiring.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `content/generated/prompts.json` (slug list, group taxonomy from S01)
@@ -27,7 +34,7 @@
 
 ## Tasks
 
-- [ ] **T01: Create 32 prompt stub MDX pages and wire sidebar config** `est:20m`
+- [x] **T01: Create 32 prompt stub MDX pages and wire sidebar config** `est:20m`
   - Why: The MDX stubs and sidebar are the two user-visible deliverables — pages must exist and be navigable before any pipeline integration.
   - Files: `src/content/docs/prompts/*.mdx` (32 new files), `astro.config.mjs`
   - Do: Read `prompts.json` for slugs and groups. Create `src/content/docs/prompts/` directory. Write 32 stub MDX files following the established scaffold pattern (frontmatter with title and description, `:::caution` scaffold notice). Add a "Prompts" sidebar section to `astro.config.mjs` between Commands and Recipes with 4 nested sub-groups ordered: Auto-mode Pipeline → Guided Variants → Commands → Foundation.

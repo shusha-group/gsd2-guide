@@ -123,6 +123,13 @@ The MDX stubs follow the exact pattern used by `manage-pages.mjs` for command pa
 - `grep "label: 'Prompts'" astro.config.mjs` returns a match
 - `grep -A2 "label: 'Auto-mode Pipeline'" astro.config.mjs` returns a match
 
+## Observability Impact
+
+- **Signals changed:** `src/content/docs/prompts/` directory appears (32 new `.mdx` files). `astro.config.mjs` gains a "Prompts" top-level sidebar section with 4 nested sub-groups.
+- **Inspection surface:** `ls src/content/docs/prompts/*.mdx | wc -l` → 32; `grep -c "'/prompts/" astro.config.mjs` → 32; `grep "label: 'Prompts'" astro.config.mjs` → confirms sidebar wired.
+- **Failure state:** If any MDX file is missing, `npm run build` errors with "could not find content entry" for the affected slug. If the sidebar is mis-inserted (e.g. outside the outer `sidebar` array), Starlight fails at config parse time with a clear JS syntax error.
+- **No secrets or runtime environment variables involved.**
+
 ## Inputs
 
 - `content/generated/prompts.json` — 32-entry JSON array with `name`, `slug`, `group` fields (produced by S01)
