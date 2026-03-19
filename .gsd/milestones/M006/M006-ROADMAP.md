@@ -58,7 +58,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Section 4 — The Daily Mix** `risk:medium` `depends:[S01]`
   > After this: The decision framework, flag explanations in plain English, and the decision table are live. `npm run check-links` passes with Section 4's cross-references.
 
-- [ ] **S03: Section 7 — When Things Go Wrong** `risk:medium` `depends:[S01]`
+- [x] **S03: Section 7 — When Things Go Wrong** `risk:medium` `depends:[S01]`
   > After this: Failure modes (stuck detection, crash recovery, loose must-haves, state repair, timeouts) are documented in plain English with clear recovery steps.
 
 - [ ] **S04: Section 2 — Your First Project** `risk:high` `depends:[S01]`

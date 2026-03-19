@@ -831,13 +831,13 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R063 — Section 7: When Things Go Wrong
 - Class: failure-visibility
-- Status: active
+- Status: validated
 - Description: Plain-English failure modes and recovery steps covering: stuck detection, auto mode crashes, loose must-haves, orientation after time away, full state repair, and timeout management.
 - Why it matters: Nobody else writes this section. Solo builders hit these failure modes alone and need a clear recovery path.
 - Source: user
 - Primary owning slice: M006/S03
 - Supporting slices: none
-- Validation: unmapped
+- Validation: when-things-go-wrong.mdx — 183 lines covering all 8 required failure scenarios (stuck detection, auto-mode crash, UAT replan, cost spikes, orientation after time away, wrong output, provider errors, full state corruption); 18 cross-reference callouts; 9 command page links; npm run build exits 0 at 113 pages; npm run check-links exits 0 at 12,288 links; Australian spelling verified
 - Notes: Write second — from real experience as the author uses GSD 2. Every failure mode hit becomes a subsection.
 
 ### R064 — Section 2: Your First Project walkthrough
@@ -941,13 +941,13 @@ This file is the explicit capability and coverage contract for the project.
 
 | R061 | core-capability | validated | M006/S01 | M006/S02–S08 | 9 MDX files + sidebar group; npm run build exits 0 at 113 pages; pipeline uncontaminated |
 | R062 | primary-user-loop | validated | M006/S02 | none | daily-mix.mdx — 129 lines, 8-row decision table, 6 command cross-references; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links |
-| R063 | failure-visibility | active | M006/S03 | none | unmapped |
+| R063 | failure-visibility | validated | M006/S03 | none | when-things-go-wrong.mdx — 183 lines, 8 failure scenarios, 18 cross-refs, 9 command links; npm run build 0 at 113 pages; npm run check-links 0 at 12,288 links; Australian spelling verified |
 | R064 | primary-user-loop | active | M006/S04 | none | unmapped |
 | R065 | core-capability | active | M006/S05 | none | unmapped |
 | R066 | core-capability | active | M006/S06 | none | unmapped |
 | R067 | core-capability | active | M006/S07 | none | unmapped |
 | R068 | operability | active | M006/S07 | none | unmapped |
 | R069 | continuity | active | M006/S08 | none | unmapped |
-| R070 | integration | active | M006/S01 | M006/S02–S08 | S02: 6 command cross-refs + root-level + sibling links in daily-mix.mdx — pattern proven, check-links validated |
+| R070 | integration | active | M006/S01 | M006/S02–S08 | S02+S03: 18 cross-refs in when-things-go-wrong.mdx confirm notation applied consistently; both sections pass check-links |
 | R071 | integration | active | M006/S04 | M006/S06 | unmapped |
-| R072 | quality-attribute | active | M006/S01 | M006/S02–S08 | unmapped |
+| R072 | quality-attribute | active | M006/S01 | M006/S02–S08 | S02+S03: Australian spelling grep passes for both companion guide sections |
