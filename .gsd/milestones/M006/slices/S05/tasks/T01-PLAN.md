@@ -91,6 +91,20 @@ Use a concrete running scenario throughout (e.g., a half-built SaaS with a messy
 - `src/content/docs/solo-guide/when-things-go-wrong.mdx` — topical heading reference (183 lines, `## ` headings without Phase N: prefix)
 - Cross-reference targets confirmed to exist: `discussing-a-milestone`, `configuration`, `commands/knowledge`, `commands/capture`, `recipes/fix-a-bug`
 
+## Observability Impact
+
+**What signals change:** The Astro build's reported page count must remain at 113 after this content is written — the page already exists in the routing table (the stub was counted). If the frontmatter is corrupted, the build will error before reaching the page-count line.
+
+**How a future agent inspects this task:**
+- `wc -l src/content/docs/solo-guide/brownfield.mdx` — verifies content was written (>100 lines)
+- `grep -c '→ gsd2-guide:' brownfield.mdx` — verifies cross-references were included
+- `npm run check-links` — verifies all cross-reference targets still resolve (catches renamed pages)
+- `grep -iP 'behavio(?!u)r|recogniz|organiz' brownfield.mdx` — verifies Australian spelling
+
+**Failure state:** If the MDX contains unclosed JSX (`{` without `}`), the build fails with a vite error naming the file and line. This is the most likely authoring error — all GSD command references like `/gsd` must be in backticks or code fences to prevent JSX interpretation.
+
+**No redaction concerns:** Content is public documentation; no secrets or PII.
+
 ## Expected Output
 
 - `src/content/docs/solo-guide/brownfield.mdx` — 120–180 lines of substantive narrative content replacing the stub, with cross-references validated by link-checker

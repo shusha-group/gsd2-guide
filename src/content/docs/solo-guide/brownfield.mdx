@@ -3,6 +3,126 @@ title: "Brownfield Reality"
 description: "Starting GSD 2 on an existing codebase without burning it down."
 ---
 
-This section covers how to introduce GSD 2 to a project that already has code, history, and technical debt. It explains how to constrain the agent's behaviour, map existing issues to milestones, and write an agent-instructions.md that protects what you've already built.
+Section 2 assumed you were starting from scratch: blank directory, no prior decisions, all the freedom and none of the baggage. Most projects aren't that. Most projects have six months of commits, a schema that grew organically, a GitHub issue list that's simultaneously a bug tracker, a feature backlog, and a graveyard for ideas that never happened. The auth system works — barely — and nobody wants to touch it.
 
-Content is being written and will appear here shortly.
+Running `/gsd` on that kind of project is different. GSD still wants to have a conversation, but the conversation starts in a different place. Instead of asking what you're building, it first asks to understand what already exists. That shift — from blank-slate brief to brownfield onboarding — is what this section covers.
+
+If you're starting fresh, see Section 2 instead. If you're already living in a half-built codebase, read on.
+
+→ gsd2-guide: [Section 2: Your First Project](../first-project/)
+
+---
+
+## The first discussion on existing code
+
+Imagine the project: a SaaS for managing contractor invoices. Twelve months in. A Node backend, a React frontend, a PostgreSQL schema with some tables that shouldn't exist and some relationships that are slightly wrong. Thirty GitHub issues ranging from "payment webhook fails silently" to "the mobile layout is broken on Safari" to "consider switching to Prisma". The product works. Customers are using it. But it's slowing down.
+
+When you run `/gsd` in that directory, GSD detects no `.gsd/` folder and enters discussion mode — but the discussion protocol adapts. Before it asks what you want to build next, it reads the codebase. It looks at the directory structure, the package manifest, any existing documentation, and the git log summary to build a picture of what's already there. Then it asks you to fill in what the code can't tell it: what works and should be left alone, what's actively painful, and what you want to change in the next milestone.
+
+This is meaningfully different from the greenfield path. In a greenfield discussion, GSD is helping you define requirements from scratch. In a brownfield discussion, it's helping you *scope* from an existing reality. The questions are different:
+
+- What's the most urgent cluster of problems right now?
+- Is there anything in the codebase that's off-limits — either too fragile to touch or deliberately stable?
+- What does the database look like, and are there migrations you've been avoiding?
+- Is there existing documentation or ADRs that describe decisions made earlier?
+
+Your job in this discussion is to be a good informant. Don't summarise — describe. The payment webhook failing silently is more useful than "there are some reliability issues". The auth system using a custom session table instead of JWT is a concrete fact that will shape every downstream decision. The more specific you are here, the more accurately GSD can scope the first milestone.
+
+→ gsd2-guide: [Discussing a Milestone](../../user-guide/discussing-a-milestone/)
+
+---
+
+## Constraining GSD on an existing codebase
+
+The most important tool in brownfield GSD is `agent-instructions.md`. It's where you write the rules the agent must follow — and more importantly, the things it must *not* do.
+
+On a new project, agent-instructions.md is mostly empty. On a brownfield project, it should contain your hard constraints up front, before any task executes. For the invoice SaaS, that might look like:
+
+```
+# Agent Instructions
+
+## Hard limits
+- Do not alter the invoices table schema. Migrations touching invoices require explicit approval.
+- The auth layer (src/auth/) is read-only for this milestone. Bugs can be fixed; the design stays.
+- Do not introduce new npm dependencies without noting them in a capture first.
+
+## Patterns to follow
+- API routes follow the pattern in src/routes/payments.js — query → validate → respond. No exceptions.
+- Error handling uses the central handler in src/middleware/errors.js. Do not throw raw errors.
+- Database access goes through src/db/client.js. No direct pg imports elsewhere.
+```
+
+That's the essence of a brownfield agent-instructions.md: hard limits (things to leave alone entirely) and pattern rules (how to work within what exists). You're not writing a style guide — you're writing a brief for an agent that has never seen this codebase before and will make sensible but wrong assumptions without explicit direction.
+
+`KNOWLEDGE.md` complements this. While agent-instructions.md sets rules, KNOWLEDGE.md records facts — things GSD has discovered or that you want it to remember across tasks. Use it to log the non-obvious: "the payments webhook uses HMAC verification in src/lib/stripe.js and the secret is in STRIPE_WEBHOOK_SECRET, not STRIPE_SECRET". That kind of fact should be in KNOWLEDGE.md before the first task runs, not discovered mid-execution.
+
+→ gsd2-guide: [Configuration](../../configuration/)\
+→ gsd2-guide: [Adding to KNOWLEDGE.md](../../commands/knowledge/)
+
+The full mechanics of agent-instructions.md — the format, how it feeds into the planning pipeline, and how to maintain it over multiple milestones — are covered in Section 5.
+
+→ gsd2-guide: [Section 5: Context Engineering](../context-engineering/)
+
+---
+
+## Mapping existing issues to milestones
+
+Thirty GitHub issues is not a GSD milestone. It's an accumulation of observations made at different times by different parts of your brain, ranging from critical production bugs to half-formed ideas. Trying to migrate all of them into GSD requirements at once produces a bloated, unfocused milestone that has no clear "done" state.
+
+The better approach: pick one cluster, leave the rest where they are.
+
+For the invoice SaaS, the thirty issues might sort into rough clusters when you look at them honestly:
+
+| Cluster | Issues |
+|---|---|
+| Payment reliability | #3, #11, #14, #22 — webhook failures, retry logic, duplicate charges |
+| Mobile UI | #7, #19, #28 — Safari layout, responsive tables, touch handling |
+| Developer experience | #12, #16, #23, #29 — slow test suite, missing seed data, no local HTTPS |
+| Future features | #4, #8, #15, #24, #27 — Stripe invoices, CSV export, team accounts |
+
+The most urgent cluster is payment reliability — those are production issues affecting real customers. That becomes your first GSD milestone. The other clusters stay in GitHub. You're not migrating them; you're choosing to work on them later, and GSD doesn't need to know about them yet.
+
+For that first milestone, express the cluster as GSD requirements, not as GitHub issue references. Requirements describe desired system behaviour; issues describe observed problems. "Payment webhook processing succeeds or fails gracefully with a recoverable error log" is a requirement. "#11: webhook fails silently" is an issue. Translate, don't copy.
+
+During the brownfield discussion, GSD will help you draft requirements from the cluster you've chosen. Your input to the discussion is the cluster description and the specific pain — "these four issues all relate to payment reliability, here's what we know about the current failure modes". GSD turns that into requirements and acceptance criteria. You review, correct, and commit.
+
+Don't capture stray thoughts during this process — use `/gsd capture` to save them without derailing the discussion. Every "oh, also" that comes up during the brownfield brief is a candidate for a later milestone.
+
+→ gsd2-guide: [/gsd capture](../../commands/capture/)\
+→ gsd2-guide: [Recipe: Fix a Bug](../../recipes/fix-a-bug/)
+
+---
+
+## The handoff spec approach
+
+The most effective way to start the brownfield discussion is to write a handoff spec before you run `/gsd`. Think of it as the document you'd give to a contractor you were bringing in to help with the project — someone technical who knows nothing about your specific codebase but could read a clear brief and be productive within a day.
+
+That spec becomes the first thing you paste into the GSD discussion. It frames everything that follows.
+
+For the invoice SaaS, a useful handoff spec covers four areas:
+
+**Architecture overview.** What the system is and how it's structured — not a diagram, just prose. "Node/Express API, React SPA, PostgreSQL with 14 tables, deployed to Railway, S3 for invoice PDF storage. The backend and frontend are separate repos. Authentication is session-based using express-session, not JWT. There are no tests above the unit level."
+
+**Current pain points.** The things that are actively wrong, framed as symptoms rather than proposed solutions. "Payment webhooks from Stripe sometimes fail without logging the error. The mobile layout breaks on Safari because of a flex property that doesn't work correctly on iOS. The test suite takes 4 minutes locally because there's no test database isolation — each test runs against the real dev database."
+
+**What's working and should stay that way.** This is the most important section for protecting what you've built. "The invoicing flow itself is solid — generation, numbering, PDF export, email delivery all work correctly and have no known issues. The auth system is not pretty but it's correct and all the edge cases have been handled. The Stripe integration is accurate; the issues are operational, not integration-level."
+
+**Deployment setup.** Not a tutorial — just enough for an agent to understand the constraints. "Deployed to Railway, two services: api and frontend. Migrations run on deploy via node scripts/migrate.js. Environment variables are set in the Railway dashboard. There's a staging environment at staging.app.com that mirrors production."
+
+That four-part structure gives GSD the context it needs to ask the right questions and scope the first milestone accurately. Without it, the discussion tends to go broader and shallower — covering more ground but with less precision. With it, the discussion focuses quickly and the resulting requirements are specific enough to actually drive execution.
+
+You don't need to be exhaustive. A handoff spec that's 200 words and accurate is more useful than one that's 1,000 words and partially wrong. The goal is to seed the discussion with the right information, not to write a comprehensive technical overview.
+
+---
+
+## What comes next
+
+Brownfield onboarding is a starting point, not a one-time act. The first milestone is deliberately narrow — one cluster of issues, one clear outcome — because breadth and correctness are easier to expand than to recover from overreach. Once it's complete and you've seen how GSD handles your existing codebase, you'll have a much clearer sense of how to scope the second.
+
+The daily workflow after brownfield onboarding is the same as any other GSD project. Section 4 covers the rhythm: how to balance active milestones with quick tasks, how to keep the `.gsd/` directory healthy over time, and how to manage the transition between milestones.
+
+→ gsd2-guide: [Section 4: The Daily Mix](../daily-mix/)
+
+For the ongoing management of agent-instructions.md — how to evolve it as the project changes, how to add scope boundaries for new milestones, and how to audit what the agent knows — Section 5 is the reference.
+
+→ gsd2-guide: [Section 5: Context Engineering](../context-engineering/)
