@@ -21,9 +21,23 @@ export default defineConfig({
         { label: 'Home', link: '/' },
         { label: 'Changelog', link: '/changelog/' },
         {
-          label: 'User Guide',
+          label: "Solo Builder's Guide",
           items: [
-            { label: 'Getting Started', link: '/getting-started/' },
+            { label: 'Overview', link: '/solo-guide/' },
+            { label: '1. Why GSD 2', link: '/solo-guide/why-gsd/' },
+            { label: '2. Your First Project', link: '/solo-guide/first-project/' },
+            { label: '3. Brownfield Reality', link: '/solo-guide/brownfield/' },
+            { label: '4. The Daily Mix', link: '/solo-guide/daily-mix/' },
+            { label: '5. Context Engineering', link: '/solo-guide/context-engineering/' },
+            { label: '6. Controlling Costs', link: '/solo-guide/controlling-costs/' },
+            { label: '7. When Things Go Wrong', link: '/solo-guide/when-things-go-wrong/' },
+            { label: '8. Building a Rhythm', link: '/solo-guide/building-rhythm/' },
+          ],
+        },
+        {
+          label: 'Getting Started',
+          items: [
+            { label: 'Installation', link: '/getting-started/' },
             { label: 'Developing with GSD', link: '/user-guide/developing-with-gsd/' },
             { label: 'Discussing a Milestone', link: '/user-guide/discussing-a-milestone/' },
           ],
@@ -175,7 +189,6 @@ export default defineConfig({
             { label: 'Working in Teams', link: '/recipes/working-in-teams/' },
             { label: 'Auto Mode', link: '/auto-mode/' },
             { label: 'Git Strategy', link: '/git-strategy/' },
-            { label: 'Working in Teams', link: '/working-in-teams/' },
             { label: 'Cost Management', link: '/cost-management/' },
             { label: 'Token Optimization', link: '/token-optimization/' },
             { label: 'Dynamic Model Routing', link: '/dynamic-model-routing/' },
@@ -195,7 +208,7 @@ export default defineConfig({
           ],
         },
         {
-          label: 'Guides',
+          label: 'How-to Guides',
           items: [
             { label: 'Configuration', link: '/configuration/' },
             { label: 'Architecture', link: '/architecture/' },
@@ -204,20 +217,6 @@ export default defineConfig({
             { label: 'Remote Questions', link: '/remote-questions/' },
             { label: 'Migration from v1', link: '/migration/' },
             { label: 'Troubleshooting', link: '/troubleshooting/' },
-          ],
-        },
-        {
-          label: 'Solo Builder\'s Guide',
-          items: [
-            { label: 'Overview', link: '/solo-guide/' },
-            { label: '1. Why GSD 2', link: '/solo-guide/why-gsd/' },
-            { label: '2. Your First Project', link: '/solo-guide/first-project/' },
-            { label: '3. Brownfield Reality', link: '/solo-guide/brownfield/' },
-            { label: '4. The Daily Mix', link: '/solo-guide/daily-mix/' },
-            { label: '5. Context Engineering', link: '/solo-guide/context-engineering/' },
-            { label: '6. Controlling Costs', link: '/solo-guide/controlling-costs/' },
-            { label: '7. When Things Go Wrong', link: '/solo-guide/when-things-go-wrong/' },
-            { label: '8. Building a Rhythm', link: '/solo-guide/building-rhythm/' },
           ],
         },
       ],
