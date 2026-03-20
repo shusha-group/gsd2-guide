@@ -21,7 +21,7 @@ Use the full lifecycle when the bug might be non-trivial — when you're not sur
 
 ### 1. Create a new milestone for the fix
 
-Run `/gsd new-milestone` and describe the bug:
+Run `/gsd` and describe the bug when the smart entry wizard asks what you're working on. Or, if you already have a project and want to jump straight to milestone creation, run `/gsd new-milestone`:
 
 ```
 > /gsd new-milestone
@@ -53,7 +53,13 @@ The context file captures what was discussed: the symptoms, the suspected root c
 
 ### 3. Research and planning
 
-Run `/gsd auto` to start autonomous execution. GSD dispatches units in sequence:
+After the context file and `STATE.md` are written, auto-mode starts automatically. If it doesn't, run:
+
+```
+> /gsd auto
+```
+
+GSD dispatches units in sequence:
 
 1. **Milestone Research** — scouts the codebase for search-related code, checks Prisma docs for case-insensitive query options
 2. **Slice Research** — zooms in on the specific slice goal and integration points
@@ -68,6 +74,7 @@ Run `/gsd auto` to start autonomous execution. GSD dispatches units in sequence:
         ├── M003-ROADMAP.md     ← S01: Fix case-sensitive search
         └── slices/
             └── S01/
+                ├── S01-RESEARCH.md
                 ├── S01-PLAN.md
                 └── tasks/
                     ├── T01-PLAN.md    ← update query to use case-insensitive mode
@@ -75,7 +82,7 @@ Run `/gsd auto` to start autonomous execution. GSD dispatches units in sequence:
 ```
 
 :::tip
-Want to review decisions before planning begins? Run `/gsd discuss` for a guided interview about the slice — UI, behavior, edge cases — before letting auto mode take over.
+Want to review decisions before planning begins? Run [`/gsd discuss`](../../commands/discuss/) for a guided interview about the slice — UX, behaviour, edge cases — before letting auto mode take over.
 :::
 
 ### 4. Execution
@@ -89,14 +96,15 @@ Each task writes a summary when done, documenting what changed and what was veri
 
 ### 5. Verification and completion
 
-After the last task, GSD runs slice-level completion:
+After the last task, GSD runs slice-level and milestone-level completion in sequence:
 
-- Executes the test suite — confirms mixed-case searches return results
 - Writes a slice summary compressing all task work
 - Writes a UAT script with concrete test cases
 - Marks the slice done in the roadmap
+- Executes automated UAT checks against the completed slice — confirms mixed-case searches return results
 - Reassesses the roadmap — confirms no further slices are needed
-- Validates the milestone against the original success criteria and seals it
+- Validates the milestone against the original success criteria
+- Seals the milestone with a completion summary
 
 ```
 .gsd/
@@ -105,12 +113,16 @@ After the last task, GSD runs slice-level completion:
         ├── M003-CONTEXT.md
         ├── M003-RESEARCH.md
         ├── M003-ROADMAP.md         ← S01 ✓ checked off
+        ├── M003-VALIDATION.md      ← milestone QA check
         ├── M003-SUMMARY.md         ← milestone completion record
         └── slices/
             └── S01/
+                ├── S01-RESEARCH.md
                 ├── S01-PLAN.md
-                ├── S01-SUMMARY.md   ← compressed slice record
-                ├── S01-UAT.md       ← test script for manual verification
+                ├── S01-SUMMARY.md       ← compressed slice record
+                ├── S01-UAT.md           ← test script for manual verification
+                ├── S01-UAT-RESULT.md    ← automated UAT execution results
+                ├── S01-ASSESSMENT.md    ← roadmap reassessment notes
                 └── tasks/
                     ├── T01-PLAN.md
                     ├── T01-SUMMARY.md
@@ -127,11 +139,15 @@ After the last task, GSD runs slice-level completion:
 | `.gsd/milestones/M003/M003-CONTEXT.md` | Bug scope, root cause hypothesis, fix approach |
 | `.gsd/milestones/M003/M003-RESEARCH.md` | Codebase findings — what code does what |
 | `.gsd/milestones/M003/M003-ROADMAP.md` | Slice structure with completion checkboxes |
+| `.gsd/milestones/M003/slices/S01/S01-RESEARCH.md` | Slice-level research and integration points |
 | `.gsd/milestones/M003/slices/S01/S01-PLAN.md` | Task breakdown for the fix slice |
 | `.gsd/milestones/M003/slices/S01/tasks/T##-PLAN.md` | Individual task plans |
 | `.gsd/milestones/M003/slices/S01/tasks/T##-SUMMARY.md` | Task completion records |
 | `.gsd/milestones/M003/slices/S01/S01-SUMMARY.md` | Compressed slice record |
 | `.gsd/milestones/M003/slices/S01/S01-UAT.md` | Acceptance test script |
+| `.gsd/milestones/M003/slices/S01/S01-UAT-RESULT.md` | Automated UAT execution results |
+| `.gsd/milestones/M003/slices/S01/S01-ASSESSMENT.md` | Roadmap reassessment after slice completes |
+| `.gsd/milestones/M003/M003-VALIDATION.md` | Milestone QA check against original success criteria |
 | `.gsd/milestones/M003/M003-SUMMARY.md` | Milestone completion record |
 
 ### Reads
@@ -141,6 +157,7 @@ After the last task, GSD runs slice-level completion:
 | `.gsd/STATE.md` | Current project state to determine next unit |
 | `.gsd/KNOWLEDGE.md` | Accumulated gotchas and patterns |
 | `.gsd/DECISIONS.md` | Architectural decisions that constrain the fix |
+| `.gsd/OVERRIDES.md` | Any user-issued steering overrides |
 
 ### Writes
 
@@ -158,15 +175,17 @@ After the last task, GSD runs slice-level completion:
 flowchart TD
     Start([Bug reported]) --> NewMilestone["/gsd new-milestone — describe the bug"]
     NewMilestone --> Context[Context file written]
-    Context --> Auto["/gsd auto"]
-    Auto --> Research[Research codebase]
-    Research --> Plan[Plan milestone + slice]
+    Context --> Auto["Auto-mode starts (or /gsd auto)"]
+    Auto --> Research[Research codebase + slice]
+    Research --> Plan[Plan milestone + slice tasks]
     Plan --> Execute[Execute tasks in fresh sessions]
-    Execute --> Verify{Tests pass?}
-    Verify -->|Yes| Summary[Write summaries + UAT]
-    Verify -->|No| Fix[Fix and re-verify]
-    Fix --> Verify
-    Summary --> Seal[Validate + seal milestone]
+    Execute --> Complete[Write slice summary + UAT]
+    Complete --> RunUAT{UAT passes?}
+    RunUAT -->|Yes| Reassess[Reassess roadmap]
+    RunUAT -->|No| Fix[Fix and re-verify]
+    Fix --> RunUAT
+    Reassess --> Validate[Validate milestone]
+    Validate --> Seal[Complete milestone + squash merge]
     Seal --> Done([Bug fixed ✓])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -176,9 +195,11 @@ flowchart TD
     style Research fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Plan fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Verify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Complete fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RunUAT fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Fix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reassess fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Validate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Seal fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```

@@ -1,29 +1,25 @@
 ---
 title: "/gsd logs"
-description: "Browse activity, debug, and metrics logs — the three diagnostic data streams GSD writes during auto-mode execution."
+description: "Reference for the three diagnostic data streams GSD writes during auto-mode execution — activity logs, debug logs, and the metrics ledger."
 ---
 
 ## What It Does
 
-`/gsd logs` is the entry point for browsing the three diagnostic data streams GSD writes during auto-mode execution: **activity logs**, **debug logs**, and the **metrics ledger**. These are the raw data sources that power forensics investigation, cost reporting, and post-mortem analysis.
+`/gsd logs` is a reference concept, not a runnable command. GSD writes three diagnostic data streams during auto-mode execution — **activity logs**, **debug logs**, and the **metrics ledger** — each serving a different purpose and accessed through dedicated commands.
 
-Each log type serves a different purpose. Activity logs capture the full session transcript for each unit — every tool call, reasoning trace, and file write. Debug logs capture internal timing and dispatch diagnostics when `--debug` mode is enabled. The metrics ledger records cost, token count, and duration for every completed unit.
+Activity logs capture the full session transcript for each unit: every tool call, reasoning trace, and file write as JSONL. Debug logs record internal timing and dispatch diagnostics when `--debug` mode is enabled. The metrics ledger records cost, token count, and duration for every completed unit.
 
-Understanding where these files live and what they contain is useful when [`/gsd forensics`](../forensics/) doesn't give enough detail, or when you want to understand cost patterns beyond what [`/gsd history`](../history/) shows.
+These are the raw data sources that power forensics investigation, cost reporting, and post-mortem analysis. Understanding where they live and what they contain is useful when [`/gsd forensics`](../forensics/) doesn't give enough detail, or when you want to understand cost patterns beyond what [`/gsd history`](../history/) shows.
 
 ## Usage
 
-```
-/gsd logs
-```
-
-The command presents an interactive browser for the three log types. You can also reach the same underlying data through more focused commands:
+There is no `/gsd logs` command. Access the three log streams through these focused commands:
 
 ```
 /gsd history            # metrics ledger — cost, tokens, duration by unit
-/gsd history --cost     # aggregated by slice
-/gsd history --phase    # aggregated by phase
-/gsd history --model    # aggregated by model
+/gsd history --cost     # cost aggregated by slice
+/gsd history --phase    # cost aggregated by phase
+/gsd history --model    # cost aggregated by model
 /gsd forensics          # activity log analysis with anomaly detection
 ```
 
@@ -64,9 +60,11 @@ Examples:
 
 The sequence number is monotonically increasing across units in the same session. Higher numbers are more recent. Each file is a stream of JSON lines, one per session entry. An entry can be a tool call, a tool result, an assistant message, or a user message.
 
+**Deduplication:** GSD skips writing a log file if the session content hasn't changed since the last write for that unit. It uses a lightweight fingerprint — entry count plus a hash of the last three entries — to detect identical sessions without serializing potentially hundreds of megabytes.
+
 When running parallel milestones, activity logs are written to the **worktree's** `.gsd/activity/` directory, not the project root. Forensics merges both locations automatically — the top 5 most recent files from each directory are included.
 
-**Retention:** Old activity log files accumulate on disk. Use [`/gsd cleanup`](../cleanup/) to remove them, or configure log retention via preferences. The most recent log for the highest sequence number is always preserved.
+**Retention:** Old activity log files accumulate on disk. Use [`/gsd cleanup`](../cleanup/) to remove them, or configure log retention via preferences. The file with the highest sequence number is always preserved, regardless of age.
 
 ### Debug Logs
 
@@ -83,7 +81,7 @@ Or set the environment variable before launching GSD:
 GSD_DEBUG=1 gsd
 ```
 
-When enabled, a timestamped JSONL file is created at `.gsd/debug/debug-<timestamp>.log`. GSD keeps a maximum of 5 debug log files and prunes older ones when a new session starts with `--debug`.
+When enabled, a timestamped log file is created at `.gsd/debug/debug-<timestamp>.log`. GSD keeps a maximum of 5 debug log files and prunes the oldest ones when a new session starts with `--debug`.
 
 Each line is a structured JSON event:
 ```json
@@ -97,7 +95,18 @@ The debug log captures:
 - Roadmap and plan parse timings
 - Dashboard render timings
 
-A summary is written as the final entry when auto-mode stops, showing aggregate counters: total elapsed time, number of dispatches, average `deriveState` duration, average token-to-size-ratio check duration, peak buffer size, and total renders.
+A `debug-summary` event is written as the final entry when auto-mode stops, with aggregate counters:
+
+| Counter | Description |
+|---------|-------------|
+| `totalElapsed_ms` | Wall-clock time for the entire session |
+| `dispatches` | Number of units dispatched |
+| `deriveStateCalls` / `avgDeriveState_ms` | State derivation call count and average duration |
+| `parseRoadmapCalls` / `avgParseRoadmap_ms` | Roadmap parse call count and average duration |
+| `parsePlanCalls` | Plan parse call count |
+| `ttsrChecks` / `avgTtsrCheck_ms` | Token-to-size-ratio check count and average duration |
+| `ttsrPeakBuffer` | Peak buffer size observed during TTSR checks |
+| `renders` | Total dashboard renders |
 
 ### Metrics Ledger
 
@@ -119,8 +128,16 @@ Each unit record contains:
 | `tokens.total` | Total tokens |
 | `cost` | Total USD cost |
 | `toolCalls` | Number of tool calls made |
+| `assistantMessages` | Number of assistant messages in the session |
+| `userMessages` | Number of user messages in the session |
 | `tier` | Complexity tier (`light`/`standard`/`heavy`) if dynamic routing is active |
 | `modelDowngraded` | `true` if dynamic routing used a cheaper model than configured |
+| `contextWindowTokens` | Context window token count at unit close (if budget tracking is active) |
+| `truncationSections` | Number of sections truncated for context management |
+| `continueHereFired` | `true` if a continue-here checkpoint fired during this unit |
+| `promptCharCount` | Character count of the unit prompt |
+| `baselineCharCount` | Character count of the baseline context |
+| `skills` | Skill names loaded/available during this unit |
 
 The `/gsd history` command is the primary way to read the metrics ledger. The dashboard overlay (`/gsd status`) also reads it for the Cost & Usage section.
 
@@ -146,7 +163,7 @@ The `/gsd history` command is the primary way to read the metrics ledger. The da
 
 ### Creates
 
-None — `/gsd logs` is read-only.
+None — the log files themselves are created by auto-mode, not by any log-reading command.
 
 ## Examples
 
@@ -158,7 +175,7 @@ Browsing the metrics ledger via `/gsd history`:
 Last 20 of 47 units | Total: $14.22 · 2.4M tokens
 
 Time           Type                ID               Model         Cost       Tokens     Duration
-──────────────────────────────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 2m ago         execute-task        M001/S02/T03     sonnet-4-6    $0.31      48K        8m 12s
 18m ago        execute-task        M001/S02/T02     sonnet-4-6    $0.27      41K        6m 44s
 31m ago        plan-slice          M001/S02         sonnet-4-6    $0.18      29K        3m 02s
@@ -176,6 +193,21 @@ Slice            Units    Cost       Tokens
 M001/S01         8        $3.41      512K
 M001/S02         4        $1.20      189K
 M001/S03         2        $0.58      91K
+```
+
+Cost breakdown by phase:
+
+```
+> /gsd history --phase
+
+Cost by phase:
+
+Phase            Units    Cost       Tokens     Duration
+────────────────────────────────────────────────────────────
+research         3        $1.20      180K       12m 00s
+planning         4        $1.80      270K       16m 00s
+execution        12       $8.40      1.3M       96m 00s
+completion       3        $0.60      90K        9m 00s
 ```
 
 Inspecting an activity log directly (most recent first):

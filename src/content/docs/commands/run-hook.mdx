@@ -9,7 +9,7 @@ description: "Manually trigger a specific post-unit hook for a given unit — by
 
 Use this when you want to re-run a hook that already completed (e.g., run code review again after manual edits), or trigger a hook outside the normal auto-mode pipeline.
 
-Note that `/gsd run-hook` only works with **post-unit hooks** (configured under `post_unit_hooks` in preferences). Pre-dispatch hooks cannot be manually triggered this way.
+Note that `/gsd run-hook` only works with **post-unit hooks** (configured under `post_unit_hooks` in preferences). Pre-dispatch hooks appear in the hook list but cannot actually be triggered this way — passing a pre-dispatch hook name will fail before dispatch, because the trigger engine only searches post-unit hook configurations.
 
 ## Usage
 
@@ -44,14 +44,16 @@ The following unit types are recognized by the hook engine and appear in the usa
 ```mermaid
 flowchart TD
     Start(["/gsd run-hook name type id"]) --> Parse[Parse arguments]
-    Parse --> ArgCheck{3 arguments<br/>provided?}
-    ArgCheck -->|No| UsageErr([Show usage help])
-    ArgCheck -->|Yes| HookCheck{Hook exists in<br/>getHookStatus?}
+    Parse --> ArgCheck{Fewer than 3<br/>arguments?}
+    ArgCheck -->|Yes| UsageErr([Show usage help])
+    ArgCheck -->|No| HookCheck{Hook exists in<br/>getHookStatus?}
     HookCheck -->|No| NotFound([Error: hook not found<br/>+ show configured hooks])
     HookCheck -->|Yes| IdCheck{Unit ID matches<br/>M000/S00/T00?}
     IdCheck -->|No| IdErr([Warning: invalid format])
     IdCheck -->|Yes| Trigger[triggerHookManually]
-    Trigger --> Build[Build prompt with<br/>variable substitution]
+    Trigger --> PostCheck{Hook found in<br/>post_unit_hooks?}
+    PostCheck -->|No| TriggerFail([Error: hook not triggerable])
+    PostCheck -->|Yes| Build[Build prompt with<br/>variable substitution]
     Build --> NewSession[Open new Claude session]
     NewSession --> Dispatch[dispatchHookUnit<br/>send prompt]
     Dispatch --> Result{Dispatch<br/>succeeded?}
@@ -67,6 +69,8 @@ flowchart TD
     style IdCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
     style IdErr fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style Trigger fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PostCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style TriggerFail fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style Build fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style NewSession fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -79,9 +83,9 @@ flowchart TD
 
 The command runs three checks before dispatching:
 
-1. **Argument count** — Requires exactly 3 positional arguments. Shows usage help with all unit types and examples if fewer are provided.
-2. **Hook existence** — Looks up the hook name via `getHookStatus()`. If not found, shows an error with the full list of configured hooks (both post-unit and pre-dispatch). Note: only post-unit hooks can actually be triggered — passing a pre-dispatch hook name will fail at dispatch time.
-3. **Unit ID format** — Validates against the pattern `M\d{3}/S\d{2,3}/T\d{2,3}` (task-level only). Returns a warning and stops if the format doesn't match. Slice-level IDs like `M001/S01` are not accepted.
+1. **Argument count** — Requires at least 3 positional arguments. Shows usage help with all unit types and examples if fewer are provided.
+2. **Hook existence** — Looks up the hook name via `getHookStatus()`. If not found, shows an error with the full list of configured hooks (both post-unit and pre-dispatch). Note: only post-unit hooks can actually be triggered — passing a pre-dispatch hook name passes this check but fails at the trigger step, because `triggerHookManually` only searches `post_unit_hooks` configurations.
+3. **Unit ID format** — Validates against the pattern `M\d{3}/S\d{2,3}/T\d{2,3}` (task-level only). Returns a warning and stops if the format doesn't match. Slice-level IDs like `M001/S01` are not accepted even when the unit type implies a slice-level context.
 
 ### Dispatch
 
@@ -90,7 +94,7 @@ Once validated, the command:
 1. Calls `triggerHookManually()` which sets the active hook state, populates a single-entry hook queue, performs `{milestoneId}`, `{sliceId}`, `{taskId}` variable substitution on the hook's prompt, and increments the cycle counter.
 2. Opens a **new Claude session** via `dispatchHookUnit()`. If auto-mode is not already active, it starts in step mode first.
 3. Applies a model override if the hook's configuration specifies one.
-4. Writes a lock file, starts a hard timeout (default 30 minutes), and sends the prompt.
+4. Writes a lock file (`auto.lock`), starts a hard timeout (default 30 minutes), and sends the prompt.
 5. The hook runs in the new session window, just like it would during auto-mode.
 
 ### Idempotency Bypass
@@ -104,12 +108,14 @@ Unlike normal auto-mode hook execution, manual triggering via `/gsd run-hook` by
 | File | Purpose |
 |------|---------|
 | `.gsd/preferences.md` | Look up hook configuration and prompt by name |
+| `.gsd/hook-state.json` | Restore existing cycle counts before incrementing |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/LOCK` | Session lock file updated for the hook unit |
+| `.gsd/auto.lock` | Session lock file updated for the hook unit |
+| `.gsd/hook-state.json` | Cycle count for this hook+trigger persisted to disk |
 | Hook-specific artifacts | Whatever the hook's prompt produces (e.g., review files in the task directory) |
 
 ## Examples
@@ -127,7 +133,7 @@ When the hook doesn't exist:
 ```
 > /gsd run-hook spellcheck execute-task M001/S01/T01
 
-✖ Hook "spellcheck" not found. Configured hooks:
+Hook "spellcheck" not found. Configured hooks:
 
 Post-Unit Hooks (run after unit completes):
   code-review [enabled] → after: execute-task

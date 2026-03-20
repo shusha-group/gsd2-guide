@@ -1,11 +1,11 @@
 ---
 title: "/gsd undo"
-description: "Revert the last completed unit — rolls back git commits, removes state, deletes artifacts, and unchecks the task in PLAN."
+description: "Revert the last completed unit — deletes artifacts, unchecks the task in PLAN, and stages git reverts."
 ---
 
 ## What It Does
 
-`/gsd undo` rolls back the most recently completed unit. It removes the unit from GSD's idempotency log, deletes its summary artifact, unchecks its task checkbox in the slice plan (for `execute-task` units), and attempts to revert the associated git commits.
+`/gsd undo` rolls back the most recently completed unit. It finds the last unit by scanning the activity log directory, deletes its summary artifact, unchecks its task checkbox in the slice plan (for `execute-task` units), and attempts to revert the associated git commits.
 
 This is the inverse of a completed dispatch — useful when a unit ran but produced wrong output, when you need to re-execute a task with different context, or when a chain of units needs to be rewound. Run it multiple times to undo multiple units in reverse order.
 
@@ -21,61 +21,65 @@ Because undo reaches into your git history, it requires explicit confirmation. R
 | Invocation | Behavior |
 |------------|----------|
 | `/gsd undo` | Preview mode — shows what will be undone, no changes made |
-| `/gsd undo --force` | Execute — removes state, deletes artifacts, reverts commits |
+| `/gsd undo --force` | Execute — deletes artifacts, unchecks PLAN, reverts commits |
 
-Run `/gsd status` first if you're unsure which unit was last completed.
+Run [`/gsd status`](../status/) first if you're unsure which unit was last completed.
 
 ## How It Works
 
 ```mermaid
 flowchart TD
-    Start(["/gsd undo [--force]"]) --> Load[Load completed-units.json]
-    Load --> Empty{Any completed units?}
+    Start(["/gsd undo [--force]"]) --> Load[Scan .gsd/activity/ for .jsonl files]
+    Load --> Empty{Any activity logs?}
     Empty -->|No| Done1([Nothing to undo])
-    Empty -->|Yes| GetLast[Get last unit key]
-    GetLast --> Force{--force flag?}
+    Empty -->|Yes| GetLast[Sort by sequence — take most recent]
+    GetLast --> Parse{Parse unit type + ID\nfrom filename?}
+    Parse -->|No| Done3([Cannot parse log — exit])
+    Parse -->|Yes| Force{--force flag?}
     Force -->|No| Warn[Show preview warning\nwith what would change]
     Warn --> Done2([Exit — run with --force to confirm])
-    Force -->|Yes| Remove[Remove from completed-units.json]
-    Remove --> Artifact[Delete summary artifact]
+    Force -->|Yes| Artifact[Delete summary artifact]
     Artifact --> Plan{execute-task unit?}
     Plan -->|Yes| Uncheck[Uncheck task in slice PLAN.md]
     Plan -->|No| Git
-    Uncheck --> Git[Look up commits in activity log]
+    Uncheck --> Git[Scan activity log for commit SHAs]
     Git --> HasCommits{Commits found?}
     HasCommits -->|Yes| Revert[Revert commits in reverse order\nstaged, not committed]
     HasCommits -->|No| Invalidate
     Revert --> Invalidate[Invalidate caches + re-derive state]
-    Invalidate --> Report([Report results])
+    Invalidate --> Notify[Send desktop notification]
+    Notify --> Report([Report results])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Empty fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Parse fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Force fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Plan fill:#0d180d,stroke:#39ff14,color:#39ff14
     style HasCommits fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Done1 fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Done2 fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done3 fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Report fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Load fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style GetLast fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Warn fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Remove fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Artifact fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Uncheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Git fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Revert fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Invalidate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
 ### Undo sequence
 
-1. **Load state** — Reads `.gsd/completed-units.json`. If the file is missing or empty, undo exits immediately with an info notice.
-2. **Preview (without `--force`)** — Shows the unit type and ID that would be undone, and lists every action that would be taken. No changes are made.
-3. **Remove from completed log** — The unit's key is removed from `.gsd/completed-units.json`. This is what allows auto-mode to re-dispatch the unit.
+1. **Scan activity logs** — Lists `.jsonl` files in `.gsd/activity/`, sorted by filename in reverse order (most recent first). If the directory is missing or empty, undo exits with an info notice.
+2. **Parse unit from filename** — Extracts the unit type and ID from the most recent filename using the pattern `<seq>-<unitType>-<unitId>.jsonl` (e.g., `0042-execute-task-M001-S01-T01.jsonl`). Dashes in the unit ID segment are converted back to slashes (`M001-S01-T01` → `M001/S01/T01`). If the filename doesn't match the expected pattern, undo exits with a warning.
+3. **Preview (without `--force`)** — Shows the unit type and ID that would be undone, and lists every action that would be taken. No changes are made.
 4. **Delete summary artifact** — The artifact produced by the unit is deleted from disk. For task-level units (`M001/S01/T01`), this is the `<TID>-SUMMARY.md` inside the tasks directory. For slice-level units (`M001/S01`), GSD looks for files matching `<SID>-SUMMARY.md` or `<SID>-COMPLETE.md` in the slice directory.
 5. **Uncheck task in PLAN** — For `execute-task` units, the corresponding checkbox in the slice's `PLAN.md` is flipped from `[x]` back to `[ ]`. This keeps the plan file consistent with the reverted state.
-6. **Revert git commits** — GSD reads the most recent `.gsd/activity/*.jsonl` file for the unit and extracts commit SHAs from git output embedded in the activity log. Commits are reverted in reverse order using `git revert`. Reverts are **staged but not committed** — you review the diff and commit or reset yourself. If a revert conflict occurs, the remaining commits are skipped and undo continues.
-7. **Re-derive state** — Caches are invalidated and `deriveState()` re-reads the `.gsd/` tree so subsequent commands reflect the reverted state.
+6. **Revert git commits** — GSD scans activity log files in `.gsd/activity/` whose names contain both the unit type and unit ID. It reads the most recent matching file and extracts commit SHAs from `tool_result` blocks — specifically the `[branch sha]` tokens that git prints after a successful commit. Duplicate SHAs are deduplicated. Commits are reverted in reverse order using `git revert`. Reverts are **staged but not committed** — you review the diff and commit or reset yourself. If a revert conflict occurs, the remaining commits are skipped and undo continues.
+7. **Re-derive state** — All caches are invalidated and `deriveState()` re-reads the `.gsd/` tree so subsequent commands reflect the reverted state. A desktop notification fires on completion.
 
 ### What "staged, not committed" means
 
@@ -91,13 +95,13 @@ This design avoids creating a "revert commit" you didn't ask for, and it lets yo
 
 ### Activity log lookup
 
-GSD records agent activity in `.gsd/activity/` as `.jsonl` files named by date and unit (e.g., `2026-03-14-execute-task-M001-S01-T01.jsonl`). Each line is a JSON message. Undo finds commit SHAs by scanning `tool_result` blocks in the most recent matching file — specifically the `[branch sha]` tokens that git prints after a successful commit. Duplicate SHAs are deduplicated automatically.
+GSD records agent activity in `.gsd/activity/` as `.jsonl` files with sequenced names (e.g., `0042-execute-task-M001-S01-T01.jsonl`). The sequence prefix is a zero-padded counter that ensures filenames sort chronologically. Each line is a JSON message. Undo finds commit SHAs by scanning `tool_result` blocks in the most recent matching file — specifically the `[branch sha]` tokens that git prints after a successful commit. Duplicate SHAs are deduplicated automatically.
 
-If no activity file exists for the unit (e.g., the unit was completed in a previous GSD version or via `/gsd skip`), the git revert step is skipped silently. State cleanup and artifact deletion still happen.
+If no activity file exists for the unit (e.g., the unit was completed in a previous GSD version or via [`/gsd skip`](../skip/)), the git revert step is skipped silently. Artifact deletion and plan unchecking still happen.
 
 ### Scope
 
-Undo only operates on the **last** unit in the completed log — it has no `--target` option. To undo multiple units, run `/gsd undo --force` repeatedly. The completed log is ordered by dispatch time, so undo always works backwards through the execution history.
+Undo only operates on the **last** unit in the activity log — it has no `--target` option. To undo multiple units, run `/gsd undo --force` repeatedly. Activity log filenames are sequenced by dispatch time, so undo always works backwards through the execution history.
 
 ## What Files It Touches
 
@@ -105,23 +109,22 @@ Undo only operates on the **last** unit in the completed log — it has no `--ta
 
 | File | Purpose |
 |------|---------|
-| `.gsd/completed-units.json` | Identify the last completed unit |
-| `.gsd/activity/<date>-<type>-<id>.jsonl` | Look up git commit SHAs for the unit |
+| `.gsd/activity/` | Directory listing to find the most recent activity log |
+| `.gsd/activity/<seq>-<type>-<unitId>.jsonl` | Most recent log file — parsed for unit identity and commit SHAs |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/completed-units.json` | Last unit key removed |
-| `.gsd/<MID>/slices/<SID>/<SID>-PLAN.md` | Task checkbox unchecked (execute-task units only) |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Task checkbox unchecked (execute-task units only) |
 
 ### Deletes
 
 | File | Condition |
 |------|-----------|
-| `.gsd/<MID>/slices/<SID>/tasks/<TID>-SUMMARY.md` | Task-level unit (`M001/S01/T01`) |
-| `.gsd/<MID>/slices/<SID>/<SID>-SUMMARY.md` | Slice-level unit (`M001/S01`) |
-| `.gsd/<MID>/slices/<SID>/<SID>-COMPLETE.md` | Slice-level unit (alternate suffix) |
+| `.gsd/milestones/<MID>/slices/<SID>/tasks/<TID>-SUMMARY.md` | Task-level unit (`M001/S01/T01`) |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-SUMMARY.md` | Slice-level unit (`M001/S01`) |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-COMPLETE.md` | Slice-level unit (alternate suffix) |
 
 ## Examples
 
@@ -132,7 +135,6 @@ Previewing an undo without committing to it:
 
 ⚠ Will undo: execute-task (M001/S01/T01)
   This will:
-    - Remove from completed-units.json
     - Delete summary artifacts
     - Uncheck task in PLAN (if execute-task)
     - Attempt to revert associated git commits
@@ -146,7 +148,6 @@ Confirming and executing the undo:
 > /gsd undo --force
 
 ✓ Undone: execute-task (M001/S01/T01)
-    - Removed from completed-units.json
     - Deleted summary artifact
     - Unchecked task in PLAN
     - Reverted 2 commit(s) (staged, not committed)
@@ -159,7 +160,6 @@ Undoing a slice-level unit (e.g., a `run-uat` that was run but produced bad resu
 > /gsd undo --force
 
 ✓ Undone: run-uat (M001/S02)
-    - Removed from completed-units.json
     - Deleted summary artifact
 ```
 
@@ -168,7 +168,7 @@ Nothing to undo:
 ```
 > /gsd undo
 
-ℹ Nothing to undo — no completed units.
+ℹ Nothing to undo — no activity logs found.
 ```
 
 ## Related Commands

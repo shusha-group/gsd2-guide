@@ -1,18 +1,20 @@
 ---
 title: "Recipe: Handle UAT Failures"
-description: "Step-by-step guide to handling UAT failures in GSD — when a slice passes its tasks but fails acceptance testing, triggering an automatic replan and re-execution cycle."
+description: "Step-by-step guide to handling UAT failures in GSD — when a slice completes its tasks but fails acceptance testing, auto-mode pauses and waits for you to investigate and resolve the issue."
 ---
 
 ## When to Use This
 
-You're running GSD auto-mode and a slice completes all its tasks, but the UAT (User Acceptance Test) fails. This happens when the implementation passes task-level verification but doesn't meet the slice's acceptance criteria — a gap between "the code works" and "the feature works correctly."
+You're running GSD auto-mode and a slice completes all its tasks, but the UAT (User Acceptance Test) step fails or surfaces checks for manual review. Auto-mode pauses and shows the failure details — it doesn't automatically replan or retry. This recipe walks through how to read the failure, understand your options, and get the pipeline moving again.
 
-GSD handles this automatically: when UAT fails, it triggers a replan of the slice, then re-executes the updated tasks. This recipe walks through what that cycle looks like and what artifacts it produces.
+This covers two UAT pause scenarios:
+- **Artifact-driven UAT fails** — automated checks ran and one or more returned FAIL
+- **Non-artifact-driven UAT** — visual tests, live-runtime checks, or manual flows that can't be mechanically executed; auto-mode surfaces them for you to perform manually
 
 ## Prerequisites
 
 - GSD installed and available in your terminal
-- A project running in auto-mode (`/gsd auto`)
+- A project running in auto-mode ([`/gsd auto`](../../commands/auto/))
 - Understanding of slices and UAT from the [auto-mode command reference](../../commands/auto/)
 
 ## Steps
@@ -30,6 +32,7 @@ GSD finishes executing T01 (build search API), T02 (build search UI), and T03 (a
         └── slices/
             └── S01/
                 ├── S01-PLAN.md           ← all tasks checked off
+                ├── S01-SUMMARY.md        ← slice summary written
                 ├── S01-UAT.md            ← acceptance criteria defined
                 └── tasks/
                     ├── T01-PLAN.md
@@ -42,9 +45,9 @@ GSD finishes executing T01 (build search API), T02 (build search UI), and T03 (a
 
 ### 2. Auto-mode runs UAT
 
-After the last task completes, GSD automatically dispatches a UAT unit. The UAT runner reads `S01-UAT.md` and executes every check defined in it — running shell commands, checking file contents, verifying behaviors.
+After `complete-slice` finishes, GSD automatically dispatches a `run-uat` unit. Because `S01-UAT.md` is `artifact-driven`, the runner executes every check mechanically — shell commands, grep checks, file reads, script invocations — and records a PASS or FAIL verdict for each.
 
-Each check gets a verdict: PASS or FAIL. The overall result is PASS (all checks passed), FAIL (one or more failed), or PARTIAL.
+Each check gets a verdict. The overall result is PASS (all checks passed), FAIL (one or more failed), or PARTIAL.
 
 In this case, the UAT includes a check for special characters in search queries. That check fails:
 
@@ -59,15 +62,83 @@ In this case, the UAT includes a check for special characters in search queries.
 
 GSD writes the result to `S01-UAT-RESULT.md` with verdict: **FAIL**.
 
-### 3. GSD triggers a replan
+### 3. Auto-mode pauses
 
-When UAT fails, auto-mode doesn't just retry — it replans the slice. The replan unit:
+When UAT fails, auto-mode **pauses** — it does not automatically replan or retry. You'll see output like:
 
-1. Reads the UAT failure details from the result file
-2. Reads all completed task summaries to understand what was built
-3. **Preserves all completed tasks** — their IDs, descriptions, and summaries stay untouched
-4. Rewrites or adds new incomplete tasks to address the failures
-5. Writes a replan log documenting what changed and why
+```
+● UAT result: FAIL — S01 (Recipe Search)
+  2 of 4 checks failed. See .gsd/milestones/M002/slices/S01/S01-UAT-RESULT.md
+
+⚠ Auto-mode paused. Investigate the failures and restart with /gsd auto.
+```
+
+The `S01-UAT-RESULT.md` file contains the full structured result:
+
+```yaml
+---
+sliceId: S01
+uatType: artifact-driven
+verdict: FAIL
+date: 2025-01-15T14:30:00.000Z
+---
+```
+
+followed by the checks table and a summary of what failed.
+
+Non-artifact-driven UAT (live-runtime, visual, manual flows) also pauses auto-mode — but instead of FAIL, the verdict is `human-review`. In this case, GSD can't execute the checks itself; it surfaces them so you can perform them manually.
+
+### 4. Investigate the failure
+
+Read the UAT result file to understand exactly which checks failed and why:
+
+```
+> cat .gsd/milestones/M002/slices/S01/S01-UAT-RESULT.md
+```
+
+For the special-character case, the failure notes make it clear: the search query is interpolated directly into a SQL string without sanitization. Special characters break the query.
+
+### 5. Fix the issue
+
+With the cause identified, fix the underlying code. In this case, add input sanitization — escape apostrophes and ampersands before they reach the database query, and add test coverage for the specific inputs that failed.
+
+You have a few options depending on how significant the fix is:
+
+**Option A — Fix it directly.** If the fix is straightforward, make the code changes yourself (or in a new `/gsd quick` task), then proceed to step 6.
+
+**Option B — Use `/gsd steer`.** If the fix requires updating the slice plan or task approach, register a steering override before restarting:
+
+```
+/gsd steer sanitize special characters in search queries before database interpolation
+```
+
+This ensures the next task dispatch picks up the constraint and documents it in `OVERRIDES.md`.
+
+**Option C — Manual UAT (`human-review` verdict).** Perform the surfaced checks yourself. Once you've verified the behavior (or determined whether it passes), either fix and proceed to step 6, or skip the UAT unit if you're satisfied the slice is complete:
+
+```
+/gsd skip run-uat/M002/S01
+```
+
+### 6. Delete the UAT result and restart
+
+Once the fix is in place, delete the result file so GSD re-runs the UAT check from scratch:
+
+```bash
+rm .gsd/milestones/M002/slices/S01/S01-UAT-RESULT.md
+```
+
+Then restart auto-mode:
+
+```
+/gsd auto
+```
+
+GSD derives state, sees the slice is complete but has no UAT result, and dispatches `run-uat` again against the fixed code.
+
+### 7. UAT passes — next slice begins
+
+This time all checks pass, including the special character queries. GSD writes the updated result with verdict: **PASS** and advances to the next slice.
 
 ```
 .gsd/
@@ -75,90 +146,57 @@ When UAT fails, auto-mode doesn't just retry — it replans the slice. The repla
     └── M002/
         └── slices/
             └── S01/
-                ├── S01-PLAN.md            ← updated: T04 added for special char handling
-                ├── S01-REPLAN.md           ← new: documents what changed and why
+                ├── S01-PLAN.md            ← T01–T03 ✓
+                ├── S01-SUMMARY.md
                 ├── S01-UAT.md
-                ├── S01-UAT-RESULT.md       ← verdict: FAIL
-                └── tasks/
-                    ├── T01-PLAN.md          ← untouched
-                    ├── T01-SUMMARY.md
-                    ├── T02-PLAN.md          ← untouched
-                    ├── T02-SUMMARY.md
-                    ├── T03-PLAN.md          ← untouched
-                    ├── T03-SUMMARY.md
-                    └── T04-PLAN.md          ← new: sanitize special chars in search queries
-```
-
-### 4. Re-execution
-
-Auto-mode continues by executing the new tasks. In this case, T04 adds input sanitization — escaping apostrophes and ampersands before they reach the database query. It also adds test cases for the specific failures UAT caught.
-
-### 5. UAT runs again
-
-After T04 completes, GSD runs UAT again. This time all checks pass, including the special character queries. The UAT result file is updated with verdict: **PASS**.
-
-```
-.gsd/
-└── milestones/
-    └── M002/
-        └── slices/
-            └── S01/
-                ├── S01-PLAN.md            ← T01–T03 ✓, T04 ✓
-                ├── S01-REPLAN.md
-                ├── S01-SUMMARY.md          ← written on successful completion
-                ├── S01-UAT.md
-                ├── S01-UAT-RESULT.md       ← verdict: PASS
-                └── tasks/
-                    ├── T01-SUMMARY.md
-                    ├── T02-SUMMARY.md
-                    ├── T03-SUMMARY.md
-                    └── T04-SUMMARY.md       ← special char fix verified
+                └── S01-UAT-RESULT.md      ← verdict: PASS
 ```
 
 ## What Gets Created
 
-Key artifacts produced during a UAT failure cycle:
+Key artifacts involved in a UAT failure cycle:
 
-```
-.gsd/
-└── milestones/
-    └── M002/
-        └── slices/
-            └── S01/
-                ├── S01-PLAN.md           ← modified: new tasks added by replan
-                ├── S01-REPLAN.md          ← replan log: what changed and why
-                ├── S01-SUMMARY.md         ← final summary after passing UAT
-                ├── S01-UAT.md             ← acceptance criteria (unchanged)
-                ├── S01-UAT-RESULT.md      ← final verdict: PASS
-                └── tasks/
-                    └── T04-PLAN.md        ← new task(s) from replan
-```
+| File | Role |
+|------|------|
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-UAT.md` | Acceptance criteria — written by `complete-slice`, read by `run-uat` |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-UAT-RESULT.md` | UAT execution results — written by `run-uat` with YAML frontmatter and checks table |
+| `.gsd/OVERRIDES.md` | Written if you use `/gsd steer` to guide the fix |
+
+The result file uses YAML frontmatter with four fields: `sliceId`, `uatType`, `verdict`, and `date`. The dispatcher reads `verdict` mechanically to decide whether to advance or pause.
 
 ## Flow Diagram
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a3a1a', 'primaryTextColor': '#e8f4e8', 'primaryBorderColor': '#39ff14', 'lineColor': '#39ff14', 'secondaryColor': '#0d180d', 'tertiaryColor': '#0d180d', 'background': '#0a0e0a', 'mainBkg': '#1a3a1a', 'nodeBorder': '#39ff14', 'clusterBkg': '#0d180d', 'titleColor': '#39ff14', 'edgeLabelBackground': '#0a0e0a'}}}%%
 flowchart TD
-    Start([All tasks complete]) --> UAT[Run UAT checks]
-    UAT --> Result{UAT verdict?}
-    Result -->|PASS| Done([Slice complete ✓])
-    Result -->|FAIL| Replan[Replan slice]
-    Replan --> Preserve[Preserve completed tasks]
-    Preserve --> NewTasks[Add tasks to fix failures]
-    NewTasks --> Execute[Execute new tasks]
-    Execute --> UAT2[Run UAT again]
-    UAT2 --> Result2{UAT verdict?}
-    Result2 -->|PASS| Done
-    Result2 -->|FAIL| Replan
+    Start([All tasks complete]) --> CompleteSlice[complete-slice\nwrites SUMMARY + UAT]
+    CompleteSlice --> UAT[run-uat executes checks]
+    UAT --> Result{"verdict?"}
+    Result -->|PASS| NextSlice([Next slice begins])
+    Result -->|FAIL| Pause[Auto-mode pauses\nshows failure details]
+    Result -->|human-review| Pause
+    Pause --> Investigate[Read UAT-RESULT.md\nidentify root cause]
+    Investigate --> Fix[Fix the code\nor steer the approach]
+    Fix --> Delete[Delete UAT-RESULT.md]
+    Delete --> Restart[Restart /gsd auto]
+    Restart --> UAT
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CompleteSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style UAT fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Result fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Replan fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Preserve fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style NewTasks fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UAT2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Result2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NextSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Pause fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Investigate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Fix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Delete fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Restart fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
+
+## Related Commands
+
+- [`/gsd auto`](../../commands/auto/) — Restart after resolving the failure
+- [`/gsd steer`](../../commands/steer/) — Inject a course-correction before restarting
+- [`/gsd skip`](../../commands/skip/) — Bypass the UAT unit entirely if you've verified manually
+- [`/gsd capture`](../../commands/capture/) — Record a follow-up thought without blocking the pipeline
+- [`/gsd status`](../../commands/status/) — Check current state and the active unit key for skip/steer

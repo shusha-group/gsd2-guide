@@ -1,20 +1,22 @@
 ---
 title: "/gsd config"
-description: "Configure API keys for external tool integrations — search providers, document extractors, and voice."
+description: "Interactive setup wizard — configure LLM providers, search engines, and tool API keys stored in ~/.gsd/agent/auth.json."
 ---
 
 ## What It Does
 
-`/gsd config` opens an interactive wizard for setting API keys for external tool integrations. These are the optional third-party services GSD uses to enhance research, document fetching, and voice input — things like web search providers and context-aware doc lookup.
+`gsd config` is a CLI subcommand that runs the interactive setup wizard for configuring every external credential GSD needs. It covers LLM providers (Anthropic, OpenAI, etc.), search engines (Tavily, Brave), context tools (Context7, Jina), and voice integrations (Groq). Running it shows which providers are already configured and which aren't, then lets you paste in keys one at a time.
 
-Running `/gsd config` shows which tools are already configured and which aren't, then lets you paste in keys one tool at a time. Keys are saved to `~/.gsd/agent/auth.json` and immediately activated in the current session — no restart needed. At startup, GSD automatically loads any saved keys from `auth.json` into the environment, but only if the variable isn't already set by other means (shell exports, `.env` files, etc. take precedence).
+Keys are saved to `~/.gsd/agent/auth.json` and immediately activated — no restart needed. At startup, GSD automatically loads any saved keys from `auth.json` into the environment, but only if the variable isn't already set by other means (shell exports, `.env` files, etc. take precedence).
+
+`gsd config` exits immediately after completing — it does not launch the TUI. Use it during initial setup or to re-configure credentials after installation. For per-key management from inside a running session (add, remove, test, rotate), use [`/gsd keys`](../keys/) instead.
 
 This command is separate from [`/gsd prefs`](../prefs/), which handles model selection, timeouts, git configuration, and workflow behavior.
 
 ## Usage
 
-```
-/gsd config
+```bash
+gsd config
 ```
 
 No arguments — the wizard is fully interactive.
@@ -23,17 +25,16 @@ No arguments — the wizard is fully interactive.
 
 ```mermaid
 flowchart TD
-    Start(["/gsd config"]) --> Load[Load auth.json]
-    Load --> Status[Show current tool status]
-    Status --> Loop{Select a tool}
-    Loop -->|tool selected| Input[Prompt for API key]
+    Start(["gsd config"]) --> Load[Load auth.json]
+    Load --> Status[Show current provider status]
+    Status --> Loop{Select a provider}
+    Loop -->|provider selected| Input[Prompt for API key]
     Input --> Save[Save to ~/.gsd/agent/auth.json]
-    Save --> Activate[Set env var in current session]
+    Save --> Activate[Set env var in current process]
     Activate --> Loop
     Loop -->|done / escape| Changed{Any changes?}
-    Changed -->|yes| Wait[Wait for idle]
-    Wait --> Reload[Reload extensions]
-    Reload --> End([Done])
+    Changed -->|yes| Confirm[Show confirmation summary]
+    Confirm --> End([Exit])
     Changed -->|no| End
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -44,29 +45,39 @@ flowchart TD
     style Input fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Activate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Wait fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Reload fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Confirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style End fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Wizard Flow
 
-1. **Load auth.json** — Reads `~/.gsd/agent/auth.json` to determine which tools are already configured.
-2. **Show status** — Displays a summary of all configurable tools with ✓ (configured) or ✗ (not set) for each.
-3. **Select loop** — Presents the tool list as a select menu. Choose a tool to configure it, or press Escape / select "(done)" to exit.
-4. **Key input** — For the selected tool, prompts to paste the API key. Shows the key's dashboard URL as a hint.
-5. **Save and activate** — The key is written to `auth.json` and immediately set as an environment variable in the current session. No restart required.
-6. **Reload** — Once the loop exits, if any keys changed, GSD waits for the agent to be idle then reloads its extensions so tools pick up the new credentials immediately.
+1. **Load auth.json** — Reads `~/.gsd/agent/auth.json` to determine which providers are already configured.
+2. **Show status** — Displays a summary of all configurable providers with ✓ (configured) or ✗ (not set) for each.
+3. **Select loop** — Presents the provider list as a select menu. Choose a provider to configure it, or press Escape / select "(done)" to exit.
+4. **Key input** — For the selected provider, prompts to paste the API key. Shows the key's dashboard URL as a hint.
+5. **Save and activate** — The key is written to `auth.json` and immediately set as an environment variable in the current process. No restart required.
+6. **Confirm** — Once the loop exits, if any keys changed, a summary of updated providers is displayed.
 
-### Configurable Tools
+### Configurable Providers
 
-| Tool | Env Var | Get Key At |
-|------|---------|------------|
+#### LLM Providers
+
+| Provider | Env Var | Get Key At |
+|----------|---------|------------|
+| Anthropic (Claude) | `ANTHROPIC_API_KEY` | console.anthropic.com |
+| OpenAI | `OPENAI_API_KEY` | platform.openai.com/api-keys |
+| Groq | `GROQ_API_KEY` | console.groq.com |
+
+#### Search & Tools
+
+| Provider | Env Var | Get Key At |
+|----------|---------|------------|
 | Tavily Search | `TAVILY_API_KEY` | tavily.com/app/api-keys |
 | Brave Search | `BRAVE_API_KEY` | brave.com/search/api |
 | Context7 Docs | `CONTEXT7_API_KEY` | context7.com/dashboard |
 | Jina Page Extract | `JINA_API_KEY` | jina.ai/api |
-| Groq Voice | `GROQ_API_KEY` | console.groq.com |
+
+For the full provider registry including additional LLM providers and remote integrations (Discord, Slack, Telegram), use [`/gsd keys`](../keys/).
 
 ### Credential Storage
 
@@ -75,6 +86,13 @@ Keys are stored in `~/.gsd/agent/auth.json` — a global file in your home direc
 If a key is already present in the environment via other means (e.g. a `.env` file or shell export), GSD won't overwrite it — the environment variable takes precedence.
 
 ## What Files It Touches
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `~/.gsd/agent/auth.json` | Created on first run if it doesn't exist |
+| `~/.gsd/agent/` | Directory created if missing |
 
 ### Reads
 
@@ -90,49 +108,52 @@ If a key is already present in the environment via other means (e.g. a `.env` fi
 
 ## Examples
 
-Opening the wizard:
+Running the setup wizard:
 
-```
-> /gsd config
+```bash
+gsd config
 
-GSD Tool Configuration
+GSD Setup Wizard
 
+  LLM Providers
+  ✓ Anthropic (Claude)
+  ✗ OpenAI — get key at platform.openai.com/api-keys
+
+  Search & Tools
   ✓ Tavily Search
   ✗ Brave Search — get key at brave.com/search/api
   ✓ Context7 Docs
   ✗ Jina Page Extract — get key at jina.ai/api
-  ✗ Groq Voice — get key at console.groq.com
+  ✗ Groq — get key at console.groq.com
 
-Configure which tool? Press Escape when done.
-  ❯ Tavily Search (configured ✓)
+Configure which provider? Press Escape when done.
+  ❯ Anthropic (Claude) (configured ✓)
+    OpenAI (not set)
+    Tavily Search (configured ✓)
     Brave Search (not set)
     Context7 Docs (configured ✓)
     Jina Page Extract (not set)
-    Groq Voice (not set)
+    Groq (not set)
     (done)
 ```
 
 After pasting a key:
 
-```
+```bash
 API key for Brave Search (brave.com/search/api):
 > BSAxxxxxxxxxxxxxxxxxxxx
 
 ● Brave Search key saved and activated.
 ```
 
-After exiting the wizard:
+Re-running setup after an update:
 
+```bash
+gsd config
 ```
-● Configuration saved. Extensions reloaded with new keys.
-```
-
-## Prompts Used
-
-- [`system`](../../prompts/system/) — The foundational persona prompt injected into every GSD agent session
 
 ## Related Commands
 
+- [`/gsd keys`](../keys/) — Full in-session key manager: add, remove, test, rotate, and health-check keys for all providers
 - [`/gsd prefs`](../prefs/) — Workflow preferences: models, timeouts, git, skills, budget
 - [`/gsd doctor`](../doctor/) — Health checks that can surface misconfigured or missing credentials
-- [`/gsd hooks`](../hooks/) — Show configured post-unit and pre-dispatch hooks

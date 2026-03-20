@@ -23,10 +23,10 @@ With no arguments, shows the full key status dashboard.
 /gsd keys                      Show key status dashboard
 /gsd keys list                 Same as above
 /gsd keys add [provider]       Add a key interactively
-/gsd keys remove [provider]    Remove a key
-/gsd keys test [provider]      Validate key(s) with a live API call
+/gsd keys remove [provider]    Remove a key (aliases: rm, delete)
+/gsd keys test [provider]      Validate key(s) with a live API call (alias: validate)
 /gsd keys rotate [provider]    Replace an existing key
-/gsd keys doctor               Health check all keys
+/gsd keys doctor               Health check all keys (alias: health)
 ```
 
 The `provider` argument is optional for all subcommands — omitting it triggers an interactive picker.
@@ -37,7 +37,7 @@ The `provider` argument is optional for all subcommands — omitting it triggers
 
 #### `list` / `status` (default)
 
-Prints a grouped dashboard of all known providers organized by category. Each row shows whether the key is configured, its source (`auth.json` or env), and a masked credential description. Backed-off providers are flagged.
+Prints a grouped dashboard of all known providers organized by category. Each row shows whether the key is configured, its source (`auth.json` or env), and a masked credential description. Backed-off providers are flagged. Categories are displayed in this order: LLM Providers → Search Providers → Tool Keys → Remote Integrations.
 
 #### `add [provider]`
 
@@ -50,11 +50,13 @@ Prompts for a provider (if not given), then:
 
 After saving, the session reloads so the new credential is immediately active.
 
-#### `remove [provider]`
+#### `remove [provider]` / `rm` / `delete`
 
-Shows only currently configured providers. For providers with multiple keys, presents a per-key picker (or "Remove all"). Removes the key from `auth.json` and clears the environment variable.
+Shows only currently configured providers. For providers with a single key, a confirmation dialog is shown before removal. For providers with multiple keys, presents a per-key picker (or "Remove all"). Removes the key from `auth.json` and clears the environment variable.
 
-#### `test [provider]`
+After removing, the session reloads so the change takes effect immediately.
+
+#### `test [provider]` / `validate`
 
 Makes a live API call to validate the key. Tests all configured providers when no argument is given. Each provider has a specific test endpoint — for example, Anthropic uses `POST /v1/messages` with a minimal payload, OpenAI uses `GET /v1/models`. Results are reported as:
 
@@ -68,7 +70,9 @@ Makes a live API call to validate the key. Tests all configured providers when n
 
 #### `rotate [provider]`
 
-Shows the current masked key, prompts for a new one, optionally validates it with a live API call before saving, then replaces the old key. OAuth credentials for the same provider are preserved. If validation fails, rotation is cancelled.
+Shows the current masked key, prompts for a new one, then optionally validates it with a live API call before saving. If the new key returns `invalid` (HTTP 401/403), rotation is cancelled. Any other test outcome (`error`, `rate_limited`, `skipped`) shows a warning but proceeds. OAuth credentials for the same provider are preserved when the API key is replaced.
+
+After rotating, the session reloads so the new key is immediately active.
 
 #### `doctor` / `health`
 
@@ -133,6 +137,10 @@ GSD API Key Manager
   ✓ google                — env GEMINI_API_KEY
   …
 
+  Search Providers
+  ✗ tavily                — not configured (tavily.com/app/api-keys)
+  …
+
   Source: /Users/you/.gsd/agent/auth.json
   2 configured | 1 in auth.json | 1 from env
 ```
@@ -146,7 +154,7 @@ API key for OpenAI: [input]
 ● Key saved for OpenAI: sk-p***7890
 ```
 
-Add a key directly:
+Add a key for a provider that supports OAuth:
 
 ```
 > /gsd keys add anthropic
@@ -198,8 +206,16 @@ Test key? Validate the new key before saving? [yes]
 ● Key rotated for Anthropic (Claude): sk-a***9999
 ```
 
+Remove a specific key:
+
+```
+> /gsd keys remove openai
+
+Remove API key (sk-p***7890) for OpenAI? [yes]
+● Key removed for OpenAI.
+```
+
 ## Related Commands
 
-- [`/gsd config`](../config/) — Set API keys for external tools (lighter-weight alternative)
 - [`/gsd doctor`](../doctor/) — Full GSD health check including key status
 - [`/gsd prefs`](../prefs/) — Configure GSD preferences and model settings

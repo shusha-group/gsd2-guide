@@ -9,7 +9,7 @@ description: "Queue and reorder future milestones — manage execution order, ad
 
 The queue is safe to use while auto-mode is running. Queued milestones are picked up naturally when auto-mode advances past the current work — no restart needed. This makes `/gsd queue` the primary way to shape what comes next without interrupting what's happening now.
 
-When you have more than one pending milestone (active or queued), the hub presents two options: reorder the existing queue or add new work. If only one milestone exists, it skips straight to the add-new-work flow.
+When you have more than one non-complete, non-parked milestone (active or queued), the hub presents two options: reorder the existing queue or add new work. If only one such milestone exists, it skips straight to the add-new-work flow.
 
 ## Usage
 
@@ -24,9 +24,11 @@ No arguments — the command opens an interactive hub. From there you choose to 
 ```mermaid
 flowchart TD
     Start(["/gsd queue"]) --> Check{.gsd/ exists?}
-    Check -->|No| Fail([Error: run /gsd first])
+    Check -->|No| Fail([Warning: run /gsd first])
     Check -->|Yes| Load[Load state via deriveState]
-    Load --> Count{More than one\npending milestone?}
+    Load --> Milestones{Any milestones\nexist?}
+    Milestones -->|No| FailM([Warning: run /gsd first])
+    Milestones -->|Yes| Count{Pending or active\nmilestones > 1?}
     Count -->|Yes| Hub[Show Queue Management Hub]
     Count -->|No| Add[Show Add New Work flow]
     Hub --> Choice{User choice}
@@ -52,6 +54,8 @@ flowchart TD
     style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Fail fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style Load fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Milestones fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style FailM fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style Count fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Hub fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Choice fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -73,25 +77,27 @@ flowchart TD
 
 ### State Loading
 
-The command reads the full project state via `deriveState()`, which scans the milestone registry to determine which milestones are complete, active, pending, or parked. It uses this to build the list of reorderable items and to provide context to the add-flow LLM.
+The command reads the full project state via `deriveState()`, which scans the milestone registry to determine which milestones are complete, active, pending, or parked. The hub appears when there are more than one milestone with status `active` or `pending` — the currently running milestone counts toward this total. If the number is one or less, the command skips the hub and goes straight to the add-new-work flow.
 
 ### Reorder Flow
 
-The reorder UI shows completed milestones (dimmed) and all pending milestones in their current execution order. Use the keyboard to navigate and reposition items:
+The reorder UI shows completed milestones (dimmed) and all non-complete, non-parked milestones in their current execution order. Parked milestones are excluded from both lists. Use the keyboard to navigate and reposition items:
 
 | Key | Action |
 |-----|--------|
 | `↑` / `↓` | Move cursor |
 | `Space` | Grab / release the cursor item for moving |
 | `↑` / `↓` (while grabbed) | Swap the grabbed item with its neighbor |
-| `d` | Manually remove a `depends_on` from the cursor item |
+| `d` | Remove the first active `depends_on` from the cursor item |
 | `Enter` | Confirm new order |
 | `Esc` | Cancel |
+
+The `d` hint only appears in the status bar when the cursor item has active (non-completed) dependencies. When `would_block` violations exist, Enter shows a count — e.g. `enter (fixes 2 dep)` — so you know how many dependencies will be cleaned up on confirm.
 
 When you confirm:
 
 1. **QUEUE-ORDER.json** — The new order is saved to `.gsd/QUEUE-ORDER.json` as `{ order: string[], updatedAt: string }`. This file is committed to git and shared across sessions.
-2. **Dependency cleanup** — Any `depends_on` entry that a reorder has made contradictory (a milestone now appears before its dependency) is flagged as `would_block` and automatically removed from the milestone's `CONTEXT.md` frontmatter on confirm. The UI shows these in orange before you hit Enter so you know what will be cleaned up.
+2. **Dependency cleanup** — Any `depends_on` entry that a reorder has made contradictory (a milestone now appears before its dependency) is flagged as `would_block`. These are annotated inline in the UI as "— auto-removed on confirm" so you can see what will be cleaned up before pressing Enter. On confirm, the entries are automatically removed from the milestone's `CONTEXT.md` frontmatter.
 3. **Redundant deps** — Dependencies that are already satisfied by queue position (the dep comes earlier) are shown dimmed as "redundant" — they are not removed, just surfaced for awareness.
 4. **Missing/circular deps** — Dependencies referencing non-existent milestones or forming cycles are shown as errors in the UI.
 5. **PROJECT.md sync** — The milestone sequence table in `PROJECT.md` is updated to reflect the new order.
@@ -101,7 +107,7 @@ When you confirm:
 
 ### Add Flow
 
-The add flow dispatches an LLM-assisted discussion session. Before asking "What do you want to add?", the LLM checks for any draft milestones — milestones that have a `CONTEXT-DRAFT.md` seed file (created when a prior discussion chose "Needs own discussion" instead of finalizing). If drafts exist, the LLM surfaces them first and offers to either discuss them now (completing the context file) or leave them for later.
+The add flow dispatches an LLM-assisted discussion session. Before asking "What do you want to add?", the LLM checks for any draft milestones — milestones that have a `CONTEXT-DRAFT.md` seed file (created when a prior discussion chose "Needs own discussion" instead of finalizing). If drafts exist, the LLM surfaces them first and offers to either discuss them now (completing the context file and deleting the draft) or leave them for later.
 
 Once past any drafts, the discussion flow:
 
@@ -111,7 +117,7 @@ Once past any drafts, the discussion flow:
 4. **Verifies before writing** — For each new milestone, a mandatory depth verification step presents the proposed scope and any technical risks. You confirm or correct before the context file is written. This gate cannot be skipped.
 5. **Writes artifacts** — Uses `gsd_generate_milestone_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, and writes `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
 
-No roadmap is created — roadmaps are generated just-in-time when auto-mode reaches that milestone.
+No roadmap is created — roadmaps are generated just-in-time when auto-mode reaches that milestone. The add flow does not auto-commit; artifacts are committed by auto-mode's normal post-unit commit cycle.
 
 ### CONTEXT.md Dependency Frontmatter
 
@@ -143,6 +149,7 @@ Auto-mode reads this field to enforce execution order. Without it, milestones ma
 | `.gsd/DECISIONS.md` | Architectural decisions (for add-flow LLM context) |
 | `.gsd/QUEUE.md` | Previous queue entries (for add-flow LLM context) |
 | `.gsd/QUEUE-ORDER.json` | Current custom execution order |
+| `.gsd/milestones/*/<ID>-CONTEXT-DRAFT.md` | Draft seed files surfaced during add flow |
 
 ### Writes
 
@@ -151,9 +158,15 @@ Auto-mode reads this field to enforce execution order. Without it, milestones ma
 | `.gsd/QUEUE-ORDER.json` | Persisted milestone execution order (reorder only) |
 | `.gsd/PROJECT.md` | Milestone sequence table updated on reorder; new entries added on queue-add |
 | `.gsd/QUEUE.md` | New queue log entries appended after each add |
-| `.gsd/milestones/*/MXXX-CONTEXT.md` | `depends_on` removed when reordering creates `would_block` conflicts |
+| `.gsd/milestones/*/<ID>-CONTEXT.md` | `depends_on` removed when reordering creates `would_block` conflicts |
 | `.gsd/REQUIREMENTS.md` | Updated if new work introduces or promotes requirements |
 | `.gsd/DECISIONS.md` | Appended if the discussion surfaces relevant decisions |
+
+### Deletes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/milestones/*/<ID>-CONTEXT-DRAFT.md` | Removed after a draft milestone is fully discussed and its `CONTEXT.md` is written |
 
 ## Examples
 

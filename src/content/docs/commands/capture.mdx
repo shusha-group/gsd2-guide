@@ -88,7 +88,13 @@ Captures are classified during triage into one of five types:
 
 When triage runs, the LLM reads the **current slice plan** and **active roadmap** as context before proposing classifications. This lets it make informed decisions — for example, preferring `inject` when the work fits naturally into the current slice, or `defer` when it belongs in a later phase.
 
-After triage, actionable captures (`inject`, `replan`, `quick-task`) accumulate as unexecuted resolutions. Auto-mode picks these up between tasks and dispatches them at the appropriate seam.
+After user confirmation, resolutions are executed immediately:
+
+- **`inject`** — Appends a new task (with the next available task ID, e.g. `T05`) to the current slice's `PLAN.md`, before the "Files Likely Touched" section.
+- **`replan`** — Writes a `<SID>-REPLAN-TRIGGER.md` marker file in the slice directory. The next dispatch cycle detects this file and enters the replanning-slice phase.
+- **`quick-task`** — Collected and dispatched as a self-contained unit at the next natural seam. The agent executes the task without modifying any plan files.
+
+Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
 
 ## What Files It Touches
 
@@ -98,18 +104,21 @@ After triage, actionable captures (`inject`, `replan`, `quick-task`) accumulate 
 |------|---------|
 | `.gsd/CAPTURES.md` | Created on first capture if it doesn't exist (with `# Captures` header) |
 | `.gsd/` | Created if the directory doesn't exist |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-REPLAN-TRIGGER.md` | Written when a `replan` capture is executed — triggers replanning-slice phase |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
 | `.gsd/CAPTURES.md` | Existing content to append to |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Read during `inject` execution to find the next task ID |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/CAPTURES.md` | New capture entry appended |
+| `.gsd/CAPTURES.md` | New capture entry appended; status and classification fields updated after triage |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | New task appended when an `inject` capture is executed |
 
 ## Examples
 

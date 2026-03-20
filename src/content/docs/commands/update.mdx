@@ -9,7 +9,7 @@ description: "Update GSD to the latest version — from the terminal or inside a
 
 You can run it two ways: as `gsd update` in your terminal (no session needed), or as `/gsd update` inside a running session. Both routes perform the same update — the difference is how output is rendered and whether you need to restart afterwards.
 
-GSD also performs a non-blocking version check on startup. If a newer version is available, a banner appears before the session starts — it won't block your workflow.
+GSD also performs a non-blocking version check on startup. If a newer version is available, a small banner appears before the session starts — it never blocks your workflow or prompts for input.
 
 ## Usage
 
@@ -34,12 +34,12 @@ No arguments — it always updates to the latest stable release.
 1. **Read current version** — Checks `GSD_VERSION` environment variable (set at startup from `package.json`).
 2. **Query npm registry** — Runs `npm view gsd-pi version` to fetch the latest published version.
 3. **Compare** — If already up to date, exits immediately with a confirmation message.
-4. **Install** — Runs `npm install -g gsd-pi@latest` with live output streamed to the terminal.
-5. **Report** — Prints the new version on success, or a manual fallback command on failure.
+4. **Install** — Runs `npm install -g gsd-pi@latest` with live output streamed to the terminal (`stdio: 'inherit'`).
+5. **Report** — Prints the new version on success, or exits with a manual fallback command on failure.
 
 ### In-Session Update Flow (`/gsd update`)
 
-Same steps as the terminal flow, but output is delivered through the session's notification system. After a successful update, you need to **restart your GSD session** to load the new version — the running session is not hot-reloaded.
+Same steps as the terminal flow, but uses `execSync` with output suppressed (`stdio: ['ignore', 'pipe', 'ignore']`) and results delivered through the session's notification system. After a successful update, you need to **restart your GSD session** to load the new version — the running session is not hot-reloaded.
 
 ### Startup Version Check
 
@@ -47,7 +47,7 @@ When GSD launches in interactive mode, it runs a non-blocking background check:
 
 1. **Cache check** — Reads `~/.gsd/.update-check`. If checked within the last 24 hours, uses the cached result immediately.
 2. **Registry fetch** — If the cache is stale, fetches `https://registry.npmjs.org/gsd-pi/latest` with a 5-second timeout. Silently ignores network errors.
-3. **Banner** — If a newer version is found, prints an update banner to stderr before the session starts. The banner is informational — it never blocks launch.
+3. **Banner** — If a newer version is found, prints a two-line banner to stderr before the session starts. The banner is informational only — it never blocks launch or prompts for input.
 
 The startup check only runs in interactive mode. Print mode and subagent spawns skip it.
 
@@ -106,21 +106,15 @@ Inside a session:
 ● Updated to v2.31.0. Restart your GSD session to use the new version.
 ```
 
-Startup banner when an update is waiting:
+Startup banner when an update is waiting (non-interactive, printed to stderr before the session starts):
 
 ```
-  ╔══════════════════════════════════════════════╗
-  ║  Update available! v2.30.0 → v2.31.0        ║
-  ╚══════════════════════════════════════════════╝
-
-  [1] Update now   npm install -g gsd-pi@latest
-  [2] Skip
-
-  Choose [1/2]:
+  Update available: v2.30.0 → v2.31.0
+  Run npm update -g gsd-pi or /gsd update to upgrade
 ```
 
 ## Related Commands
 
+- [`/gsd changelog`](../changelog/) — Show categorized release notes for the current version
 - [`/gsd doctor`](../doctor/) — Health checks including version diagnostics
-- [`/gsd config`](../config/) — Re-run the setup wizard
 - [`/gsd reapply-patches`](../reapply-patches/) — Reapply local modifications after an update

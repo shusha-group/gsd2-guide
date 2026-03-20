@@ -50,7 +50,7 @@ flowchart TD
     WizP --> Menu
 
     Menu --> Cat{Category?}
-    Cat -->|Workflow Mode| CfgMode[solo / team / manual]
+    Cat -->|Workflow Mode| CfgMode[solo / team / none]
     Cat -->|Models| CfgModels[Model per phase]
     Cat -->|Timeouts| CfgTime[soft / idle / hard timeout]
     Cat -->|Git| CfgGit[branch, push, isolation, merge strategy]
@@ -114,7 +114,7 @@ flowchart TD
 
 ### Workflow Mode Defaults
 
-Selecting `solo` or `team` sets a bundle of git defaults as the lowest-priority layer. Explicit values you've set always win.
+Selecting `solo` or `team` sets a bundle of git defaults as the lowest-priority layer. Explicit values you've set always win. Choosing `(none)` removes the mode field and lets you configure everything manually.
 
 | Setting | `solo` | `team` |
 |---------|--------|--------|
@@ -139,13 +139,22 @@ Preferences are stored as YAML frontmatter in a markdown file. The wizard serial
 
 ## What Files It Touches
 
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `~/.gsd/preferences.md` | Created from template if missing when wizard opens |
+| `.gsd/preferences.md` | Created from template if missing when `project` scope is selected |
+
 ### Reads
 
 | File | Purpose |
 |------|---------|
 | `~/.gsd/preferences.md` | Global preferences (canonical path) |
+| `~/.gsd/PREFERENCES.md` | Uppercase fallback for global preferences (bootstrap artifact) |
 | `~/.pi/agent/gsd-preferences.md` | Legacy global preferences (fallback) |
 | `.gsd/preferences.md` | Project preferences |
+| `.gsd/PREFERENCES.md` | Uppercase fallback for project preferences (bootstrap artifact) |
 | Claude Code config files | For `import-claude` subcommand |
 
 ### Writes
@@ -154,13 +163,6 @@ Preferences are stored as YAML frontmatter in a markdown file. The wizard serial
 |------|---------|
 | `~/.gsd/preferences.md` | Updated global preferences |
 | `.gsd/preferences.md` | Updated project preferences |
-
-### Creates
-
-| File | Purpose |
-|------|---------|
-| `~/.gsd/preferences.md` | Created from template if missing when wizard opens |
-| `.gsd/preferences.md` | Created from template if missing when `project` scope is selected |
 
 ## Examples
 

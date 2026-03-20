@@ -32,8 +32,8 @@ flowchart TD
     SlicePlan --> Format[Format captures list]
     Roadmap --> Format
     Format --> Prompt[Load triage-captures prompt]
-    Prompt --> Inject[Inject GSD workflow protocol]
-    Inject --> Dispatch[Send gsd-triage message to LLM]
+    Prompt --> Workflow[Prepend GSD workflow protocol]
+    Workflow --> Dispatch[Send gsd-triage message to LLM]
     Dispatch --> Classify[LLM classifies each capture]
     Classify --> AutoConfirm[note/defer → auto-confirm]
     Classify --> UserConfirm[quick-task/inject/replan → confirm with user]
@@ -52,7 +52,7 @@ flowchart TD
     style Roadmap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Format fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Prompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Inject fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Workflow fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Classify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style AutoConfirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -75,11 +75,11 @@ If no active slice or roadmap exists, placeholder text `(no active slice plan)` 
 The captures are formatted as a bullet list:
 
 ```
-- **CAP-a1b2c3d4**: "consider adding rate limiting" (captured: 2025-01-15T10:30:00Z)
-- **CAP-f9e8d7c6**: "login form error messages" (captured: 2025-01-15T11:00:00Z)
+- **CAP-a1b2c3d4**: "consider adding rate limiting" (captured: 2025-01-15T10:30:00.000Z)
+- **CAP-f9e8d7c6**: "login form error messages" (captured: 2025-01-15T11:00:00.000Z)
 ```
 
-This list, along with the plan context, is injected into the `triage-captures` prompt template. The assembled prompt is prepended with the GSD workflow protocol and sent as a `gsd-triage` message with `triggerTurn: true`, which starts a new LLM session to run the triage.
+This list, along with the plan context, is injected into the `triage-captures` prompt template. The assembled prompt is prepended with the GSD workflow protocol (read from `~/.pi/GSD-WORKFLOW.md`, or the path in `GSD_WORKFLOW_PATH` if set) and sent as a `gsd-triage` message with `triggerTurn: true`, which starts a new LLM session to run the triage.
 
 ### LLM Classification
 
@@ -90,14 +90,14 @@ The LLM classifies each capture into one of five types:
 | `quick-task` | Small, self-contained — can be done in minutes without modifying the plan |
 | `inject` | Belongs in the current slice but wasn't planned — a new task is added |
 | `defer` | Belongs in a future slice or milestone — not urgent now |
-| `replan` | Changes the shape of remaining work — existing incomplete tasks may need rewriting |
+| `replan` | Changes the shape of remaining work in the current slice — existing incomplete tasks may need rewriting |
 | `note` | Informational only — no action needed |
 
 The LLM follows these priority guidelines when classifying:
 - Prefer **quick-task** when work is clearly small and self-contained.
 - Prefer **inject** over **replan** when only a new task is needed (not a rewrite of existing ones).
 - Prefer **defer** over **inject** when the work doesn't belong in the current slice's scope.
-- Use **replan** only when remaining incomplete tasks need to change.
+- Use **replan** only when remaining incomplete tasks need to change — not just for adding work.
 - If unsure between quick-task and inject: will this take more than 10 minutes? If yes, inject.
 
 ### Confirmation Flow
@@ -124,11 +124,36 @@ For each confirmed capture, the LLM updates its section in `.gsd/CAPTURES.md`:
 **Resolved:** 2025-01-15T14:00:00.000Z
 ```
 
-After triage, actionable captures (`inject`, `replan`, `quick-task`) accumulate as unexecuted resolutions. Auto-mode picks these up between tasks and dispatches them at the appropriate seam. When executed, an `**Executed:**` timestamp is appended.
+After triage, actionable captures (`inject`, `replan`, `quick-task`) accumulate as unexecuted resolutions. When their resolutions are later executed, an `**Executed:**` timestamp is appended:
+
+```markdown
+**Executed:** 2025-01-15T15:00:00.000Z
+```
+
+### Resolution Execution
+
+Triage classifies captures but does not execute them. Execution happens separately — via auto-mode dispatch or manual action. The `executeTriageResolutions` function runs after a triage-captures unit completes, scanning for resolved captures with actionable classifications that haven't been executed yet:
+
+- **inject** — Reads the active slice plan, finds the highest existing task ID, and appends a new task entry before the `## Files Likely Touched` section:
+  ```markdown
+  - [ ] **T05: <capture text>** `est:30m`
+    - Why: Injected from capture CAP-a1b2c3d4 during triage
+    - Do: <capture text>
+    - Done when: Capture intent fulfilled
+  ```
+  Marks the capture as executed on success.
+
+- **replan** — Writes a `SXX-REPLAN-TRIGGER.md` marker file in the slice directory. The next dispatch cycle detects this file and enters the `replanning-slice` phase. The trigger file records the source capture ID, text, rationale, and a timestamp.
+
+- **quick-task** — Collected and dispatched as a self-contained unit. A dedicated prompt (`buildQuickTaskPrompt`) is generated from the capture text and executed without modifying any plan files. The capture is marked as executed after the unit completes.
+
+Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
 
 ### Auto-Mode Triage
 
-When auto-mode fires triage programmatically (between tasks), it uses a different flow. Instead of an LLM session, the triage results are parsed programmatically and presented via the `showTriageConfirmation` UI — the same five classifications and the same auto-confirm rule for `note`/`defer`, but with an interactive widget rather than an LLM conversation. File overlap detection also runs in this path: if a capture's affected files overlap with files planned for upcoming tasks, a warning is surfaced before you confirm.
+When auto-mode fires triage programmatically (between tasks), the confirmation UI differs. Instead of a conversational LLM session, the triage results are parsed and presented via `showTriageConfirmation` — an interactive widget using `showNextAction`. Each actionable capture is displayed one at a time with its proposed classification and rationale; you select from all five classifications (proposed is shown as recommended) or skip the capture to leave it pending.
+
+The same auto-confirm rule applies: `note` and `defer` are resolved automatically without prompting. File overlap detection also runs in this path: if a capture's affected files overlap with files planned for upcoming tasks, a warning is surfaced before you confirm. If you change the proposed classification, that override is recorded in the resolution text.
 
 ## What Files It Touches
 
@@ -139,13 +164,15 @@ When auto-mode fires triage programmatically (between tasks), it uses a differen
 | `.gsd/CAPTURES.md` | Loads pending captures |
 | `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | Active slice plan for context |
 | `.gsd/milestones/MXXX/MXXX-ROADMAP.md` | Active roadmap for context |
-| `~/.pi/GSD-WORKFLOW.md` | GSD workflow protocol injected into the triage prompt |
+| `~/.pi/GSD-WORKFLOW.md` | GSD workflow protocol prepended to the triage prompt |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/CAPTURES.md` | Captures updated with classification, resolution, rationale, and resolved timestamp |
+| `.gsd/CAPTURES.md` | Captures updated with classification, resolution, rationale, resolved timestamp, and eventually an executed timestamp |
+| `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | New task appended when an `inject` capture is executed |
+| `.gsd/milestones/MXXX/slices/SXX/SXX-REPLAN-TRIGGER.md` | Written when a `replan` capture is executed — triggers replanning-slice phase |
 
 ## Examples
 

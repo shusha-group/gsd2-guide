@@ -9,7 +9,7 @@ description: "Create a milestone from a specification document — the headless 
 
 When run directly in a TUI session with no headless context file present, the command falls back to interactive smart entry — the same discussion flow you get from running `/gsd` with no active milestone.
 
-The non-interactive path uses the `discuss-headless` prompt, which processes the spec document and writes all milestone artifacts in a single pass: `CONTEXT.md`, `ROADMAP.md`, and the milestone directory structure. After writing, auto-mode starts automatically — you don't need to run `/gsd auto` separately.
+The non-interactive path uses the `discuss-headless` prompt, which processes the spec document and writes all milestone artifacts in a single pass: `CONTEXT.md`, `ROADMAP.md`, and the milestone directory structure. After the agent writes `STATE.md` as its final step, auto-mode starts automatically — you don't need to run `/gsd auto` separately.
 
 ## Usage
 
@@ -51,19 +51,23 @@ flowchart TD
     Bootstrap --> NextId[Generate next\nmilestone ID]
     NextId --> MkDir[Create milestone\ndirectory]
     MkDir --> Dispatch[Dispatch\ndiscuss-headless prompt]
-    Dispatch --> Write[Write CONTEXT.md\nROADMAP.md]
-    Write --> AutoStart[Auto-mode\nstarts automatically]
+    Dispatch --> Write[Agent writes CONTEXT.md\nROADMAP.md STATE.md]
+    Write --> Gates{Auto-start\ngates pass?}
+    Gates -->|Yes| AutoStart([Auto-mode starts])
+    Gates -->|No| Wait[Wait for next\nagent_end check]
     Check -->|No| SmartEntry[showSmartEntry —\ninteractive discussion flow]
     SmartEntry --> AutoStart
 
     style Cmd fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Gates fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Read fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Bootstrap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style NextId fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style MkDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Write fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Wait fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style AutoStart fill:#0d180d,stroke:#39ff14,color:#39ff14
     style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
@@ -78,8 +82,21 @@ The headless runner writes your spec to `.gsd/runtime/headless-context.md` befor
 4. **Generate milestone ID** — finds existing milestone IDs and increments to the next one (e.g., `M001` if no milestones exist, `M003` if `M001` and `M002` are present). Respects the `unique_milestone_ids` preference for suffix generation.
 5. **Create milestone directory** — makes `.gsd/milestones/MXXX/slices/`.
 6. **Build prompt** — loads the `discuss-headless` prompt template, inlining all GSD document templates (project, requirements, context, roadmap, decisions) directly into the prompt so the agent can write everything in one pass.
-7. **Arm auto-start** — registers a `pendingAutoStart` hook so auto-mode fires as soon as the agent reports "Milestone X ready."
+7. **Arm auto-start** — registers a `pendingAutoStart` hook. After each agent turn completes, `checkAutoStartAfterDiscuss()` fires and checks four gates before starting auto-mode (see below).
 8. **Dispatch** — sends the prompt to the active session.
+
+### Auto-Start Gates
+
+Auto-mode doesn't fire the moment the agent writes its first file. `checkAutoStartAfterDiscuss()` is called at the end of each agent turn and must pass all gates before triggering:
+
+| Gate | Condition |
+|------|-----------|
+| **1 — Artifact exists** | The milestone must have a `CONTEXT.md` or `ROADMAP.md` |
+| **2 — STATE.md written** | `.gsd/STATE.md` must exist — the agent writes this as its final step |
+| **3 — Multi-milestone completeness** | Warns if milestones listed in `PROJECT.md` are missing from the filesystem (non-blocking) |
+| **4 — Discussion manifest** | If `DISCUSSION-MANIFEST.json` exists, all gates must be marked complete before auto-start fires |
+
+Gate 2 is the primary completion signal — it prevents auto-start from triggering mid-session while the agent is still writing artifacts. For single-milestone discussions, gates 3 and 4 are effectively no-ops.
 
 ### `discuss-headless` vs Interactive Discussion
 
@@ -93,7 +110,7 @@ If `.gsd/` doesn't exist yet (a fresh project), `bootstrapGsdProject` initialize
 
 - Initializes a git repo (using the `git.main_branch` preference, defaulting to `main`) if the directory is not already a repo.
 - Creates `.gsd/milestones/` and `.gsd/runtime/` directory trees.
-- Writes `.gitignore` entries for GSD runtime files.
+- Writes `.gitignore` entries for GSD runtime files (respects the `git.commit_docs` preference).
 - Writes a default preferences file if none exists.
 - Adds `.gsd/runtime/` to git's untracked list so session files don't appear in status.
 
@@ -130,7 +147,7 @@ This makes `gsd headless new-milestone` usable in a completely empty directory �
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | Written by the agent as the final step — triggers auto-mode start |
+| `.gsd/STATE.md` | Written by the agent as its final step — satisfies Gate 2 and triggers auto-mode start |
 
 ## Examples
 

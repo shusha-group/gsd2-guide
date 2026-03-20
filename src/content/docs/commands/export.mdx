@@ -60,7 +60,21 @@ Note that JSON exports include a `byModel` aggregation not present in markdown �
 
 ### HTML Export (`--html`)
 
-Generates a self-contained HTML report snapshot in `.gsd/reports/` named `<milestone-id>-<timestamp>.html` (e.g., `M003-20260317T103000.html`). The report draws from the same visualizer data pipeline as the TUI [`/gsd visualize`](../visualize/) overlay — progress tree, dependency graph, cost/token charts, execution timeline, changelog, and knowledge base.
+Generates a self-contained HTML report snapshot in `.gsd/reports/` named `<milestone-id>-<timestamp>.html` (e.g., `M003-20260317T103000.html`). The report draws from the same visualizer data pipeline as the TUI [`/gsd visualize`](../visualize/) overlay and renders eleven sections:
+
+| Section | Contents |
+|---------|----------|
+| Summary | Project name, phase, overall progress bar, key metrics |
+| Progress | Milestones and slices tree with status |
+| Timeline | Chronological unit execution history |
+| Dependencies | Slice dependency graph |
+| Metrics | Cost/token/duration charts by phase and model |
+| Health | Configuration overview and missing changelogs |
+| Changelog | Completed slice summaries |
+| Knowledge | Rules, patterns, and lessons from KNOWLEDGE.md |
+| Captures | Pending and resolved captures |
+| Artifacts | Tracked file and artifact status |
+| Planning | Milestone planning notes and discussion |
 
 All CSS and JavaScript are inlined — no external dependencies. The file is printable to PDF from any browser.
 

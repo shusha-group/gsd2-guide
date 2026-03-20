@@ -17,7 +17,7 @@ Use `/gsd quick` when the change is small enough that planning overhead isn't wo
 /gsd quick <task description>
 ```
 
-The description is plain English. Everything after `quick` is captured as the description — quotes are optional.
+Everything after `quick` is captured as the description. Surrounding quotes are stripped by the shell but are otherwise optional — GSD itself just trims leading and trailing whitespace.
 
 ```
 /gsd quick fix the login button color
@@ -61,21 +61,23 @@ flowchart TD
 
 ### Setup
 
-1. **Validate `.gsd/`** — Checks that a GSD project exists. If not, prompts you to initialize a project first. Quick tasks still need the GSD project structure, even though they skip milestones.
+1. **Validate `.gsd/`** — Checks that a GSD project exists. If not, prompts you to run `/gsd` to initialize a project first. Quick tasks still need the GSD project structure, even though they skip milestones.
 2. **Generate slug** — Converts your description into a URL-safe slug (e.g., `"fix the login button color"` → `fix-the-login-button-color`), truncated to 40 characters.
-3. **Determine task number** — Scans `.gsd/quick/` for existing numbered directories and increments the highest number found.
-4. **Create branch** — Creates a git branch named `gsd/quick/N-slug`, where N is the task number. If your working tree has uncommitted changes, GSD auto-commits them before switching. If branch creation fails for any reason, GSD continues on the current branch with a warning.
+3. **Determine task number** — Scans `.gsd/quick/` for existing numbered directories and increments the highest number found. Returns `1` if no quick tasks exist yet.
+4. **Create branch** — Creates a git branch named `gsd/quick/N-slug`. If your working tree has uncommitted changes, GSD auto-commits them first with a `chore(QN): auto-commit after quick-task` message before switching. If branch creation fails for any reason, GSD continues on the current branch with a warning.
 5. **Create task directory** — Creates `.gsd/quick/N-slug/` to hold the task summary.
 
 ### Execution
 
-The task is dispatched as a focused prompt containing the description, branch name, summary path, and task metadata. The agent:
+The task is dispatched as a focused prompt containing the description, branch name, summary path, date, task number, and slug. The agent:
 
+- Follows any `GSD Skill Preferences` present in system context
 - Reads relevant code before modifying — no stubs or placeholders
 - Writes or updates tests where appropriate
+- Handles error cases and edge cases
 - Commits changes atomically using conventional commit messages (`feat:`, `fix:`, `refactor:`, etc.)
-- Writes a structured summary to `.gsd/quick/N-SUMMARY.md`
-- Adds a row to the "Quick Tasks Completed" table in `.gsd/STATE.md`
+- Writes a structured summary to `.gsd/quick/N-slug/N-SUMMARY.md`
+- Adds a row to the "Quick Tasks Completed" table in `.gsd/STATE.md` and updates the "Last activity" line
 
 The agent finishes by saying `"Quick task N complete."` — no multi-unit dispatch, no research/plan/execute phases.
 
@@ -104,7 +106,7 @@ Each quick task produces a `N-SUMMARY.md` file in its task directory:
 
 ### STATE.md Tracking
 
-After completion, the agent updates `.gsd/STATE.md` to record the task in a "Quick Tasks Completed" table:
+After completion, the agent updates `.gsd/STATE.md` to record the task in a "Quick Tasks Completed" table and updates the "Last activity" line:
 
 ```
 | # | Description | Date | Commit | Directory |
@@ -140,7 +142,7 @@ The quick branch is ready to merge. You can review the diff, merge it, or discar
 | File | Purpose |
 |------|---------|
 | `.gsd/quick/N-slug/N-SUMMARY.md` | Task summary written by agent |
-| `.gsd/STATE.md` | "Quick Tasks Completed" table updated |
+| `.gsd/STATE.md` | "Quick Tasks Completed" table row added; "Last activity" line updated |
 | Application files | Whatever the task requires |
 
 ## Examples
@@ -196,6 +198,6 @@ Running without a description shows usage:
 ## Related Commands
 
 - [`/gsd capture`](../capture/) — Save a thought for later without executing immediately
-- [`/gsd next`](../next/) — Step through the current milestone one task at a time
 - [`/gsd auto`](../auto/) — Full continuous execution for milestone-based work
 - [`/gsd steer`](../steer/) — Direct override when active work needs redirecting
+- [`/gsd history`](../history/) — Review what quick tasks and units have been executed

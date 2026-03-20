@@ -1,90 +1,88 @@
 ---
 title: "/gsd skip"
-description: "Prevent a unit from auto-mode dispatch — mark it as skipped so the pipeline advances without executing it."
+description: "Prevent a unit from auto-mode dispatch — add it to the completed-units registry so the pipeline advances without executing it."
 ---
 
 ## What It Does
 
-`/gsd skip` prevents a unit from being dispatched by auto-mode. It marks the unit as completed in GSD's idempotency log without executing it, so the dispatch loop skips over it and moves to the next unit in the pipeline.
+`/gsd skip` marks a unit as already handled so auto-mode won't dispatch it. It appends the unit's key to `.gsd/completed-units.json` — the same idempotency log the dispatch loop checks before queuing any unit. Once a key is recorded there, auto-mode skips over it permanently.
 
-This is the manual counterpart to stuck detection's automatic pipeline advancement. When a unit repeatedly fails verification (hitting the 3-dispatch limit), GSD can either write a blocker placeholder and auto-advance or stop for manual intervention. `/gsd skip` is how you intervene deliberately — telling GSD to bypass a unit you've already handled manually, or one you don't need executed at all.
+This is useful when you've already handled a task manually, when a unit type adds no value for a particular slice, or when a unit is stuck and you'd rather bypass it than retry. Unlike stuck detection (which auto-advances after 3 failed dispatches), `/gsd skip` lets you bypass a unit proactively — before it ever causes a problem.
 
-You can also use it proactively to skip optional units — for example, bypassing `run-uat` for a slice where UAT is handled externally, or skipping `reassess-roadmap` when you know the roadmap doesn't need changes after a particular slice completes.
+You can also use it to permanently bypass optional unit types — for example, skipping `plan-slice` for a slice where you've already written the plan by hand, or skipping `research-slice` when the approach is already clear.
 
 ## Usage
 
 ```
-/gsd skip
 /gsd skip <unit-id>
-/gsd skip <unit-type>
 ```
 
-| Argument | Behavior |
-|----------|----------|
-| (none) | Skip the unit that would be dispatched next |
-| `M001/S02/T03` | Skip a specific task by its milestone/slice/task ID |
-| `research-slice` | Skip the current `research-slice` unit |
-| `run-uat` | Skip the current `run-uat` unit |
-| `reassess-roadmap` | Skip the current `reassess-roadmap` unit |
+The `<unit-id>` argument is required. Accepted formats:
 
-Run `/gsd status` first if you're not sure what unit would be dispatched next.
+| Format | Example | Resolved key |
+|--------|---------|-------------|
+| Full unit key | `execute-task/M001/S01/T03` | `execute-task/M001/S01/T03` |
+| Milestone/slice/task path | `M001/S01/T03` | `execute-task/M001/S01/T03` |
+| Task ID only (uses active context) | `T03` | `execute-task/<active-MID>/<active-SID>/T03` |
+| Slice ID only (uses active context) | `S02` | `plan-slice/<active-MID>/S02` |
+| Bare unit type | `research-slice` | `research-slice` (used as-is) |
+
+Run [`/gsd status`](../status/) first if you're not sure what unit is current or what key to use.
 
 ## How It Works
 
 ```mermaid
 flowchart TD
-    Start(["/gsd skip [target]"]) --> Resolve{Target specified?}
-    Resolve -->|No| Derive[Derive next unit from project state]
-    Resolve -->|Yes| Validate[Validate target unit exists]
-    Derive --> Confirm{Confirm skip?}
-    Validate --> Confirm
-    Confirm -->|No| Cancel([Cancelled — nothing skipped])
-    Confirm -->|Yes| Placeholder[Write minimal placeholder artifact]
-    Placeholder --> Log[Record skip in completed-units.json]
-    Log --> Notify[Report: unit skipped, next unit preview]
-    Notify --> Done([Pipeline advanced])
+    Start(["/gsd skip <unit-id>"]) --> HasArg{Argument provided?}
+    HasArg -->|No| Usage([Show usage message — nothing skipped])
+    HasArg -->|Yes| Normalize[Normalize unit key]
+    Normalize --> Check{Already in completed-units.json?}
+    Check -->|Yes| AlreadyDone([Notify: already skipped])
+    Check -->|No| Append[Append key to completed-units.json]
+    Append --> Notify([Notify: skipped — won't be dispatched])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Resolve fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Confirm fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Derive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Validate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Cancel fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Placeholder fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Log fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style HasArg fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Usage fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style AlreadyDone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Normalize fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Append fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Notify fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Skip sequence
 
-1. **Resolve target** — If no argument is given, `deriveState()` reads the `.gsd/` directory to determine which unit would be dispatched next. If a unit ID or type is given, GSD validates it matches a dispatchable unit in the current project state.
-2. **Confirm** — GSD shows you the unit it's about to skip (type, ID, milestone/slice path) and asks for confirmation before proceeding.
-3. **Write placeholder artifact** — For the unit to pass dispatch verification, its expected artifact must exist on disk. GSD writes a minimal stub at the artifact path (e.g., a `T03-SUMMARY.md` with `[skipped]` content, or a `S01-UAT.md` with a skip notice). This prevents the auto-mode dispatch loop from re-queuing the unit.
-4. **Record in completed-units log** — The skip is written to `.gsd/completed-units.json` with a `skipped` status and timestamp. This is the same idempotency log auto-mode uses to prevent re-dispatch after a crash.
-5. **Report** — Displays confirmation of the skip and what will be dispatched next when auto-mode resumes.
+1. **Validate argument** — If no argument is given, GSD prints a usage hint and exits without modifying anything.
+2. **Normalize key** — GSD resolves shorthand into a full unit key:
+   - A bare task ID like `T03` is expanded to `execute-task/<active-MID>/<active-SID>/T03` by reading the current project state.
+   - A bare slice ID like `S02` becomes `plan-slice/<active-MID>/S02`.
+   - A path like `M001/S01/T03` becomes `execute-task/M001/S01/T03`.
+   - If the argument already contains `execute-task`, `plan-`, `research-`, or `complete-`, it's used as-is.
+3. **Deduplicate** — If the resolved key is already in `completed-units.json`, GSD notifies you and exits without writing.
+4. **Append and save** — The key is appended to the JSON array and written back to `.gsd/completed-units.json`.
+5. **Notify** — GSD reports the skipped key and confirms it won't be dispatched.
+
+There is no confirmation dialog — the skip takes effect immediately.
 
 ### What counts as a skippable unit
 
-Any unit type in the dispatch table can be skipped:
+Any unit key that auto-mode would look up in `completed-units.json` can be skipped:
 
 | Unit type | When you might skip it |
 |-----------|------------------------|
-| `research-milestone` | You've already researched the codebase manually |
-| `research-slice` | Slice approach is clear; research adds no value |
-| `run-uat` | UAT is handled by your own test suite or CI |
-| `reassess-roadmap` | Roadmap is settled; you don't want reassessment |
 | `execute-task` | Task was handled manually outside GSD |
-| `replan-slice` | You'd rather update the plan yourself than let GSD rewrite it |
+| `plan-slice` | You've already written the slice plan by hand |
+| `research-slice` | Slice approach is clear; research adds no value |
+| `research-milestone` | You've already researched the codebase manually |
+| `complete-slice` | Slice wrap-up is unnecessary for this iteration |
 | `validate-milestone` | Validation is handled externally |
-
-Task units (`execute-task`) should generally use [`/gsd doctor fix`](../doctor/) or manual task completion (check the task checkbox in the plan) rather than skip — skip is more appropriate for whole-slice or whole-milestone units.
 
 ### Skip vs. stuck detection
 
-When auto-mode detects a unit is stuck (same unit re-dispatched 3 times without completing), it automatically writes a blocker placeholder to advance the pipeline. `/gsd skip` gives you the same outcome manually — before the stuck counter even triggers, or after you've investigated and decided not to retry.
+When auto-mode detects a unit is stuck (same unit re-dispatched without completing), it automatically advances the pipeline. `/gsd skip` gives you the same outcome manually — before the stuck counter triggers, or after you've investigated and decided not to retry.
 
-If you want auto-mode to *never* dispatch a particular unit type on this project, use a [`skip` pre-dispatch hook](../hooks/) in preferences instead — this is permanent and preference-driven, rather than one-off.
+If you want auto-mode to *never* dispatch a particular unit type on this project, configure a `skip` pre-dispatch hook in [`/gsd hooks`](../hooks/) instead — that approach is declarative and preference-driven rather than a one-off key entry.
 
 ## What Files It Touches
 
@@ -92,92 +90,76 @@ If you want auto-mode to *never* dispatch a particular unit type on this project
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | Derive active milestone, slice, and task |
-| `.gsd/<MID>/<SID>/<SID>-PLAN.md` | Validate target unit against current slice plan |
-| `.gsd/completed-units.json` | Check for existing skip or completion records |
+| `.gsd/completed-units.json` | Load existing keys to check for duplicates |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/completed-units.json` | Skip record added with `skipped` status and timestamp |
+| `.gsd/completed-units.json` | Resolved unit key appended to the array |
 
-### Creates (placeholder artifacts)
+The file contains a flat JSON array of key strings:
 
-The artifact path written depends on the unit type being skipped:
+```json
+["execute-task/M001/S01/T03", "research-slice/M001/S02", "plan-slice/M001/S03"]
+```
 
-| Unit type | Placeholder written |
-|-----------|---------------------|
-| `research-slice` | `.gsd/<MID>/<SID>/<SID>-RESEARCH.md` (skip stub) |
-| `execute-task` | `.gsd/<MID>/<SID>/tasks/<TID>-SUMMARY.md` (skip stub) |
-| `run-uat` | `.gsd/<MID>/<SID>/<SID>-UAT-RESULT.md` (skip stub) |
-| `reassess-roadmap` | `.gsd/<MID>/<SID>/<SID>-ASSESSMENT.md` (skip stub) |
-| `validate-milestone` | `.gsd/<MID>/<MID>-VALIDATION.md` (skip stub) |
+No placeholder artifacts are written to slice or task directories — the key entry in `completed-units.json` is sufficient to prevent re-dispatch.
 
 ## Examples
-
-Skipping the next unit interactively:
-
-```
-> /gsd skip
-
-● Next unit: run-uat
-  Slice: M001/S02 (Recipe CRUD API)
-  Artifact: .gsd/milestones/M001/slices/S02/S02-UAT-RESULT.md
-
-  Skip this unit? (y/N) y
-
-✓ Skipped: run-uat for M001/S02
-  Placeholder written to S02-UAT-RESULT.md
-  Next unit: reassess-roadmap
-```
 
 Skipping a specific task that was completed manually:
 
 ```
-> /gsd skip M001/S02/T03
+> /gsd skip T03
 
-● Unit: execute-task M001/S02/T03 (Deploy preview environment)
-
-  Skip this unit? (y/N) y
-
-✓ Skipped: execute-task M001/S02/T03
-  Placeholder written to T03-SUMMARY.md
-  Next unit: execute-task M001/S02/T04 (Wire preview URL to PR comments)
+✓ Skipped: execute-task/M001/S01/T03. Will not be dispatched in auto-mode.
 ```
 
-Skipping slice reassessment when the roadmap is settled:
+Skipping using the full task path:
 
 ```
-> /gsd skip reassess-roadmap
+> /gsd skip M001/S02/T05
 
-● Unit: reassess-roadmap
-  Milestone: M001 (Core Recipe Platform)
-  After slice: S02 (Recipe CRUD API)
-
-  Skip this unit? (y/N) y
-
-✓ Skipped: reassess-roadmap
-  Next unit: research-slice M001/S03
+✓ Skipped: execute-task/M001/S02/T05. Will not be dispatched in auto-mode.
 ```
 
-Checking what's next without skipping:
+Skipping slice research when the approach is already clear:
 
 ```
-> /gsd next --dry-run
+> /gsd skip research-slice
 
-● Dry-run preview:
-  Next unit:  run-uat
-  ID:         M001/S02
-  Phase:      summarizing
-  ...
+✓ Skipped: research-slice. Will not be dispatched in auto-mode.
+```
+
+Skipping using the full unit key:
+
+```
+> /gsd skip execute-task/M001/S03/T01
+
+✓ Skipped: execute-task/M001/S03/T01. Will not be dispatched in auto-mode.
+```
+
+Attempting to skip an already-skipped unit:
+
+```
+> /gsd skip T03
+
+● Already skipped: execute-task/M001/S01/T03
+```
+
+Calling without an argument:
+
+```
+> /gsd skip
+
+● Usage: /gsd skip <unit-id>  (e.g., /gsd skip execute-task/M001/S01/T03 or /gsd skip T03)
 ```
 
 ## Related Commands
 
-- [`/gsd doctor`](../doctor/) — Auto-repair structural issues without skipping units
-- [`/gsd auto`](../auto/) — Resumes after a skip; the skipped unit won't be re-dispatched
+- [`/gsd status`](../status/) — Check current project state to find the right unit ID to skip
+- [`/gsd auto`](../auto/) — Resume after a skip; the skipped unit won't be re-dispatched
 - [`/gsd undo`](../undo/) — Revert the last completed unit (inverse of skip for units already run)
-- [`/gsd next --dry-run`](../next/) — Preview what would be dispatched next without executing or skipping
-- [`/gsd forensics`](../forensics/) — Investigate *why* a unit is stuck before deciding to skip
+- [`/gsd doctor`](../doctor/) — Auto-repair structural issues without skipping units
 - [`/gsd hooks`](../hooks/) — Configure permanent `skip` hooks for unit types you never want dispatched

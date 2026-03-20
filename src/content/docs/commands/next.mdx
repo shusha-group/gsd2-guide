@@ -76,7 +76,11 @@ When `--dry-run` is active, GSD:
 | `executing` | `execute-task` |
 | `summarizing` | `complete-slice` |
 | `completing-milestone` | `complete-milestone` |
-| anything else | phase name verbatim |
+| `validating-milestone` | `validating-milestone` |
+| `replanning-slice` | `replanning-slice` |
+| `needs-discussion` | `needs-discussion` |
+| `blocked` | `blocked` |
+| any other phase | phase name verbatim |
 
 4. **Loads historical metrics** — Reads the in-memory ledger (or falls back to the ledger on disk) to calculate average cost and duration for units of the same type. Loads preferences to check the budget ceiling.
 5. **Shows preview** — Displays the unit type, ID, milestone, phase, estimated cost and duration (computed as averages over historical units of the same type), total spent, budget remaining, and task/slice progress.
@@ -121,6 +125,19 @@ Previewing the next unit:
   Spent so far:  $6.40
   Budget left:   $43.60
   Progress:      8/12 tasks, 1/4 slices
+```
+
+When no budget ceiling is configured, the budget line reads `no ceiling set`:
+
+```
+  Budget left:   no ceiling set
+```
+
+When the unit type has never been executed before, estimates are unavailable:
+
+```
+  Est. cost:     unknown (first of this type)
+  Est. duration: unknown
 ```
 
 Running the next unit:

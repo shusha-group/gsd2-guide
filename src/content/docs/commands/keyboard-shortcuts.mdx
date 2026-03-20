@@ -7,7 +7,7 @@ description: "Quick-access keyboard shortcuts for GSD — toggle the dashboard, 
 
 GSD registers three keyboard shortcuts for actions that benefit from instant access. These work during any active session — whether you're in auto mode, reviewing architecture, or watching a build.
 
-All shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable detection. In terminals that don't support the protocol, GSD shows a slash-command fallback hint in the shortcut description rather than hiding the feature.
+All shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or `modifyOtherKeys` for reliable detection. In terminals that don't support either, GSD appends a slash-command fallback hint to the shortcut description rather than hiding the feature.
 
 Pressing `Escape` during an active auto-mode session has a separate effect: it aborts the current agent turn and the `agent_end` handler automatically calls pause, so auto mode suspends with state preserved.
 
@@ -20,11 +20,13 @@ Pressing `Escape` during an active auto-mode session has a separate effect: it a
 | `Ctrl+Alt+B` | Open background process manager | `/bg` |
 | `Escape` | Abort current turn (pauses auto mode) | `/gsd pause` |
 
+## How It Works
+
 ### Ctrl+Alt+G — GSD Dashboard
 
 Opens a full-screen overlay showing milestone progress, active slice and task, completed units, timing, and the activity log. Same view as [`/gsd status`](../status/), but toggled in place without leaving the conversation. Press `Escape`, `Ctrl+C`, or `Ctrl+Alt+G` again to close.
 
-Only activates when a `.gsd/` directory is present in the current working directory. If not found, a notice is shown instead.
+Only activates when a `.gsd/` directory is present in the current working directory. If not found, a notice is shown: _"No .gsd/ directory found. Run /gsd to start."_
 
 ### Ctrl+Alt+V — Voice Mode
 
@@ -40,9 +42,25 @@ When auto mode is running, pressing `Escape` aborts the current agent turn immed
 
 This is distinct from [`/gsd pause`](../pause/), which sets a flag to pause cleanly after the current unit finishes rather than aborting mid-turn.
 
+### Terminal Fallback Hints
+
+When GSD detects an unsupported terminal, the shortcut description shown in the UI changes from:
+
+```
+Open GSD dashboard
+```
+
+to:
+
+```
+Open GSD dashboard — shortcut may not work in this terminal, use /gsd status
+```
+
+This happens for all three `Ctrl+Alt` shortcuts automatically. The slash-command fallbacks always work regardless of terminal.
+
 ## Terminal Compatibility
 
-These shortcuts rely on the **Kitty keyboard protocol**, a modern terminal extension that enables precise detection of modifier key combinations. Terminals that support it include:
+These shortcuts rely on the **Kitty keyboard protocol** or **modifyOtherKeys**, modern terminal extensions that enable precise detection of modifier key combinations. Terminals with support include:
 
 - **Kitty** — Full support (protocol originator)
 - **WezTerm** — Full support
@@ -51,13 +69,13 @@ These shortcuts rely on the **Kitty keyboard protocol**, a modern terminal exten
 
 ### Terminals Without Support
 
-In terminals that don't implement the Kitty protocol, `Ctrl+Alt` key combinations can't be reliably detected. GSD detects this at startup and appends a fallback hint to the shortcut description — shortcuts that would be silently swallowed show their slash-command equivalent instead.
+In terminals that don't implement the Kitty protocol or modifyOtherKeys, `Ctrl+Alt` key combinations can't be reliably detected. GSD detects this at startup and appends a fallback hint to the shortcut description — shortcuts that would be silently swallowed show their slash-command equivalent instead.
 
 Known unsupported terminals:
 
 - **macOS Terminal.app** (`TERM_PROGRAM=apple_terminal`) — No Kitty protocol support
 - **Warp** (`TERM_PROGRAM=warpterm`) — Not supported
-- **JetBrains IDE terminals** — Built-in terminals don't support the protocol
+- **JetBrains IDE terminals** (`TERMINAL_EMULATOR` contains `JetBrains`) — Built-in terminals don't support the protocol
 
 | Instead of | Use |
 |-----------|-----|
@@ -67,7 +85,7 @@ Known unsupported terminals:
 | `Escape` | `/gsd pause` |
 
 :::note
-GSD auto-detects terminal capabilities at startup using `TERM_PROGRAM` and `TERMINAL_EMULATOR` environment variables. You don't need to configure anything — if your terminal supports the protocol, shortcuts just work. If it doesn't, fallback commands are always available.
+GSD auto-detects terminal capabilities at startup using the `TERM_PROGRAM` and `TERMINAL_EMULATOR` environment variables. You don't need to configure anything — if your terminal supports the protocol, shortcuts just work. If it doesn't, fallback commands are always available.
 :::
 
 ## Related Commands

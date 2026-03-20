@@ -29,13 +29,13 @@ Quotes are optional.
 
 1. **Validate** — Checks that `.gsd/` exists. Fails fast with a clear error if the project hasn't been initialized.
 2. **Generate slug** — Lowercases and hyphenates the description, truncated to 40 characters.
-3. **Number the task** — Scans `.gsd/quick/` for existing directories and increments from the highest number found.
-4. **Create task directory** — Creates `.gsd/quick/<N>-<slug>/` to hold the summary.
-5. **Create branch** — Auto-commits any dirty working state, then creates `gsd/quick/<N>-<slug>`. If branch creation fails (e.g., detached HEAD), execution continues on the current branch with a warning.
-6. **Dispatch** — Sends the quick-task prompt to the agent with your description, the task directory, branch name, and date.
-7. **Execute** — The agent reads existing code, builds the real thing (no stubs), runs tests where applicable, and commits atomically with conventional commit messages.
+3. **Number the task** — Scans `.gsd/quick/` for existing directories and increments from the highest number found. Returns `1` if no quick tasks exist yet.
+4. **Create branch** — Creates `gsd/quick/<N>-<slug>`. If your working tree has uncommitted changes, GSD auto-commits them first with a `chore(QN): auto-commit after quick-task` message before switching. If branch creation fails for any reason, execution continues on the current branch with a warning.
+5. **Create task directory** — Creates `.gsd/quick/<N>-<slug>/` to hold the summary.
+6. **Dispatch** — Sends the quick-task prompt to the agent with your description, the task directory, branch name, summary path, task number, and date.
+7. **Execute** — The agent reads existing code, builds the real thing (no stubs), handles edge cases, writes or updates tests where appropriate, and commits atomically with conventional commit messages.
 8. **Write summary** — Agent writes `<N>-SUMMARY.md` to the task directory documenting what changed, files modified, and what was verified.
-9. **Update STATE.md** — Agent appends a row to the "Quick Tasks Completed" table in `.gsd/STATE.md` with the task number, description, date, commit hash, and directory link.
+9. **Update STATE.md** — Agent appends a row to the "Quick Tasks Completed" table in `.gsd/STATE.md` and updates the "Last activity" line.
 
 ### Flow Diagram
 
@@ -44,10 +44,9 @@ flowchart TD
     Start(["/gsd quick '...'"]) --> Validate{.gsd/ exists?}
     Validate -->|No| Fail([Error: run /gsd first])
     Validate -->|Yes| Slug[Generate slug + task number]
-    Slug --> TaskDir[Create task directory]
-    TaskDir --> AutoCommit[Auto-commit dirty state]
-    AutoCommit --> Branch[Create gsd/quick/N-slug branch]
-    Branch --> Execute[Agent executes task]
+    Slug --> Branch[Create gsd/quick/N-slug branch]
+    Branch --> TaskDir[Create task directory]
+    TaskDir --> Execute[Agent executes task]
     Execute --> Summary[Write N-SUMMARY.md]
     Summary --> Commit[Atomic commit]
     Commit --> State[Update STATE.md table]
@@ -58,9 +57,8 @@ flowchart TD
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Validate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Slug fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style TaskDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style AutoCommit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Branch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style TaskDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -93,7 +91,7 @@ The agent writes a numbered summary file (e.g., `1-SUMMARY.md`) to the task dire
 
 ### STATE.md Tracking
 
-After completion, the agent updates `.gsd/STATE.md` with a new row in the "Quick Tasks Completed" table:
+After completion, the agent updates `.gsd/STATE.md` with a new row in the "Quick Tasks Completed" table and updates the "Last activity" line. If the section doesn't exist yet, the agent creates it after the "Blockers/Concerns" section:
 
 ```markdown
 | # | Description | Date | Commit | Directory |
@@ -109,19 +107,21 @@ After completion, the agent updates `.gsd/STATE.md` with a new row in the "Quick
 |------|---------|
 | `.gsd/quick/<N>-<slug>/` | Task directory created before dispatch |
 | `.gsd/quick/<N>-<slug>/<N>-SUMMARY.md` | Summary written by agent after execution |
+| `gsd/quick/<N>-<slug>` branch | Git branch for the change |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | Read to append the quick tasks table |
 | `.gsd/quick/` | Scanned to determine the next task number |
+| `.gsd/STATE.md` | Read before updating the quick tasks table |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | "Quick Tasks Completed" table updated |
+| `.gsd/quick/<N>-<slug>/<N>-SUMMARY.md` | Task summary written by agent |
+| `.gsd/STATE.md` | "Quick Tasks Completed" table row added; "Last activity" line updated |
 | Source files | Whatever the task requires |
 
 ## Examples
@@ -160,6 +160,10 @@ git merge gsd/quick/1-add-a-back-to-top-button-to-re
 ```
 
 GSD doesn't auto-merge quick branches — that's your call.
+
+## Prompts Used
+
+- [`quick-task`](../../prompts/quick-task/) — Lightweight task execution prompt
 
 ## Related Commands
 

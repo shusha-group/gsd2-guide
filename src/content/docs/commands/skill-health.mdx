@@ -90,9 +90,9 @@ There is no separate `skill-telemetry.json` file. Skill health is derived entire
 A skill is flagged (`⚠`) when it has at least 5 uses and either:
 
 - **Success rate below 70%** — too many units with excessive tool calls
-- **Token trend rising 20%+** — recent average tokens are significantly higher than the previous window
+- **Token trend rising 20%+** — recent average tokens are significantly higher than the previous window (requires 10+ uses for trend detection)
 
-The `--declining` flag filters the full dashboard to show only flagged skills.
+The `--declining` flag filters the full dashboard to show only flagged skills. If no skills are flagged, it prints `No skills flagged for declining performance.`
 
 ### Staleness Detection
 
@@ -103,14 +103,20 @@ The `--stale N` flag shows skills that haven't appeared in any unit within N day
 The health report includes a **Heal Suggestions** section. When a skill is flagged or stale, the report proposes an action:
 
 - **Declining success** — `Review SKILL.md for outdated patterns` (warning or critical by severity)
-- **Rising tokens** — `Skill may be causing inefficient execution patterns` (info)
+- **Rising tokens** — `Skill may be causing inefficient execution patterns` (info; requires 10+ uses)
 - **Stale** — `Consider archiving or updating` (info)
 
 These are display suggestions only. To generate a structured fix proposal, GSD runs a separate heal-skill analysis post-unit (see below).
 
 ### Heal-Skill Post-Unit Analysis
 
-After each auto-mode unit, GSD can optionally run a heal-skill analysis. It reads the skill that was loaded, compares actual execution against the skill's guidance, and writes a structured proposal to `.gsd/skill-review-queue.md` — one entry per issue found. The agent never modifies a skill file directly. This human review step is intentional: research shows that curated skills outperform auto-generated ones by +16.2pp.
+After each auto-mode unit, GSD can optionally run a heal-skill analysis. It reads the skill that was loaded, compares actual execution against the skill's guidance, and classifies the drift:
+
+- **None** — agent followed the skill correctly → writes "No drift detected" to the unit artifact and stops
+- **Minor** — agent found a better approach but the skill isn't wrong → appends a note to `.gsd/KNOWLEDGE.md` and stops
+- **Significant** — skill has outdated or incorrect guidance → writes a structured proposal to `.gsd/skill-review-queue.md`
+
+The agent never modifies a skill file directly. This human review step is intentional: research shows that curated skills outperform auto-generated ones by +16.2pp.
 
 A review queue entry looks like this:
 
@@ -142,6 +148,7 @@ A review queue entry looks like this:
 | File | Purpose |
 |------|---------|
 | `.gsd/skill-review-queue.md` | Heal suggestions written by post-unit heal-skill analysis (not by this command directly) |
+| `.gsd/KNOWLEDGE.md` | Minor drift notes appended by post-unit heal-skill analysis |
 
 ## Examples
 
@@ -209,7 +216,7 @@ Stale skills (unused 30+ days):
 ```
 > /gsd skill-health --stale 30
 
-Stale Skills (unused for 30+ days):
+Stale Skills (unused for 60+ days):
   ⏸  debug-like-expert
   ⏸  graphql-patterns
 ```

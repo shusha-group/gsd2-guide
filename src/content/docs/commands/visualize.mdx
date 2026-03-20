@@ -5,7 +5,7 @@ description: "Open a full TUI visualizer with 10 tabs — progress, timeline, de
 
 ## What It Does
 
-`/gsd visualize` opens a full-featured TUI visualizer that goes far beyond the simple progress dashboard of [`/gsd status`](../status/). It provides 10 tabs, each offering a different view of your project's execution data: a filterable progress overview with risk heatmap, a Gantt timeline, dependency graphs and critical path, cost and token metrics with projections, session health and budget pressure, live agent activity, a changelog of completed slices, the KNOWLEDGE.md knowledge base, pending captures, and export to JSON, markdown, or plain text.
+`/gsd visualize` opens a full-featured TUI visualizer that goes far beyond the simple progress dashboard of [`/gsd status`](../status/). It provides 10 tabs, each offering a different view of your project's execution data: a filterable progress overview with risk heatmap, a Gantt timeline, dependency graphs and critical path, cost and token metrics with projections, session health with provider and skill status, live agent activity, a changelog of completed slices, the KNOWLEDGE.md knowledge base, pending captures, and export to JSON, markdown, or plain text.
 
 The visualizer is completely read-only. It reads `.gsd/` state files, metrics ledger, slice summaries, and preference files — it never modifies anything. It auto-refreshes every 5 seconds while open.
 
@@ -23,7 +23,7 @@ The visualizer loads all project data on startup, then renders the 10-tab interf
 
 ```mermaid
 flowchart TD
-    Start(["/gsd visualize"]) --> LoadState[Load .gsd/ state and registry]
+    Start(["/gsd visualize"]) --> LoadState[Derive state from .gsd/ files]
     LoadState --> LoadMetrics[Load metrics ledger]
     LoadMetrics --> LoadSummaries[Load slice SUMMARY files]
     LoadSummaries --> LoadExtra[Load knowledge, captures, preferences]
@@ -48,7 +48,7 @@ flowchart TD
 
 ### The 10 tabs
 
-**1. Progress** — A filterable overview of all milestones, slices, and tasks. Leads with a **Risk Heatmap** (color-coded blocks per milestone), a **Feature Snapshot** (missing and recently updated slices), and **Discussion Status** (which milestones have been discussed, drafted, or are still pending). Each slice shows a verification badge (✓/✗/?) and a blocker warning if one was found during verification. The active slice expands to show individual tasks with estimates. Press **Enter** or **Space** to collapse/expand a milestone.
+**1. Progress** — A filterable overview of all milestones, slices, and tasks. Leads with a **Risk Heatmap** (color-coded blocks per milestone — green for low, amber for medium, red for high — plus a legend and count of high-risk slices not yet started), a **Feature Snapshot** (missing slices, slices updated in the last 7 days, and recent completions), and **Discussion Status** (which milestones have been discussed, drafted, or are still pending). Each slice shows a verification badge (✓/✗/?) and a blocker warning if one was found during verification. Milestones can be `active`, `complete`, `pending`, or `parked`. The active slice expands to show individual tasks with estimates. Press **Enter** or **Space** to collapse/expand a milestone.
 
 **2. Timeline** — A Gantt-style view of the last 20 executed units. On terminals ≥ 90 columns wide, renders as a proportional Gantt chart with phase-colored bars (research, planning, execution, summary) and time axis labels. On narrower terminals, falls back to a list view with duration bars. Shows tier tags and model labels per unit.
 
@@ -56,17 +56,17 @@ flowchart TD
 
 **4. Metrics** — Cost and token breakdown with bar charts. **By Phase** (research/planning/execution/summary), **By Model**, and **By Tier**. A **Projections** section calculates average cost per completed slice, projects remaining spend, shows burn rate, and draws a sparkline of per-slice cost trends. Displays a warning if projected total exceeds 2× current spend.
 
-**5. Health** — Session health in three sections. **Budget**: visual progress bar against the configured ceiling (if set) and the active token profile. **Pressure**: truncation rate and continue-here rate as color-coded bars (green/yellow/red). **Routing**: tier breakdown with downgrade counts and savings summary. **Session**: raw tool call and message counts.
+**5. Health** — Session health in six sections. **Budget**: visual progress bar against the configured ceiling (if set) and the active token profile. **Pressure**: truncation rate and continue-here rate as color-coded bars (green/yellow/red). **Routing**: tier breakdown with downgrade counts and savings summary. **Session**: raw tool call and message counts. **Environment**: any failing environment checks (missing tools, configuration issues) surfaced from the doctor checks. **Providers**: status of configured LLM, notification, search, and tool providers. **Skills**: a summary of installed skills with warning/critical counts and the top issue, with a link to `/gsd skill-health` for the full report.
 
-**6. Agent** — Live agent activity. Shows current unit type and ID if auto-mode is active, elapsed time, a completion progress bar (completed units vs total slices), units/hr rate, and session cost and token totals. Also surfaces truncation and continue-here rates, and flags any pending captures.
+**6. Agent** — Live agent activity. Shows current unit type and ID if auto-mode is active, elapsed time, a completion progress bar (completed units vs total slices), units/hr rate, and session cost and token totals. Also surfaces truncation and continue-here rates, and flags any pending captures. Shows the **Recent (last 5)** completed units with timestamps, type, ID, duration, and cost.
 
 **7. Changes** — Changelog of all completed slices, ordered by completion date. Each entry shows the slice title, one-liner summary, files modified with descriptions, key decisions, and patterns established (sourced from slice `SUMMARY.md` verification metadata).
 
 **8. Knowledge** — Contents of `.gsd/KNOWLEDGE.md` rendered in three sections: **Rules** (ID, scope, content), **Patterns** (ID, content), and **Lessons Learned** (ID, content). Shows a message if the file doesn't exist yet.
 
-**9. Captures** — All entries from `CAPTURES.md`, grouped by status (pending first, then triaged, then resolved). Shows each capture's ID, status badge, text preview, and classification badge. The tab label shows a live count of pending captures when there are any.
+**9. Captures** — All entries from `CAPTURES.md`, with a summary line showing total, pending, and resolved counts. Entries are grouped by status (pending first, then triaged, then resolved). Shows each capture's ID, status badge, text preview, and classification badge.  The tab label shows a live count of pending captures when there are any.
 
-**0. Export** — Three export options: **[m]** Markdown report, **[j]** JSON report, **[s]** Snapshot of the current view as plain text. Exports are written to `.gsd/` with a timestamped filename. The last export path is shown after a successful export.
+**0. Export** — Three export options: **[m]** Markdown report, **[j]** JSON report, **[s]** Snapshot of the current active tab as plain text. Exports are written to `.gsd/` with a timestamped filename. The last export path is shown after a successful export.
 
 ### Navigation
 
@@ -92,14 +92,15 @@ The visualizer supports full keyboard and mouse navigation:
 
 The visualizer aggregates from several sources:
 
-- **State and registry** — `STATE.md` and the milestone registry for current phase, active milestone/slice/task, and milestone status.
+- **Derived state** — Calls `deriveState()` which reads the `.gsd/` directory tree to determine the current phase, active milestone/slice/task, and the milestone registry (status, dependencies, titles).
 - **Roadmap and plan files** — `*-ROADMAP.md` and `*-PLAN.md` files for slice/task structure, dependencies, and risk levels. Parsed with mtime-based caching to avoid re-reading unchanged files.
 - **Slice summaries** — `*-SUMMARY.md` files for changelog entries, verification results, key decisions, patterns established, and data flow (provides/requires). Also cached by mtime.
 - **Metrics ledger** — In-memory ledger (or disk fallback) containing per-unit records of cost, token counts, model, tier, start/end times. Powers the Metrics, Timeline, Agent, and Health tabs.
 - **Captures** — `.gsd/CAPTURES.md` for all capture entries and pending count.
 - **Knowledge** — `.gsd/KNOWLEDGE.md` for rules, patterns, and lessons.
 - **Preferences** — Project and global GSD preferences for budget ceiling and token profile (shown in Health tab).
-- **Discussion state** — Milestone `*-CONTEXT.md` and `*-CONTEXT-DRAFT.md` files to determine which milestones have been through `/gsd discuss-phase`.
+- **Discussion state** — Milestone `*-CONTEXT.md` and `*-CONTEXT-DRAFT.md` files to determine which milestones have been through [`/gsd discuss-phase`](../discuss-phase/).
+- **Provider and environment checks** — Auth config files and environment variables (no network calls) for the Providers and Environment sections of the Health tab.
 
 ## What Files It Touches
 
@@ -109,15 +110,22 @@ Entirely read-only.
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | Current phase, active milestone/slice/task |
-| `M*-ROADMAP.md` | Slice structure, dependencies, risk levels |
-| `S*-PLAN.md` | Task structure and estimates (active slice only) |
-| `S*-SUMMARY.md` | Changelog entries, verification metadata |
-| `M*-CONTEXT.md` / `M*-CONTEXT-DRAFT.md` | Discussion status per milestone |
+| `.gsd/milestones/M*/M*-ROADMAP.md` | Slice structure, dependencies, risk levels |
+| `.gsd/milestones/M*/slices/S*/S*-PLAN.md` | Task structure and estimates (active slice only) |
+| `.gsd/milestones/M*/slices/S*/S*-SUMMARY.md` | Changelog entries, verification metadata |
+| `.gsd/milestones/M*/M*-CONTEXT.md` / `M*-CONTEXT-DRAFT.md` | Discussion status per milestone |
 | `.gsd/KNOWLEDGE.md` | Rules, patterns, lessons |
 | `.gsd/CAPTURES.md` | Capture entries and pending count |
 | Metrics ledger (in-memory or `.gsd/`) | Per-unit cost, tokens, model, timing |
 | GSD preferences (project + global) | Budget ceiling, token profile |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/snapshot-<timestamp>.txt` | Written when **[s]** Snapshot is triggered on the Export tab |
+| `.gsd/<timestamp>-export.md` | Written when **[m]** Markdown export is triggered |
+| `.gsd/<timestamp>-export.json` | Written when **[j]** JSON export is triggered |
 
 ## Examples
 
@@ -168,6 +176,37 @@ Jumping to the Progress tab and filtering for high-risk slices:
   M01: Authentication and core data       ● active
     ● S01: User auth and session mgmt           high
     ✓ S02: Recipe CRUD                          high
+```
+
+Checking the Health tab for environment and provider status:
+
+```
+> press 5
+
+  Tab 5: Health
+
+  Budget
+    No budget ceiling set
+    Token profile: standard
+
+  Pressure
+    Truncation:    ████░░░░░░░░░░  8.3%
+    Continue-here: ██░░░░░░░░░░░░  4.2%
+
+  Environment
+    ⚠ git not found on PATH
+      Install git and ensure it is in your PATH
+
+  Providers
+    LLM
+      ✓ Configured
+    Notifications
+      ✗ Slack bot token not set
+
+  Skills
+    12 skills tracked  ·  1 warning
+    ⚠ gsd:execute-phase: missing required prompt permission
+    → /gsd skill-health for full report
 ```
 
 ## Related Commands

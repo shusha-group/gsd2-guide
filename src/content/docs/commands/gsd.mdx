@@ -7,9 +7,24 @@ description: "The main entry point — execute one unit at a time in step mode, 
 
 `/gsd` is GSD's primary entry point. It runs in **step mode** — executing one unit of work, then pausing to ask what you'd like to do next. This gives you the same dispatch engine as [`/gsd auto`](../auto/), but with a human decision point between every unit.
 
-If no milestone exists yet, `/gsd` launches the smart entry wizard — a guided conversation that helps you define your first milestone through discussion rather than filling out templates.
+If no milestone exists yet, `/gsd` launches the smart entry wizard — a guided conversation that helps you define your first milestone through discussion rather than filling out templates. If a previous auto-mode session crashed, `/gsd` surfaces a crash recovery prompt before the wizard runs.
 
-Bare `/gsd` is identical to [`/gsd next`](../next/). Both invoke the same code path. The difference is purely about how you think about it: `/gsd` is "start working", `/gsd next` is "give me the next unit."
+Bare `/gsd` is nearly identical to [`/gsd next`](../next/). Both invoke the same dispatch engine with `step: true`. The only difference is that `/gsd next` also supports `--dry-run` and `--verbose` flags.
+
+`/gsd` also serves as the namespace for all GSD subcommands:
+
+```
+/gsd auto        /gsd stop          /gsd pause         /gsd discuss
+/gsd status      /gsd visualize     /gsd queue         /gsd quick
+/gsd capture     /gsd triage        /gsd dispatch       /gsd history
+/gsd undo        /gsd skip          /gsd export         /gsd cleanup
+/gsd steer       /gsd knowledge     /gsd new-milestone  /gsd parallel
+/gsd mode        /gsd prefs         /gsd config         /gsd hooks
+/gsd run-hook    /gsd skill-health  /gsd doctor         /gsd forensics
+/gsd migrate     /gsd remote        /gsd inspect        /gsd update
+```
+
+Run `/gsd help` for a categorized reference with descriptions.
 
 ## Usage
 
@@ -27,10 +42,11 @@ Under the hood, `/gsd` runs the same initialization sequence and dispatch engine
 
 ```mermaid
 flowchart TD
-    Start(["/gsd"]) --> Paused{Paused session?}
-    Paused -->|Yes| Restore[Restore saved state]
-    Paused -->|No| HasMilestone{Milestone exists?}
-    Restore --> Execute
+    Start(["/gsd"]) --> CrashLock{Crash lock?}
+    CrashLock -->|Yes| CrashPrompt[Crash recovery prompt]
+    CrashLock -->|No| HasMilestone{Milestone exists?}
+    CrashPrompt -->|Resume auto| Auto(["/gsd auto"])
+    CrashPrompt -->|Continue manually| HasMilestone
     HasMilestone -->|No| Wizard[Smart entry wizard]
     HasMilestone -->|Yes| Init[Initialize step mode]
     Wizard --> Init
@@ -43,27 +59,38 @@ flowchart TD
     Status --> StepWiz
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Paused fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CrashLock fill:#0d180d,stroke:#39ff14,color:#39ff14
     style HasMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
     style StepWiz fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Restore fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CrashPrompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Wizard fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Init fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Status fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Auto fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
+
+### Crash recovery
+
+Before showing the wizard, `/gsd` checks for a crash lock left by a previous auto-mode session that was interrupted. If found, it clears the lock and presents a choice:
+
+- **Resume with /gsd auto** — restart auto-mode from where it left off.
+- **Continue manually** — proceed to the wizard as normal.
+
+The wizard also self-heals stale runtime records: any unit records left behind by a crashed session (stuck in `dispatched` or `timeout` phase, or whose expected artifact already exists) are cleared automatically before dispatch continues.
 
 ### Smart entry wizard
 
-If no milestone exists (fresh project or first run after `gsd init`), `/gsd` doesn't ask you to fill out a template. Instead, it launches a guided conversation:
+If no active milestone is found (fresh project, all milestones complete, or the active milestone was discarded), `/gsd` doesn't ask you to fill out a template. Instead, it launches a guided conversation:
 
-1. Asks about the project — what you're building, what exists already, what the first goal is.
-2. Creates a milestone context file from the discussion.
-3. Proceeds to research and planning as the first dispatched units.
+1. **First ever milestone** — skips the wizard picker and immediately asks "What's the vision?" via the `discuss` prompt. Auto-mode starts once the context and roadmap are committed.
+2. **No active milestone (subsequent)** — presents a "Create next milestone" action before dispatching the discuss prompt.
+3. **All milestones complete** — offers "Start new milestone" or "View status".
+4. **Milestone in `needs-discussion` state** — a `CONTEXT-DRAFT.md` exists but no roadmap yet. The wizard offers to continue from the draft, start fresh, or skip to a new milestone.
 
-This means you can go from zero to a running milestone by just typing `/gsd` and talking. If you already have a milestone in a `needs-discussion` state (a `CONTEXT-DRAFT.md` exists but no roadmap yet), the wizard routes to a milestone-level discussion instead.
+After discussion completes and the context + roadmap are committed, auto-mode starts automatically (or step mode, if `/gsd` was what triggered the wizard).
 
 ### The step wizard
 
@@ -85,7 +112,7 @@ A unit is the smallest dispatchable piece of work. Depending on the project phas
 - A **summary** (compressing completed work and writing acceptance criteria)
 - A **roadmap reassessment** (re-evaluating remaining slices after a slice completes)
 
-The dispatch engine [determines the unit type](../auto/#the-dispatch-loop) by evaluating a declarative table of 15 ordered dispatch rules against the current project state.
+The dispatch engine [determines the unit type](../auto/#the-dispatch-loop) by evaluating a declarative table of ordered dispatch rules against the current project state.
 
 ## What Files It Touches
 
@@ -101,6 +128,7 @@ Same as [`/gsd auto`](../auto/#what-files-it-touches) — the underlying engine 
 | `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Slice ordering and completion status |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Task breakdown for the active slice |
 | `.gsd/milestones/<MID>/slices/<SID>/tasks/<TID>-SUMMARY.md` | Prior task outcomes fed as context |
+| `.gsd/runtime/crash.lock` | Crash lock from a previous interrupted session |
 
 ### Writes
 
@@ -110,6 +138,15 @@ Same as [`/gsd auto`](../auto/#what-files-it-touches) — the underlying engine 
 | `.gsd/milestones/<MID>/slices/<SID>/tasks/<TID>-SUMMARY.md` | Written by task executors |
 | `.gsd/runtime/` | Session metadata, lock files |
 | `.gsd/activity/` | JSONL execution logs |
+
+### Creates (first run only)
+
+| File | Purpose |
+|------|---------|
+| `.gsd/milestones/<MID>/<MID>-CONTEXT.md` | Milestone context written after discuss prompt |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Roadmap written after plan-milestone |
+| `.gitignore` | Baseline GSD patterns added if not present |
+| `.gsd/PREFERENCES.md` | Created from template on first bootstrap |
 
 ## Examples
 
@@ -160,12 +197,25 @@ First run on a fresh project (smart entry wizard):
   ...
 ```
 
+Crash recovery on resume:
+
+```
+> /gsd
+
+● Interrupted session detected
+  Last unit: T03 (Add auth middleware) — interrupted 4 minutes ago
+
+  ❯ Resume with /gsd auto
+    Continue manually
+```
+
 ## Prompts Used
 
-- [`discuss`](../../prompts/discuss/) — Interactive milestone planning prompt
+- [`discuss`](../../prompts/discuss/) — Interactive milestone planning prompt (vision capture, Q&A, multi-milestone sequencing)
+- [`discuss-headless`](../../prompts/discuss-headless/) — Headless milestone creation from a seed specification document
 - [`guided-complete-slice`](../../prompts/guided-complete-slice/) — The interactive counterpart to complete-slice
-- [`guided-discuss-milestone`](../../prompts/guided-discuss-milestone/) — An interview-style prompt that surfaces behavioral and architectural unknowns fo…
-- [`guided-discuss-slice`](../../prompts/guided-discuss-slice/) — An interview-style prompt that surfaces behavioral, UX, and scope unknowns for a…
+- [`guided-discuss-milestone`](../../prompts/guided-discuss-milestone/) — An interview-style prompt that surfaces behavioral and architectural unknowns for a milestone
+- [`guided-discuss-slice`](../../prompts/guided-discuss-slice/) — An interview-style prompt that surfaces behavioral, UX, and scope unknowns for a slice
 - [`guided-execute-task`](../../prompts/guided-execute-task/) — The interactive counterpart to execute-task
 - [`guided-plan-milestone`](../../prompts/guided-plan-milestone/) — The interactive counterpart to plan-milestone
 - [`guided-plan-slice`](../../prompts/guided-plan-slice/) — The interactive counterpart to plan-slice
@@ -176,8 +226,9 @@ First run on a fresh project (smart entry wizard):
 ## Related Commands
 
 - [`/gsd auto`](../auto/) — Continuous execution without pausing between units
-- [`/gsd next`](../next/) — Explicit alias (identical behavior, also supports `--dry-run`)
-- [`/gsd discuss`](../discuss/) — Pre-plan a slice with a guided interview before auto mode runs
+- [`/gsd next`](../next/) — Explicit alias (identical behavior, also supports `--dry-run` and `--verbose`)
+- [`/gsd discuss`](../discuss/) — Run a guided slice interview before auto mode executes that slice
+- `/gsd parallel` — Orchestrate multiple milestones in parallel worktrees (`start` / `status` / `stop` / `pause` / `resume` / `merge`)
 - [`/gsd status`](../status/) — View progress dashboard
 - [`/gsd pause`](../pause/) — Suspend the session with state preservation for later resume
 - [`/gsd stop`](../stop/) — Terminate the session

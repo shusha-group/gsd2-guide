@@ -31,15 +31,23 @@ The command calls `formatHookStatus()` from the hook engine, which internally ca
 
 ### Post-Unit Hook Behaviour
 
-Post-unit hooks fire after a core unit completes. The hook engine prevents infinite chains by never triggering hooks for:
+Post-unit hooks fire after a core unit completes. The hook engine prevents runaway chains by never triggering hooks for:
 
 - `hook/*` unit types (hook-on-hook)
 - `triage-captures` units
 - `quick-task` units
 
-Each hook can run multiple times for the same trigger unit, controlled by `max_cycles`. Idempotency is enforced via an `artifact` file — if the artifact already exists at the expected path, the hook is skipped entirely.
+Each hook can run multiple times for the same trigger unit, controlled by `max_cycles` (default `1`, maximum `10`). Idempotency is enforced via an `artifact` file — if the artifact already exists at the expected path, the hook is skipped entirely.
 
-If a hook produces a `retry_on` artifact instead of the normal artifact, the hook engine signals the caller to re-dispatch the original trigger unit. This allows a hook to force a task to re-run (e.g., a review hook flags issues → task re-runs → hook fires again).
+If a hook produces a `retry_on` artifact instead of the normal artifact, the hook engine signals the caller to re-dispatch the original trigger unit. This allows a hook to force a task to re-run (for example, a review hook flags issues → task re-runs → hook fires again on the next completion). The cycle count is checked before allowing a retry — once `max_cycles` is reached, the retry is suppressed.
+
+Both post-unit and pre-dispatch hook prompts support variable substitution using the trigger unit's context:
+
+| Variable | Resolves to |
+|----------|------------|
+| `{milestoneId}` | e.g. `M001` |
+| `{sliceId}` | e.g. `S01` |
+| `{taskId}` | e.g. `T01` |
 
 **Artifact path resolution** is based on the trigger unit's ID depth:
 
@@ -51,7 +59,7 @@ If a hook produces a `retry_on` artifact instead of the normal artifact, the hoo
 
 ### Pre-Dispatch Hook Behaviour
 
-Pre-dispatch hooks intercept a unit before its prompt is sent. Multiple hooks can fire for the same unit type and compose in order:
+Pre-dispatch hooks intercept a unit before its prompt is sent. Hook units (`hook/*`) are never intercepted by pre-dispatch hooks. Multiple hooks can fire for the same unit type and compose in order:
 
 - **`modify`** hooks stack — all `prepend`/`append` values are applied sequentially to build up the final prompt.
 - **`skip`** short-circuits — the first matching skip hook cancels the unit entirely. An optional `skip_if` condition file can gate the skip: the unit is only skipped if that file exists at the unit's artifact path.
@@ -61,7 +69,7 @@ Skip and replace always take precedence over modify hooks.
 
 ### Cycle Persistence
 
-Cycle counts survive crashes and restarts. The engine persists them to `.gsd/hook-state.json` after each hook dispatch and on auto-mode pause, then restores them on resume. On a clean stop, the state file is cleared.
+Cycle counts survive crashes and restarts. The engine persists them to `.gsd/hook-state.json` after each hook dispatch and on auto-mode pause, then restores them on resume. On a clean stop, the state file is reset to an empty record.
 
 ### Hook Types
 
@@ -131,12 +139,8 @@ No hooks configured. Add post_unit_hooks or pre_dispatch_hooks
 to .gsd/preferences.md
 ```
 
-## Prompts Used
-
-- [`execute-task`](../../prompts/execute-task/) — The core executor prompt
-
 ## Related Commands
 
-- [`/gsd run-hook`](../run-hook/) — Manually trigger a specific hook
+- [`/gsd run-hook`](../run-hook/) — Manually trigger a specific hook, bypassing artifact idempotency checks
 - [`/gsd prefs`](../prefs/) — Configure hook settings in preferences
 - [`/gsd auto`](../auto/) — Hooks run automatically during auto-mode execution

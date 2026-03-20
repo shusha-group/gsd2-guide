@@ -72,7 +72,7 @@ Scans the `.planning/` directory for structural issues. Issues are classified as
 |-------|----------|
 | `.planning/` directory missing or not a directory | Fatal |
 | `ROADMAP.md` missing (milestone structure inferred from `phases/`) | Warning |
-| `PROJECT.md` missing (metadata will be empty) | Warning |
+| `PROJECT.md` missing (project metadata will be empty) | Warning |
 | `REQUIREMENTS.md` missing (requirements will be empty) | Warning |
 | `STATE.md` missing (state information will be empty) | Warning |
 | `phases/` directory missing (no phase data parsed) | Warning |
@@ -126,7 +126,7 @@ Generates a summary of what will be written:
 - Milestone count
 - Slice count with completion percentage
 - Task count with completion percentage
-- Requirement count with status breakdown (validated, active, deferred, out-of-scope) — only shown if requirements exist
+- Requirement count with status breakdown (validated, active, deferred) — only shown if requirements exist
 - Warning if a `.gsd/` directory already exists in the current working directory (it will be overwritten)
 
 The preview is shown via an interactive confirmation UI. You can proceed or cancel.
@@ -164,7 +164,7 @@ After writing, the command offers to dispatch an agent-driven review. The agent 
 | `.gsd/PROJECT.md` | Project description (pass-through or stub) |
 | `.gsd/STATE.md` | Minimal stub — recomputed by `deriveState()` on first run |
 | `.gsd/DECISIONS.md` | Key decisions aggregated from phase summaries |
-| `.gsd/REQUIREMENTS.md` | Migrated requirements, grouped by status |
+| `.gsd/REQUIREMENTS.md` | Migrated requirements, grouped by status (only written if requirements exist) |
 | `.gsd/milestones/M001/M001-ROADMAP.md` | Milestone roadmap with slice checklist |
 | `.gsd/milestones/M001/M001-CONTEXT.md` | Minimal context stub |
 | `.gsd/milestones/M001/M001-RESEARCH.md` | Consolidated research (only if research exists) |
@@ -221,7 +221,7 @@ When `.planning/` doesn't exist:
 ```
 > /gsd migrate ~/projects/myapp
 
-✖ Directory not found: /Users/you/projects/myapp/.planning
+Directory not found: /Users/you/projects/myapp/.planning
 
 Migration converts a .planning/ directory (from older GSD versions)
 into .gsd/ format.
@@ -234,8 +234,8 @@ When warnings are present but migration can proceed:
 ```
 > /gsd migrate
 
-⚠ ROADMAP.md not found — milestone structure will be inferred from phases/ directory
-⚠ REQUIREMENTS.md not found — requirements will be empty
+⚠ ROADMAP.md not found — milestone structure will be inferred from phases/ directory (ROADMAP.md)
+⚠ REQUIREMENTS.md not found — requirements will be empty (REQUIREMENTS.md)
 
 ● Migration preview
   Milestones: 1

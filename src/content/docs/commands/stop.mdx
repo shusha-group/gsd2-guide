@@ -1,11 +1,11 @@
 ---
 title: "/gsd stop"
-description: "Gracefully terminate GSD auto mode — clears the session lock, tears down the worktree, and shows a session cost summary."
+description: "Gracefully terminate GSD auto mode — clears the session lock, tears down the worktree, closes the database, and shows a session cost summary."
 ---
 
 ## What It Does
 
-`/gsd stop` gracefully terminates a running auto-mode session. It clears the session lock at `.gsd/auto.lock`, tears down the worktree (while preserving the branch and all commits), closes the metrics database, and displays a session cost summary.
+`/gsd stop` gracefully terminates a running auto-mode session. It clears the session lock at `.gsd/auto.lock`, tears down the worktree (while preserving the branch and all commits), closes the SQLite database, and displays an inline session cost summary.
 
 Unlike [`/gsd pause`](../pause/), which preserves state for later resume, stop is a full teardown. The next `/gsd auto` starts a fresh session.
 
@@ -17,35 +17,35 @@ Unlike [`/gsd pause`](../pause/), which preserves state for later resume, stop i
 
 No flags. Works in two contexts:
 
-- **Local** — If auto mode is running in the current terminal, stops it directly after the current unit finishes.
-- **Remote** — If auto mode is running in *another* terminal, detects the `.gsd/auto.lock` file and sends a stop signal. The running session picks up the signal and shuts down gracefully.
+- **Local** — If auto mode is running in the current terminal, stops it directly. Because stop is called between dispatch cycles (not mid-execution), the current unit will have already finished.
+- **Remote** — If auto mode is running in *another* terminal, GSD reads the PID stored in `.gsd/auto.lock` and sends SIGTERM to that process. The running session's SIGTERM handler triggers `stopAuto()`, which cleans up and exits gracefully.
 
 ## How It Works
 
 ```mermaid
 flowchart TD
     Stop(["/gsd stop"]) --> Running{Auto mode running locally?}
-    Running -->|Yes| Finish[Wait for current unit to finish]
-    Running -->|No| Remote{Lock file exists?}
-    Remote -->|Yes| Signal[Send stop signal via auto.lock]
-    Remote -->|No| NoOp([Nothing to stop])
-    Signal --> Wait[Wait for confirmation]
-    Wait --> Done
-    Finish --> Clear[Clear auto.lock]
-    Clear --> Teardown[Tear down worktree]
-    Teardown --> CloseDB[Close gsd.db]
-    CloseDB --> Summary[Show cost summary]
+    Running -->|Yes| StopLocal[Call stopAuto — already between units]
+    Running -->|No| LockFile{Lock file exists\nwith alive PID?}
+    LockFile -->|Yes| Signal[Send SIGTERM to remote PID]
+    LockFile -->|No| NoOp([Nothing to stop])
+    Signal --> Remote[Remote SIGTERM handler\ncalls stopAuto]
+    StopLocal --> Teardown
+    Remote --> Teardown
+    Teardown[Clear auto.lock + release OS lock] --> Worktree[Exit worktree\npreserve branch]
+    Worktree --> CloseDB[Close gsd.db]
+    CloseDB --> Summary[Show inline cost summary]
     Summary --> Done([Stopped])
 
     style Stop fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Running fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Remote fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style LockFile fill:#0d180d,stroke:#39ff14,color:#39ff14
     style NoOp fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
-    style Finish fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style StopLocal fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Signal fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Wait fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Clear fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Remote fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Teardown fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Worktree fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CloseDB fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -53,15 +53,20 @@ flowchart TD
 
 ### Teardown sequence
 
-1. **Wait for current unit** — If a task is mid-execution, GSD lets it finish rather than interrupting. The unit's work is committed normally.
-2. **Clear session lock** — Removes `.gsd/auto.lock`, releasing the session for future runs.
-3. **Tear down worktree** — If worktree isolation was active, removes the `.gsd/worktrees/<MID>/` directory. The `milestone/<MID>` branch and all its commits are preserved — only the working copy is removed.
-4. **Close metrics database** — Flushes pending metrics and closes the SQLite database at `.gsd/gsd.db`.
-5. **Cost summary** — Displays total tokens used, estimated cost, wall-clock time, and units completed during the session.
+1. **Clear timeout handles** — Cancels any active unit timeout, wrap-up warning, idle watchdog, and continue-here interval timers.
+2. **Clear session lock** — Removes `.gsd/auto.lock` and releases the OS-level lock held via `proper-lockfile`.
+3. **Deregister SIGTERM handler** — Removes the SIGTERM handler registered at auto-mode start.
+4. **Exit worktree** — If worktree isolation was active, exits the `.gsd/worktrees/<MID>/` working copy. The `milestone/<MID>` branch and all its commits are preserved — only the working copy is removed.
+5. **Close database** — Flushes pending metrics and closes the SQLite database at `.gsd/gsd.db`.
+6. **Restore base path** — Resets to the original project root and changes the working directory back.
+7. **Cost summary** — Shows total cost, token count, and units completed for the session as an inline notification.
+8. **Rebuild state** — Re-derives GSD state from disk so the status display reflects the stopped session.
 
 ### Remote stop
 
-When you run `/gsd stop` in a terminal where auto mode isn't running, GSD checks for `.gsd/auto.lock`. If it exists (meaning auto mode is running in another terminal), GSD writes a stop signal to the lock file. The running session checks for this signal between unit dispatches and shuts down gracefully after confirming the stop.
+When you run `/gsd stop` in a terminal where auto mode isn't running, GSD reads `.gsd/auto.lock`. If the file exists and its recorded PID is still alive, GSD sends `SIGTERM` to that process. The running session's registered SIGTERM handler calls `stopAuto()`, which performs the full teardown sequence above and exits cleanly.
+
+If the lock file exists but the PID is no longer alive (a stale lock from a crash), GSD cleans up the stale lock file and reports that nothing is running.
 
 ## What Files It Touches
 
@@ -69,20 +74,14 @@ When you run `/gsd stop` in a terminal where auto mode isn't running, GSD checks
 
 | File | Purpose |
 |------|---------|
-| `.gsd/auto.lock` | Detect whether auto mode is running locally or in another session |
-| `.gsd/gsd.db` | Flush and close the metrics database |
-
-### Writes
-
-| File | Purpose |
-|------|---------|
-| `.gsd/auto.lock` | Write stop signal when targeting a remote session |
+| `.gsd/auto.lock` | Detect whether auto mode is running remotely; read PID for SIGTERM |
+| `.gsd/gsd.db` | Flush and close the SQLite metrics database |
 
 ### Deletes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/auto.lock` | Cleared on clean shutdown |
+| `.gsd/auto.lock` | Removed on clean shutdown |
 | `.gsd/worktrees/<MID>/` | Worktree working copy removed (branch and commits preserved) |
 
 ## Examples
@@ -92,22 +91,7 @@ Stopping auto mode after several completed units:
 ```
 > /gsd stop
 
-● Waiting for current unit to finish...
-  ✓ T03 complete — committed
-
-● Stopping auto mode
-  ✓ Session lock cleared
-  ✓ Worktree removed (.gsd/worktrees/M001/)
-  ✓ Branch milestone/M001 preserved (8 commits)
-
-● Session Summary
-  ┌────────────────────────────────┐
-  │ Units completed:  5            │
-  │ Duration:         47m 12s      │
-  │ Input tokens:     342,891      │
-  │ Output tokens:    89,204       │
-  │ Estimated cost:   $4.82        │
-  └────────────────────────────────┘
+● Auto-mode stopped — User requested stop. Session: $4.82 · 432,095 tokens · 5 units
 ```
 
 Remote stop from another terminal:
@@ -115,17 +99,15 @@ Remote stop from another terminal:
 ```
 > /gsd stop
 
-● Auto mode detected in another session (PID 48291)
-  Sending stop signal...
-  ✓ Stop confirmed — session ended
+● Sent stop signal to auto-mode session (PID 48291). It will shut down gracefully.
 ```
 
-When no session is active:
+When no session is active (stale or missing lock):
 
 ```
 > /gsd stop
 
-● Nothing to stop — no active auto-mode session found.
+● Auto-mode is not running.
 ```
 
 ## Related Commands

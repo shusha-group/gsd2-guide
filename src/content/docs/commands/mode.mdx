@@ -30,35 +30,40 @@ flowchart TD
     A["/gsd mode"] --> B{scope arg?}
     B -- "project" --> C[Load .gsd/preferences.md]
     B -- "global or none" --> D[Load ~/.gsd/preferences.md]
-    C --> E[Show mode select prompt]
+    C --> E{File exists?}
     D --> E
-    E --> F{Choice}
-    F -- solo --> G["Write mode: solo"]
-    F -- team --> H["Write mode: team"]
-    F -- none --> I["Remove mode key"]
-    F -- keep current --> J[No change]
-    G --> K[Save preferences file]
-    H --> K
-    I --> K
+    E -- no --> F[Create from template]
+    E -- yes --> G[Show mode select prompt]
+    F --> G
+    G --> H{Choice}
+    H -- solo --> I["Write mode: solo"]
+    H -- team --> J["Write mode: team"]
+    H -- none --> K["Remove mode key"]
+    H -- keep current --> L[No change]
+    I --> M[Save preferences file]
+    J --> M
+    K --> M
 
     style A fill:#0d180d,stroke:#39ff14,color:#39ff14
     style B fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style F fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style E fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style H fill:#0d180d,stroke:#39ff14,color:#39ff14
     style C fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style F fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style L fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style M fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
 The command presents four options:
 
 1. **solo** — auto-push, squash, simple IDs (personal projects)
 2. **team** — unique IDs, push branches, pre-merge checks (shared repos)
-3. **(none)** — no mode defaults, configure everything individually
+3. **(none)** — configure everything manually
 4. **(keep current)** — exit without changes
 
 When you select a mode, only the `mode` key is written to your preferences file (`mode: solo` or `mode: team`). The individual git and ID settings are **not written** — they are resolved at runtime via `applyModeDefaults`, which merges mode defaults as the lowest-priority layer. Any explicitly set preference value wins over the mode default.
@@ -66,6 +71,10 @@ When you select a mode, only the `mode` key is written to your preferences file 
 ### Scope
 
 By default, `/gsd mode` writes to the **global** preferences at `~/.gsd/preferences.md`. Pass `project` to write to `.gsd/preferences.md` in the current project instead. Project-scope preferences take priority over global preferences during merge, so you can have a different mode per project.
+
+### File Creation
+
+Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If the target preferences file doesn't exist, it creates one from the built-in template before proceeding. You won't be dropped into the selector against a missing file.
 
 ### Mode Comparison
 
@@ -88,6 +97,13 @@ In team mode, milestone IDs include a random 6-character suffix: `M001-eh88as`. 
 The unique ID format affects directory names (`.gsd/milestones/M001-eh88as/`), branch names (`milestone/M001-eh88as`), and all references in state files.
 
 ## What Files It Touches
+
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `~/.gsd/preferences.md` | Created from template if it doesn't exist (global scope) |
+| `.gsd/preferences.md` | Created from template if it doesn't exist (project scope) |
 
 ### Reads
 
@@ -113,7 +129,7 @@ Switching to team mode globally:
 Workflow mode:
   ❯ solo — auto-push, squash, simple IDs (personal projects)
     team — unique IDs, push branches, pre-merge checks (shared repos)
-    (none) — no mode defaults, configure individually
+    (none) — configure everything manually
     (keep current)
 
   → team
@@ -131,7 +147,7 @@ Switching to project-level solo mode (overrides global team mode for this repo):
 Workflow mode (current: team):
   ❯ solo — auto-push, squash, simple IDs (personal projects)
     team — unique IDs, push branches, pre-merge checks (shared repos)
-    (none) — no mode defaults, configure individually
+    (none) — configure everything manually
     (keep current)
 
   → solo
