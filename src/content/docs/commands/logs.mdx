@@ -1,55 +1,74 @@
 ---
 title: "/gsd logs"
-description: "Reference for the three diagnostic data streams GSD writes during auto-mode execution — activity logs, debug logs, and the metrics ledger."
+description: "Browse and inspect the three diagnostic data streams GSD writes during auto-mode — activity logs, debug logs, and the metrics ledger."
 ---
 
 ## What It Does
 
-`/gsd logs` is a reference concept, not a runnable command. GSD writes three diagnostic data streams during auto-mode execution — **activity logs**, **debug logs**, and the **metrics ledger** — each serving a different purpose and accessed through dedicated commands.
+`/gsd logs` gives you a live index of everything GSD has recorded: activity logs, debug logs, and a summary of the metrics ledger. It's the starting point for any diagnostic investigation — run it to see what's been captured, then drill into specific entries to understand what happened inside a unit.
 
-Activity logs capture the full session transcript for each unit: every tool call, reasoning trace, and file write as JSONL. Debug logs record internal timing and dispatch diagnostics when `--debug` mode is enabled. The metrics ledger records cost, token count, and duration for every completed unit.
+Unlike [`/gsd forensics`](../forensics/), which uses an LLM to investigate anomalies, `/gsd logs` is purely mechanical: it reads the raw data and presents it. Use it when you want to browse what exists, spot an unexpected error count, or quickly check how much a session cost. Use forensics when you need to understand *why* something went wrong.
 
-These are the raw data sources that power forensics investigation, cost reporting, and post-mortem analysis. Understanding where they live and what they contain is useful when [`/gsd forensics`](../forensics/) doesn't give enough detail, or when you want to understand cost patterns beyond what [`/gsd history`](../history/) shows.
+GSD writes three diagnostic data streams automatically during auto-mode:
+
+- **Activity logs** (`.gsd/activity/*.jsonl`) — Full session transcript for each unit: every tool call, tool result, and assistant message. Written before each context wipe.
+- **Debug logs** (`.gsd/debug/debug-*.log`) — Internal timing and dispatch diagnostics. Only written when `GSD_DEBUG=1` is set.
+- **Metrics ledger** (`.gsd/metrics.json`) — Cost, token count, and duration for every completed unit. Persists across sessions.
 
 ## Usage
 
-There is no `/gsd logs` command. Access the three log streams through these focused commands:
-
 ```
-/gsd history            # metrics ledger — cost, tokens, duration by unit
-/gsd history --cost     # cost aggregated by slice
-/gsd history --phase    # cost aggregated by phase
-/gsd history --model    # cost aggregated by model
-/gsd forensics          # activity log analysis with anomaly detection
+/gsd logs              # Overview: activity logs, debug logs, metrics summary
+/gsd logs <N>          # Detailed summary of activity log #N
+/gsd logs tail [N]     # Show last N activity log entries (default 5)
+/gsd logs debug        # List debug log files
+/gsd logs debug <N>    # Show detailed summary of debug log #N
+/gsd logs clear        # Remove old activity and debug logs
 ```
 
 ## How It Works
 
-### The Three Log Types
+### Overview (`/gsd logs`)
+
+The default view shows three sections:
+
+1. **Activity Logs** — A table of the 15 most recent `.jsonl` files, showing sequence number, unit type, unit ID, file size, and age. If there are more than 15, the count of older entries is shown below the table.
+2. **Debug Logs** — Listed only when present. Each entry shows the filename, size, and age.
+3. **Metrics summary** — A one-line count of total units tracked, cumulative cost, and total tokens from the metrics ledger.
 
 ```mermaid
 flowchart TD
     Auto(["auto-mode runs"]) --> AL[Activity logs\n.gsd/activity/*.jsonl]
     Auto --> ML[Metrics ledger\n.gsd/metrics.json]
-    DebugFlag(["--debug flag"]) --> DL[Debug logs\n.gsd/debug/debug-*.log]
+    DebugFlag(["GSD_DEBUG=1"]) --> DL[Debug logs\n.gsd/debug/debug-*.log]
 
-    AL --> F["/gsd forensics\nAnomaly detection,\nroot-cause analysis"]
-    ML --> H["/gsd history\nCost and token\nbreakdowns"]
-    DL --> D["Manual inspection\nfor dispatch/state\ndiagnostics"]
+    AL --> LV["/gsd logs\nOverview table\nwith size + age"]
+    AL --> LS["/gsd logs N\nTool calls, errors,\nfiles written"]
+    AL --> LT["/gsd logs tail\nRecent unit\nquick summary"]
+    ML --> LV
+    DL --> LV
+    DL --> LD["/gsd logs debug N\nEvents, duration,\ndispatches"]
 
     style Auto fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DebugFlag fill:#0d180d,stroke:#39ff14,color:#39ff14
     style AL fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ML fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style DL fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style F fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LV fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LT fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LD fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-### Activity Logs
+### Activity Log Detail (`/gsd logs <N>`)
 
-Activity logs live in `.gsd/activity/` and are written automatically during auto-mode — before each context wipe, GSD dumps the full session as JSONL. These are the most detailed diagnostic artifacts: no formatting, no truncation, no information loss.
+Pass the sequence number from the overview table to drill into a specific unit's log:
+
+- File path, size, and age
+- Total entry count, tool call count, and error count
+- Files written or edited during the unit (up to 10)
+- Bash commands run, flagged if they failed (up to 10)
+- Last reasoning excerpt (up to 200 characters)
 
 **File naming:** `<seq>-<unit-type>-<unit-id>.jsonl`
 
@@ -58,44 +77,48 @@ Examples:
 - `002-plan-slice-M001-S02.jsonl`
 - `003-complete-slice-M001-S01.jsonl`
 
-The sequence number is monotonically increasing across units in the same session. Higher numbers are more recent. Each file is a stream of JSON lines, one per session entry. An entry can be a tool call, a tool result, an assistant message, or a user message.
+The sequence number is monotonically increasing across units in the same session. Higher numbers are more recent. Each file is a stream of JSON lines — one per session entry — representing tool calls, tool results, assistant messages, and user messages.
 
 **Deduplication:** GSD skips writing a log file if the session content hasn't changed since the last write for that unit. It uses a lightweight fingerprint — entry count plus a hash of the last three entries — to detect identical sessions without serializing potentially hundreds of megabytes.
 
 When running parallel milestones, activity logs are written to the **worktree's** `.gsd/activity/` directory, not the project root. Forensics merges both locations automatically — the top 5 most recent files from each directory are included.
 
-**Retention:** Old activity log files accumulate on disk. Use [`/gsd cleanup`](../cleanup/) to remove them, or configure log retention via preferences. The file with the highest sequence number is always preserved, regardless of age.
+### Tail (`/gsd logs tail [N]`)
 
-### Debug Logs
-
-Debug logs are off by default. Enable them by passing `--debug` when starting auto-mode:
+Shows a one-line summary for each of the last N activity logs (default 5, max 20):
 
 ```
-/gsd auto --debug
-/gsd next --debug
+#<seq> <unitType> <unitId> — <toolCalls> tools, <ok|N err>, <age>
 ```
 
-Or set the environment variable before launching GSD:
+Useful for a quick health check after a long auto-mode session.
 
-```bash
-GSD_DEBUG=1 gsd
+### Debug Logs (`/gsd logs debug` / `/gsd logs debug <N>`)
+
+Debug logging is off by default. Enable it with:
+
+```
+GSD_DEBUG=1 gsd auto
+GSD_DEBUG=1 gsd next
 ```
 
-When enabled, a timestamped log file is created at `.gsd/debug/debug-<timestamp>.log`. GSD keeps a maximum of 5 debug log files and prunes the oldest ones when a new session starts with `--debug`.
+When enabled, a timestamped log file is created at `.gsd/debug/debug-<timestamp>.log`. GSD keeps a maximum of 5 debug log files, pruning the oldest when a new session starts.
 
-Each line is a structured JSON event:
+Each log line is a structured JSON event:
+
 ```json
 { "ts": "2026-03-19T10:30:00.000Z", "event": "derive-state-impl", "elapsed_ms": 12.4, "phase": "executing", "milestone": "M001" }
 ```
 
-The debug log captures:
-- State derivation timing and results
-- Dispatch decisions and unit selections
-- Token-to-size-ratio checks (context pressure monitoring)
-- Roadmap and plan parse timings
-- Dashboard render timings
+The debug log captures state derivation timing, dispatch decisions, token-to-size-ratio (TTSR) checks, roadmap and plan parse timings, and dashboard render timings.
 
-A `debug-summary` event is written as the final entry when auto-mode stops, with aggregate counters:
+`/gsd logs debug <N>` shows a summary for the Nth debug log (1-indexed, oldest-first):
+
+- File size and age
+- Total event count, session duration, and dispatch count
+- Any error or failure events captured
+
+A `debug-summary` event is written as the final entry when auto-mode stops:
 
 | Counter | Description |
 |---------|-------------|
@@ -107,6 +130,15 @@ A `debug-summary` event is written as the final entry when auto-mode stops, with
 | `ttsrChecks` / `avgTtsrCheck_ms` | Token-to-size-ratio check count and average duration |
 | `ttsrPeakBuffer` | Peak buffer size observed during TTSR checks |
 | `renders` | Total dashboard renders |
+
+### Clearing Logs (`/gsd logs clear`)
+
+Removes old log files using a tiered retention policy:
+
+- **Activity logs**: Keeps the 5 most recent files. Removes any older files that are more than 7 days old.
+- **Debug logs**: Keeps the 2 most recent files. Removes any older files that are more than 3 days old.
+
+If nothing is old enough to remove, reports "No old logs to clear."
 
 ### Metrics Ledger
 
@@ -130,6 +162,8 @@ Each unit record contains:
 | `toolCalls` | Number of tool calls made |
 | `assistantMessages` | Number of assistant messages in the session |
 | `userMessages` | Number of user messages in the session |
+| `apiRequests` | Total API requests made (each assistant message = one request) |
+| `cacheHitRate` | Cache hit rate as a percentage (0–100), computed from `cacheRead / (cacheRead + input)` |
 | `tier` | Complexity tier (`light`/`standard`/`heavy`) if dynamic routing is active |
 | `modelDowngraded` | `true` if dynamic routing used a cheaper model than configured |
 | `contextWindowTokens` | Context window token count at unit close (if budget tracking is active) |
@@ -138,8 +172,19 @@ Each unit record contains:
 | `promptCharCount` | Character count of the unit prompt |
 | `baselineCharCount` | Character count of the baseline context |
 | `skills` | Skill names loaded/available during this unit |
+| `compressionSavings` | Character savings from prompt compression as a percentage (0–100) |
 
-The `/gsd history` command is the primary way to read the metrics ledger. The dashboard overlay (`/gsd status`) also reads it for the Cost & Usage section.
+Phase classification for `/gsd history --phase` grouping:
+
+| Phase | Unit Types |
+|-------|-----------|
+| `research` | `research-milestone`, `research-slice` |
+| `planning` | `plan-milestone`, `plan-slice` |
+| `execution` | `execute-task` |
+| `completion` | `complete-slice` |
+| `reassessment` | `reassess-roadmap` |
+
+The [`/gsd history`](../history/) command is the primary way to read the metrics ledger. The dashboard overlay ([`/gsd status`](../status/)) also reads it for the Cost & Usage section.
 
 ### Log Locations
 
@@ -148,7 +193,7 @@ The `/gsd history` command is the primary way to read the metrics ledger. The da
 | `.gsd/activity/*.jsonl` | Activity logs | Before each context wipe in auto-mode |
 | `.gsd/worktrees/<MID>/.gsd/activity/*.jsonl` | Activity logs (parallel) | Same, but scoped to a worktree |
 | `.gsd/metrics.json` | Metrics ledger | After each unit completes |
-| `.gsd/debug/debug-<timestamp>.log` | Debug logs | When `--debug` flag or `GSD_DEBUG=1` is set |
+| `.gsd/debug/debug-<timestamp>.log` | Debug logs | When `GSD_DEBUG=1` is set |
 
 ## What Files It Touches
 
@@ -158,82 +203,116 @@ The `/gsd history` command is the primary way to read the metrics ledger. The da
 |------|---------|
 | `.gsd/activity/*.jsonl` | Activity logs for all completed units |
 | `.gsd/worktrees/<MID>/.gsd/activity/*.jsonl` | Worktree activity logs (parallel mode) |
-| `.gsd/metrics.json` | Metrics ledger |
+| `.gsd/metrics.json` | Metrics ledger — unit count, cost, token totals |
 | `.gsd/debug/debug-*.log` | Debug diagnostic logs |
 
-### Creates
+### Deletes
 
-None — the log files themselves are created by auto-mode, not by any log-reading command.
+| File | Purpose |
+|------|---------|
+| `.gsd/activity/*.jsonl` | Old activity logs removed by `/gsd logs clear` (>7 days old, beyond 5 most recent) |
+| `.gsd/debug/debug-*.log` | Old debug logs removed by `/gsd logs clear` (>3 days old, beyond 2 most recent) |
 
 ## Examples
 
-Browsing the metrics ledger via `/gsd history`:
+Running the overview:
 
 ```
-> /gsd history
+> /gsd logs
 
-Last 20 of 47 units | Total: $14.22 · 2.4M tokens
+Activity Logs (.gsd/activity/):
+  #   Unit Type         Unit ID              Size    Age
+  ──────────────────────────────────────────────────────────────────────────
+   45 execute-task       M001/S02/T03          82.4KB  2m ago
+   44 execute-task       M001/S02/T02          71.1KB  18m ago
+   43 plan-slice         M001/S02              38.8KB  31m ago
+  ... and 40 older entries
 
-Time           Type                ID               Model         Cost       Tokens     Duration
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-2m ago         execute-task        M001/S02/T03     sonnet-4-6    $0.31      48K        8m 12s
-18m ago        execute-task        M001/S02/T02     sonnet-4-6    $0.27      41K        6m 44s
-31m ago        plan-slice          M001/S02         sonnet-4-6    $0.18      29K        3m 02s
+  View details: /gsd logs <#>
+
+Metrics: 47 units tracked · $14.22 · 2400K tokens
+
+Tip: Enable debug logging with GSD_DEBUG=1 before /gsd auto
 ```
 
-Cost breakdown by slice:
+Drilling into a specific activity log:
 
 ```
-> /gsd history --cost
+> /gsd logs 45
 
-Cost by slice:
-
-Slice            Units    Cost       Tokens
-──────────────────────────────────────────
-M001/S01         8        $3.41      512K
-M001/S02         4        $1.20      189K
-M001/S03         2        $0.58      91K
-```
-
-Cost breakdown by phase:
-
-```
-> /gsd history --phase
-
-Cost by phase:
-
-Phase            Units    Cost       Tokens     Duration
+Activity Log #45: execute-task — M001/S02/T03
 ────────────────────────────────────────────────────────────
-research         3        $1.20      180K       12m 00s
-planning         4        $1.80      270K       16m 00s
-execution        12       $8.40      1.3M       96m 00s
-completion       3        $0.60      90K        9m 00s
+File: 045-execute-task-M001-S02-T03.jsonl
+Size: 82.4KB  |  Age: 2m ago
+Entries: 214  |  Tool calls: 38  |  Errors: 1
+
+Files written/edited:
+  /Users/me/project/src/api/routes.ts
+  /Users/me/project/src/api/handlers.ts
+  /Users/me/project/tests/api.test.ts
+
+Commands run:
+  npm run lint
+  npm test -- --testPathPattern=api FAILED
+
+1 error(s) encountered during this unit.
+
+Last reasoning:
+  "The test failure is due to a missing mock for the database connection. I'll add..."
+
+Full log: /Users/me/project/.gsd/activity/045-execute-task-M001-S02-T03.jsonl
 ```
 
-Inspecting an activity log directly (most recent first):
+Quick health check with tail:
+
+```
+> /gsd logs tail 3
+
+Last 3 activity log(s):
+
+  #45 execute-task M001/S02/T03 — 38 tools, 1 err, 2m ago
+  #44 execute-task M001/S02/T02 — 31 tools, ok, 18m ago
+  #43 plan-slice M001/S02 — 14 tools, ok, 31m ago
+```
+
+Listing debug logs after a session with debug enabled:
+
+```
+> /gsd logs debug
+
+Debug Logs (.gsd/debug/):
+
+  1. debug-2026-03-19T10-30-00-000Z.log  48.2KB  2h ago
+  2. debug-2026-03-22T14-15-30-000Z.log  12.1KB  3m ago
+
+View details: /gsd logs debug <#>
+```
+
+Inspecting a debug log summary:
+
+```
+> /gsd logs debug 2
+
+Debug Log: debug-2026-03-22T14-15-30-000Z.log
+────────────────────────────────────────────────────────────
+Size: 12.1KB  |  Age: 3m ago
+Events: 312  |  Duration: 8m  |  Dispatches: 1
+
+Full log: /Users/me/project/.gsd/debug/debug-2026-03-22T14-15-30-000Z.log
+```
+
+Clearing old logs:
+
+```
+> /gsd logs clear
+
+Cleared 38 activity log(s) and 1 debug log(s).
+```
+
+Inspecting an activity log directly (when you need raw JSONL):
 
 ```bash
-ls -lt .gsd/activity/ | head -5
-cat .gsd/activity/047-execute-task-M001-S02-T03.jsonl | python3 -m json.tool | head -50
-```
-
-Enabling debug logging for a single unit:
-
-```
-> /gsd next --debug
-
-● Debug logging enabled: .gsd/debug/debug-2026-03-19T10-30-00-000Z.log
-```
-
-After the unit completes:
-
-```bash
-cat .gsd/debug/debug-2026-03-19T10-30-00-000Z.log | python3 -c "
-import sys, json
-for line in sys.stdin:
-    e = json.loads(line)
-    print(f'{e[\"event\"]}: {e.get(\"elapsed_ms\", \"\")}ms')
-"
+cat .gsd/activity/045-execute-task-M001-S02-T03.jsonl | python3 -m json.tool | head -50
 ```
 
 Running a deep investigation on a failing session:
@@ -248,3 +327,4 @@ Running a deep investigation on a failing session:
 - [`/gsd forensics`](../forensics/) — Deep activity log analysis with anomaly detection and LLM investigation
 - [`/gsd status`](../status/) — Live dashboard including cost totals from the metrics ledger
 - [`/gsd doctor`](../doctor/) — Structural health checks (reads planning files, not activity logs)
+- [`/gsd cleanup`](../cleanup/) — Archive completed phase directories (separate from log retention)

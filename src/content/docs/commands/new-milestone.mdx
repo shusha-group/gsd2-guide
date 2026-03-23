@@ -1,120 +1,116 @@
 ---
 title: "/gsd new-milestone"
-description: "Create a milestone from a specification document — the headless entry point for non-interactive milestone creation."
+description: "Start a new milestone cycle — update PROJECT.md, scope requirements, and generate a phased roadmap for what you're building next."
 ---
 
 ## What It Does
 
-`/gsd new-milestone` is the headless entry point for milestone creation from a specification document. It's the command that `gsd headless new-milestone --context brief.md` dispatches to the RPC session — the headless runner writes your spec to `.gsd/runtime/headless-context.md`, then `/gsd new-milestone` picks it up, bootstraps the project if needed, and runs the full milestone planning pipeline without any interactive Q&A rounds.
+`/gsd new-milestone` is the brownfield equivalent of [`/gsd new-project`](../new-project/). Your project already exists, `PROJECT.md` has history, and phases have shipped — this command starts the next cycle. It loads your existing project context, gathers what you want to build next, updates `PROJECT.md` and `STATE.md`, optionally runs parallel domain research, scopes requirements with REQ-IDs, and spawns the roadmapper to produce a phased execution plan that continues your phase numbering from where the last milestone left off.
 
-When run directly in a TUI session with no headless context file present, the command falls back to interactive smart entry — the same discussion flow you get from running `/gsd` with no active milestone.
+The command accepts an optional milestone name as an argument. If no `MILESTONE-CONTEXT.md` file exists (written by [`/gsd discuss-phase`](../discuss-phase/) or a prior discussion), it falls back to interactive Q&A — asking what you want to build next and exploring features, priorities, and constraints.
 
-The non-interactive path uses the `discuss-headless` prompt, which processes the spec document and writes all milestone artifacts in a single pass: `CONTEXT.md`, `ROADMAP.md`, and the milestone directory structure. After the agent writes `STATE.md` as its final step, auto-mode starts automatically — you don't need to run `/gsd auto` separately.
+After the roadmap is approved and committed, you get a clear next step: `/gsd:discuss-phase [N]` or `/gsd:plan-phase [N]` to start execution.
 
 ## Usage
 
-This command is primarily invoked via the headless runner, not typed directly:
-
-```bash
-# Create a milestone from a file and start auto-mode
-gsd headless new-milestone --context brief.md --auto
-
-# Create from inline text
-gsd headless new-milestone --context-text "Build a REST API with JWT auth"
-
-# Pipe from stdin
-echo "Add social features: follow, feed, comments" | gsd headless new-milestone --context -
+```
+/gsd new-milestone [milestone name]
 ```
 
-If you run it directly in a TUI session, GSD checks for a pending headless context file. If none exists, it falls back to the interactive flow — identical to running `/gsd` with no active milestone.
+The milestone name argument is optional. If provided, it pre-fills the milestone label (e.g., `v1.1 Notifications`). If omitted, GSD will prompt for it during the workflow.
 
 ```
 /gsd new-milestone
+/gsd new-milestone "v2.0 Social Features"
+/gsd new-milestone v1.1 Notifications
 ```
-
-See the [Headless Mode](../headless/) page for the full flag reference and CI integration patterns.
 
 ## How It Works
 
-### Dispatch Path Selection
-
-When `/gsd new-milestone` fires, it checks for `.gsd/runtime/headless-context.md`:
-
-- **File exists** → headless path: reads the spec, deletes the file, bootstraps the project, and dispatches the `discuss-headless` prompt.
-- **File missing** → interactive fallback: runs `showSmartEntry`, the standard milestone discussion flow used by `/gsd` when no milestone is active.
+### Workflow Overview
 
 ```mermaid
 flowchart TD
-    Cmd(["/gsd new-milestone"]) --> Check{headless-context.md\nexists?}
-    Check -->|Yes| Read[Read spec content\ndelete file]
-    Read --> Bootstrap[Bootstrap .gsd/\nif missing]
-    Bootstrap --> NextId[Generate next\nmilestone ID]
-    NextId --> MkDir[Create milestone\ndirectory]
-    MkDir --> Dispatch[Dispatch\ndiscuss-headless prompt]
-    Dispatch --> Write[Agent writes CONTEXT.md\nROADMAP.md STATE.md]
-    Write --> Gates{Auto-start\ngates pass?}
-    Gates -->|Yes| AutoStart([Auto-mode starts])
-    Gates -->|No| Wait[Wait for next\nagent_end check]
-    Check -->|No| SmartEntry[showSmartEntry —\ninteractive discussion flow]
-    SmartEntry --> AutoStart
+    Start(["/gsd new-milestone"]) --> LoadCtx[Load project context\nPROJECT.md · MILESTONES.md · STATE.md]
+    LoadCtx --> ContextFile{MILESTONE-CONTEXT.md\nexists?}
+    ContextFile -->|Yes| UseCtx[Use pre-gathered context\nPresent summary for confirmation]
+    ContextFile -->|No| QA[Interactive Q&A\nWhat to build next?]
+    UseCtx --> Version[Determine milestone version\nv1.0 → v1.1 · confirm with user]
+    QA --> Version
+    Version --> UpdateFiles[Update PROJECT.md + STATE.md\nCommit]
+    UpdateFiles --> Research{Research\nneeded?}
+    Research -->|Yes| Parallel[4 parallel researcher agents\nStack · Features · Architecture · Pitfalls]
+    Parallel --> Synth[Synthesizer agent\nWrite SUMMARY.md]
+    Synth --> Reqs[Scope requirements\nby category with AskUserQuestion]
+    Research -->|No| Reqs
+    Reqs --> WriteReqs[Write REQUIREMENTS.md\nwith REQ-IDs · Commit]
+    WriteReqs --> Roadmap[Spawn gsd-roadmapper\nContinue phase numbering]
+    Roadmap --> Approve{Roadmap\napproved?}
+    Approve -->|Adjust| Roadmap
+    Approve -->|Yes| Commit[Commit ROADMAP.md\nSTATE.md · REQUIREMENTS.md]
+    Commit --> Done([Done — next: /gsd:plan-phase N])
 
-    style Cmd fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Gates fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Read fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Bootstrap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style NextId fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style MkDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Write fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Wait fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style AutoStart fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ContextFile fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Research fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Approve fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style LoadCtx fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UseCtx fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style QA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Version fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UpdateFiles fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Parallel fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Synth fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reqs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteReqs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Roadmap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-### Headless Path
+### Step-by-Step
 
-The headless runner writes your spec to `.gsd/runtime/headless-context.md` before dispatching `/gsd new-milestone` to the RPC session. When the command fires:
+**1. Load context** — Reads `PROJECT.md` (existing stack, decisions, validated requirements), `MILESTONES.md` (what has shipped), and `STATE.md` (pending todos, blockers). Calls `init new-milestone` to resolve agent models and config.
 
-1. **Read spec** — reads the seed context from `headless-context.md`.
-2. **Delete file** — removes `headless-context.md` immediately (non-fatal if deletion fails).
-3. **Bootstrap project** — calls `bootstrapGsdProject`: ensures `.gsd/milestones/` and `.gsd/runtime/` directories exist, initializes a git repo if missing, ensures `.gitignore` and preferences files exist, and untracks runtime files from git.
-4. **Generate milestone ID** — finds existing milestone IDs and increments to the next one (e.g., `M001` if no milestones exist, `M003` if `M001` and `M002` are present). Respects the `unique_milestone_ids` preference for suffix generation.
-5. **Create milestone directory** — makes `.gsd/milestones/MXXX/slices/`.
-6. **Build prompt** — loads the `discuss-headless` prompt template, inlining all GSD document templates (project, requirements, context, roadmap, decisions) directly into the prompt so the agent can write everything in one pass.
-7. **Arm auto-start** — registers a `pendingAutoStart` hook. After each agent turn completes, `checkAutoStartAfterDiscuss()` fires and checks four gates before starting auto-mode (see below).
-8. **Dispatch** — sends the prompt to the active session.
+**2. Gather milestone goals** — If `MILESTONE-CONTEXT.md` exists (written by a prior discussion), its features and scope are used and presented for confirmation. Otherwise, GSD shows what shipped in the last milestone and asks: "What do you want to build next?" — using `AskUserQuestion` to explore features, priorities, constraints, and scope.
 
-### Auto-Start Gates
+**3. Determine milestone version** — Parses the last version from `MILESTONES.md`, suggests the next increment (e.g., `v1.0 → v1.1`, or `v2.0` for a major), and confirms with you.
 
-Auto-mode doesn't fire the moment the agent writes its first file. `checkAutoStartAfterDiscuss()` is called at the end of each agent turn and must pass all gates before triggering:
+**4. Update PROJECT.md and STATE.md** — Adds a `## Current Milestone` section to `PROJECT.md` with the goal and target features. Resets `STATE.md` with `Phase: Not started (defining requirements)`, preserving the Accumulated Context section from the previous milestone. Commits both files.
 
-| Gate | Condition |
-|------|-----------|
-| **1 — Artifact exists** | The milestone must have a `CONTEXT.md` or `ROADMAP.md` |
-| **2 — STATE.md written** | `.gsd/STATE.md` must exist — the agent writes this as its final step |
-| **3 — Multi-milestone completeness** | Warns if milestones listed in `PROJECT.md` are missing from the filesystem (non-blocking) |
-| **4 — Discussion manifest** | If `DISCUSSION-MANIFEST.json` exists, all gates must be marked complete before auto-start fires |
+**5. Consume MILESTONE-CONTEXT.md** — If the context file existed, it's deleted (consumed).
 
-Gate 2 is the primary completion signal — it prevents auto-start from triggering mid-session while the agent is still writing artifacts. For single-milestone discussions, gates 3 and 4 are effectively no-ops.
+**6. Research decision** — Asks whether to research the domain ecosystem for new features before defining requirements. The choice is persisted to config so future commands honor it. If "Research first" is selected, 4 parallel `gsd-project-researcher` agents run (see below).
 
-### `discuss-headless` vs Interactive Discussion
+**7. Research (optional)** — Spawns 4 parallel agents, each focused on a different dimension:
 
-The normal discussion flow (`showSmartEntry`) runs multiple adaptive Q&A rounds before writing any files. The `discuss-headless` prompt skips all interactive rounds — it processes the spec document directly and produces all milestone artifacts in a single session. The spec document substitutes for the Q&A: the richer the spec, the better the output.
+| Dimension | Question answered |
+|-----------|------------------|
+| **Stack** | What library/version additions are needed for the new features? |
+| **Features** | How do the target features typically work? Table stakes vs differentiators? |
+| **Architecture** | How do new features integrate with the existing architecture? |
+| **Pitfalls** | Common mistakes when adding these features to an existing system? |
 
-This means headless milestone creation is faster but produces plans that are only as detailed as the spec you supply. Vague specs produce shallower roadmaps; detailed specs with constraints, user stories, and known trade-offs produce richer ones.
+After all 4 complete, a `gsd-research-synthesizer` agent writes `SUMMARY.md` with key findings displayed inline.
 
-### Project Bootstrapping
+**8. Define requirements** — Presents features by category (from research or gathered via conversation). For each category, `AskUserQuestion` (multi-select) lets you scope what's in vs deferred vs out of scope. Requirements are written with REQ-IDs in `[CATEGORY]-[NUMBER]` format (e.g., `AUTH-01`, `NOTIF-02`), continuing numbering from existing requirements. You confirm the full list before it's committed.
 
-If `.gsd/` doesn't exist yet (a fresh project), `bootstrapGsdProject` initializes the full structure before creating the milestone:
+**9. Create roadmap** — Spawns `gsd-roadmapper` with the phase starting number taken from `MILESTONES.md` (e.g., if v1.0 ended at phase 5, v1.1 starts at phase 6). The roadmapper maps every requirement to exactly one phase, derives 2–5 success criteria per phase, and validates 100% coverage. The roadmap is presented inline for approval — you can request adjustments and the roadmapper is re-spawned until you approve.
 
-- Initializes a git repo (using the `git.main_branch` preference, defaulting to `main`) if the directory is not already a repo.
-- Creates `.gsd/milestones/` and `.gsd/runtime/` directory trees.
-- Writes `.gitignore` entries for GSD runtime files (respects the `git.commit_docs` preference).
-- Writes a default preferences file if none exists.
-- Adds `.gsd/runtime/` to git's untracked list so session files don't appear in status.
+**10. Final commit** — Commits `ROADMAP.md`, `STATE.md`, and `REQUIREMENTS.md` together. Displays a completion summary with the artifact table and the next command.
 
-This makes `gsd headless new-milestone` usable in a completely empty directory — no manual setup required.
+### Milestone Version Numbering
+
+GSD reads the last version from `MILESTONES.md` and suggests the next increment:
+
+- `v1.0` → suggests `v1.1` (minor increment)
+- Suggest `v2.0` yourself for major reboots
+
+Phase numbering **continues** across milestones — if v1.0 delivered phases 1–5, v1.1's roadmap starts at phase 6. This preserves the full build history in a single continuous phase sequence.
+
+### Context File Shortcut
+
+If you ran [`/gsd discuss-phase`](../discuss-phase/) or another discussion command that wrote `MILESTONE-CONTEXT.md`, the Q&A step is skipped entirely — GSD uses that file's features and scope directly and presents a summary for confirmation. This is the fastest path through new-milestone when the goals are already clear.
 
 ## What Files It Touches
 
@@ -122,93 +118,104 @@ This makes `gsd headless new-milestone` usable in a completely empty directory �
 
 | File | Purpose |
 |------|---------|
-| `.gsd/runtime/headless-context.md` | Spec document written by the headless runner — consumed and deleted on read |
-| `.gsd/milestones/` | Scanned to determine the next milestone ID |
+| `.planning/PROJECT.md` | Existing stack, decisions, validated requirements |
+| `.planning/MILESTONES.md` | What shipped previously; last phase number for continuation |
+| `.planning/STATE.md` | Pending todos and blockers from previous milestone |
+| `.planning/MILESTONE-CONTEXT.md` | Pre-gathered milestone goals (optional — skips Q&A if present) |
+| `.planning/research/SUMMARY.md` | Research findings (if research ran) — used during requirements scoping |
 
 ### Creates
 
 | File | Purpose |
 |------|---------|
-| `.gsd/milestones/MXXX/slices/` | Milestone directory created before dispatching the prompt |
-| `.gsd/milestones/MXXX/MXXX-CONTEXT.md` | Milestone scope, goals, and constraints — written by the dispatched agent |
-| `.gsd/milestones/MXXX/MXXX-ROADMAP.md` | Slice plan with risk ordering, success criteria, and boundary map — written by the dispatched agent |
-
-### Creates (bootstrap only, if missing)
-
-| File | Purpose |
-|------|---------|
-| `.gsd/` | Root GSD directory — created if project is uninitialized |
-| `.gsd/milestones/` | Milestones container |
-| `.gsd/runtime/` | Runtime files directory (not tracked in git) |
-| `.gitignore` | Updated with GSD runtime entries |
-| `.gsd/preferences.json` | Default preferences file |
+| `.planning/REQUIREMENTS.md` | Scoped requirements with REQ-IDs, categories, future and out-of-scope sections |
+| `.planning/ROADMAP.md` | Phased execution plan with success criteria, continuing phase numbering |
+| `.planning/research/STACK.md` | Stack additions needed for new features (research only) |
+| `.planning/research/FEATURES.md` | Feature analysis: table stakes vs differentiators (research only) |
+| `.planning/research/ARCHITECTURE.md` | Integration points and build order (research only) |
+| `.planning/research/PITFALLS.md` | Common mistakes and prevention strategies (research only) |
+| `.planning/research/SUMMARY.md` | Synthesized research summary (research only) |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/STATE.md` | Written by the agent as its final step — satisfies Gate 2 and triggers auto-mode start |
+| `.planning/PROJECT.md` | Updated with `## Current Milestone` section and active requirements |
+| `.planning/STATE.md` | Reset to `Phase: Not started (defining requirements)` for new milestone |
+| `.planning/REQUIREMENTS.md` | Traceability section filled by roadmapper after roadmap creation |
+
+### Deletes
+
+| File | Purpose |
+|------|---------|
+| `.planning/MILESTONE-CONTEXT.md` | Consumed and deleted after goals are extracted |
 
 ## Examples
 
-**Create a milestone from a spec document and immediately start execution:**
+**Start a new milestone with a name:**
 
-```bash
-gsd headless new-milestone --context brief.md --auto
+```
+/gsd new-milestone "v2.0 Social Features"
 ```
 
-Where `brief.md` might contain:
+GSD loads your project history, shows what shipped in v1.0, and jumps straight to version confirmation and research decision — saving the "what to build" Q&A since you've named the milestone.
 
-```markdown
-# v2 Social Features
+**Start with no name — full interactive flow:**
 
-Add social capabilities to Cookmate:
-- Users can follow other cooks
-- Activity feed showing new recipes from followed users
-- Comment on recipes (threaded, not nested)
-- Share recipes via link (no auth required to view)
-
-Constraints:
-- Supabase for all backend (no new services)
-- Feed must work on cached data, not real-time at launch
-- Mobile-first — all interactions touch-friendly
+```
+/gsd new-milestone
 ```
 
-GSD reads this spec and produces a full milestone plan without any questions.
+GSD asks what you want to build next, explores priorities and constraints, suggests a version number, then proceeds through research → requirements → roadmap.
 
-**Create from inline text:**
+**Fastest path — pre-discuss then plan:**
 
-```bash
-gsd headless new-milestone --context-text "Build a CLI tool for managing dotfiles with profiles and sync"
+If you've already worked through what to build (e.g., with `/gsd discuss-phase`), a `MILESTONE-CONTEXT.md` file will be present. Running `/gsd new-milestone` then skips the goal-gathering Q&A entirely:
+
+```
+/gsd new-milestone
+
+● Found MILESTONE-CONTEXT.md — using pre-gathered scope
+  Milestone: v1.1 Notifications
+  Features: Push alerts, in-app notification center, digest emails
+
+  Confirm? (yes / adjust)
 ```
 
-**Pipe from a generation script:**
+**Research output example:**
 
-```bash
-cat product-brief.md | sed 's/## Internal Notes.*//' | \
-  gsd headless new-milestone --context -
+When research is selected, GSD runs 4 parallel agents and shows a summary:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► RESEARCH COMPLETE ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Stack additions: expo-notifications 0.28, @supabase/realtime-js
+Feature table stakes: delivery receipts, badge counts, opt-out per type
+Watch Out For: APNs certificate expiry, notification permission timing
 ```
 
-**Run in CI after pushing a spec file:**
+**Requirements scoping:**
 
-```yaml
-# .github/workflows/plan.yml
-- name: Plan new milestone
-  run: |
-    gsd headless new-milestone \
-      --context .gsd/specs/next-milestone.md \
-      --timeout 600000 \
-      --auto
+After research (or Q&A), GSD scopes each category interactively:
+
 ```
+## Push Notifications
+Table stakes: Delivery receipts, Badge counts
+Differentiators: Rich media, Scheduled sends
 
-**Run directly (falls back to interactive):**
-
-If no `headless-context.md` file exists, running `/gsd new-milestone` in a TUI session starts the same discussion flow as `/gsd` — GSD asks "What's the vision?" and proceeds with adaptive Q&A.
+Which features are in scope for v1.1? (multi-select)
+✓ Delivery receipts
+✓ Badge counts
+  Rich media — deferred to v1.2
+  Scheduled sends — out of scope
+```
 
 ## Related Commands
 
-- [`/gsd`](../gsd/) — Interactive entry point — routes to discussion when no milestone is active
-- [Headless Mode](../headless/) — Full CLI reference for `gsd headless new-milestone` flags and CI patterns
-- [`/gsd queue`](../queue/) — Queue additional future milestones before or after planning
-- [`/gsd discuss`](../discuss/) — Re-open discussion for the current milestone
-- [`/gsd auto`](../auto/) — Start auto-mode manually if it didn't fire automatically
+- [`/gsd new-project`](../new-project/) — Greenfield equivalent — initializes a brand-new project from scratch
+- [`/gsd complete-milestone`](../complete-milestone/) — Archive the current milestone before running new-milestone
+- [`/gsd discuss-phase`](../discuss-phase/) — Gather phase context before planning (also writes MILESTONE-CONTEXT.md)
+- [`/gsd plan-phase`](../plan-phase/) — Create a detailed phase plan after the roadmap is ready
+- [`/gsd queue`](../queue/) — Add future milestones to the backlog

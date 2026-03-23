@@ -14,7 +14,7 @@ After presenting its analysis, the prompt offers to create a GitHub issue on the
 ## Pipeline Position
 
 ```mermaid
-flowchart LR
+flowchart TD
     UserInvoke["/gsd forensics"] --> ForensicsPrompt["forensics"]
     ForensicsPrompt --> Analysis["root cause analysis"]
     Analysis --> Recovery["recovery guidance"]

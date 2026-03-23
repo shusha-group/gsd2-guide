@@ -51,10 +51,10 @@ flowchart TD
 
     Menu --> Cat{Category?}
     Cat -->|Workflow Mode| CfgMode[solo / team / none]
-    Cat -->|Models| CfgModels[Model per phase]
+    Cat -->|Models| CfgModels[Provider + model per phase, optional fallbacks]
     Cat -->|Timeouts| CfgTime[soft / idle / hard timeout]
-    Cat -->|Git| CfgGit[branch, push, isolation, merge strategy]
-    Cat -->|Skills| CfgSkills[discovery, UAT dispatch]
+    Cat -->|Git| CfgGit[branch, push, snapshots, commit type, isolation, merge strategy]
+    Cat -->|Skills| CfgSkills[discovery, staleness days, UAT dispatch]
     Cat -->|Budget| CfgBudget[ceiling, enforcement, context pause]
     Cat -->|Notifications| CfgNotify[event-based alert toggles]
     Cat -->|Advanced| CfgAdv[unique milestone IDs]
@@ -104,10 +104,10 @@ flowchart TD
 | Category | What It Configures | Key Fields |
 |----------|-------------------|------------|
 | **Workflow Mode** | Solo or team workflow with coordinated defaults | `mode` (`solo`/`team`) |
-| **Models** | Model selection per execution phase | `models.research`, `models.planning`, `models.execution`, `models.completion` |
+| **Models** | Model selection per execution phase, with optional per-phase fallbacks | `models.research`, `models.planning`, `models.execution`, `models.completion` |
 | **Timeouts** | Auto-mode supervisor timeouts | `auto_supervisor.soft_timeout_minutes`, `idle_timeout_minutes`, `hard_timeout_minutes` |
-| **Git** | Branch naming, push behavior, isolation, merge strategy | `git.main_branch`, `git.auto_push`, `git.push_branches`, `git.snapshots`, `git.remote`, `git.pre_merge_check`, `git.commit_type`, `git.merge_strategy`, `git.isolation` |
-| **Skills** | Skill discovery and UAT dispatch behavior | `skill_discovery` (`auto`/`suggest`/`off`), `uat_dispatch` |
+| **Git** | Branch naming, push behavior, WIP snapshots, commit type, isolation, merge strategy | `git.main_branch`, `git.auto_push`, `git.push_branches`, `git.snapshots`, `git.remote`, `git.pre_merge_check`, `git.commit_type`, `git.merge_strategy`, `git.isolation` |
+| **Skills** | Skill discovery mode, staleness threshold, and UAT dispatch behavior | `skill_discovery` (`auto`/`suggest`/`off`), `skill_staleness_days`, `uat_dispatch` |
 | **Budget** | Cost ceiling, enforcement policy, context pause | `budget_ceiling`, `budget_enforcement` (`warn`/`pause`/`halt`), `context_pause_threshold` |
 | **Notifications** | Event-based alert toggles | `notifications.enabled`, `on_complete`, `on_error`, `on_budget`, `on_milestone`, `on_attention` |
 | **Advanced** | Unique milestone IDs | `unique_milestone_ids` |
@@ -124,6 +124,36 @@ Selecting `solo` or `team` sets a bundle of git defaults as the lowest-priority 
 | `git.merge_strategy` | `squash` | `squash` |
 | `git.isolation` | `worktree` | `worktree` |
 | `unique_milestone_ids` | `false` | `true` |
+
+### Models Category
+
+The model wizard groups available models by provider. For each of the four phases (`research`, `planning`, `execution`, `completion`) you pick a provider first, then select a specific model ID from that provider's list. You can also type a model ID manually or clear the phase back to the inherited default.
+
+Each phase can be configured as a plain model ID string or as an object with a primary model, an optional `provider` hint (to disambiguate when the same ID exists across providers), and an ordered `fallbacks` list that GSD tries in sequence when the primary fails due to rate limits or exhausted credits.
+
+### Git Category
+
+The Git category exposes all git-related settings in one place:
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `main_branch` | `main` | Branch name used for merge operations |
+| `auto_push` | `false` | Push commits to remote after each commit |
+| `push_branches` | `false` | Push milestone branches to remote |
+| `snapshots` | `false` | Create WIP snapshot commits during long tasks |
+| `remote` | `origin` | Git remote name |
+| `pre_merge_check` | `false` | Run checks before merging (`true`/`false`/`auto`) |
+| `commit_type` | *(inferred)* | Default conventional-commit type (`feat`, `fix`, `chore`, etc.) |
+| `merge_strategy` | *(unset)* | `squash` or `merge` |
+| `isolation` | `worktree` | `worktree`, `branch`, or `none` |
+
+`pre_merge_check: "auto"` lets GSD detect whether CI checks are configured and run them only when present.
+
+### Skills Category
+
+- **`skill_discovery`** (`auto`/`suggest`/`off`) — Controls how GSD discovers and loads skills at dispatch time. `auto` loads relevant skills silently; `suggest` proposes them for confirmation; `off` disables discovery entirely.
+- **`skill_staleness_days`** — Skills that haven't been used in this many days are deprioritized during discovery. Set to `0` to disable staleness tracking. Defaults to `60`.
+- **`uat_dispatch`** — When `true`, GSD dispatches a UAT agent after each slice completes.
 
 ### Status Subcommand
 
@@ -178,7 +208,7 @@ GSD preferences (global) — pick a category to configure.
   Timeouts        soft: 20m, idle: 10m, hard: 30m
   Git             main: main, push: on
   Skills          discovery: auto
-  Budget          $50 / warn
+  Budget          $50 / pause
   Notifications   6/6 enabled
   Advanced        unique IDs: off
   ── Save & Exit ──
@@ -188,7 +218,7 @@ GSD preferences (global) — pick a category to configure.
   Budget ceiling (USD) (current: $50):
   > 100
 
-  Budget enforcement (current: warn):
+  Budget enforcement (current: pause):
   ❯ warn
     pause
     halt

@@ -9,7 +9,7 @@ description: "Run a guided interview about an upcoming slice — capture UX, beh
 
 This is useful when you know things the agent doesn't: how a feature should feel to the user, what happens in failure states, which edge cases are in scope, or what a slice should explicitly *not* do. `/gsd discuss` is where that intent gets captured before planning starts.
 
-The discussion is behaviour-focused, not tech-focused. The agent asks about what the user sees and experiences, what should happen when things go wrong, and where scope begins and ends. Library choices, architecture, and naming conventions are left for the research and planning phases.
+The discussion is behaviour-focused, not tech-focused. The agent asks about what the user sees and experiences, what should happen when things go wrong, and where scope begins and ends. Library choices, architecture, and naming conventions are left for the research and planning phases — unless a technical choice materially changes scope or integration behaviour, in which case the agent asks directly.
 
 ## Usage
 
@@ -39,7 +39,11 @@ flowchart TD
     CheckPending -->|None| NoPending([All slices complete — nothing to discuss])
     CheckPending -->|Yes| Picker[Show slice picker]
     Picker --> Select[Select a slice]
-    Select --> Interview[Guided slice interview]
+    Select --> AlreadyDiscussed{Already has CONTEXT?}
+    AlreadyDiscussed -->|Yes| ReDiscussConfirm[Confirm re-discuss]
+    ReDiscussConfirm -->|Cancel| Picker
+    ReDiscussConfirm -->|Re-discuss| Interview
+    AlreadyDiscussed -->|No| Interview[Guided slice interview]
     Interview --> WriteCtx[Write CONTEXT.md for slice]
     WriteCtx --> More{Discuss another?}
     More -->|Yes| Picker
@@ -50,6 +54,7 @@ flowchart TD
     style CheckMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CheckPhase fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DraftChoice fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style AlreadyDiscussed fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CheckRoadmap fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CheckPending fill:#0d180d,stroke:#39ff14,color:#39ff14
     style More fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -60,6 +65,7 @@ flowchart TD
     style DraftGate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style MilestoneDiscuss fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style NewMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ReDiscussConfirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Picker fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Select fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Interview fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -73,6 +79,8 @@ GSD reads the active milestone's roadmap and filters to slices that are not yet 
 
 The picker loops: after each discussion finishes, it returns to the picker so you can chain multiple slice interviews in one session. When all pending slices have been discussed, it exits and tells you to run `/gsd` to start planning.
 
+If a slice already has a `CONTEXT.md` from a prior discussion, selecting it shows a re-discuss confirmation. Confirming launches an update interview that reads the existing context, asks about changes and new decisions, then rewrites the file with merged findings.
+
 ### The guided interview
 
 The interview is a back-and-forth conversation, not a form. Before asking anything, the agent scouts the codebase and reads surrounding context so its questions are grounded in what actually exists. It focuses on:
@@ -82,7 +90,7 @@ The interview is a back-and-forth conversation, not a form. Before asking anythi
 - **Scope boundaries** — What is explicitly in vs out for this slice? What's deferred to later?
 - **Feel and experience** — Tone, responsiveness, feedback, transitions, what "done" feels like
 
-Questions come in rounds of 1–3 at a time. After each round the agent checks in: "I think I have a solid picture. Ready to wrap up, or is there more?" You decide the pace.
+Questions come in rounds of 1–3 at a time. The agent continues asking rounds until it genuinely believes the slice is well understood. Only then does it offer a wrap-up choice: "Write the context file" or "One more pass." You decide the pace.
 
 ### Context loaded before each interview
 
@@ -98,13 +106,25 @@ To make questions grounded and specific, the agent preloads the following before
 
 The interview produces a slice `CONTEXT.md` at `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT.md`. This file becomes authoritative input for the planning phase — when auto mode later plans this slice, it reads the `CONTEXT.md` to understand your intent for behaviour, scope, and feel.
 
+The context file is structured around:
+
+- **Goal** — one sentence: what this slice delivers
+- **Why this Slice** — why now, what it unblocks
+- **Scope / In Scope** — what was confirmed in scope during the interview
+- **Scope / Out of Scope** — what was explicitly deferred or excluded
+- **Constraints** — hard constraints the user flagged
+- **Integration Points** — what this slice consumes and produces
+- **Open Questions** — anything still unresolved, with current thinking
+
+The agent preserves your exact terminology, emphasis, and specific framing rather than paraphrasing it into generic summaries. The context file is the downstream planner's only window into this conversation.
+
 ### Needs-discussion phase
 
 If the active milestone is in a `needs-discussion` state — it has a `CONTEXT-DRAFT.md` from an earlier multi-milestone discussion but no full `CONTEXT.md` or roadmap yet — `/gsd discuss` routes to a milestone-level discussion instead of the slice picker. It offers three choices:
 
 - **Discuss from draft** — Seeds the new discussion with the draft content so nothing from the prior conversation is lost
 - **Start fresh discussion** — Discards the draft and begins a clean discussion
-- **Skip — create new milestone** — Leaves this milestone as-is and starts a new one
+- **Skip — create new milestone** — Leaves this milestone as-is and starts a fresh vision discussion for the next milestone
 
 ### Integration with auto mode
 
@@ -122,6 +142,7 @@ When auto mode encounters a slice that has a `CONTEXT.md`, it uses that file dur
 | `.gsd/DECISIONS.md` | Architectural decisions that constrain this slice |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-SUMMARY.md` | Completed slice summaries (for context) |
 | `.gsd/milestones/<MID>/<MID>-CONTEXT-DRAFT.md` | Draft seed for needs-discussion phase |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT.md` | Existing slice context (for re-discuss flow) |
 
 ### Creates
 
@@ -134,7 +155,7 @@ When auto mode encounters a slice that has a `CONTEXT.md`, it uses that file dur
 
 | File | Purpose |
 |------|---------|
-| `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT.md` | Slice context from the interview |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT.md` | Slice context from the interview; rewritten on re-discuss |
 
 ## Examples
 
@@ -171,9 +192,10 @@ Discussing an upcoming slice in a Cookmate project:
   Use Cloudinary for storage — presigned URLs from client direct, don't
   proxy through our API.
 
-  I think I have a solid picture. Ready to wrap up and write the context file,
-  or is there more to cover?
-> Wrap up
+  [Agent decides depth is sufficient, offers wrap-up]
+  Write the context file  (recommended)
+  One more pass
+> Write the context file
 
 ● Writing .gsd/milestones/M001/slices/S04/S04-CONTEXT.md
   ✓ S04 context written.
@@ -190,9 +212,31 @@ When all slices are covered:
 ● All 3 slices discussed. Run /gsd to start planning.
 ```
 
+Re-discussing a slice to update its context:
+
+```
+> /gsd discuss
+
+  Slices:
+    S04: Image upload pipeline  · upcoming · discussed ✓  (recommended)
+
+> S04: Image upload pipeline
+
+● Re-discuss S04?
+  S04 already has a context file from a prior discussion.
+  Re-discussing will interview for updates and rewrite the context file.
+
+  Re-discuss to update context  (recommended)
+  Cancel
+> Re-discuss to update context
+
+  [Agent reads existing S04-CONTEXT.md, asks about any changes since last time]
+```
+
 ## Prompts Used
 
-- [`discuss`](../../prompts/discuss/) — Interactive milestone planning prompt
+- [`guided-discuss-slice`](../../prompts/guided-discuss-slice/) — Slice interview prompt (normal flow)
+- [`guided-discuss-milestone`](../../prompts/guided-discuss-milestone/) — Milestone interview prompt (needs-discussion phase)
 
 ## Related Commands
 

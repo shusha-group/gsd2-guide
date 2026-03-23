@@ -119,6 +119,7 @@ export default defineConfig({
                 { label: 'Headless Mode', link: '/commands/headless/' },
               ],
             },
+                { label: 'reactive-execute', link: '/prompts/reactive-execute/' },
           ],
         },
         {

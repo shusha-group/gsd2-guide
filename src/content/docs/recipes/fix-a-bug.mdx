@@ -21,7 +21,7 @@ Use the full lifecycle when the bug might be non-trivial — when you're not sur
 
 ### 1. Create a new milestone for the fix
 
-Run `/gsd` and describe the bug when the smart entry wizard asks what you're working on. Or, if you already have a project and want to jump straight to milestone creation, run `/gsd new-milestone`:
+Run `/gsd` and describe the bug when the smart entry wizard asks what you're working on. Or, if you already have an active project and want to jump straight to milestone creation for this bug, run `/gsd new-milestone`:
 
 ```
 > /gsd new-milestone
@@ -62,7 +62,7 @@ After the context file and `STATE.md` are written, auto-mode starts automaticall
 GSD dispatches units in sequence:
 
 1. **Milestone Research** — scouts the codebase for search-related code, checks Prisma docs for case-insensitive query options
-2. **Slice Research** — zooms in on the specific slice goal and integration points
+2. **Slice Research** — zooms in on the specific slice goal and integration points. For a focused single-slice bug fix, this step may be skipped if the milestone research already covered the relevant code.
 3. **Plan the slice** — breaks the slice into tasks (update query, add tests, verify)
 
 ```
@@ -82,7 +82,7 @@ GSD dispatches units in sequence:
 ```
 
 :::tip
-Want to review decisions before planning begins? Run [`/gsd discuss`](../../commands/discuss/) for a guided interview about the slice — UX, behaviour, edge cases — before letting auto mode take over.
+Want to front-load scope decisions for a slice before auto mode plans it? Run [`/gsd discuss`](../../commands/discuss/) after the roadmap exists — it runs a guided interview about slice behaviour, edge cases, and scope, and writes a `CONTEXT.md` that the planner reads during the next planning unit.
 :::
 
 ### 4. Execution
@@ -102,7 +102,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 - Writes a UAT script with concrete test cases
 - Marks the slice done in the roadmap
 - Executes automated UAT checks against the completed slice — confirms mixed-case searches return results
-- Reassesses the roadmap — confirms no further slices are needed
+- Reassesses the roadmap — confirms no further slices are needed (requires [`phases.reassess_after_slice`](../../commands/prefs/) preference)
 - Validates the milestone against the original success criteria
 - Seals the milestone with a completion summary
 
@@ -122,7 +122,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
                 ├── S01-SUMMARY.md       ← compressed slice record
                 ├── S01-UAT.md           ← test script for manual verification
                 ├── S01-UAT-RESULT.md    ← automated UAT execution results
-                ├── S01-ASSESSMENT.md    ← roadmap reassessment notes
+                ├── S01-ASSESSMENT.md    ← roadmap reassessment notes (opt-in)
                 └── tasks/
                     ├── T01-PLAN.md
                     ├── T01-SUMMARY.md
@@ -146,7 +146,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 | `.gsd/milestones/M003/slices/S01/S01-SUMMARY.md` | Compressed slice record |
 | `.gsd/milestones/M003/slices/S01/S01-UAT.md` | Acceptance test script |
 | `.gsd/milestones/M003/slices/S01/S01-UAT-RESULT.md` | Automated UAT execution results |
-| `.gsd/milestones/M003/slices/S01/S01-ASSESSMENT.md` | Roadmap reassessment after slice completes |
+| `.gsd/milestones/M003/slices/S01/S01-ASSESSMENT.md` | Roadmap reassessment after slice completes (opt-in via `phases.reassess_after_slice`) |
 | `.gsd/milestones/M003/M003-VALIDATION.md` | Milestone QA check against original success criteria |
 | `.gsd/milestones/M003/M003-SUMMARY.md` | Milestone completion record |
 
@@ -165,6 +165,8 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 |------|---------|
 | `.gsd/STATE.md` | Updated after each unit completes |
 | `.gsd/KNOWLEDGE.md` | Any new patterns discovered (e.g., Prisma `mode` flag) |
+| `.gsd/gsd.db` | SQLite database opened or auto-migrated at startup — tracks units, metrics, and routing history |
+| `.gsd/completed-units.json` | Disk-backed idempotency log — prevents double-dispatch on restart |
 | `.gsd/activity/` | JSONL execution logs per session |
 | `.gsd/runtime/` | Session metadata and lock files |
 
@@ -207,7 +209,7 @@ flowchart TD
 ## Related Commands
 
 - [`/gsd quick`](../../commands/quick/) — faster path for bugs you already understand
-- [`/gsd discuss`](../../commands/discuss/) — guided interview before a slice executes
+- [`/gsd discuss`](../../commands/discuss/) — guided slice interview after the roadmap exists
 - [`/gsd auto`](../../commands/auto/) — autonomous execution reference
 - [`/gsd doctor`](../../commands/doctor/) — if execution gets stuck or state looks wrong
 - [Recipe: Small Change](../small-change/) — for one-liner fixes without milestone ceremony

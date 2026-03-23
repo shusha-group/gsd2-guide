@@ -7,7 +7,7 @@ description: "API key manager — list, add, remove, test, rotate, and health-ch
 
 `/gsd keys` manages the API credentials GSD uses to call external services. It covers every category GSD needs: LLM providers, search engines, tool APIs, and remote bot integrations. All keys are stored in `~/.gsd/agent/auth.json` with `600` permissions — the doctor subcommand enforces this automatically.
 
-Keys can come from two sources: `auth.json` (managed by this command) or environment variables (e.g. `ANTHROPIC_API_KEY`). `auth.json` takes priority. When multiple keys are stored for the same provider, GSD uses them in round-robin order. Providers that support OAuth (like Anthropic and GitHub Copilot) redirect to `/login` for browser-based authentication instead.
+Keys can come from two sources: `auth.json` (managed by this command) or environment variables (e.g. `ANTHROPIC_API_KEY`). `auth.json` takes priority. When multiple keys are stored for the same provider, GSD uses them in round-robin order. Providers that support OAuth (like Anthropic and GitHub Copilot) show a prompt directing you to use [`/login`](../login/) for browser-based authentication instead.
 
 Keys are always masked in output — only the first 4 and last 4 characters are shown (e.g. `sk-a***4cde`).
 
@@ -43,7 +43,7 @@ Prints a grouped dashboard of all known providers organized by category. Each ro
 
 Prompts for a provider (if not given), then:
 
-1. If the provider supports OAuth, offers a choice between API key and browser login (OAuth redirects to `/login`).
+1. If the provider supports OAuth, offers a choice between API key and browser login. Choosing "Browser login (OAuth)" shows a message directing you to use `/login` for the full browser authentication flow.
 2. Prompts for the API key via text input.
 3. Validates the key format against known prefixes (e.g. Anthropic keys must start with `sk-ant-`). If the prefix doesn't match, a warning is shown but the key is saved anyway.
 4. Stores the key in `auth.json` and sets the corresponding environment variable in the current process.
@@ -80,9 +80,9 @@ Runs static checks without making network calls:
 
 1. **Permissions** — `auth.json` must be `chmod 600`. Fixes automatically if wrong.
 2. **Empty keys** — Flags keys stored as empty strings (from skipped onboarding).
-3. **Expired OAuth** — Warns on expired tokens; notes tokens expiring within 5 minutes.
+3. **Expired OAuth** — Warns on expired tokens; reports tokens expiring within 5 minutes as info.
 4. **Env conflicts** — Warns when `auth.json` and an environment variable hold different values for the same provider (`auth.json` wins).
-5. **Backed-off keys** — Flags providers where all keys are in rate-limit backoff.
+5. **Backed-off keys** — Flags providers where all keys are in rate-limit backoff, including remaining backoff time if known.
 6. **Missing LLM** — Errors if no LLM provider has any credential at all.
 7. **Duplicate keys** — Warns if the same key value is registered for multiple providers.
 
@@ -164,6 +164,13 @@ Anthropic (Claude) — how do you want to authenticate?
   ○ Browser login (OAuth)
 ```
 
+Choosing "Browser login (OAuth)" shows:
+
+```
+Use /login to authenticate via OAuth with Anthropic (Claude).
+The /login command handles the full browser flow.
+```
+
 Test all configured keys:
 
 ```
@@ -219,3 +226,4 @@ Remove API key (sk-p***7890) for OpenAI? [yes]
 
 - [`/gsd doctor`](../doctor/) — Full GSD health check including key status
 - [`/gsd prefs`](../prefs/) — Configure GSD preferences and model settings
+- [`/gsd setup`](../setup/) — Global setup status, including `setup keys` shortcut

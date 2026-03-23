@@ -29,12 +29,12 @@ flowchart TD
     Detail --> DetailView([Render detail: uses, tokens,<br/>cost, recent unit IDs])
 
     Route -->|--declining| GenReport[Generate full health report]
-    GenReport --> FilterDecline[Filter to flagged skills only]
-    FilterDecline --> DashDecline([Render declining skills])
+    GenReport --> FilterDecline[Filter skills table to flagged only]
+    FilterDecline --> DashDecline([Render report with<br/>flagged skills only in table])
 
     Route -->|--stale N| GenReport2[Generate health report<br/>with custom threshold]
-    GenReport2 --> FilterStale[Detect stale skills]
-    FilterStale --> DashStale([Render stale skills])
+    GenReport2 --> FilterStale[Detect stale skills via threshold]
+    FilterStale --> DashStale([Render full dashboard<br/>with stale section])
 
     Route -->|No args| GenFull[Generate full health report]
     GenFull --> DashFull([Render full dashboard<br/>with heal suggestions])
@@ -92,7 +92,7 @@ A skill is flagged (`⚠`) when it has at least 5 uses and either:
 - **Success rate below 70%** — too many units with excessive tool calls
 - **Token trend rising 20%+** — recent average tokens are significantly higher than the previous window (requires 10+ uses for trend detection)
 
-The `--declining` flag filters the full dashboard to show only flagged skills. If no skills are flagged, it prints `No skills flagged for declining performance.`
+The `--declining` flag filters the full dashboard to show only flagged skills in the table. The stale, declining, and heal suggestion sections are still included below the table. If no skills are flagged, it prints `No skills flagged for declining performance.`
 
 ### Staleness Detection
 
@@ -102,9 +102,9 @@ The `--stale N` flag shows skills that haven't appeared in any unit within N day
 
 The health report includes a **Heal Suggestions** section. When a skill is flagged or stale, the report proposes an action:
 
-- **Declining success** — `Review SKILL.md for outdated patterns` (warning or critical by severity)
-- **Rising tokens** — `Skill may be causing inefficient execution patterns` (info; requires 10+ uses)
-- **Stale** — `Consider archiving or updating` (info)
+- **Declining success** — `Success rate dropped to X% over Y uses. Review SKILL.md for outdated patterns.` (warning or critical based on severity)
+- **Rising tokens** — `Token usage trending upward. Skill may be causing inefficient execution patterns.` (info; requires 10+ uses)
+- **Stale** — `Not used in 60+ days. Consider archiving or updating.` (info)
 
 These are display suggestions only. To generate a structured fix proposal, GSD runs a separate heal-skill analysis post-unit (see below).
 
@@ -112,7 +112,7 @@ These are display suggestions only. To generate a structured fix proposal, GSD r
 
 After each auto-mode unit, GSD can optionally run a heal-skill analysis. It reads the skill that was loaded, compares actual execution against the skill's guidance, and classifies the drift:
 
-- **None** — agent followed the skill correctly → writes "No drift detected" to the unit artifact and stops
+- **None** — agent followed the skill correctly → writes "No drift detected" to the unit heal artifact and stops
 - **Minor** — agent found a better approach but the skill isn't wrong → appends a note to `.gsd/KNOWLEDGE.md` and stops
 - **Significant** — skill has outdated or incorrect guidance → writes a structured proposal to `.gsd/skill-review-queue.md`
 
@@ -133,6 +133,8 @@ A review queue entry looks like this:
   - Suggested: "Use CSS custom properties via `className` for all theming"
 - **Action:** [ ] Reviewed [ ] Updated [ ] Dismissed
 ```
+
+If multiple issues are found in a single unit, one entry is written per issue. The prompt explicitly instructs the agent not to flag stylistic preferences — only genuine errors or outdated content.
 
 ## What Files It Touches
 
@@ -178,14 +180,25 @@ Heal Suggestions:
   🟡 review: Token usage trending upward. Skill may be causing inefficient execution patterns.
 ```
 
-Declining-only view:
+Declining-only view (filters the table to flagged skills; stale/declining/suggestion sections still appear):
 
 ```
 > /gsd skill-health --declining
 
+Skill Health Report
+════════════════════════════════════════════════════════════
+Generated: 2026-03-19T10:00:00.000Z
+Units with skill data: 34
+
 Skill                    Uses  Success%  Avg Tokens  Trend     Last Used
 ────────────────────────────────────────────────────────────────────────
 review                    6      83%       42.0k    rising    3 days ago ⚠
+
+Declining Skills (flagged for review):
+  ⚠  review: Token usage trending upward (20%+ increase)
+
+Heal Suggestions:
+  🟡 review: Token usage trending upward. Skill may be causing inefficient execution patterns.
 ```
 
 Detail view for a specific skill:

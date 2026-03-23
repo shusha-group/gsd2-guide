@@ -1,154 +1,162 @@
 ---
 title: "/gsd cleanup"
-description: "Remove merged GSD branches and prune old snapshot refs to keep the repository tidy."
+description: "Archive accumulated phase directories from completed milestones into organized milestone archives."
 ---
 
 ## What It Does
 
-`/gsd cleanup` is a maintenance command that removes accumulated git cruft from GSD's normal operation. It does two things: deletes `gsd/*` branches that have already been merged into your main branch, and prunes old snapshot refs under `refs/gsd/snapshots/`, keeping only the most recent five per label.
+`/gsd cleanup` moves phase directories from `.planning/phases/` into per-milestone archive folders under `.planning/milestones/`. It's a housekeeping command you run after one or more milestones have shipped but their phase directories were left in place.
 
-You can run both cleanups at once or target just one:
+When you run [`/gsd complete-milestone`](../complete-milestone/), you're offered the option to archive phase directories on the spot. If you skipped that step — or want to archive directories from multiple past milestones at once — `/gsd cleanup` handles it retroactively.
 
-- `/gsd cleanup` — runs branch cleanup, then snapshot cleanup
-- `/gsd cleanup branches` — merged branch cleanup only
-- `/gsd cleanup snapshots` — snapshot pruning only
-
-Neither operation modifies files or commits anything — they only remove git refs and local branches. The command is safe to run at any time; it skips gracefully when there's nothing to clean.
+The command shows a dry-run summary before making any changes. Nothing moves until you confirm. If all completed milestones already have phase archives, or if there are no phase directories left to move, cleanup exits with a clear message and does nothing.
 
 ## Usage
 
 ```
-/gsd cleanup [branches|snapshots]
-```
-
-Without a subcommand, both cleanups run in sequence.
-
-```
 /gsd cleanup
-/gsd cleanup branches
-/gsd cleanup snapshots
 ```
+
+Cleanup takes no subcommands or arguments.
 
 ## How It Works
 
-### Branch Cleanup
-
 ```mermaid
 flowchart TD
-    A[List all gsd/* branches] --> B{Any found?}
+    A[Read .planning/MILESTONES.md] --> B{Any completed milestones?}
     B -- No --> C[Nothing to clean up\nStop]
-    B -- Yes --> D[Detect main branch]
-    D --> E[Find merged gsd/* branches]
-    E --> F{Any merged?}
-    F -- No --> G[Report: none merged yet\nStop]
-    F -- Yes --> H[Delete each merged branch]
-    H --> I[Report deleted count]
+    B -- Yes --> D[Check milestones/ for existing\nv{X.Y}-phases archives]
+    D --> E{Any milestones without\na phases archive?}
+    E -- No --> F[All already archived\nStop]
+    E -- Yes --> G[Read v{X.Y}-ROADMAP.md\nfor each unarchived milestone]
+    G --> H[Match phase dirs in\n.planning/phases/]
+    H --> I{Any phase dirs found?}
+    I -- No --> J[No directories to archive\nStop]
+    I -- Yes --> K[Show dry-run summary]
+    K --> L{User confirms?}
+    L -- Cancel --> M[Stop]
+    L -- Yes --> N[mkdir milestones/v{X.Y}-phases/\nfor each milestone]
+    N --> O[mv phases/ dirs to\nmilestone archive]
+    O --> P[Commit changes]
+    P --> Q[Report archived counts]
 
     style A fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style B fill:#0d180d,stroke:#39ff14,color:#39ff14
     style C fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style F fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-```
-
-1. **List GSD branches** — Finds all local branches matching the `gsd/*` pattern (e.g., `gsd/M01-S01`).
-2. **Detect main branch** — Determines the main branch name (`main`, `master`, etc.).
-3. **Find merged branches** — Checks which `gsd/*` branches are already merged into main.
-4. **Delete** — Removes each merged branch. Branches that can't be deleted (e.g., currently checked out) are silently skipped.
-5. **Report** — Shows how many branches were deleted and how many remain.
-
-### Snapshot Cleanup
-
-```mermaid
-flowchart TD
-    A[List refs/gsd/snapshots/* refs] --> B{Any found?}
-    B -- No --> C[Nothing to prune\nStop]
-    B -- Yes --> D[Group refs by label]
-    D --> E[Sort each group by timestamp]
-    E --> F[Delete all but last 5 per label]
-    F --> G[Report pruned count]
-
-    style A fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style B fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style C fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style E fill:#0d180d,stroke:#39ff14,color:#39ff14
     style F fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style I fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style L fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style M fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style N fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style O fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style P fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Q fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-1. **List snapshot refs** — Finds all refs under `refs/gsd/snapshots/`.
-2. **Group by label** — Each snapshot ref has the form `refs/gsd/snapshots/<label>/<timestamp>`. Refs are grouped by their label prefix.
-3. **Sort by timestamp** — Within each group, refs are sorted chronologically by their timestamp suffix.
-4. **Prune old snapshots** — All but the five most recent refs per label are deleted. The five newest are always kept.
-5. **Report** — Shows how many snapshot refs were pruned and how many remain.
+### Step-by-Step
 
-### About Snapshots
+1. **Read MILESTONES.md** — Parses `.planning/MILESTONES.md` to get a list of completed milestone versions (e.g., `v1.0`, `v1.1`).
 
-Snapshots are point-in-time git refs that GSD creates before destructive operations (like squash merges). They're enabled via the `snapshots` preference. Each snapshot captures the current HEAD at `refs/gsd/snapshots/<label>/<timestamp>`, providing a recovery point without creating visible branches. Over time these accumulate; cleanup prunes the old ones while keeping recent history intact.
+2. **Check for existing archives** — Lists `.planning/milestones/` and filters out milestones that already have a `v{X.Y}-phases/` directory. Only milestones without an existing phases archive proceed.
+
+3. **Determine phase membership** — For each unarchived milestone, reads its roadmap archive at `.planning/milestones/v{X.Y}-ROADMAP.md` to extract the phase numbers and names that belong to it.
+
+4. **Match existing directories** — Checks which of those phase directories still exist in `.planning/phases/`. Directories that have already been removed or moved elsewhere are skipped.
+
+5. **Show dry-run summary** — Presents a summary listing which phase directories will be moved to which destination for each milestone. No changes happen yet.
+
+6. **Confirm** — Asks: *"Proceed with archiving?"*. Selecting Cancel stops without changes.
+
+7. **Move directories** — Creates `.planning/milestones/v{X.Y}-phases/` for each milestone and moves the matching phase directories into it.
+
+8. **Commit** — Commits the changes with message `chore: archive phase directories from completed milestones`, staging both `.planning/milestones/` and `.planning/phases/`.
 
 ### Early Exit Conditions
 
-Both cleanups stop without error when there's nothing to do:
+Cleanup stops without error when there's nothing to do:
 
-- **No `gsd/*` branches** — Reports "No GSD branches to clean up."
-- **Branches exist but none merged** — Reports how many branches exist and that none are merged yet.
-- **No snapshot refs** — Reports "No snapshot refs to clean up."
+- **All milestones already archived** — Reports "All completed milestones already have phase directories archived. Nothing to clean up."
+- **No phase directories remain** — Reports "No phase directories found to archive. Phases may have been removed or archived previously."
 
 ## What Files It Touches
 
-`/gsd cleanup` operates exclusively on git refs and local branches. It does not read or write any files in the working tree or commit anything.
+### Reads
 
-### Git Refs Modified
+| File | Purpose |
+|------|---------|
+| `.planning/MILESTONES.md` | Identifies completed milestones and their versions |
+| `.planning/milestones/v{X.Y}-ROADMAP.md` | Determines which phases belong to each milestone |
+| `.planning/phases/` | Lists phase directories available to archive |
 
-| Ref Pattern | Operation |
-|-------------|-----------|
-| `gsd/*` (local branches) | Deleted if merged into main branch |
-| `refs/gsd/snapshots/<label>/*` | Old entries deleted, newest 5 per label kept |
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.planning/milestones/v{X.Y}-phases/` | Archive directory created per milestone |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.planning/milestones/v{X.Y}-phases/{phase-dir}/` | Phase directories moved here from `.planning/phases/` |
 
 ## Examples
 
-Running full cleanup when both branches and snapshots need pruning:
+Archiving two milestones' worth of phase directories:
 
 ```
 > /gsd cleanup
 
-Cleaned up 4 merged branches. 1 remain.
-Pruned 12 old snapshot refs. 10 remain.
+## Cleanup Summary
+
+### v1.0 — MVP
+These phase directories will be archived:
+- 01-foundation/
+- 02-auth/
+- 03-core-features/
+
+Destination: .planning/milestones/v1.0-phases/
+
+### v1.1 — Security
+These phase directories will be archived:
+- 04-security/
+- 05-hardening/
+
+Destination: .planning/milestones/v1.1-phases/
+
+Proceed with archiving? [Yes — archive listed phases / Cancel]
+
+Archived:
+- v1.0: 3 phase directories → .planning/milestones/v1.0-phases/
+- v1.1: 2 phase directories → .planning/milestones/v1.1-phases/
+
+.planning/phases/ cleaned up.
 ```
 
-Running branch-only cleanup when no branches are merged yet:
-
-```
-> /gsd cleanup branches
-
-3 GSD branches found, none are merged into main yet.
-```
-
-Running snapshot cleanup when no snapshots exist (snapshots not enabled):
-
-```
-> /gsd cleanup snapshots
-
-No snapshot refs to clean up.
-```
-
-Nothing to clean up at all:
+Nothing left to do:
 
 ```
 > /gsd cleanup
 
-No GSD branches to clean up.
-No snapshot refs to clean up.
+All completed milestones already have phase directories archived. Nothing to clean up.
+```
+
+Phase directories were deleted manually before cleanup ran:
+
+```
+> /gsd cleanup
+
+No phase directories found to archive. Phases may have been removed or archived previously.
 ```
 
 ## Related Commands
 
-- [`/gsd doctor`](../doctor/) — Diagnose and repair `.gsd/` state issues
-- [`/gsd prefs`](../prefs/) — Enable the `snapshots` preference that generates snapshot refs
-- [`/gsd update`](../update/) — Update GSD to the latest version
-- [`/gsd health`](../health/) — Diagnose planning directory health issues
+- [`/gsd complete-milestone`](../complete-milestone/) — Archive a shipped milestone; offers phase archival inline
+- [`/gsd health`](../health/) — Diagnose `.planning/` directory health and repair structural issues
+- [`/gsd audit-milestone`](../audit-milestone/) — Audit milestone completion before archiving

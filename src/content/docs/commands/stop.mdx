@@ -32,10 +32,15 @@ flowchart TD
     Signal --> Remote[Remote SIGTERM handler\ncalls stopAuto]
     StopLocal --> Teardown
     Remote --> Teardown
-    Teardown[Clear auto.lock + release OS lock] --> Worktree[Exit worktree\npreserve branch]
+    Teardown[Clear auto.lock + OS lock + crash lock] --> Skills[Clear skill state]
+    Skills --> Sigterm[Deregister SIGTERM handler]
+    Sigterm --> Worktree[Exit worktree\npreserve branch]
     Worktree --> CloseDB[Close gsd.db]
-    CloseDB --> Summary[Show inline cost summary]
-    Summary --> Done([Stopped])
+    CloseDB --> Restore[Restore base path + chdir]
+    Restore --> Summary[Show inline cost summary]
+    Summary --> Rebuild[Rebuild state from disk]
+    Rebuild --> Cleanup[Reset metrics, hooks,\nmodel, browser]
+    Cleanup --> Done([Stopped])
 
     style Stop fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Running fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -45,28 +50,39 @@ flowchart TD
     style Signal fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Remote fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Teardown fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Skills fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Sigterm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Worktree fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CloseDB fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Restore fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Rebuild fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Cleanup fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Teardown sequence
 
 1. **Clear timeout handles** — Cancels any active unit timeout, wrap-up warning, idle watchdog, and continue-here interval timers.
-2. **Clear session lock** — Removes `.gsd/auto.lock` and releases the OS-level lock held via `proper-lockfile`.
-3. **Deregister SIGTERM handler** — Removes the SIGTERM handler registered at auto-mode start.
-4. **Exit worktree** — If worktree isolation was active, exits the `.gsd/worktrees/<MID>/` working copy. The `milestone/<MID>` branch and all its commits are preserved — only the working copy is removed.
-5. **Close database** — Flushes pending metrics and closes the SQLite database at `.gsd/gsd.db`.
-6. **Restore base path** — Resets to the original project root and changes the working directory back.
-7. **Cost summary** — Shows total cost, token count, and units completed for the session as an inline notification.
-8. **Rebuild state** — Re-derives GSD state from disk so the status display reflects the stopped session.
+2. **Clear session lock** — Removes `.gsd/auto.lock`, releases the OS-level lock held via `proper-lockfile` (the `.gsd.lock/` directory), and clears the crash lock.
+3. **Clear skill state** — Resets skill snapshot and telemetry accumulated during the session.
+4. **Deregister SIGTERM handler** — Removes the SIGTERM handler registered at auto-mode start.
+5. **Exit worktree** — If worktree isolation was active, exits the `.gsd/worktrees/<MID>/` working copy. The `milestone/<MID>` branch and all its commits are preserved — only the working copy is removed.
+6. **Close database** — Flushes pending metrics and closes the SQLite database at `.gsd/gsd.db`.
+7. **Restore base path** — Resets to the original project root and changes the working directory back.
+8. **Cost summary** — Shows total cost, token count, and units completed for the session as an inline notification.
+9. **Rebuild state** — Re-derives GSD state from disk so the status display reflects the stopped session.
+10. **Reset session state** — Clears metrics, routing history, hook state, persisted hook state, browser processes, and in-flight tool records. Restores the original model if it was changed during the session. Removes `.gsd/runtime/paused-session.json` if it exists.
 
 ### Remote stop
 
 When you run `/gsd stop` in a terminal where auto mode isn't running, GSD reads `.gsd/auto.lock`. If the file exists and its recorded PID is still alive, GSD sends `SIGTERM` to that process. The running session's registered SIGTERM handler calls `stopAuto()`, which performs the full teardown sequence above and exits cleanly.
 
 If the lock file exists but the PID is no longer alive (a stale lock from a crash), GSD cleans up the stale lock file and reports that nothing is running.
+
+### Lock file layers
+
+`.gsd/auto.lock` contains JSON metadata (PID, start time, active unit) written by the crash-recovery subsystem — this is the file read for remote stop. Separately, `proper-lockfile` holds an OS-level exclusive lock on the `.gsd/` directory itself (manifested as a `.gsd.lock/` sibling directory), preventing two sessions from starting concurrently. Both are cleared on stop.
 
 ## What Files It Touches
 
@@ -82,7 +98,9 @@ If the lock file exists but the PID is no longer alive (a stale lock from a cras
 | File | Purpose |
 |------|---------|
 | `.gsd/auto.lock` | Removed on clean shutdown |
+| `.gsd.lock/` | Proper-lockfile OS-lock directory removed alongside `auto.lock` |
 | `.gsd/worktrees/<MID>/` | Worktree working copy removed (branch and commits preserved) |
+| `.gsd/runtime/paused-session.json` | Removed if it exists — prevents stale pause state from a previous `/gsd pause` |
 
 ## Examples
 

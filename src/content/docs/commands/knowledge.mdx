@@ -5,7 +5,7 @@ description: "Add persistent project knowledge — record rules, patterns, and l
 
 ## What It Does
 
-`/gsd knowledge` appends an entry to `.gsd/KNOWLEDGE.md`. This file is injected into the system prompt for every agent session, so rules, patterns, and lessons you add here influence all future agent work without needing to repeat them.
+`/gsd knowledge` appends an entry to `.gsd/KNOWLEDGE.md`. This file is injected into both the base system context and each individual unit prompt — research, planning, execution, slice completion, and more — so rules, patterns, and lessons you add here influence all future agent work without needing to repeat them.
 
 Each entry is typed as a `rule`, `pattern`, or `lesson` and assigned an auto-incrementing ID (`K001`, `P001`, `L001`) scoped to the active milestone and slice. The scope helps future agents understand the context where the knowledge was discovered.
 
@@ -86,13 +86,13 @@ Entries are never removed or modified. If a rule becomes obsolete, add a new ent
 
 ### How Knowledge Is Used
 
-`KNOWLEDGE.md` is injected into the system prompt for every agent session — task execution, slice planning, milestone research, and everything else. This means:
+KNOWLEDGE.md is surfaced to agents in two ways:
 
-- Rules are enforced automatically — the agent sees them as constraints
-- Patterns guide implementation choices — the agent follows established approaches
-- Lessons prevent repeated mistakes — the agent knows about gotchas in advance
+**Base system context** — At the start of every agent session, the file is injected under a `[PROJECT KNOWLEDGE — Rules, patterns, and lessons learned]` block, appended after the GSD persona and preferences.
 
-The file is only injected if it exists. If no knowledge has been added yet, the block is simply omitted.
+**Unit prompts** — The file is also inlined directly into the prompt for each unit: research, planning, task execution, slice completion, milestone completion, and more. This means agents see the knowledge both globally and in context of the specific work they're about to do.
+
+If `.gsd/KNOWLEDGE.md` doesn't exist, both injection points are silently skipped — no error, no empty block. The file only appears in prompts once at least one entry has been added.
 
 ## What Files It Touches
 
@@ -157,10 +157,6 @@ Missing description — shows per-type hint:
 
 ● Usage: /gsd knowledge rule <description>
 ```
-
-## Prompts Used
-
-- [`system`](../../prompts/system/) — The foundational persona prompt injected into every GSD agent session
 
 ## Related Commands
 

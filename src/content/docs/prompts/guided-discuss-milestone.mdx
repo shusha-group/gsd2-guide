@@ -7,11 +7,13 @@ description: "An interview-style prompt that surfaces behavioral and architectur
 
 `guided-discuss-milestone` is a structured discovery session. Before planning a milestone, there are almost always gray areas — things that look clear in a feature title but branch into different implementation paths depending on what the user actually wants. This prompt surfaces those gray areas through a focused interview and captures the answers in a `{milestoneId}-CONTEXT.md` file that downstream planning prompts treat as the authoritative scope brief.
 
-The prompt starts with a lightweight codebase investigation — using `rg`, `find`, or the `scout` subagent to understand what already exists that the milestone touches. This ensures questions are grounded in reality rather than generic assumptions. The agent then runs an interview in rounds of 1–3 questions each, covering six areas: what is being built (concrete enough to explain to a stranger), why it needs to exist, who it's for, what "done" looks like, the biggest technical unknowns and risks, and what external systems the milestone touches.
+The prompt starts with a lightweight codebase investigation — using `rg`, `find`, or the `scout` subagent to understand what already exists that the milestone touches. It also uses `resolve_library` / `get_library_docs` for unfamiliar libraries, and `search_and_read` for one-shot topic research, with a limited web search budget distributed across the investigation pass and subsequent rounds. This ensures questions are grounded in reality rather than generic assumptions.
 
-When `structuredQuestionsAvailable` is true, each round uses `ask_user_questions` for interactive selection UI. When false, questions are posed in plain text. After each round the agent asks whether to continue or wrap up, and performs a depth check before concluding — the agent prints a structured summary using the user's exact terminology and asks for confirmation before writing the context file.
+The agent then runs an interview in rounds of 1–3 questions each, covering six areas: what is being built (concrete enough to explain to a stranger), why it needs to exist, who it's for, what "done" looks like, the biggest technical unknowns and risks, and what external systems the milestone touches. When `structuredQuestionsAvailable` is true, each round uses `ask_user_questions` for interactive selection UI. When false, questions are posed in plain text.
 
-The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact wording, emphasis, and framing. It is not a paraphrase — downstream agents read it as their only window into this conversation. When a milestone has a context file, it is the first thing planning prompts read and the authoritative answer to scope questions.
+The agent does **not** ask a "ready to wrap up?" gate after every round — it continues immediately into the next round unless the depth checklist is genuinely satisfied. A single wrap-up prompt is used only when the agent believes all six areas are covered or the user signals they want to stop. Before writing, the agent prints a structured depth summary using the user's exact terminology and runs a confirmation gate — when structured questions are available, the question ID must contain `depth_verification` to enable the write-gate downstream.
+
+The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact wording, emphasis, and framing. It is not a paraphrase — downstream agents read it as their only window into this conversation. After writing, the prompt says exactly `"{milestoneId} context written."` and nothing else. When a milestone has a context file, it is the first thing planning prompts read and the authoritative answer to scope questions.
 
 ## Pipeline Position
 
@@ -19,13 +21,16 @@ The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact 
 flowchart TD
     GsdCommand["/gsd"] --> SelectUnit["select-unit"]
     SelectUnit --> GuidedDiscussMilestone["guided-discuss-milestone"]
-    GuidedDiscussMilestone --> UserInteraction["user-interaction"]
-    UserInteraction --> ArtifactWritten["artifact-written"]
+    GuidedDiscussMilestone --> QuestionRounds["question-rounds"]
+    QuestionRounds --> DepthVerification{"depth verified?"}
+    DepthVerification -->|"no"| QuestionRounds
+    DepthVerification -->|"yes"| ArtifactWritten["artifact-written\n(milestoneId-CONTEXT.md)"]
 
     style GuidedDiscussMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
     style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style QuestionRounds fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DepthVerification fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 

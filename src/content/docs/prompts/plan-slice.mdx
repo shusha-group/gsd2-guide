@@ -17,16 +17,19 @@ The resulting task plans are the primary contract for executor agents. Executors
 flowchart TD
     ResearchSlice["research-slice"] --> PlanSlice["plan-slice"]
     PlanSlice --> ExecuteTask["execute-task"]
-    ExecuteTask --> ReplnSlice{"blocker?"}
-    ReplnSlice -->|"yes"| ReplanSlice["replan-slice"]
-    ReplnSlice -->|"no"| CompleteSlice["complete-slice"]
+    ExecuteTask --> BlockerFound{"blocker_discovered?"}
+    BlockerFound -->|"yes"| ReplanSlice["replan-slice"]
+    BlockerFound -->|"no"| MoreTasks{"more tasks?"}
     ReplanSlice --> ExecuteTask
+    MoreTasks -->|"yes"| ExecuteTask
+    MoreTasks -->|"no"| CompleteSlice["complete-slice"]
 
     style PlanSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
     style ResearchSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ExecuteTask fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ReplnSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style BlockerFound fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ReplanSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style MoreTasks fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CompleteSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
@@ -44,7 +47,7 @@ This prompt fires after `research-slice` completes. The planner writes the slice
 | `dependencySummaries` | Pre-assembled summaries of completed slices that this slice depends on | Yes |
 | `sourceFilePaths` | List of source file paths particularly relevant to this slice's implementation scope | Yes |
 | `executorContextConstraints` | Constraints and context limits that executor agents must respect when running tasks in this slice | Yes |
-| `outputPath` | File path where the completed slice plan (S01-PLAN.md) should be written | Yes |
+| `outputPath` | File path where the completed slice plan (`S01-PLAN.md`) should be written | Yes |
 | `slicePath` | File system path to the slice directory | Yes |
 | `commitInstruction` | Instruction block telling the planner how to commit the completed slice plan | Yes |
 

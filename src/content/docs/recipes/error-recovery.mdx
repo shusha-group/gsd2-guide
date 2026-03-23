@@ -40,7 +40,7 @@ Check the current state:
 ...
 ```
 
-The `auto.lock` file confirms auto-mode was running and didn't shut down cleanly. It's a JSON file that records the PID, which unit was dispatched, and when:
+The `auto.lock` file confirms auto-mode was running and didn't shut down cleanly. It's a JSON file that records the PID, which unit was dispatched, when it started, and the session file path:
 
 ```json
 {
@@ -49,7 +49,8 @@ The `auto.lock` file confirms auto-mode was running and didn't shut down cleanly
   "unitType": "execute-task",
   "unitId": "M002/S01/T02",
   "unitStartedAt": "2025-01-15T10:24:00.000Z",
-  "completedUnits": 3
+  "completedUnits": 3,
+  "sessionFile": ".gsd/activity/004-execute-task-M002-S01-T02.jsonl"
 }
 ```
 
@@ -79,11 +80,13 @@ Start by scanning for issues without making any changes:
 > /gsd doctor
 ```
 
-Doctor runs checks across four categories:
+Doctor runs checks across six categories:
 
-- **Structure** — Missing summaries, UAT files, unchecked roadmap entries, missing `tasks/` directories
-- **Git health** — Orphaned worktrees, stale milestone branches, corrupt merge or rebase state, runtime files tracked by git
-- **Runtime state** — Stale `auto.lock` (PID check), orphaned completed-unit keys, stale hook state, activity log bloat, STATE.md staleness, gitignore drift
+- **Structure** — Missing summaries, UAT files, unchecked roadmap entries, missing `tasks/` directories, duplicate task IDs, premature slice completion
+- **Git health** — Orphaned worktrees, stale milestone branches, corrupt merge or rebase state, runtime files tracked by git, orphaned worktree directories, stale or dirty worktrees
+- **Runtime state** — Stale `auto.lock` (PID check), stranded lock directory, stale parallel sessions, orphaned completed-unit keys, stale hook state, activity log bloat, STATE.md staleness, gitignore drift, metrics ledger bloat
+- **Global state** — Orphaned project state directories in `~/.gsd/projects/` whose git root no longer exists
+- **Environment** — Provider/auth key availability for active work
 - **Requirements** — Active requirements without an owning slice, blocked requirements without a reason
 
 The report shows what's wrong before anything is repaired:
@@ -105,7 +108,23 @@ Once you understand what's wrong, apply automatic repairs:
 > /gsd doctor fix
 ```
 
-Fix mode repairs everything marked as fixable: removes the stale crash lock, marks T02 done in the plan if a summary now exists, creates placeholder summaries for missing slice artifacts, regenerates STATE.md from current disk state, and more. It only touches issues with `fixable: true` — it won't rewrite plan content or make judgment calls.
+Fix mode repairs everything marked as fixable. Depending on what's detected, this includes:
+
+- Removing the stale `auto.lock` crash lock
+- Removing stranded `.gsd.lock/` directories
+- Marking tasks `[x]` in the slice plan when a summary already exists on disk
+- **Un-checking** tasks in the slice plan when the summary is missing (so they re-execute cleanly)
+- Un-marking slices as done in the roadmap when completion was premature
+- Creating placeholder summaries for done-but-missing slice artifacts
+- Creating placeholder UAT files when all tasks are complete but UAT is missing
+- Marking the slice `[x]` in the roadmap when all tasks and artifacts are complete
+- Removing orphaned completed-unit keys that reference missing artifacts
+- Rebuilding STATE.md from current disk state
+- Pruning activity logs to a 7-day retention window
+- Removing orphaned worktrees and stale milestone branches
+- Adding missing GSD runtime patterns to `.gitignore`
+
+Doctor fix only touches issues with `fixable: true` — it won't rewrite plan content or make judgment calls.
 
 ```
 GSD doctor report.
@@ -126,7 +145,11 @@ If doctor fix resolves the issues cleanly, resume execution:
 
 Auto-mode re-derives state from disk on startup. If T02 never wrote a summary, auto-mode re-executes T02 from scratch — it reads T01's summary for context and continues the slice. If T02's summary exists but the plan checkbox was unchecked, doctor already fixed that and auto-mode picks up the next task.
 
-Auto-mode also runs lightweight self-healing on every startup: it scans runtime records and clears any where the expected artifact already exists on disk (recovering from incomplete closeouts after prior crashes), and checks for leftover git merge state — finalizing clean merges or aborting conflicted ones.
+Auto-mode also runs lightweight self-healing on every startup:
+
+- **Stale runtime records** — Clears dispatched records older than 1 hour (which means the process crashed before the unit could complete).
+- **Complete-slice invariant repair** — If a `complete-slice` unit has both a SUMMARY and UAT file on disk but the roadmap checkbox is still unchecked (crashed after writing artifacts but before updating the roadmap), auto-mode flips the checkbox automatically.
+- **Merge state reconciliation** — Checks for leftover `MERGE_HEAD` or `SQUASH_MSG` from a prior session. If all conflicts are resolved, it finalizes the commit. If conflicts involve only `.gsd/` state files, it auto-resolves by accepting theirs. If code conflicts remain, it aborts and resets.
 
 ### 5. If structural issues remain — use heal mode
 
@@ -136,7 +159,7 @@ When auto-fix can't resolve everything (non-fixable issues, missing artifacts th
 > /gsd doctor heal
 ```
 
-Heal mode first applies all fixable repairs, then filters the remaining issues — all errors plus UAT-related warnings — and dispatches them to the LLM as a structured list. The LLM receives the full doctor report with issue codes, unit IDs, and file paths, and is instructed to generate real artifacts from existing context (task summaries, plan files) rather than leaving placeholders when possible.
+Heal mode first applies all fixable repairs, then filters the remaining issues — all errors plus UAT-related warnings (`all_tasks_done_missing_slice_uat` and `slice_checked_missing_uat`) — and dispatches them to the LLM as a structured list. The LLM receives the full doctor report with issue codes, unit IDs, and file paths, and is instructed to generate real artifacts from existing context (task summaries, plan files) rather than leaving placeholders when possible.
 
 ```
 GSD doctor heal prep.
@@ -159,15 +182,15 @@ When the failure is behavioral (keeps happening, unusual cost spikes, stuck loop
 > /gsd forensics auto-mode keeps crashing on T02 of the image upload slice
 ```
 
-Forensics gathers a structured report from five data sources:
+Forensics gathers a structured report from multiple data sources:
 
-- **Activity logs** — Tool calls, reasoning traces, and errors from the crashed session
+- **Activity logs** — Tool calls, reasoning traces, and errors from the crashed session (worktree-aware: checks both the project root and any active worktree)
 - **Metrics ledger** — Cost and timing data to detect spikes or excessive retries
 - **Crash lock** — PID liveness to confirm the crash
 - **Doctor checks** — Full structural scan run internally
 - **Completed keys** — Cross-referenced against expected artifacts to find stale completions
 
-Forensics then detects anomalies — stuck loops, cost spikes, timeouts, missing artifacts, error traces — and dispatches the full report to the LLM for interactive root-cause analysis. The LLM explains what happened, why it happened, and how to recover. It also offers to create a GitHub issue at `gsd-build/gsd-2` if the problem is a GSD bug.
+Forensics then detects anomalies — stuck loops, cost spikes, timeouts, missing artifacts, error traces — and dispatches the full report to the LLM for interactive root-cause analysis. The LLM traces from symptom to root cause in the GSD source code and produces a filing-ready GitHub issue draft with specific file references and a concrete fix suggestion.
 
 Every forensic report is saved as a timestamped file in `.gsd/forensics/` for future reference.
 
@@ -198,8 +221,10 @@ The recovery process may produce:
 | `.gsd/STATE.md` | Regenerated from current disk state |
 | `.gsd/auto.lock` | Removed (stale lock cleared) |
 | `.gsd/milestones/*/slices/*/tasks/*-SUMMARY.md` | Stub summary if task was done but summary missing |
-| `.gsd/milestones/*/slices/*/S*-PLAN.md` | Task checkbox updated if summary exists |
-| `.gsd/milestones/*/M*-ROADMAP.md` | Slice checkbox updated if all tasks done |
+| `.gsd/milestones/*/slices/*/S*-PLAN.md` | Task checkbox updated (checked or un-checked) based on summary presence |
+| `.gsd/milestones/*/M*-ROADMAP.md` | Slice checkbox updated if all tasks done, or un-marked if premature |
+| `.gsd/milestones/*/slices/*/S*-UAT.md` | Placeholder UAT if all tasks complete but UAT missing |
+| `.gitignore` | Missing GSD runtime patterns appended |
 
 ### From `/gsd doctor heal`
 
@@ -212,7 +237,7 @@ The recovery process may produce:
 
 | File | Purpose |
 |------|---------|
-| `.gsd/forensics/report-*.md` | Timestamped, redacted forensic report |
+| `.gsd/forensics/report-*.md` | Timestamped, redacted forensic report with filing-ready GitHub issue draft |
 
 ## Flow Diagram
 

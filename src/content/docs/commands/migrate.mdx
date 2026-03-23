@@ -66,7 +66,7 @@ flowchart TD
 
 ### Stage 1: Validate
 
-Scans the `.planning/` directory for structural issues. Issues are classified as **warnings** (non-blocking) or **fatals** (block migration). The only fatal issue is a missing or non-existent `.planning/` directory — everything else is a warning. Warnings are displayed to the user before proceeding; they indicate reduced data quality but never halt migration.
+Scans the `.planning/` directory for structural issues. Issues are classified as **warnings** (non-blocking) or **fatals** (block migration). The only fatal issue is a `.planning/` path that doesn't exist or isn't a directory — everything else is a warning. Warnings are displayed to the user before proceeding; they indicate reduced data quality but never halt migration.
 
 | Issue | Severity |
 |-------|----------|
@@ -82,12 +82,18 @@ Scans the `.planning/` directory for structural issues. Issues are classified as
 Reads the `.planning/` directory into a typed in-memory representation. The parser handles all subdirectories and file naming conventions used by older GSD versions:
 
 - **Top-level files** — `PROJECT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `STATE.md`, `config.json`
-- **`phases/NN-slug/`** — directories named `NN-slug` (e.g., `29-auth-system`) or `NN.N-slug` (decimal for inserted phases). Within each phase: plan files (`29-01-PLAN.md`), summary files (`29-01-SUMMARY.md`), research files (any file matching `research`), and verification files (any file matching `verification`)
+- **`phases/NN-slug/`** — directories named `NN-slug` (e.g., `29-auth-system`) or `NN.N-slug` (decimal for inserted phases). Within each phase: plan files (`29-01-PLAN.md`) with YAML frontmatter and XML-in-markdown sections (`<objective>`, `<tasks>`, `<context>`, `<verification>`), summary files (`29-01-SUMMARY.md`) with YAML frontmatter, research files (any filename containing `research`), and verification files (any filename containing `verification`)
 - **`quick/NNN-slug/`** — quick task directories with `NNN-PLAN.md` and `NNN-SUMMARY.md`
 - **`milestones/`** — milestone-level files like `v2.2-ROADMAP.md` and `v2.2-REQUIREMENTS.md`
 - **`research/`** — top-level research files
 
-Roadmap parsing handles three formats: flat phase checklists, `## vN.N — Title` heading-sectioned milestones, and `<details><summary>` collapsed milestone blocks.
+Roadmap parsing tries three strategies in priority order:
+
+1. **`<details>` blocks** — `<details><summary>vN.N Title (Phases N-M)</summary>` collapsed milestone blocks, each containing phase checkbox lines
+2. **`##` heading sections** — `## vN.N — Title` headings, each section collecting phase checkbox lines beneath it
+3. **Flat list** — all checkbox phase entry lines extracted directly (produces a single `M001` milestone)
+
+Phase entry lines support two formats: `- [x] Phase NN: Title` and `- [x] NN — Title` (em-dash or en-dash only; plain hyphens are not treated as separators).
 
 Missing files produce `null` values — they are never errors at this stage.
 
@@ -108,8 +114,8 @@ Within each milestone, **phases become slices** and **plan files become tasks**:
 | Roadmap milestone section | `milestones/M001/` directory |
 | `ROADMAP.md` milestone entries | `M001-ROADMAP.md` |
 | `phases/NN-slug/` directory | `slices/S01/` directory |
-| `NN-NN-PLAN.md` (plan file) | `T01-PLAN.md` (task plan) |
-| `NN-NN-SUMMARY.md` (summary file) | `T01-SUMMARY.md` (task summary) |
+| `NN-NN-PLAN.md` (plan file) | `tasks/T01-PLAN.md` (task plan) |
+| `NN-NN-SUMMARY.md` (summary file) | `tasks/T01-SUMMARY.md` (task summary) |
 | Phase research files | `S01-RESEARCH.md` |
 | `research/` top-level files | `M001-RESEARCH.md` |
 | `REQUIREMENTS.md` | `REQUIREMENTS.md` |
@@ -117,7 +123,9 @@ Within each milestone, **phases become slices** and **plan files become tasks**:
 | `STATE.md` | `STATE.md` (stub — recomputed by `deriveState()`) |
 | Key decisions from phase summaries | `DECISIONS.md` |
 
-Requirement statuses from the old format are normalized: `complete`, `completed`, `done`, and `shipped` all map to `validated`. Unrecognised statuses default to `active`.
+Requirement statuses from the old format are normalized: `complete`, `completed`, `done`, and `shipped` all map to `validated`. The statuses `active`, `validated`, and `deferred` are kept as-is. All other unrecognised statuses (including `out-of-scope`) default to `active`.
+
+`DECISIONS.md` is always written. When phase summaries contain `key-decisions` frontmatter entries, they are aggregated into bullet-list form. If no decisions are found, the file is seeded with a standard empty decision-register table.
 
 ### Stage 4: Preview
 
@@ -163,8 +171,8 @@ After writing, the command offers to dispatch an agent-driven review. The agent 
 |------|---------|
 | `.gsd/PROJECT.md` | Project description (pass-through or stub) |
 | `.gsd/STATE.md` | Minimal stub — recomputed by `deriveState()` on first run |
-| `.gsd/DECISIONS.md` | Key decisions aggregated from phase summaries |
-| `.gsd/REQUIREMENTS.md` | Migrated requirements, grouped by status (only written if requirements exist) |
+| `.gsd/DECISIONS.md` | Key decisions from phase summaries, or empty decision-register table |
+| `.gsd/REQUIREMENTS.md` | Migrated requirements grouped by status — Active, Validated, Deferred, Out of Scope (only written if requirements exist) |
 | `.gsd/milestones/M001/M001-ROADMAP.md` | Milestone roadmap with slice checklist |
 | `.gsd/milestones/M001/M001-CONTEXT.md` | Minimal context stub |
 | `.gsd/milestones/M001/M001-RESEARCH.md` | Consolidated research (only if research exists) |

@@ -9,7 +9,9 @@ description: "Reviews the milestone roadmap after each slice completes, deciding
 
 The assessment bias is strongly toward "roadmap is fine." Most of the time, the plan is still good, and the agent writes a brief confirmation and the pipeline moves on immediately. Changes are only warranted when there is concrete evidence — a prior slice changed an API surface that a later slice depends on, a risk was retired earlier than expected and a proof slice is now redundant, or a new risk emerged that should be addressed before the next planned slice.
 
-When changes are needed, the reassessment agent rewrites only the unchecked slices in the roadmap — completed slices are never modified. It also considers deferred captures: user thoughts captured during execution and deferred to future consideration. These may warrant slice adjustments, reordering, or new scope additions. The assessment document it writes is brief and concrete: what changed, why, and what the coverage impact is. The pipeline then continues with the next slice in the updated roadmap.
+Before deciding whether changes are needed, the agent runs a **success-criterion coverage check**: every criterion in the roadmap's `## Success Criteria` section must map to at least one remaining unchecked slice. If any criterion has no remaining owner after the proposed changes, it is flagged as a blocking issue — the agent must resolve it before finalizing. This prevents silent gaps where completing a slice leaves important outcomes unproven by anything downstream.
+
+When changes are needed, the reassessment agent rewrites only the unchecked slices in the roadmap — completed slices are never modified. If a `.gsd/REQUIREMENTS.md` file exists, it also evaluates requirement coverage and updates ownership or status if scope changed. It also considers deferred captures: user thoughts captured during execution and deferred to future consideration. These may warrant slice adjustments, reordering, or new scope additions. The assessment document it writes is brief and concrete: what changed, why, and what the coverage impact is. The pipeline then continues with the next slice in the updated roadmap.
 
 ## Pipeline Position
 
@@ -40,6 +42,7 @@ This prompt fires after every `complete-slice` in the pipeline. It can be skippe
 | `workingDirectory` | Absolute path to the project working directory | Yes |
 | `inlinedContext` | Pre-assembled context block containing milestone status, roadmap state, and completion summaries | Yes |
 | `deferredCaptures` | List of deferred capture items to consider when reassessing the roadmap priorities | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills relevant to the reassessment context | Yes |
 | `assessmentPath` | File path where the roadmap reassessment document should be written | Yes |
 | `roadmapPath` | File path to the project roadmap document being reassessed | Yes |
 | `commitInstruction` | Instruction block telling the reassessment agent how to commit updated roadmap files | Yes |

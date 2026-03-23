@@ -1,13 +1,13 @@
 ---
 title: "/gsd mode"
-description: "Switch between solo and team workflow modes — sets coordinated defaults for git behavior, milestone IDs, and documentation level."
+description: "Switch between solo and team workflow modes — sets coordinated defaults for git behavior, milestone IDs, and isolation."
 ---
 
 ## What It Does
 
 `/gsd mode` is a quick toggle between solo and team workflow modes. Each mode records a single `mode` key in your preferences file and applies a coordinated set of defaults at runtime — saving you from configuring git, isolation, and ID settings individually.
 
-Solo mode is optimized for individual developers — it auto-pushes, uses simple sequential milestone IDs, and keeps documentation lightweight. Team mode is designed for shared repositories — it uses unique milestone IDs to avoid collisions, pushes branches for review, and enables pre-merge checks.
+Solo mode is optimized for individual developers — it auto-pushes, uses simple sequential milestone IDs, and keeps git flow lightweight. Team mode is designed for shared repositories — it uses unique milestone IDs to avoid collisions, pushes branches for review, and enables pre-merge checks.
 
 Mode defaults are the **lowest-priority layer**. Any value you've explicitly set in your preferences file overrides the mode default. This means you can use a mode as a starting point and customize individual settings without losing the rest.
 
@@ -85,7 +85,6 @@ Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If 
 | `pre_merge_check` | `false` — merge without CI gate | `true` — wait for CI before merging |
 | `merge_strategy` | `squash` | `squash` |
 | `isolation` | `worktree` | `worktree` |
-| `commit_docs` | `true` | `true` |
 | `unique_milestone_ids` | `false` — simple `M001`, `M002` | `true` — `M001-eh88as`, `M002-k4m9xz` (prevents ID collisions) |
 
 ### Unique Milestone IDs
@@ -136,7 +135,7 @@ Workflow mode:
 
 Mode: team — defaults: auto_push=false, push_branches=true,
   pre_merge_check=true, merge_strategy=squash, isolation=worktree,
-  commit_docs=true, unique_milestone_ids=true
+  unique_milestone_ids=true
 ```
 
 Switching to project-level solo mode (overrides global team mode for this repo):
@@ -154,7 +153,7 @@ Workflow mode (current: team):
 
 Mode: solo — defaults: auto_push=true, push_branches=false,
   pre_merge_check=false, merge_strategy=squash, isolation=worktree,
-  commit_docs=true, unique_milestone_ids=false
+  unique_milestone_ids=false
 ```
 
 Removing mode defaults entirely (configure each preference manually):

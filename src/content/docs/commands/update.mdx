@@ -77,20 +77,20 @@ Updating from the terminal:
 
 ```bash
 $ gsd update
-Current version: v2.30.0
+Current version: v2.36.0
 Checking npm registry...
-Updating: v2.30.0 → v2.31.0
+Updating: v2.36.0 → v2.37.0
 
 added 1 package, changed 1 package, and audited 142 packages in 8s
 
-Updated to v2.31.0
+Updated to v2.37.0
 ```
 
 Already up to date:
 
 ```bash
 $ gsd update
-Current version: v2.31.0
+Current version: v2.37.0
 Checking npm registry...
 Already up to date.
 ```
@@ -99,22 +99,20 @@ Inside a session:
 
 ```
 /gsd update
-
-● Current version: v2.30.0
-  Checking npm registry...
-● Updating: v2.30.0 → v2.31.0...
-● Updated to v2.31.0. Restart your GSD session to use the new version.
+# Current version: v2.36.0
+# Checking npm registry...
+# Updated to v2.37.0. Restart GSD to use the new version.
 ```
 
-Startup banner when an update is waiting (non-interactive, printed to stderr before the session starts):
+Startup banner when an update is waiting (printed to stderr before the session starts):
 
 ```
-  Update available: v2.30.0 → v2.31.0
+  Update available: v2.36.0 → v2.37.0
   Run npm update -g gsd-pi or /gsd update to upgrade
 ```
 
 ## Related Commands
 
-- [`/gsd changelog`](../changelog/) — Show categorized release notes for the current version
-- [`/gsd doctor`](../doctor/) — Health checks including version diagnostics
-- [`/gsd reapply-patches`](../reapply-patches/) — Reapply local modifications after an update
+- [`/gsd doctor`](../doctor/) — Runtime health checks including version diagnostics
+- [`/gsd prefs`](../prefs/) — Model selection, timeouts, and budget settings
+- [`/gsd help`](../gsd/) — Categorized command reference for all GSD subcommands

@@ -115,7 +115,7 @@ Once past any drafts, the discussion flow:
 2. **Checks for overlap** — Dedup check against existing milestones, extension check for work that belongs with a pending milestone, and dependency check for prerequisites.
 3. **Assesses scope** — Determines whether the work is single-milestone (2–12 slices) or multi-milestone. If multi-milestone, proposes a split for your approval before writing anything.
 4. **Verifies before writing** — For each new milestone, a mandatory depth verification step presents the proposed scope and any technical risks. You confirm or correct before the context file is written. This gate cannot be skipped.
-5. **Writes artifacts** — Uses `gsd_generate_milestone_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, and writes `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
+5. **Writes artifacts** — Uses `gsd_milestone_generate_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, and writes `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
 
 No roadmap is created — roadmaps are generated just-in-time when auto-mode reaches that milestone. The add flow does not auto-commit; artifacts are committed by auto-mode's normal post-unit commit cycle.
 

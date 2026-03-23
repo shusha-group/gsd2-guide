@@ -38,7 +38,12 @@ Quotes around the thought are optional — they're stripped if present.
 
 ### Worktree Awareness
 
-When running inside a worktree (`.gsd/worktrees/<MID>/`), captures resolve to the **original project root's** `CAPTURES.md`, not the worktree-local copy. This ensures all captures from all worktrees end up in a single file, regardless of which worktree the agent is running in.
+When running inside a worktree, captures resolve to the **original project root's** `CAPTURES.md`, not the worktree-local copy. Two worktree layouts are detected:
+
+- **Direct layout**: `/.gsd/worktrees/<MID>/`
+- **Symlink-resolved layout**: `/.gsd/projects/<hash>/worktrees/`
+
+In both cases the project root is resolved by walking up to the directory that contains `.gsd/worktrees/`. This ensures all captures from all worktrees end up in a single file.
 
 ### Capture Entry Format
 
@@ -59,7 +64,7 @@ After triage, the status is updated and classification fields are appended:
 **Captured:** 2025-01-15T10:30:00.000Z
 **Status:** resolved
 **Classification:** defer
-**Resolution:** deferred to S03
+**Resolution:** deferred to M003
 **Rationale:** Not in scope for current slice
 **Resolved:** 2025-01-15T14:00:00.000Z
 ```
@@ -88,11 +93,12 @@ Captures are classified during triage into one of five types:
 
 When triage runs, the LLM reads the **current slice plan** and **active roadmap** as context before proposing classifications. This lets it make informed decisions — for example, preferring `inject` when the work fits naturally into the current slice, or `defer` when it belongs in a later phase.
 
-After user confirmation, resolutions are executed immediately:
+**Triage only classifies — it does not execute resolutions.** After the triage unit completes, auto-mode calls `executeTriageResolutions()` at the next dispatch cycle to carry out the actions:
 
-- **`inject`** — Appends a new task (with the next available task ID, e.g. `T05`) to the current slice's `PLAN.md`, before the "Files Likely Touched" section.
-- **`replan`** — Writes a `<SID>-REPLAN-TRIGGER.md` marker file in the slice directory. The next dispatch cycle detects this file and enters the replanning-slice phase.
-- **`quick-task`** — Collected and dispatched as a self-contained unit at the next natural seam. The agent executes the task without modifying any plan files.
+- **`inject`** — Appends a new task (with the next available task ID, e.g. `T05`) to the current slice's `PLAN.md`, before the "Files Likely Touched" section. The injected task includes a `Why`, `Do`, and `Done when` scaffold, and an `est:30m` estimate.
+- **`replan`** — Writes a `<SID>-REPLAN-TRIGGER.md` marker file in the slice directory. The next dispatch cycle detects this and enters the replanning-slice phase.
+- **`quick-task`** — Collected for dispatch as self-contained units at the next natural seam. The agent executes the task without modifying any plan files.
+- **`defer`** — If the target milestone doesn't exist yet, creates its directory and seeds a `<MID>-CONTEXT-DRAFT.md` with the deferred captures listed. This ensures `deriveState()` discovers the milestone and routes to the discussion phase.
 
 Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
 
@@ -105,6 +111,7 @@ Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to preven
 | `.gsd/CAPTURES.md` | Created on first capture if it doesn't exist (with `# Captures` header) |
 | `.gsd/` | Created if the directory doesn't exist |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-REPLAN-TRIGGER.md` | Written when a `replan` capture is executed — triggers replanning-slice phase |
+| `.gsd/milestones/<MID>/<MID>-CONTEXT-DRAFT.md` | Seeded when a `defer` target milestone doesn't exist yet |
 
 ### Reads
 
@@ -112,6 +119,7 @@ Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to preven
 |------|---------|
 | `.gsd/CAPTURES.md` | Existing content to append to |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Read during `inject` execution to find the next task ID |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Read during triage for classification context |
 
 ### Writes
 

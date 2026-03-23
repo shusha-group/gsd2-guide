@@ -1,31 +1,35 @@
 ---
 title: "guided-plan-slice"
-description: "The interactive counterpart to plan-slice — collaboratively decomposes a slice into tasks with user input on scope and ordering before writing the plan."
+description: "The interactive counterpart to plan-slice — reads project context directly, decomposes a slice into executable tasks with must-haves, and enforces a detailed self-audit before writing plan artifacts."
 ---
 
 ## What It Does
 
-`guided-plan-slice` is the interactive counterpart to [`plan-slice`](../plan-slice/). In auto-mode, the planner reads research artifacts and writes a slice plan and task breakdown without pausing for input. The guided version works through the same decomposition process but invites the user into the loop — asking about scope tradeoffs, confirming task ordering, and surfacing places where the plan touches uncertain territory.
+`guided-plan-slice` is the interactive counterpart to [`plan-slice`](../plan-slice/). Where `plan-slice` receives pre-assembled context injected by the auto-mode dispatcher, `guided-plan-slice` reads project context directly — consulting `.gsd/DECISIONS.md` for locked architectural decisions, `.gsd/REQUIREMENTS.md` to identify which Active requirements this slice owns or supports, the roadmap boundary map, and any available context, research, or dependency summary files.
 
-This is a compact dispatch wrapper — the guided session loads the same templates as auto-mode but adds interactive checkpoints. The source file is 3 lines, delegating directly to the same planning conventions and artifact format that `plan-slice` uses. The output (`{sliceId}-PLAN.md` and `T{n}-PLAN.md` files) is identical in structure.
+Once the planner has oriented itself, it decomposes the slice into tasks with explicit must-haves, fills a `Proof Level` section that honestly declares what class of proof this slice delivers (fixture, contract, or live integration), and fills an `Integration Closure` section that identifies what end-to-end wiring still remains after this slice completes. This prevents plans from overclaiming progress while leaving critical wiring gaps unacknowledged.
+
+Before writing the final artifacts, the planner performs a detailed self-audit against a strict checklist: every must-have maps to at least one task; every task has complete sections (steps, must-haves, verification, observability impact, inputs, and expected output); task ordering is consistent with no circular references; every pair of artifacts that must connect has an explicit wiring step; task scope targets 2–5 steps and 3–8 files (6–8 steps or 8–10 files — consider splitting; 10+ steps or 12+ files — must split); the plan honors locked decisions; and every task produces real user-facing progress. Showing the completed result to a non-technical stakeholder must demonstrate real product progress rather than developer artifacts.
+
+If planning surfaces structural decisions that weren't captured previously, the planner appends them to `.gsd/DECISIONS.md`. The output artifacts — `{sliceId}-PLAN.md` and individual `T##-PLAN.md` files in the `tasks/` subdirectory — are identical in format to auto-mode plan outputs and can be executed by either guided or auto-mode task runners.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
-    SelectUnit --> GuidedPlanSlice["guided-plan-slice"]
-    GuidedPlanSlice --> UserInteraction["user-interaction"]
-    UserInteraction --> ArtifactWritten["artifact-written"]
+    PlanPhase["/gsd plan-phase"] --> GuidedPlanSlice["guided-plan-slice"]
+    GuidedPlanSlice --> SelfAudit["self-audit"]
+    SelfAudit --> ArtifactsWritten["artifacts written"]
+    ArtifactsWritten --> ExecuteTask["execute-task"]
 
     style GuidedPlanSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PlanPhase fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SelfAudit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ArtifactsWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ExecuteTask fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The `/gsd` command dispatches `guided-plan-slice` when the user selects a slice to plan interactively. The resulting plan files are identical in format to auto-mode outputs and can be executed by either guided or auto-mode task runners.
+`guided-plan-slice` fires when the user initiates an interactive planning session for a slice. It reads all necessary context from disk rather than relying on injected variables, making it suitable for use when the user wants to plan a slice outside of the fully automated pipeline. The resulting `{sliceId}-PLAN.md` and `T##-PLAN.md` files feed directly into `execute-task`, whether dispatched manually or by the auto-mode runner.
 
 ## Variables
 
@@ -34,8 +38,9 @@ The `/gsd` command dispatches `guided-plan-slice` when the user selects a slice 
 | `sliceId` | Current slice identifier within the milestone (e.g. S01) | Yes |
 | `sliceTitle` | Human-readable title of the slice being planned | Yes |
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
-| `inlinedTemplates` | Output template content inlined directly into the prompt | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills that match the current planning context | Yes |
+| `inlinedTemplates` | Output template content (Slice Plan and Task Plan templates) inlined directly into the prompt | Yes |
 
 ## Used By
 
-- [`/gsd`](../../commands/gsd/) — dispatched when the user selects a slice to plan in guided (interactive) mode
+- [`/gsd plan-phase`](../../commands/plan-phase/) — dispatched to plan a slice interactively with user oversight and input

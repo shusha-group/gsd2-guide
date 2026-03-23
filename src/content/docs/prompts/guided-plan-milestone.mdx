@@ -1,33 +1,35 @@
 ---
 title: "guided-plan-milestone"
-description: "The interactive counterpart to plan-milestone — collaboratively builds a milestone roadmap with user input on scope, slice ordering, and risk priorities before writing the roadmap."
+description: "Plans a milestone roadmap with risk-first slice ordering, demoable vertical slices, requirement coverage, and optional secret forecasting — dispatched interactively via /gsd:new-milestone."
 ---
 
 ## What It Does
 
-`guided-plan-milestone` is the interactive counterpart to [`plan-milestone`](../plan-milestone/). Where auto-mode reads requirements and decisions and writes the full milestone roadmap in one shot, the guided version structures planning as a dialogue. The agent reads `.gsd/DECISIONS.md` and `.gsd/REQUIREMENTS.md`, surveys the codebase for existing patterns, then works with the user to shape the roadmap — confirming scope, discussing risk ordering, and checking whether the slice decomposition matches what the user is actually trying to build.
+`guided-plan-milestone` builds a milestone roadmap by reading `.gsd/DECISIONS.md` and `.gsd/REQUIREMENTS.md`, surveying existing patterns in the codebase, and writing `{milestoneId}-ROADMAP.md` with a full slice plan. It is the counterpart to the auto-mode `plan-milestone` prompt, dispatched when the user starts a new milestone cycle interactively through [`/gsd:new-milestone`](../../commands/new-milestone/).
 
-The prompt enforces the same planning doctrine as auto-mode: risk-first ordering, demoable vertical slices, truthful demo lines that don't overclaim proof levels, and requirement coverage that maps every active requirement to a slice, deferral, or explicit out-of-scope note. In guided mode, the agent can surface these constraints as questions — "this looks like a foundation-only slice, should we combine it with the next one?" — rather than making those calls silently.
+The prompt enforces the same planning doctrine as auto-mode: risk-first ordering, demoable vertical slices, truthful demo lines that don't overclaim proof levels, and requirement coverage that maps every active requirement to a slice, deferral, or explicit out-of-scope note. Every slice must be vertical, shippable, and demonstrable to a stakeholder as real product progress — not a developer showing a terminal command or a test runner output. Foundation-only slices are not permitted; if a slice doesn't produce something demoable end-to-end, it must be restructured into a real vertical.
 
-After the roadmap conversation concludes, `guided-plan-milestone` performs secret forecasting: it analyzes the planned slices for external service dependencies and writes a `{milestoneId}-SECRETS.md` manifest if any are found. The output artifacts (`{milestoneId}-ROADMAP.md` and optionally the secrets manifest) are identical in format to auto-mode outputs and feed directly into the slice research and planning phases.
+Requirement coverage is enforced: every relevant Active requirement must be mapped to a primary owning slice, deferred with reason, or moved out of scope — orphaned requirements are surfaced rather than silently skipped. If planning produces structural decisions, they are appended to `.gsd/DECISIONS.md`.
+
+After writing the roadmap, `guided-plan-milestone` performs secret forecasting: it analyzes the planned slices and boundary maps for external service dependencies. If any are found, it writes a `{secretsOutputPath}` secrets manifest listing every predicted secret with the service name, a direct dashboard URL for obtaining the key, a format hint, status (`pending`), and destination (`dotenv`, `vercel`, or `convex`). If no external secrets are required, this step is skipped entirely — no empty manifest is created.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
-    SelectUnit --> GuidedPlanMilestone["guided-plan-milestone"]
-    GuidedPlanMilestone --> UserInteraction["user-interaction"]
-    UserInteraction --> ArtifactWritten["artifact-written"]
+    NewMilestone["/gsd:new-milestone"] --> GuidedPlanMilestone["guided-plan-milestone"]
+    GuidedPlanMilestone --> RoadmapWritten["{milestoneId}-ROADMAP.md written"]
+    GuidedPlanMilestone --> SecretsManifest["secrets manifest (optional)"]
+    RoadmapWritten --> PlanPhase["plan-phase"]
 
     style GuidedPlanMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style NewMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RoadmapWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SecretsManifest fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PlanPhase fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The `/gsd` command dispatches `guided-plan-milestone` when the user starts planning a new milestone interactively. The resulting roadmap feeds into research and planning for each subsequent slice.
+`guided-plan-milestone` is dispatched once at the start of each milestone cycle. Its output — `{milestoneId}-ROADMAP.md` — is the authoritative contract that drives all subsequent slice research and planning phases. The optional secrets manifest surfaces credential requirements early so they can be obtained before execution begins.
 
 ## Variables
 
@@ -36,8 +38,9 @@ The `/gsd` command dispatches `guided-plan-milestone` when the user starts plann
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
 | `milestoneTitle` | Human-readable title of the milestone being planned | Yes |
 | `secretsOutputPath` | File path where the secrets manifest should be written if external services are needed | Yes |
-| `inlinedTemplates` | Output template content inlined directly into the prompt | Yes |
+| `inlinedTemplates` | Output template content inlined directly into the prompt (Roadmap and Secrets Manifest templates) | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills relevant to milestone planning | Yes |
 
 ## Used By
 
-- [`/gsd`](../../commands/gsd/) — dispatched when the user starts a new milestone in guided (interactive) mode
+- [`/gsd:new-milestone`](../../commands/new-milestone/) — dispatched to produce the milestone roadmap when starting a new milestone cycle

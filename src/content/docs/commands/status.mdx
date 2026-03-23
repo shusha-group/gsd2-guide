@@ -7,7 +7,7 @@ description: "Open a real-time TUI dashboard showing auto-mode state, milestone 
 
 `/gsd status` opens a TUI dashboard overlay that shows the current state of your project at a glance — what auto-mode is doing right now, milestone and slice progress, task breakdown for the active slice, completed units, and cost metrics. The dashboard refreshes every 2 seconds.
 
-The dashboard is read-only. It doesn't modify any files or interrupt a running auto-mode session. You can open it while auto-mode is running to monitor progress without disrupting execution. When no session is active, it still shows project state (phase, milestone, slice, tasks remaining) from the planning files on disk.
+The dashboard is read-only. It doesn't modify any files or interrupt a running auto-mode session. You can open it while auto-mode is running to monitor progress without disrupting execution. When no session is active, it still shows project state (phase, milestone, slice, tasks remaining) derived from the planning files on disk.
 
 ## Usage
 
@@ -52,10 +52,42 @@ flowchart TD
 
 The dashboard builds its view from two data sources:
 
-1. **Planning files** — `deriveState()` reads roadmap and plan files directly from disk to determine current phase, active milestone, active slice, and task completion state. This is the same source-of-truth traversal the dispatch engine uses.
+1. **Planning files** — `deriveState()` reads roadmap and plan files directly from disk to determine current phase, active milestone, active slice, and task completion state. This is the same source-of-truth traversal the dispatch engine uses. Results are memoized for 100ms so repeated calls within a single refresh cycle don't re-read the entire `.gsd/` tree.
 2. **Live session data** — `getAutoDashboardData()` returns in-memory state from the running auto-mode session: what unit is executing right now, how long it's been running, which units completed this session, and whether the session is active, paused, or idle.
 
 For cost and token metrics, the dashboard reads the metrics ledger (in-memory, populated by the running session) and aggregates it by phase, slice, and model.
+
+### Milestone registry
+
+`deriveState()` builds a registry of every milestone and assigns each one a status:
+
+| Status | Meaning |
+|--------|---------|
+| `active` | The current milestone — has work remaining and all deps met |
+| `pending` | Not yet started, or dep-blocked (waiting on another milestone to complete) |
+| `complete` | All slices done and milestone summary written |
+| `parked` | Explicitly parked via a `PARKED` sentinel file — excluded from active selection |
+
+**Ghost milestones** (directories containing only `META.json` with no `CONTEXT`, `ROADMAP`, or `SUMMARY` file) are silently skipped — they don't appear in the registry.
+
+**Milestone dependencies** declared in `CONTEXT.md` or `CONTEXT-DRAFT.md` frontmatter (`depends_on`) are evaluated before a milestone is promoted to `active`. If its deps aren't complete yet, the milestone shows as `pending` in the registry.
+
+### Phase states
+
+The dashboard header reflects the current phase derived from disk:
+
+| Phase | What it means |
+|-------|--------------|
+| `pre-planning` | No roadmap yet — milestone needs planning |
+| `needs-discussion` | Milestone has a `CONTEXT-DRAFT.md` but no `CONTEXT.md` — discussion required before planning |
+| `planning` | Active slice has no plan file, or plan exists but has no tasks |
+| `executing` | Tasks are being executed |
+| `summarizing` | All tasks done but slice not yet marked complete |
+| `replanning-slice` | A task flagged `blocker_discovered`, or a triage replan was triggered |
+| `validating-milestone` | All slices complete — milestone validation running |
+| `completing-milestone` | Validation passed — milestone summary being written |
+| `blocked` | All remaining milestones have unmet dependencies |
+| `complete` | All milestones done |
 
 ### Dashboard layout
 
@@ -65,7 +97,7 @@ The overlay renders at 70% of terminal width (minimum 60 columns, maximum 90% of
 - **Current unit** — What's actively running (unit type and ID), how long it's been executing. Shows "No unit running · /gsd auto to start" when idle.
 - **Parallel workers** — Visible only when subagent workers are active. Shows batch ID, worker agent, task preview, and elapsed time per worker.
 - **Pending captures badge** — Shown when there are pending captures awaiting triage.
-- **Milestone progress** — Active milestone ID and title, followed by filled progress bars for Tasks (active slice), Slices (current milestone), and Milestones (overall).
+- **Milestone progress** — Active milestone ID and title, followed by filled progress bars for Tasks (active slice), Slices (current milestone), and Milestones (overall). Parked milestones are shown distinctly.
 - **Slice breakdown** — Every slice with status icon (✓ done / ▸ active / ○ pending) and risk level. For the active slice, each task is listed with its own status icon.
 - **Completed units** — Last 10 units from this session in reverse order with duration. Units that triggered context-pressure wrap-up are flagged with `→ wrap-up`; truncated units show a section count indicator.
 - **Cost & Usage** — Total cost, tokens, tool calls, and unit count. Token breakdown by input / output / cache-read / cache-write. Cost broken down by phase and by slice. Per-slice cost projection for remaining work (if budget ceiling is configured). Cost broken down by model.
@@ -96,9 +128,16 @@ Entirely read-only — the dashboard never writes to any file.
 
 | File | Purpose |
 |------|---------|
-| `M*/ROADMAP.md` | Slice structure, ordering, and completion state |
-| `M*/S*/PLAN.md` | Task breakdown within the active slice |
-| `M*/S*/T*/SUMMARY.md` | Completed task summaries (for blocker detection) |
+| `.gsd/CAPTURES.md` | Pending capture count for the captures badge |
+| `.gsd/parallel/<MID>.status.json` | Per-worker status for the parallel workers panel |
+| `M*/<MID>-ROADMAP.md` | Slice structure, ordering, and completion state |
+| `M*/<MID>-CONTEXT.md` | Milestone title and `depends_on` dependency declarations |
+| `M*/<MID>-CONTEXT-DRAFT.md` | Draft milestone detection (triggers `needs-discussion` phase) |
+| `M*/<MID>-VALIDATION.md` | Milestone validation state (determines `validating-milestone` vs `completing-milestone`) |
+| `M*/<MID>-PARKED` | Sentinel file — milestone excluded from active selection when present |
+| `M*/<MID>-SUMMARY.md` | Terminal completion artifact — milestone is complete when this exists |
+| `M*/S*/<SID>-PLAN.md` | Task breakdown within the active slice |
+| `M*/S*/T*/<TID>-SUMMARY.md` | Completed task summaries (for blocker detection) |
 | Metrics ledger (in-memory) | Token counts, costs, and unit timing from the running session |
 
 ## Examples

@@ -11,7 +11,7 @@ Multiple developers are working on the same project and want to use GSD simultan
 
 - GSD installed and available for each team member
 - A shared git repository (GitHub, GitLab, etc.)
-- Familiarity with [/gsd prefs](../../commands/prefs/) for configuring project preferences
+- Familiarity with [/gsd mode](../../commands/mode/) or [/gsd prefs](../../commands/prefs/) for configuring project preferences
 
 ## Steps
 
@@ -19,27 +19,38 @@ Multiple developers are working on the same project and want to use GSD simultan
 
 ### 1. Enable team mode
 
-One developer sets up the project preferences and commits them. This is a one-time setup:
+The fastest way is `/gsd mode`:
 
 ```
-> /gsd prefs
+> /gsd mode project
+
+Workflow mode:
+  ❯ solo — auto-push, squash, simple IDs (personal projects)
+    team — unique IDs, push branches, pre-merge checks (shared repos)
+    (none) — configure everything manually
+    (keep current)
+
+  → team
+
+Mode: team — defaults: auto_push=false, push_branches=true,
+  pre_merge_check=true, merge_strategy=squash, isolation=worktree,
+  unique_milestone_ids=true
 ```
 
-Set `mode: team` in the project preferences:
+Alternatively, open the full wizard with `/gsd prefs project` and select **Workflow Mode → team**.
 
-```yaml
-# .gsd/preferences.md
----
-version: 1
-mode: team
----
-```
+Either way, setting `mode: team` in `.gsd/preferences.md` applies a coordinated set of defaults for shared repos:
 
-This enables several settings at once:
+| Setting | Team default | What it does |
+|---------|-------------|--------------|
+| `unique_milestone_ids` | `true` | Adds random 6-char suffix to milestone IDs (e.g. `M001-eh88as`) to prevent collisions |
+| `git.push_branches` | `true` | Pushes milestone branches to the remote for visibility |
+| `git.pre_merge_check` | `true` | Runs a test command before squash-merging to main |
+| `git.merge_strategy` | `squash` | Squashes all milestone commits into one clean commit on main |
+| `git.isolation` | `worktree` | Each milestone runs in an isolated git worktree |
+| `git.auto_push` | `false` | Commits stay local until milestone branch is pushed on completion |
 
-- **Unique milestone IDs** — milestones get a random suffix (e.g., `M001-eh88as`) to prevent ID collisions when two developers create milestones independently
-- **Push branches** — each milestone works on a `milestone/<MID>` branch that gets pushed to the remote
-- **Pre-merge checks** — GSD runs a test command before merging a milestone branch back to main
+Mode defaults are the **lowest-priority layer**. Any setting you explicitly configure in the preferences file overrides the mode default.
 
 ### 2. Configure `.gitignore`
 
@@ -140,7 +151,21 @@ Bob gets his own unique milestone ID and worktree:
 
 The unique ID suffixes (`eh88as`, `k4m9px`) prevent collisions — even if both developers happen to create their first milestone at the same time, the IDs won't conflict.
 
-### 5. Milestones complete and merge
+### 5. Milestone dependencies (optional)
+
+If Bob's search feature depends on Alice's auth work, declare it in the milestone's `CONTEXT.md` frontmatter:
+
+```yaml
+---
+depends_on: [M001-eh88as]
+---
+
+# M002-k4m9px: Recipe Search
+```
+
+GSD checks `depends_on` during state derivation. A milestone whose dependencies haven't completed yet is held as `pending` — auto-mode won't start it until the dependency is done. You can use `/gsd queue` to reorder milestones and manage dependencies interactively.
+
+### 6. Milestones complete and merge
 
 When Alice's milestone finishes, GSD squash-merges her `milestone/M001-eh88as` branch to main. Before the squash, GSD runs the pre-merge check if configured — this executes a test command to verify the work passes. By default the check is skipped; you can enable it with a custom command or let GSD auto-detect `npm test` from `package.json`:
 
@@ -189,11 +214,25 @@ If your project needs setup work each time a worktree is created (e.g. copying `
 # .gsd/preferences.md
 ---
 git:
-  worktree_post_create: "./scripts/setup-worktree.sh"
+  worktree_post_create: ".gsd/hooks/post-worktree-create"
 ---
 ```
 
 The script receives `SOURCE_DIR` and `WORKTREE_DIR` as environment variables. Failure is non-fatal — GSD logs a warning and continues.
+
+### Optional: Keep planning artifacts local
+
+For teams where only some members use GSD, or when company policy requires a clean repo, set `commit_docs: false`:
+
+```yaml
+# .gsd/preferences.md
+---
+git:
+  commit_docs: false
+---
+```
+
+This adds `.gsd/` to `.gitignore` entirely and keeps all planning artifacts local. The developer gets the benefits of structured planning without affecting teammates who don't use GSD.
 
 ## Git Isolation Modes
 
@@ -262,7 +301,10 @@ flowchart TD
     DevA --> WorkA["Worktree + branch milestone/M001\nsequential commits, no slice branches"]
     DevB --> WorkB["Worktree + branch milestone/M002\nsequential commits, no slice branches"]
     WorkA --> CompleteA[M001 complete]
-    WorkB --> CompleteB[M002 complete]
+    WorkB --> DepCheck{depends_on\nM001?}
+    DepCheck -->|yes| WaitA[Wait for M001]
+    WaitA --> CompleteA
+    DepCheck -->|no| CompleteB[M002 complete]
     CompleteA --> CheckA{pre_merge_check\nconfigured?}
     CompleteB --> CheckB{pre_merge_check\nconfigured?}
     CheckA -->|passes / skipped| MergeA["squash merge → main"]
@@ -280,6 +322,8 @@ flowchart TD
     style WorkB fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CompleteA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CompleteB fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DepCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style WaitA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CheckA fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CheckB fill:#0d180d,stroke:#39ff14,color:#39ff14
     style MergeA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -291,6 +335,8 @@ flowchart TD
 
 ## Related Commands
 
+- [`/gsd mode`](../../commands/mode/) — Quick solo/team toggle
 - [`/gsd prefs`](../../commands/prefs/) — Configure project preferences including team mode and git settings
 - [`/gsd auto`](../../commands/auto/) — Start auto-mode to execute a milestone
+- [`/gsd queue`](../../commands/queue/) — Manage milestone order and dependencies
 - [`/worktree`](../../commands/worktree/) — Create, list, merge, and remove parallel worktrees

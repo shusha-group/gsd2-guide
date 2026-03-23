@@ -1,33 +1,33 @@
 ---
 title: "guided-research-slice"
-description: "The interactive counterpart to research-slice — conducts slice research collaboratively, with the agent asking clarifying questions as it explores the codebase."
+description: "The in-conversation research prompt — scouts the codebase for a slice using structured strategic questions, writing a RESEARCH.md artifact that feeds directly into planning."
 ---
 
 ## What It Does
 
-`guided-research-slice` is the interactive counterpart to [`research-slice`](../research-slice/). Where auto-mode explores the codebase and writes a research artifact without pausing, the guided version turns the exploration into a conversation. As the agent reads code and identifies unknowns, it asks the user targeted questions — about existing patterns to respect, risks that look significant, and constraints the codebase imposes — before writing the research output that a planner will consume.
+`guided-research-slice` is the in-conversation counterpart to [`research-slice`](../research-slice/). Where auto-mode dispatches research as an isolated sub-agent with pre-loaded context and depth calibration, the guided version runs directly in the user's active context window — making the exploration visible and interruptible. The user is present and can steer: pointing out relevant files, clarifying constraints, or stopping to redirect before the research artifact is written.
 
-The agent's goal is to be a scout: surface key files, where the work divides naturally, what to build first, and how to verify. In guided mode, the user can point the scout toward what they already know, saving exploration time and making the research output sharper. The agent is explicitly instructed to answer five strategic questions in its research: what should be proven first, what existing patterns to reuse, what boundary contracts matter, what constraints the codebase imposes, and what failure modes should shape slice ordering.
+The prompt instructs the agent to read `.gsd/DECISIONS.md` and `.gsd/REQUIREMENTS.md` first, targeting research toward active requirements the slice owns. From there the agent explores relevant code using `rg`/`find` for targeted reads or `scout` for broader unfamiliar subsystems, and checks libraries with `resolve_library`/`get_library_docs` for anything not already used in the codebase.
 
-Like the auto-mode version, `guided-research-slice` reads `.gsd/DECISIONS.md` and `.gsd/REQUIREMENTS.md` at the start, targeting research toward active requirements the slice owns. The output is a `{sliceId}-RESEARCH.md` file written to the slice directory that feeds directly into planning.
+Rather than the elaborate depth-calibration and numbered steps of the auto-mode version, `guided-research-slice` uses five **Strategic Questions** to structure the agent's thinking: what to prove first, what existing patterns to reuse, what boundary contracts matter, what constraints the codebase imposes, and what failure modes should shape slice ordering. These questions ensure the output is decision-driving rather than just fact-collecting. The result is a `{sliceId}-RESEARCH.md` file written to the slice directory, consumed by `guided-plan-slice` or `plan-slice` in the next step.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
-    SelectUnit --> GuidedResearchSlice["guided-research-slice"]
-    GuidedResearchSlice --> UserInteraction["user-interaction"]
-    UserInteraction --> ArtifactWritten["artifact-written"]
+    GsdCommand["/gsd"] --> PlanningPhase["planning phase (slice needs research)"]
+    PlanningPhase --> GuidedResearchSlice["guided-research-slice"]
+    GuidedResearchSlice --> ResearchArtifact["writes {sliceId}-RESEARCH.md"]
+    ResearchArtifact --> GuidedPlanSlice["guided-plan-slice"]
 
     style GuidedResearchSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
     style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PlanningPhase fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ResearchArtifact fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GuidedPlanSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The `/gsd` command dispatches `guided-research-slice` when the user selects a slice to research interactively. The resulting research file is consumed by `guided-plan-slice` or `plan-slice` in the next step.
+When the user runs `/gsd` during the planning phase and selects **"Research first"** from the smart entry wizard, the guided flow dispatches `guided-research-slice` in the current conversation. Once the research artifact is written, the user can run `/gsd` again to proceed to planning, where `guided-plan-slice` consumes the `RESEARCH.md` output.
 
 ## Variables
 
@@ -36,8 +36,9 @@ The `/gsd` command dispatches `guided-research-slice` when the user selects a sl
 | `sliceId` | Current slice identifier within the milestone (e.g. S01) | Yes |
 | `sliceTitle` | Human-readable title of the slice being researched | Yes |
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
-| `inlinedTemplates` | Output template content inlined directly into the prompt | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates skills relevant to the slice context | Yes |
+| `inlinedTemplates` | Research output template content inlined directly into the prompt | Yes |
 
 ## Used By
 
-- [`/gsd`](../../commands/gsd/) — dispatched when the user selects a slice to research in guided (interactive) mode
+- [`/gsd`](../../commands/gsd/) — dispatched when the user selects "Research first" during the planning phase of a slice

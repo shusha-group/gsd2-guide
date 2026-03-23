@@ -64,7 +64,7 @@ flowchart TD
 
 **8. Knowledge** — Contents of `.gsd/KNOWLEDGE.md` rendered in three sections: **Rules** (ID, scope, content), **Patterns** (ID, content), and **Lessons Learned** (ID, content). Shows a message if the file doesn't exist yet.
 
-**9. Captures** — All entries from `CAPTURES.md`, with a summary line showing total, pending, and resolved counts. Entries are grouped by status (pending first, then triaged, then resolved). Shows each capture's ID, status badge, text preview, and classification badge.  The tab label shows a live count of pending captures when there are any.
+**9. Captures** — All entries from `CAPTURES.md`, with a summary line showing total, pending, and resolved counts. Entries are grouped by status (pending first, then triaged, then resolved). Shows each capture's ID, status badge, text preview, and classification badge. The tab label shows a live count of pending captures when there are any.
 
 **0. Export** — Three export options: **[m]** Markdown report, **[j]** JSON report, **[s]** Snapshot of the current active tab as plain text. Exports are written to `.gsd/` with a timestamped filename. The last export path is shown after a successful export.
 
@@ -213,5 +213,7 @@ Checking the Health tab for environment and provider status:
 
 - [`/gsd status`](../status/) — Simpler progress dashboard (no metrics or multi-tab interface)
 - [`/gsd auto`](../auto/) — The execution engine that generates the data this visualizer displays
+- [`/gsd export`](../export/) — Generate a shareable HTML report snapshot from the same data pipeline
 - [`/gsd capture`](../capture/) — Add a capture that appears in the Captures tab
+- [`/gsd skill-health`](../skill-health/) — Full skill metrics dashboard (linked from the Health tab)
 - [`/gsd health`](../health/) — CLI health diagnosis (non-interactive alternative to the Health tab)

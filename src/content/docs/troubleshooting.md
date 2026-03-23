@@ -43,12 +43,37 @@ It checks:
 
 **Fix:** This was fixed in v2.14+. If you're on an older version, update. The dispatch prompt now includes explicit working directory instructions.
 
+### `command not found: gsd` after install
+
+**Symptoms:** `npm install -g gsd-pi` succeeds but `gsd` isn't found.
+
+**Cause:** npm's global bin directory isn't in your shell's `$PATH`.
+
+**Fix:**
+
+```bash
+# Find where npm installed the binary
+npm prefix -g
+# Output: /opt/homebrew (Apple Silicon) or /usr/local (Intel Mac)
+
+# Add the bin directory to your PATH if missing
+echo 'export PATH="$(npm prefix -g)/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Workaround:** Run `npx gsd-pi` or `$(npm prefix -g)/bin/gsd` directly.
+
+**Common causes:**
+- **Homebrew Node** — `/opt/homebrew/bin` should be in PATH but sometimes isn't if Homebrew init is missing from your shell profile
+- **Version manager (nvm, fnm, mise)** — global bin is version-specific; ensure your version manager initializes in your shell config
+- **oh-my-zsh** — the `gitfast` plugin aliases `gsd` to `git svn dcommit`. Check with `alias gsd` and unalias if needed
+
 ### `npm install -g gsd-pi` fails
 
 **Common causes:**
 - Missing workspace packages — fixed in v2.10.4+
 - `postinstall` hangs on Linux (Playwright `--with-deps` triggering sudo) — fixed in v2.3.6+
-- Node.js version too old — requires ≥ 20.6.0
+- Node.js version too old — requires ≥ 22.0.0
 
 ### Provider errors during auto mode
 
@@ -96,6 +121,37 @@ rm -rf "$(dirname .gsd)/.gsd.lock"
 **Symptoms:** Worktree merge fails on `.gsd/` files.
 
 **Fix:** GSD auto-resolves conflicts on `.gsd/` runtime files. For content conflicts in code files, the LLM is given an opportunity to resolve them via a fix-merge session. If that fails, manual resolution is needed.
+
+### Pre-dispatch says the milestone integration branch no longer exists
+
+**Symptoms:** Auto mode or `/gsd doctor` reports that a milestone recorded an integration branch that no longer exists in git.
+
+**What it means:** The milestone's `.gsd/milestones/<MID>/<MID>-META.json` still points at the branch that was active when the milestone started, but that branch has since been renamed or deleted.
+
+**Current behavior:**
+- If GSD can deterministically recover to a safe branch, it no longer hard-stops auto mode.
+- Safe fallbacks are:
+  - explicit `git.main_branch` when configured and present
+  - the repo's detected default integration branch (for example `main` or `master`)
+- In that case `/gsd doctor` reports a warning and `/gsd doctor fix` rewrites the stale metadata to the effective branch.
+- GSD still blocks when no safe fallback branch can be determined.
+
+**Fix:**
+- Run `/gsd doctor fix` to rewrite the stale milestone metadata automatically when the fallback is obvious.
+- If GSD still blocks, recreate the missing branch or update your git preferences so `git.main_branch` points at a real branch.
+
+### Transient `EBUSY` / `EPERM` / `EACCES` while writing `.gsd/` files
+
+**Symptoms:** On Windows, auto mode or doctor occasionally fails while updating `.gsd/` files with errors like `EBUSY`, `EPERM`, or `EACCES`.
+
+**Cause:** Antivirus, indexers, editors, or filesystem watchers can briefly lock the destination or temp file just as GSD performs the atomic rename.
+
+**Current behavior:** GSD now retries those transient rename failures with a short bounded backoff before surfacing an error. The retry is intentionally limited so genuine filesystem problems still fail loudly instead of hanging forever.
+
+**Fix:**
+- Re-run the operation; most transient lock races clear quickly.
+- If the error persists, close tools that may be holding the file open and then retry.
+- If repeated failures continue, run `/gsd doctor` to confirm the repo state is still healthy and report the exact path + error code.
 
 ## MCP Client Issues
 
@@ -170,6 +226,26 @@ rm -rf "$(dirname .gsd)/.gsd.lock"
 - Set required environment variables in the MCP config's `env` block
 - If needed, set `cwd` explicitly in the server definition
 
+### Session lock stolen by `/gsd` in another terminal
+
+**Symptoms:** Running `/gsd` (step mode) in a second terminal causes a running auto-mode session to lose its lock.
+
+**Fix:** Fixed in v2.36.0. Bare `/gsd` no longer steals the session lock from a running auto-mode session. Upgrade to the latest version.
+
+### Worktree commits landing on main instead of milestone branch
+
+**Symptoms:** Auto-mode commits in a worktree end up on `main` instead of the `milestone/<MID>` branch.
+
+**Fix:** Fixed in v2.37.1. CWD is now realigned before dispatch and stale merge state is cleaned on failure. Upgrade to the latest version.
+
+### Extension loader fails with subpath export error
+
+**Symptoms:** Extension fails to load with a `Cannot find module` error referencing npm subpath exports.
+
+**Cause:** Dynamic imports in the extension loader didn't resolve npm subpath exports (e.g., `@pkg/foo/bar`).
+
+**Fix:** Fixed in v2.38+. The extension loader now auto-resolves npm subpath exports and creates a `node_modules` symlink for dynamic import resolution. Upgrade to the latest version.
+
 ## Recovery Procedures
 
 ### Reset auto mode state
@@ -226,7 +302,7 @@ Doctor rebuilds `STATE.md` from plan and roadmap files on disk and fixes detecte
 
 ### "GSD database is not available"
 
-**Symptoms:** `gsd_save_decision`, `gsd_update_requirement`, or `gsd_save_summary` fail with this error.
+**Symptoms:** `gsd_decision_save` (or its alias `gsd_save_decision`), `gsd_requirement_update` (or `gsd_update_requirement`), or `gsd_summary_save` (or `gsd_save_summary`) fail with this error.
 
 **Cause:** The SQLite database wasn't initialized. This happens in manual `/gsd` sessions (non-auto mode) on versions before v2.29.
 

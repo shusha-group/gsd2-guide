@@ -41,6 +41,7 @@ This prompt fires after `research-milestone` completes (or directly if research 
 | `inlinedContext` | Pre-assembled context block containing research summaries and existing project context for the planner | Yes |
 | `skillDiscoveryMode` | Mode string controlling how skill discovery is performed ('auto', 'manual', 'skip') | Yes |
 | `skillDiscoveryInstructions` | Instructions for the planner on how to discover and evaluate relevant skills for this milestone | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills that match the current milestone planning context | Yes |
 | `sourceFilePaths` | List of source file paths that are particularly relevant to this milestone's implementation scope | Yes |
 | `researchOutputPath` | File path to the research document that informs this planning session | Yes |
 | `outputPath` | File path where the completed milestone plan should be written | Yes |

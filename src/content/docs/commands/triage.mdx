@@ -79,7 +79,7 @@ The captures are formatted as a bullet list:
 - **CAP-f9e8d7c6**: "login form error messages" (captured: 2025-01-15T11:00:00.000Z)
 ```
 
-This list, along with the plan context, is injected into the `triage-captures` prompt template. The assembled prompt is prepended with the GSD workflow protocol (read from `~/.pi/GSD-WORKFLOW.md`, or the path in `GSD_WORKFLOW_PATH` if set) and sent as a `gsd-triage` message with `triggerTurn: true`, which starts a new LLM session to run the triage.
+This list, along with the plan context, is injected into the `triage-captures` prompt template. The assembled prompt is prepended with the GSD workflow protocol (read from `~/.gsd/agent/GSD-WORKFLOW.md`, or the path in `GSD_WORKFLOW_PATH` if set) and sent as a `gsd-triage` message with `triggerTurn: true`, which starts a new LLM session to run the triage.
 
 ### LLM Classification
 
@@ -147,6 +147,8 @@ Triage classifies captures but does not execute them. Execution happens separate
 
 - **quick-task** — Collected and dispatched as a self-contained unit. A dedicated prompt (`buildQuickTaskPrompt`) is generated from the capture text and executed without modifying any plan files. The capture is marked as executed after the unit completes.
 
+- **defer** — When the resolution text references a milestone ID that doesn't yet exist on disk, `ensureDeferMilestoneDir` creates the milestone directory and seeds it with a `MXXX-CONTEXT-DRAFT.md` listing the deferred captures. This ensures `deriveState()` discovers the milestone and routes to the discussion phase.
+
 Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
 
 ### Auto-Mode Triage
@@ -157,6 +159,13 @@ The same auto-confirm rule applies: `note` and `defer` are resolved automaticall
 
 ## What Files It Touches
 
+### Creates
+
+| File | Purpose |
+|------|---------|
+| `.gsd/milestones/MXXX/MXXX-CONTEXT-DRAFT.md` | Seeded when a `defer` target milestone doesn't exist yet — lists deferred captures so `deriveState()` enters the discussion phase |
+| `.gsd/milestones/MXXX/slices/SXX/SXX-REPLAN-TRIGGER.md` | Written when a `replan` capture is executed — triggers the replanning-slice phase on next dispatch |
+
 ### Reads
 
 | File | Purpose |
@@ -164,7 +173,7 @@ The same auto-confirm rule applies: `note` and `defer` are resolved automaticall
 | `.gsd/CAPTURES.md` | Loads pending captures |
 | `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | Active slice plan for context |
 | `.gsd/milestones/MXXX/MXXX-ROADMAP.md` | Active roadmap for context |
-| `~/.pi/GSD-WORKFLOW.md` | GSD workflow protocol prepended to the triage prompt |
+| `~/.gsd/agent/GSD-WORKFLOW.md` | GSD workflow protocol prepended to the triage prompt (override with `GSD_WORKFLOW_PATH`) |
 
 ### Writes
 
@@ -172,7 +181,6 @@ The same auto-confirm rule applies: `note` and `defer` are resolved automaticall
 |------|---------|
 | `.gsd/CAPTURES.md` | Captures updated with classification, resolution, rationale, resolved timestamp, and eventually an executed timestamp |
 | `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | New task appended when an `inject` capture is executed |
-| `.gsd/milestones/MXXX/slices/SXX/SXX-REPLAN-TRIGGER.md` | Written when a `replan` capture is executed — triggers replanning-slice phase |
 
 ## Examples
 

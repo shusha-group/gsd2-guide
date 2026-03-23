@@ -7,29 +7,35 @@ description: "An interview-style prompt that surfaces behavioral, UX, and scope 
 
 `guided-discuss-slice` is a focused discovery session scoped to a single slice. Where `guided-discuss-milestone` explores milestone-level goals and risks, this prompt drills into the behavioral and UX specifics of one slice: what it should feel like, how it should behave at its edges, where its scope boundary sits, and what the user cares about that won't be obvious from the roadmap entry alone.
 
-The prompt explicitly avoids technical implementation questions — tech stack, naming conventions, and architecture are for research and planning. The discussion focuses on the human decisions: what does the user see and experience, what happens when things go wrong, what is explicitly in scope versus deferred, and what would constitute a satisfying result for a real user.
+The prompt explicitly avoids technical implementation questions — tech stack, naming conventions, and architecture are for research and planning. The discussion focuses on the human decisions: what does the user see and experience, what happens when things go wrong, what is explicitly in scope versus deferred, and what would constitute a satisfying result for a real user. If a technical choice materially changes scope, proof, or integration behavior, it is asked directly and captured.
 
-Before the first question round, the agent does a lightweight codebase investigation to understand what already exists at the slice boundary — what comes before this slice, what depends on it, and what patterns the slice is likely to touch. This makes the interview questions specific to the actual codebase rather than generic. The agent then runs 1–3 question rounds using `ask_user_questions` for structured input, asking about UX behavior, edge cases, scope boundaries, and the feel of the slice when done.
+Before the first question round, the agent does a lightweight targeted investigation to ground its questions in reality: it scouts the codebase with `rg`, `find`, or `scout` to understand what already exists at the slice boundary, checks the roadmap context to understand what surrounds this slice, and uses `resolve_library` / `get_library_docs` for unfamiliar libraries rather than web search. This pass identifies the 3–5 biggest behavioral unknowns — things where the user's answer will materially change what gets built — before any questions are asked.
 
-The output is a `{sliceId}-CONTEXT.md` file with six sections: Goal (one sentence), Why this Slice, In Scope (confirmed during the interview), Out of Scope (explicitly deferred or excluded), Constraints, Integration Points (what the slice consumes and produces), and Open Questions with current thinking. This context file is read by `research-slice` and `plan-slice`, making it the primary mechanism for a user to inject non-obvious scope decisions into the planning process.
+The agent then runs 1–3 question rounds using `ask_user_questions` for structured input, asking about UX behavior, edge cases, scope boundaries, and the feel of the slice when done. After each round it decides whether to continue or wrap up; it does not ask a meta "ready to wrap up?" question after every round.
+
+The output is a `{sliceId}-CONTEXT.md` file with seven sections: Goal (one sentence), Why this Slice, In Scope (confirmed during the interview), Out of Scope (explicitly deferred or excluded), Constraints, Integration Points (what the slice consumes and produces), and Open Questions with current thinking. When writing is complete the agent says exactly `"{sliceId} context written."` and stops. This context file is read by `research-slice` and `plan-slice`, making it the primary mechanism for a user to inject non-obvious scope decisions into the planning process.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
-    SelectUnit --> GuidedDiscussSlice["guided-discuss-slice"]
-    GuidedDiscussSlice --> UserInteraction["user-interaction"]
-    UserInteraction --> ArtifactWritten["artifact-written"]
+    DiscussCmd["/gsd discuss-slice"] --> GuidedDiscussSlice["guided-discuss-slice"]
+    GuidedDiscussSlice --> Investigation["codebase investigation"]
+    Investigation --> QuestionRounds["question rounds (1–3)"]
+    QuestionRounds --> ContextFile["{sliceId}-CONTEXT.md"]
+    ContextFile --> ResearchSlice["research-slice"]
+    ContextFile --> PlanSlice["plan-slice"]
 
     style GuidedDiscussSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DiscussCmd fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Investigation fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style QuestionRounds fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ContextFile fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ResearchSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PlanSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-`guided-discuss-slice` runs before research begins for a slice. The context file it writes shapes what `research-slice` investigates and what constraints `plan-slice` builds around.
+`guided-discuss-slice` runs before research begins for a slice. The context file it produces is the primary downstream artifact — `research-slice` uses it to focus investigation and `plan-slice` builds around the constraints and scope decisions captured there.
 
 ## Variables
 
@@ -46,4 +52,4 @@ flowchart TD
 
 ## Used By
 
-- [`/gsd`](../../commands/gsd/) — dispatched when the user starts a slice discussion or scoping session
+- [`/gsd discuss-slice`](../../commands/discuss-slice/) — dispatched when the user starts a slice discussion or scoping session before research begins

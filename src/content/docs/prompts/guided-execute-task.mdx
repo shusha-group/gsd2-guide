@@ -1,31 +1,37 @@
 ---
 title: "guided-execute-task"
-description: "The interactive counterpart to execute-task — runs a task with user checkpoints rather than headlessly, letting the user observe and steer each step."
+description: "The interactive executor prompt — runs a task plan in the user's active session, applying the same build standards as auto-mode but without headless dispatching or blocker detection."
 ---
 
 ## What It Does
 
-`guided-execute-task` is the interactive counterpart to [`execute-task`](../execute-task/). Where the auto-mode version runs headlessly — the agent executes and writes a summary with no opportunity for user input — the guided version invites collaboration at key decision points. The agent reads the task plan, loads relevant context, and works through implementation steps, but pauses to surface tradeoffs, surface unexpected findings, and let the user steer before committing to a direction.
+`guided-execute-task` is the interactive counterpart to [`execute-task`](../execute-task/). Where the auto-mode version is dispatched headlessly into a background subprocess, the guided version runs directly in the user's active Claude Code session — meaning the user sees output in real time and can intervene at any point.
 
-This is a compact dispatch wrapper — the guided session loads the same templates as auto-mode but adds interactive checkpoints. The source file is 3 lines, delegating directly to the same task plan and artifact conventions that `execute-task` uses. All must-haves, verification steps, and summary requirements are identical.
+The execution contract is identical to auto-mode: read the task plan (`{{taskId}}-PLAN.md`), load summaries from prior tasks in the slice, execute every step, verify must-haves, and write a Task Summary artifact when done. No stubs, no hardcoded responses, no mock data in place of real implementations. If the task touches UI, the agent exercises real browser flows using `browser_batch` for obvious sequences, `browser_assert` for explicit pass/fail checks, and `browser_diff` when the effect of an action is ambiguous. Architectural, pattern, or library decisions made during execution are appended to `.gsd/DECISIONS.md`.
+
+The prompt also includes two important runtime safety valves. If execution is running long and not all steps can be finished, the agent is instructed to stop implementing and prioritize writing a clean partial summary — a recoverable handoff is more valuable than a half-finished step with no documentation. If verification fails, the agent follows a structured debugging protocol: form a hypothesis, test that specific theory, change one variable at a time, and if three or more fixes fail without progress, stop and reassess from first principles before touching more code.
+
+Unlike `execute-task`, guided mode does not detect blockers or trigger a `replan-slice` dispatch. The user is present to catch those situations manually.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
-    SelectUnit --> GuidedExecuteTask["guided-execute-task"]
-    GuidedExecuteTask --> UserInteraction["user-interaction"]
-    UserInteraction --> ArtifactWritten["artifact-written"]
+    GsdCommand["/gsd"] --> SmartEntry["smart entry wizard"]
+    SmartEntry --> UserChoice{"user selects execute"}
+    UserChoice -->|"not interrupted"| GuidedExecuteTask["guided-execute-task"]
+    UserChoice -->|"interrupted"| GuidedResumeTask["guided-resume-task"]
+    GuidedExecuteTask --> ArtifactWritten["task summary written + committed"]
 
     style GuidedExecuteTask fill:#0d180d,stroke:#39ff14,color:#39ff14
     style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UserChoice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GuidedResumeTask fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The `/gsd` command dispatches `guided-execute-task` when the user selects a task to run interactively. After the session, the same task summary artifact is written to disk and the checkbox is marked done.
+`guided-execute-task` fires when the user runs `/gsd` and the smart entry wizard determines that a task is ready to execute. If the task was previously interrupted mid-run, the wizard dispatches `guided-resume-task` instead. After the session completes, the dispatcher expects `{{taskId}}-SUMMARY.md` to exist and the task checkbox to be marked done before considering the unit complete.
 
 ## Variables
 
@@ -35,8 +41,9 @@ The `/gsd` command dispatches `guided-execute-task` when the user selects a task
 | `taskTitle` | Human-readable title of the task being executed | Yes |
 | `sliceId` | Current slice identifier within the milestone (e.g. S01) | Yes |
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
-| `inlinedTemplates` | Output template content inlined directly into the prompt | Yes |
+| `inlinedTemplates` | Task Summary output template inlined directly into the prompt | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills that match the current task context | Yes |
 
 ## Used By
 
-- [`/gsd`](../../commands/gsd/) — dispatched when the user selects a task to execute in guided (interactive) mode
+- [`/gsd`](../../commands/gsd/) — dispatched through the smart entry wizard when the user selects a task to execute in interactive mode

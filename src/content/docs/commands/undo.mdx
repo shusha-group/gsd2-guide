@@ -1,6 +1,6 @@
 ---
 title: "/gsd undo"
-description: "Revert the last completed unit — deletes artifacts, unchecks the task in PLAN, and stages git reverts."
+description: "Revert the last completed unit — deletes artifacts, unchecks the task in PLAN.md, and stages git reverts."
 ---
 
 ## What It Does
@@ -21,7 +21,7 @@ Because undo reaches into your git history, it requires explicit confirmation. R
 | Invocation | Behavior |
 |------------|----------|
 | `/gsd undo` | Preview mode — shows what will be undone, no changes made |
-| `/gsd undo --force` | Execute — deletes artifacts, unchecks PLAN, reverts commits |
+| `/gsd undo --force` | Execute — deletes artifacts, unchecks PLAN.md, reverts commits |
 
 Run [`/gsd status`](../status/) first if you're unsure which unit was last completed.
 
@@ -71,17 +71,17 @@ flowchart TD
     style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-### Undo sequence
+### Undo Sequence
 
 1. **Scan activity logs** — Lists `.jsonl` files in `.gsd/activity/`, sorted by filename in reverse order (most recent first). If the directory is missing or empty, undo exits with an info notice.
 2. **Parse unit from filename** — Extracts the unit type and ID from the most recent filename using the pattern `<seq>-<unitType>-<unitId>.jsonl` (e.g., `0042-execute-task-M001-S01-T01.jsonl`). Dashes in the unit ID segment are converted back to slashes (`M001-S01-T01` → `M001/S01/T01`). If the filename doesn't match the expected pattern, undo exits with a warning.
 3. **Preview (without `--force`)** — Shows the unit type and ID that would be undone, and lists every action that would be taken. No changes are made.
 4. **Delete summary artifact** — The artifact produced by the unit is deleted from disk. For task-level units (`M001/S01/T01`), this is the `<TID>-SUMMARY.md` inside the tasks directory. For slice-level units (`M001/S01`), GSD looks for files matching `<SID>-SUMMARY.md` or `<SID>-COMPLETE.md` in the slice directory.
-5. **Uncheck task in PLAN** — For `execute-task` units, the corresponding checkbox in the slice's `PLAN.md` is flipped from `[x]` back to `[ ]`. This keeps the plan file consistent with the reverted state.
+5. **Uncheck task in PLAN.md** — For `execute-task` units, the corresponding checkbox in the slice's `PLAN.md` is flipped from `[x]` back to `[ ]`. This keeps the plan file consistent with the reverted state.
 6. **Revert git commits** — GSD scans activity log files in `.gsd/activity/` whose names contain both the unit type and unit ID. It reads the most recent matching file and extracts commit SHAs from `tool_result` blocks — specifically the `[branch sha]` tokens that git prints after a successful commit. Duplicate SHAs are deduplicated. Commits are reverted in reverse order using `git revert`. Reverts are **staged but not committed** — you review the diff and commit or reset yourself. If a revert conflict occurs, the remaining commits are skipped and undo continues.
 7. **Re-derive state** — All caches are invalidated and `deriveState()` re-reads the `.gsd/` tree so subsequent commands reflect the reverted state. A desktop notification fires on completion.
 
-### What "staged, not committed" means
+### What "Staged, Not Committed" Means
 
 When undo reverts git commits, it stages the reverse changes but leaves them uncommitted. This gives you a chance to inspect the diff before deciding:
 
@@ -93,7 +93,7 @@ git reset HEAD      # unstage if you want to handle it differently
 
 This design avoids creating a "revert commit" you didn't ask for, and it lets you combine the revert with other changes in a single commit.
 
-### Activity log lookup
+### Activity Log Lookup
 
 GSD records agent activity in `.gsd/activity/` as `.jsonl` files with sequenced names (e.g., `0042-execute-task-M001-S01-T01.jsonl`). The sequence prefix is a zero-padded counter that ensures filenames sort chronologically. Each line is a JSON message. Undo finds commit SHAs by scanning `tool_result` blocks in the most recent matching file — specifically the `[branch sha]` tokens that git prints after a successful commit. Duplicate SHAs are deduplicated automatically.
 
@@ -136,7 +136,7 @@ Previewing an undo without committing to it:
 ⚠ Will undo: execute-task (M001/S01/T01)
   This will:
     - Delete summary artifacts
-    - Uncheck task in PLAN (if execute-task)
+    - Uncheck task in PLAN.md (if execute-task)
     - Attempt to revert associated git commits
 
   Run /gsd undo --force to confirm.
@@ -149,7 +149,7 @@ Confirming and executing the undo:
 
 ✓ Undone: execute-task (M001/S01/T01)
     - Deleted summary artifact
-    - Unchecked task in PLAN
+    - Unchecked task in PLAN.md
     - Reverted 2 commit(s) (staged, not committed)
   Review with 'git diff --cached' then 'git commit' or 'git reset HEAD'
 ```

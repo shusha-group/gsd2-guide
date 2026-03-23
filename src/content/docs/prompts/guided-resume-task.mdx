@@ -7,7 +7,9 @@ description: "The interactive counterpart to resume-task — resumes an interrup
 
 `guided-resume-task` is the interactive counterpart for resuming a partially completed task. Where auto-mode silently finds the continue file and picks up execution, the guided version surfaces what the continue file contains before resuming — giving the user a chance to understand where execution was interrupted, review any partial state, and decide whether to continue or redirect.
 
-This is a compact dispatch wrapper — the guided session loads the same templates as auto-mode but adds interactive checkpoints. The source file is 1 line, delegating directly to the resume logic: find the continue file in the slice directory, read it, delete it, and proceed.
+When dispatched, the prompt locates the continue file (`{{sliceId}}-CONTINUE.md` or `continue.md`) in the slice directory, reads it, and uses it as the recovery contract for where to pick up. Crucially, the continue file is **not** deleted immediately — it is retained until the task is successfully completed or a newer summary or continue artifact clearly supersedes it. If the resumed attempt fails again, the continue file is updated or replaced so that no recovery context is lost across retries.
+
+Skill preferences are also respected: if a `GSD Skill Preferences` block is present in system context, the executor uses it to decide which skills to load during the resumed session, without relaxing verification or artifact requirements.
 
 ## Pipeline Position
 
@@ -33,6 +35,7 @@ The `/gsd` command dispatches `guided-resume-task` when interrupted work needs t
 |----------|-------------|----------|
 | `sliceId` | Slice identifier where the continue file lives (e.g. S01) | Yes |
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills matching the current task context | Yes |
 
 ## Used By
 

@@ -1,11 +1,11 @@
 ---
 title: "CLI Flags"
-description: "Command-line flags and subcommands for starting and managing GSD sessions — resume previous sessions, override models, run single-shot prompts, manage worktrees, and configure providers."
+description: "Command-line flags and subcommands for starting and managing GSD sessions — resume previous sessions, override models, run single-shot prompts, launch headless mode, and configure providers."
 ---
 
 ## What It Does
 
-`gsd` is invoked from the command line with optional flags and subcommands. Flags control how a session starts — which model to use, whether to resume, whether to run in an isolated worktree, and whether to run in headless or single-shot mode. Subcommands like `gsd config` and `gsd headless` exit immediately after their task without launching the TUI.
+`gsd` is invoked from the command line with optional flags and subcommands. Flags control how a session starts — which model to use, whether to resume, whether to run in headless or single-shot mode. Subcommands like `gsd config` and `gsd headless` exit immediately after their task without launching the TUI.
 
 Most day-to-day work happens inside the interactive TUI using [slash commands](../slash-commands/). The CLI flags listed here are for the binary entry point only.
 
@@ -20,6 +20,7 @@ Getting help:
 
 ```bash
 gsd --help
+gsd <subcommand> --help
 ```
 
 ## How It Works
@@ -29,13 +30,13 @@ gsd --help
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--continue` | `-c` | Resume the most recent session for the current directory. Restores conversation history and active auto-mode state. |
-| `--worktree [name]` | `-w` | Start in an isolated git worktree. Without a name, auto-generates one or resumes the only active worktree. With a name, creates or resumes that named worktree. |
 | `--print` | `-p` | Single-shot prompt mode — send a message (positional arg), print the response, exit. No TUI. |
 | `--mode <mode>` | | Output mode for non-interactive use: `text` (plain), `json` (structured), `rpc` (child process), `mcp` ([MCP server](https://modelcontextprotocol.io)). |
 | `--model <id>` | | Override the default model for this session. Model ID depends on the provider (e.g. `claude-opus-4-6`, `gpt-4o`). |
 | `--no-session` | | Disable session persistence — conversation history is not saved. |
-| `--extension <path>` | | Load an additional extension from a file path. |
+| `--extension <path>` | | Load an additional extension from a file path. Can be repeated for multiple extensions. |
 | `--tools <a,b,c>` | | Restrict available tools to a comma-separated list. |
+| `--append-system-prompt <text\|path>` | | Append text to the system prompt. Accepts inline text or a file path. |
 | `--list-models [search]` | | List available models and exit. Optionally filter by a search term. |
 | `--version` | `-v` | Print the installed GSD version and exit. |
 | `--help` | `-h` | Print help text and exit. |
@@ -47,27 +48,7 @@ gsd --help
 | [`gsd config`](../config/) | Re-run the interactive setup wizard to configure LLM providers, API keys, and tool integrations. |
 | `gsd update` | Update GSD to the latest version via npm (`npm install -g gsd-pi@latest`). |
 | `gsd sessions` | Interactive session picker — list all saved sessions for the current directory and choose one to resume. |
-| `gsd worktree <cmd>` | Manage isolated git worktrees (list, merge, clean, remove). Alias: `gsd wt`. |
 | [`gsd headless`](../headless/) | Run `/gsd` commands without a TUI — for CI, cron jobs, and scripted automation. |
-
-### Worktree Subcommands
-
-`gsd worktree` (alias: `gsd wt`) manages the full lifecycle of isolated git worktrees. The `-w` flag on the main `gsd` command creates or resumes a worktree for interactive sessions; `gsd worktree` sub-subcommands operate on existing worktrees from outside a session.
-
-| Command | Description |
-|---------|-------------|
-| `list` | List all worktrees with status (files changed, commits ahead, dirty state). Default if no subcommand given. |
-| `merge [name]` | Squash-merge a worktree into main and remove it. If only one worktree exists, merges it automatically. |
-| `clean` | Remove all worktrees that have been merged or are empty (no changes). |
-| `remove <name>` | Remove a specific worktree. Use `--force` to remove even with unmerged changes. |
-
-Typical worktree lifecycle:
-
-1. `gsd -w` — create an auto-named worktree and start a session inside it
-2. *(work normally)* — all changes happen on an isolated branch
-3. `Ctrl+C` — exit; dirty work is auto-committed so nothing is lost
-4. `gsd -w` — resume where you left off (or `gsd -w <name>` for a named one)
-5. `gsd worktree merge` — squash-merge into main when done, branch deleted
 
 ### Headless Subcommands
 
@@ -85,14 +66,13 @@ Headless flags:
 
 | Flag | Description |
 |------|-------------|
-| `--timeout <ms>` | Overall timeout in milliseconds (default: 300000; 600000 for `new-milestone`) |
+| `--timeout <ms>` | Overall timeout in milliseconds (default: 300000) |
 | `--json` | Emit a JSONL event stream to stdout |
+| `--verbose` | Show tool calls in progress output |
 | `--model <id>` | Override model for this headless session |
 | `--supervised` | Forward interactive UI requests to an orchestrator via stdout/stdin (implies `--json`) |
 | `--response-timeout <ms>` | Timeout for orchestrator response (default: 30000) |
-| `--max-restarts <n>` | Max automatic restarts on crash before giving up (default: 3) |
-| `--answers <path>` | Path to a JSON file with pre-supplied answers and secrets for non-interactive runs |
-| `--events <types>` | Filter JSONL output to specific event types (comma-separated; implies `--json`) |
+| `--max-restarts <n>` | Max automatic restarts on crash before giving up (default: 3; set to 0 to disable) |
 
 `new-milestone` flags:
 
@@ -101,7 +81,6 @@ Headless flags:
 | `--context <path>` | Path to a spec or PRD file. Use `-` for stdin. |
 | `--context-text <text>` | Inline specification text |
 | `--auto` | Start auto-mode automatically after milestone creation |
-| `--verbose` | Show tool calls in progress output |
 
 Exit codes for `gsd headless`: `0` = complete, `1` = error or timeout, `2` = blocked.
 
@@ -172,27 +151,6 @@ Run as an MCP server:
 gsd --mode mcp
 ```
 
-Start an isolated worktree session (auto-named):
-
-```bash
-gsd -w
-```
-
-Create or resume a named worktree:
-
-```bash
-gsd -w auth-refactor
-```
-
-Manage worktrees from outside a session:
-
-```bash
-gsd worktree list                       # see all worktrees and status
-gsd worktree merge auth-refactor        # squash-merge into main
-gsd worktree clean                      # remove merged/empty worktrees
-gsd worktree remove old-branch --force  # force remove with unmerged changes
-```
-
 Run headless auto-mode (no TUI, exits when done):
 
 ```bash
@@ -208,16 +166,10 @@ gsd headless new-milestone --context spec.md --auto
 cat spec.md | gsd headless new-milestone --context -
 ```
 
-Run headless with pre-supplied answers file (for secrets/prompts):
+Run headless with verbose tool call output:
 
 ```bash
-gsd headless --answers answers.json auto
-```
-
-Stream only specific event types:
-
-```bash
-gsd headless --events agent_end,extension_ui_request auto
+gsd headless --verbose auto
 ```
 
 Instant state snapshot (no LLM call):

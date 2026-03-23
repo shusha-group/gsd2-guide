@@ -7,9 +7,13 @@ description: "Verifies that all tasks in a slice actually deliver the slice goal
 
 `complete-slice` is the closer. After all tasks in a slice are marked complete, this prompt dispatches an agent that verifies the assembled work actually delivers what the slice promised — not just that individual tasks finished, but that the whole slice goal is met end-to-end. If any slice-level verification checks fail, the closer fixes them before declaring the slice done.
 
-Beyond verification, the closer has two primary outputs: a slice summary and a UAT script. The slice summary compresses all task summaries into a concise record of what the slice actually delivered — written not just for archival purposes but for the `reassess-roadmap` agent that reads it next, and for future slice researchers who depend on this slice. The slice summary's **Forward Intelligence** section is particularly important: it captures hard-won knowledge about what's fragile, what assumptions changed, and what downstream slices need to watch out for.
+Beyond verification, the closer has several primary outputs. The **slice summary** compresses all task summaries into a concise record of what the slice actually delivered — written not just for archival purposes but for the `reassess-roadmap` agent that reads it next, and for future slice researchers who depend on this slice. The slice summary's **Forward Intelligence** section is particularly important: it captures hard-won knowledge about what's fragile, what assumptions changed, and what downstream slices need to watch out for.
 
-The UAT script is a concrete set of test cases derived from the slice plan and task summaries — numbered steps with preconditions and expected outcomes tailored to what this slice actually built. It is not a generic template. After writing both artifacts, the closer marks the slice `[x]` in the roadmap, which signals to the dispatcher that `reassess-roadmap` should be fired next.
+The **UAT script** is a concrete set of test cases derived from the slice plan and task summaries — numbered steps with preconditions and expected outcomes tailored to what this slice actually built. It is not a generic template.
+
+The closer also performs knowledge capture: it appends significant architectural decisions to `.gsd/DECISIONS.md` and non-obvious lessons learned to `.gsd/KNOWLEDGE.md`, but only when the content would genuinely save future agents from repeating investigation. If `.gsd/REQUIREMENTS.md` exists, requirement status is updated to reflect what execution actually proved. If `.gsd/PROJECT.md` exists, its current state section is refreshed. After writing all artifacts, the closer marks the slice `[x]` in the roadmap, which signals to the dispatcher that `reassess-roadmap` should be fired next.
+
+Effort scales with complexity — a simple 1-2 task slice gets a brief summary and lightweight verification, while a complex multi-system slice gets thorough verification and a detailed summary.
 
 ## Pipeline Position
 
@@ -29,7 +33,7 @@ flowchart TD
     style ValidateMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` but the slice itself is not yet marked `[x]` in the roadmap. The closer must write both the slice summary and the UAT file before marking the slice done — the dispatcher checks for both artifacts. If requirements tracking is active, the closer also updates requirement status based on what was actually proved during execution.
+The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` but the slice itself is not yet marked `[x]` in the roadmap. The closer must write both the slice summary and the UAT file before marking the slice done — the dispatcher checks for both artifacts. The unit will not be marked complete if any of the three required outputs are missing: the slice summary, the UAT file, or the `[x]` mark on the slice in the roadmap.
 
 ## Variables
 
@@ -39,9 +43,10 @@ The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` bu
 | `sliceTitle` | Human-readable title of the slice being completed | Yes |
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
 | `workingDirectory` | Absolute path to the project working directory | Yes |
-| `inlinedContext` | Pre-assembled context block containing relevant task summaries, slice plan, and dependency artifacts for the completion agent | Yes |
+| `inlinedContext` | Pre-assembled context block containing the slice plan, all task summaries, output templates, and the milestone roadmap | Yes |
+| `skillActivation` | Optional skill-loading instruction injected at runtime (e.g. to activate a domain-specific skill before verification) | Yes |
 | `sliceSummaryPath` | File path where the slice completion summary should be written | Yes |
-| `sliceUatPath` | File path to the UAT (user acceptance testing) results for this slice | Yes |
+| `sliceUatPath` | File path where the UAT script should be written | Yes |
 | `roadmapPath` | File path to the project roadmap document | Yes |
 
 ## Used By

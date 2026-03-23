@@ -1,5 +1,5 @@
 ---
-title: "Headless Mode"
+title: "/gsd headless"
 description: "Run GSD commands without a TUI — designed for CI pipelines, cron jobs, and scripted automation with structured output and meaningful exit codes."
 ---
 
@@ -50,7 +50,7 @@ echo "Build a CLI tool" | gsd headless new-milestone --context -
 
 | Flag | Syntax | Default | Description |
 |------|--------|---------|-------------|
-| `--timeout` | `--timeout N` | `300000` (5 min) | Overall timeout in milliseconds. The process exits with code `1` if this limit is reached. `new-milestone` auto-extends this to `600000` (10 min). |
+| `--timeout` | `--timeout N` | `300000` (5 min) | Overall timeout in milliseconds. The process exits with code `1` if this limit is reached. `new-milestone` auto-extends this to `600000` (10 min) when the timeout is still the default. |
 | `--max-restarts` | `--max-restarts N` | `3` | Auto-restart on crash with exponential backoff. Set `0` to disable. |
 | `--json` | `--json` | Off | Stream all events as JSONL to stdout. Each line is a self-contained JSON object. |
 | `--events` | `--events type1,type2` | — | Filter JSONL output to specific event types. Implies `--json`. |
@@ -89,21 +89,30 @@ gsd headless query | jq '.cost.total'
     "activeMilestone": { "id": "M001", "title": "..." },
     "activeSlice": { "id": "S01", "title": "..." },
     "activeTask": { "id": "T01", "title": "..." },
-    "registry": [{ "id": "M001", "status": "active" }],
-    "progress": { "milestones": { "done": 0, "total": 2 }, "slices": { "done": 1, "total": 3 } },
-    "blockers": []
+    "nextAction": "Execute T01: Create auth module in slice S01.",
+    "registry": [{ "id": "M001", "title": "...", "status": "active" }],
+    "progress": {
+      "milestones": { "done": 0, "total": 2 },
+      "slices": { "done": 1, "total": 3 },
+      "tasks": { "done": 2, "total": 5 }
+    },
+    "blockers": [],
+    "requirements": { "active": 4, "validated": 2, "deferred": 0, "outOfScope": 0, "blocked": 0, "total": 6 }
   },
   "next": {
     "action": "dispatch",
     "unitType": "execute-task",
-    "unitId": "M001/S01/T01"
+    "unitId": "M001/S01/T01",
+    "reason": "Next incomplete task in active slice"
   },
   "cost": {
-    "workers": [{ "milestoneId": "M001", "cost": 1.50, "state": "running" }],
+    "workers": [{ "milestoneId": "M001", "pid": 12345, "state": "running", "cost": 1.50, "lastHeartbeat": 1716000000000 }],
     "total": 1.50
   }
 }
 ```
+
+Fields under `state.progress` (`slices`, `tasks`) are omitted when not applicable (e.g., before slice planning starts). `state.requirements` is omitted when no `REQUIREMENTS.md` exists.
 
 ### `gsd headless new-milestone`
 
@@ -123,7 +132,7 @@ echo "Build a CLI tool" | gsd headless new-milestone --context -
 gsd headless new-milestone --context brief.md --auto
 ```
 
-The timeout is automatically extended to 10 minutes for `new-milestone` commands (regardless of the `--timeout` default) because milestone creation involves codebase investigation and writing multiple planning artifacts.
+The timeout is automatically extended to 10 minutes for `new-milestone` commands when using the default 5-minute timeout, because milestone creation involves codebase investigation and writing multiple planning artifacts. If you pass a custom `--timeout`, it is used as-is.
 
 ## How It Works
 
@@ -207,6 +216,13 @@ On every exit, headless writes a summary to stderr:
 [headless] Status: complete
 [headless] Duration: 42.3s
 [headless] Events: 187 total, 43 tool calls
+```
+
+When restarts occurred, a restart count is appended. When `--answers` was used, an injection stats line is appended:
+
+```
+[headless] Restarts: 2
+[headless] Answers: 5 answered, 1 defaulted, 2 secrets
 ```
 
 On failure, the last 5 events are also printed to aid diagnostics.

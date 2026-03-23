@@ -1,13 +1,15 @@
 ---
 title: "guided-complete-slice"
-description: "The interactive counterpart to complete-slice — guides the user through slice completion, reviewing task summaries together before writing the slice summary and UAT."
+description: "The guided-flow counterpart to complete-slice — completes a slice by compressing task summaries, writing the slice summary and UAT artifact, surfacing key decisions, and marking the roadmap checkbox done."
 ---
 
 ## What It Does
 
-`guided-complete-slice` is the interactive counterpart to [`complete-slice`](../complete-slice/). In auto-mode, the agent compresses task summaries and writes the slice summary and UAT artifact without pausing. The guided version walks through the same completion steps but surfaces key decisions recorded during task execution and asks the user to review them before finalizing the slice summary.
+`guided-complete-slice` closes out a completed slice in the guided (user-facing) workflow. It performs the same operations as the auto-mode `complete-slice` prompt: compress all task summaries into `{{sliceId}}-SUMMARY.md`, produce `{{sliceId}}-UAT.md` with the `UAT Type` and `Not Proven By This UAT` sections explicitly filled in, audit task summaries for `key_decisions` and ensure significant ones land in `.gsd/DECISIONS.md`, mark the slice checkbox done in the roadmap, and update the milestone summary. The system handles commit and merge after the unit completes — the agent does not commit or merge manually.
 
-This is a compact dispatch wrapper — the guided session loads the same templates as auto-mode but adds interactive checkpoints. The source file is 3 lines and delegates directly to the same completion conventions: compress task summaries, write `{sliceId}-SUMMARY.md` and `{sliceId}-UAT.md`, review key decisions for `.gsd/DECISIONS.md`, and mark the slice checkbox done in the roadmap.
+The slice summary is the primary record of what was built. Downstream agents — `reassess-roadmap`, future slice researchers, and plan generators — read it to understand what this slice delivered and what to watch out for. Because downstream context depends on this artifact, the summary must be substantive: what was built, key decisions made, and anything that remains unproven by the UAT.
+
+The prompt is a compact dispatch: one instruction block followed by `{{inlinedTemplates}}`, which supplies the Slice Summary and UAT output templates inline so the agent has the exact format contract at hand.
 
 ## Pipeline Position
 
@@ -15,17 +17,19 @@ This is a compact dispatch wrapper — the guided session loads the same templat
 flowchart TD
     GsdCommand["/gsd"] --> SelectUnit["select-unit"]
     SelectUnit --> GuidedCompleteSlice["guided-complete-slice"]
-    GuidedCompleteSlice --> UserInteraction["user-interaction"]
-    UserInteraction --> ArtifactWritten["artifact-written"]
+    GuidedCompleteSlice --> SummaryWritten["SUMMARY.md + UAT.md written"]
+    SummaryWritten --> DecisionsUpdated[".gsd/DECISIONS.md updated"]
+    DecisionsUpdated --> RoadmapMarked["slice checkbox marked done"]
 
     style GuidedCompleteSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
     style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UserInteraction fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SummaryWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DecisionsUpdated fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RoadmapMarked fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The `/gsd` command dispatches `guided-complete-slice` when the user wants to close out a slice interactively. The resulting summary artifacts are identical in format to auto-mode outputs.
+The `/gsd` command dispatches `guided-complete-slice` when the user wants to close out a slice from the guided workflow. The resulting summary artifacts are identical in format to auto-mode outputs and are consumed by the same downstream agents.
 
 ## Variables
 
@@ -35,7 +39,8 @@ The `/gsd` command dispatches `guided-complete-slice` when the user wants to clo
 | `sliceTitle` | Human-readable title of the slice being completed | Yes |
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
 | `workingDirectory` | Absolute path to the project working directory | Yes |
-| `inlinedTemplates` | Output template content inlined directly into the prompt | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills relevant to the completion context | Yes |
+| `inlinedTemplates` | Slice Summary and UAT output template content inlined directly into the prompt | Yes |
 
 ## Used By
 

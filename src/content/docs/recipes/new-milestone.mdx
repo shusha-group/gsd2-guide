@@ -29,34 +29,32 @@ When you run `/gsd` with no active milestone, GSD enters discussion mode. The fl
 2. **Reflection** — Before asking anything, GSD proves it understood: a concrete summary, an honest size read (how many milestones, roughly how many slices), and a capabilities list. You confirm or correct.
 3. **Vision mapping** — If the work spans multiple milestones, GSD proposes a milestone sequence for your approval before drilling into details. Single-milestone work goes straight to questioning.
 4. **Mandatory investigation** — Before the first question round, GSD scouts the codebase, checks library docs, and runs web searches. Your codebase's existing patterns and constraints shape the questions.
-5. **Questioning** — Adaptive Q&A as a thinking partner. GSD probes vague answers, challenges abstract claims, and follows your energy. Questions are about experience, not implementation.
-6. **Depth verification** — A structured checkpoint before wrapping up. GSD prints a synthesis of what it understood — your exact terminology, the constraints you emphasized, the trade-offs you shaped — and asks for confirmation.
-7. **Wrap-up gate** — GSD lists the capabilities it's planning to build and asks if that matches your vision. You can keep discussing or confirm.
+5. **Questioning** — Adaptive Q&A as a thinking partner. GSD probes vague answers, challenges abstract claims, and follows your energy. It uses position-first framing ("I'd lean toward X because Y — does that match your thinking?"), asks for negative constraints ("what should it never feel like?"), and weaves your exact terminology back into subsequent questions.
+6. **Depth verification** — A structured checkpoint before wrapping up. GSD prints a synthesis in chat — your exact terminology, the constraints you emphasized, the trade-offs you shaped — and asks for confirmation. This is the write gate. GSD will not write any files until depth verification passes.
+7. **Roadmap preview** — After depth verification, GSD produces or updates `REQUIREMENTS.md`, then prints the planned roadmap as a markdown table in your terminal. One row per slice: Slice, Title, Risk, Depends, Demo. You approve the structure before anything is written to disk.
 
-### Requirements Pass
+### Capability Contract
 
-If `.gsd/REQUIREMENTS.md` doesn't exist yet (first milestone on a new project or the file was never created), GSD runs a focused research pass before roadmap creation. It surfaces:
+`REQUIREMENTS.md` is produced or updated on every discussion — not just the first one. Before writing a roadmap, GSD presents candidate requirements in a chat table with columns: ID, Title, Status, Owner, Source. Groups by status (Active, Deferred, Out of Scope). You confirm, adjust, or add before they're locked.
+
+For new projects (or any project without an existing `REQUIREMENTS.md`), GSD runs a focused research pass first. It surfaces:
 
 - Table stakes the product space typically expects
 - Likely omissions that would make the product feel incomplete
 - Domain-standard behaviors you may or may not want
 - Scope traps to avoid
 
-Candidate requirements are shown in a markdown table in the terminal — not silently written to a file. You confirm, adjust, or add before they're locked.
-
-### Roadmap Preview
-
-Before writing any files, GSD prints the planned roadmap as a markdown table in your terminal. One row per slice: ID, title, risk, dependencies, demo sentence. You see and approve the full structure before anything is written to disk.
+Research findings are presented as candidate requirements — not silently turned into scope.
 
 ### Auto-Start After Discussion
 
-After writing all artifacts, GSD writes `STATE.md` as the final step. This triggers auto-mode to start automatically — no need to run `/gsd auto` separately. The transition is seamless: discuss, confirm, and auto-mode picks up immediately.
+After writing all artifacts, auto-mode starts automatically — no need to run `/gsd auto` separately. The transition is seamless: discuss, confirm, and auto-mode picks up immediately.
 
 ### Multi-Milestone Handling
 
 When the vision spans multiple milestones, GSD processes them sequentially after writing the primary milestone's artifacts. For each remaining milestone, a readiness gate asks:
 
-- **Discuss now** — Run a focused discussion for this milestone in the current session while context is still fresh. Writes a full `CONTEXT.md` with technical assumption verification.
+- **Discuss now** — Run a focused discussion for this milestone in the current session while context is still fresh. Before writing `CONTEXT.md`, GSD performs a mandatory technical assumption verification — reading actual code files, checking APIs exist, and presenting findings with a per-milestone depth verification gate. Writes a full `CONTEXT.md` when confirmed.
 - **Write draft for later** — Capture the seed material as `CONTEXT-DRAFT.md`. When auto-mode reaches this milestone, it pauses and prompts you to run `/gsd` to complete the discussion from the draft.
 - **Just queue it** — Create the milestone directory without any context. Auto-mode pauses when it arrives and starts a full discussion from scratch.
 
@@ -79,7 +77,7 @@ The state machine reads this field to enforce execution order. Without it, a mil
 Once discussion completes and auto-mode starts, the pipeline continues:
 
 - **Research** reads the prior milestone summaries, scouts the codebase, and checks library docs for new technology. Findings are advisory — they surface candidate requirements rather than silently expanding scope.
-- **Planning** decomposes the milestone into demoable vertical slices ordered by risk. Each slice is real, shippable product progress — not a foundation layer or spike.
+- **Planning** decomposes the milestone into demoable vertical slices ordered by risk. Each slice is real, shippable product progress — not a foundation layer or spike. If the milestone has only one slice, the planner also writes the slice plan and task plans inline, skipping a separate plan-slice cycle.
 - **Slice execution** follows the familiar research → plan → execute → verify cycle.
 
 Prior milestone artifacts — decisions, knowledge entries, summaries — are available as context throughout.
@@ -95,7 +93,6 @@ Prior milestone artifacts — decisions, knowledge entries, summaries — are av
 | `.gsd/milestones/MXXX/MXXX-ROADMAP.md` | Slice plan with risk ordering, success criteria, proof strategy, verification classes, requirement coverage, and boundary map |
 | `.gsd/milestones/MXXX/MXXX-RESEARCH.md` | Milestone-level research findings (codebase, libraries, risks) |
 | `.gsd/REQUIREMENTS.md` | Capability contract with requirement IDs, status, ownership, and traceability (created if missing) |
-| `.gsd/STATE.md` | Active state snapshot — written last during discussion, triggers auto-start |
 
 ### Writes (updates existing)
 
@@ -103,6 +100,7 @@ Prior milestone artifacts — decisions, knowledge entries, summaries — are av
 |------|---------|
 | `.gsd/PROJECT.md` | Updated to show new milestone in the sequence |
 | `.gsd/DECISIONS.md` | New entries appended for architectural decisions made during discussion |
+| `.gsd/REQUIREMENTS.md` | Updated with requirements from the new milestone's discussion (when file already exists) |
 
 ### Creates (conditional)
 
@@ -153,19 +151,32 @@ GSD reflects back the scope and size estimate before questioning:
   Does that capture it? If not, tell me what I missed.
 ```
 
-After discussion and confirmation, GSD shows the roadmap preview:
+After discussion and depth verification, GSD prints the requirements table then the roadmap preview:
 
 ```
+● Requirements for M002: Social Features
+
+  | ID   | Title                  | Status | Owner | Source |
+  |------|------------------------|--------|-------|--------|
+  | R001 | Follow system          | Active | S01   | user   |
+  | R002 | Activity feed          | Active | S02   | user   |
+  | R003 | Recipe comments        | Active | S03   | user   |
+  | R004 | Shareable recipe links | Active | S04   | user   |
+
+  Confirm, adjust, or add?
+
+> Looks right.
+
 ● Roadmap for M002: Social Features
 
-  | Slice | Title                   | Risk   | Depends | Demo |
-  |-------|-------------------------|--------|---------|------|
-  | S01   | User profiles + following | high  | []      | User visits another cook's profile and follows them |
-  | S02   | Activity feed           | high   | [S01]   | User sees new recipes from followed cooks in their feed |
-  | S03   | Recipe comments         | medium | [S01]   | User adds a comment and sees it appear immediately |
-  | S04   | Recipe sharing          | low    | []      | User copies a share link that opens the recipe for others |
+  | Slice | Title                     | Risk   | Depends | Demo |
+  |-------|---------------------------|--------|---------|------|
+  | S01   | User profiles + following | high   | []      | User visits another cook's profile and follows them |
+  | S02   | Activity feed             | high   | [S01]   | User sees new recipes from followed cooks in their feed |
+  | S03   | Recipe comments           | medium | [S01]   | User adds a comment and sees it appear immediately |
+  | S04   | Recipe sharing            | low    | []      | User copies a share link that opens the recipe for others |
 
-  Ready to write the plan, or want to adjust?
+  Ready to write, or want to adjust?
 ```
 
 After confirmation, files are written and auto-mode starts:
@@ -221,7 +232,6 @@ After discussion completes and auto-mode is running, the `.gsd/` tree shows:
 ```
 .gsd/
 ├── PROJECT.md                    ← updated with M002 in sequence
-├── STATE.md                      ← active milestone: M002
 ├── REQUIREMENTS.md               ← capability contract updated
 ├── DECISIONS.md                  ← new decisions from discussion appended
 ├── KNOWLEDGE.md                  ← patterns from M001 intact
@@ -250,8 +260,8 @@ flowchart TD
     Confirm --> Investigate
     VisionMap -->|No| Investigate[Mandatory codebase investigation]
     Investigate --> QA[Adaptive Q&A rounds]
-    QA --> DepthCheck[Depth verification checkpoint]
-    DepthCheck --> ReqPass[Requirements pass + roadmap preview]
+    QA --> DepthCheck[Depth verification — write gate]
+    DepthCheck --> ReqPass[Requirements table + roadmap preview]
     ReqPass --> WriteFiles[Write CONTEXT · ROADMAP · REQUIREMENTS · PROJECT]
     WriteFiles --> MultiGate{More milestones?}
     MultiGate -->|Yes| Gate["Sequential readiness gate\n(discuss / draft / queue)"]

@@ -11,6 +11,8 @@ The researcher operates without any assumption about the milestone's complexity.
 
 Downstream agents depend heavily on this output. The `plan-milestone` agent reads the research document in a fresh context with no memory of the exploration phase. If the research doc is vague, the planner will waste context re-exploring code the researcher already read. If it is precise — specifying which files exist, what patterns are already established, where the natural seams are — the planner can decompose immediately and confidently.
 
+The researcher also answers a set of strategic questions: what should be proven first, what existing patterns should be reused, what boundary contracts matter, and where known failure modes should shape slice ordering. If a `.gsd/REQUIREMENTS.md` exists, the researcher evaluates it — identifying which active requirements are table stakes, likely omissions, or overbuilt risks — and surfaces candidate requirements rather than silently expanding scope.
+
 ## Pipeline Position
 
 ```mermaid
@@ -41,6 +43,7 @@ This stage can be skipped entirely via the `skip_research` preference, in which 
 | `milestoneTitle` | Human-readable title of the milestone being researched | Yes |
 | `workingDirectory` | Absolute path to the project working directory | Yes |
 | `inlinedContext` | Pre-assembled context block containing existing project state and relevant prior research | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills relevant to the milestone domain before research begins | Yes |
 | `skillDiscoveryMode` | Mode string controlling how skill discovery is performed ('auto', 'manual', 'skip') | Yes |
 | `skillDiscoveryInstructions` | Instructions for the researcher on how to discover and evaluate relevant skills | Yes |
 | `outputPath` | File path where the research document should be written | Yes |

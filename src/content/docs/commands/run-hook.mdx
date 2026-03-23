@@ -9,7 +9,7 @@ description: "Manually trigger a specific post-unit hook for a given unit — by
 
 Use this when you want to re-run a hook that already completed (e.g., run code review again after manual edits), or trigger a hook outside the normal auto-mode pipeline.
 
-Note that `/gsd run-hook` only works with **post-unit hooks** (configured under `post_unit_hooks` in preferences). Pre-dispatch hooks appear in the hook list but cannot actually be triggered this way — passing a pre-dispatch hook name will fail before dispatch, because the trigger engine only searches post-unit hook configurations.
+Note that `/gsd run-hook` only works with **post-unit hooks** (configured under `post_unit_hooks` in preferences). Pre-dispatch hooks appear in the hook list but cannot actually be triggered this way — passing a pre-dispatch hook name will fail at the trigger step, because `triggerHookManually` only searches `post_unit_hooks` configurations.
 
 ## Usage
 
@@ -52,7 +52,7 @@ flowchart TD
     IdCheck -->|No| IdErr([Warning: invalid format])
     IdCheck -->|Yes| Trigger[triggerHookManually]
     Trigger --> PostCheck{Hook found in<br/>post_unit_hooks?}
-    PostCheck -->|No| TriggerFail([Error: hook not triggerable])
+    PostCheck -->|No| TriggerFail([Error: hook may be disabled<br/>or wrong unit type])
     PostCheck -->|Yes| Build[Build prompt with<br/>variable substitution]
     Build --> NewSession[Open new Claude session]
     NewSession --> Dispatch[dispatchHookUnit<br/>send prompt]
@@ -91,10 +91,10 @@ The command runs three checks before dispatching:
 
 Once validated, the command:
 
-1. Calls `triggerHookManually()` which sets the active hook state, populates a single-entry hook queue, performs `{milestoneId}`, `{sliceId}`, `{taskId}` variable substitution on the hook's prompt, and increments the cycle counter.
+1. Calls `triggerHookManually()` which sets the active hook state, populates a single-entry hook queue, performs `{milestoneId}`, `{sliceId}`, `{taskId}` variable substitution on the hook's prompt, and increments the in-memory cycle counter.
 2. Opens a **new Claude session** via `dispatchHookUnit()`. If auto-mode is not already active, it starts in step mode first.
 3. Applies a model override if the hook's configuration specifies one.
-4. Writes a lock file (`auto.lock`), starts a hard timeout (default 30 minutes), and sends the prompt.
+4. Writes a lock file (`auto.lock`) and a runtime record, starts a hard timeout (default 30 minutes), and sends the prompt.
 5. The hook runs in the new session window, just like it would during auto-mode.
 
 ### Idempotency Bypass
@@ -108,14 +108,13 @@ Unlike normal auto-mode hook execution, manual triggering via `/gsd run-hook` by
 | File | Purpose |
 |------|---------|
 | `.gsd/preferences.md` | Look up hook configuration and prompt by name |
-| `.gsd/hook-state.json` | Restore existing cycle counts before incrementing |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/auto.lock` | Session lock file updated for the hook unit |
-| `.gsd/hook-state.json` | Cycle count for this hook+trigger persisted to disk |
+| `.gsd/auto.lock` | Session lock file written for the hook unit |
+| `.gsd/runtime/units/hook-<name>-<unitId>.json` | Runtime record tracking the hook unit's dispatch phase and timeout state |
 | Hook-specific artifacts | Whatever the hook's prompt produces (e.g., review files in the task directory) |
 
 ## Examples
@@ -147,15 +146,23 @@ When no arguments are provided, the full usage help is shown:
 Usage: /gsd run-hook <hook-name> <unit-type> <unit-id>
 
 Unit types:
-  execute-task       - Task execution (unit-id: M001/S01/T01)
-  plan-slice         - Slice planning (unit-id: M001/S01)
+  execute-task   - Task execution (unit-id: M001/S01/T01)
+  plan-slice     - Slice planning (unit-id: M001/S01)
   research-milestone - Milestone research (unit-id: M001)
-  complete-slice     - Slice completion (unit-id: M001/S01)
+  complete-slice - Slice completion (unit-id: M001/S01)
   complete-milestone - Milestone completion (unit-id: M001)
 
 Examples:
   /gsd run-hook code-review execute-task M001/S01/T01
   /gsd run-hook lint-check plan-slice M001/S01
+```
+
+When an invalid unit ID format is used:
+
+```
+> /gsd run-hook code-review execute-task M001/S01
+
+Invalid unit ID format: "M001/S01". Expected format: M004/S04/T03
 ```
 
 ## Related Commands

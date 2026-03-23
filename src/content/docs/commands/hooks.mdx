@@ -19,7 +19,7 @@ No arguments — the command reads hook configuration from preferences and displ
 
 ## How It Works
 
-The command calls `formatHookStatus()` from the hook engine, which internally calls `getHookStatus()` to collect all configured hooks, then formats them for terminal display.
+The command calls `formatHookStatus()` from the hook engine facade, which delegates to the `RuleRegistry` singleton via `getOrCreateRegistry()`. The registry calls `getHookStatus()` to collect all configured hooks and their live cycle counts, then formats them for terminal display.
 
 ### Data Collection
 
@@ -31,7 +31,9 @@ The command calls `formatHookStatus()` from the hook engine, which internally ca
 
 ### Post-Unit Hook Behaviour
 
-Post-unit hooks fire after a core unit completes. The hook engine prevents runaway chains by never triggering hooks for:
+Post-unit hooks fire after a core unit completes. When multiple hooks match a unit type, they are all enqueued and run sequentially — each fires in order and completes before the next begins.
+
+The hook engine prevents runaway chains by never triggering hooks for:
 
 - `hook/*` unit types (hook-on-hook)
 - `triage-captures` units
@@ -40,6 +42,10 @@ Post-unit hooks fire after a core unit completes. The hook engine prevents runaw
 Each hook can run multiple times for the same trigger unit, controlled by `max_cycles` (default `1`, maximum `10`). Idempotency is enforced via an `artifact` file — if the artifact already exists at the expected path, the hook is skipped entirely.
 
 If a hook produces a `retry_on` artifact instead of the normal artifact, the hook engine signals the caller to re-dispatch the original trigger unit. This allows a hook to force a task to re-run (for example, a review hook flags issues → task re-runs → hook fires again on the next completion). The cycle count is checked before allowing a retry — once `max_cycles` is reached, the retry is suppressed.
+
+**Browser safety injection:** The hook engine automatically appends the following instruction to every post-unit hook prompt before dispatching it:
+
+> **Browser tool safety:** Do NOT use `browser_wait_for` with `condition: "network_idle"` — it hangs indefinitely when dev servers keep persistent connections (Vite HMR, WebSocket). Use `selector_visible`, `text_visible`, or `delay` instead.
 
 Both post-unit and pre-dispatch hook prompts support variable substitution using the trigger unit's context:
 
@@ -53,19 +59,19 @@ Both post-unit and pre-dispatch hook prompts support variable substitution using
 
 | Unit ID format | Artifact path |
 |----------------|--------------|
-| `M001/S01/T01` | `.gsd/M001/slices/S01/tasks/T01-{artifact}` |
-| `M001/S01` | `.gsd/M001/slices/S01/{artifact}` |
-| `M001` | `.gsd/M001/{artifact}` |
+| `M001/S01/T01` | `.gsd/milestones/M001/slices/S01/tasks/T01-{artifact}` |
+| `M001/S01` | `.gsd/milestones/M001/slices/S01/{artifact}` |
+| `M001` | `.gsd/milestones/M001/{artifact}` |
 
 ### Pre-Dispatch Hook Behaviour
 
-Pre-dispatch hooks intercept a unit before its prompt is sent. Hook units (`hook/*`) are never intercepted by pre-dispatch hooks. Multiple hooks can fire for the same unit type and compose in order:
+Pre-dispatch hooks intercept a unit before its prompt is sent. Hook units (`hook/*`) are never intercepted. Multiple hooks can match the same unit type and are evaluated in the order they appear in preferences:
 
-- **`modify`** hooks stack — all `prepend`/`append` values are applied sequentially to build up the final prompt.
-- **`skip`** short-circuits — the first matching skip hook cancels the unit entirely. An optional `skip_if` condition file can gate the skip: the unit is only skipped if that file exists at the unit's artifact path.
-- **`replace`** short-circuits — the first matching replace hook swaps the entire unit prompt and optionally overrides the unit type label.
+- **`modify`** hooks stack — all `prepend`/`append` values are applied sequentially in config order to build up the final prompt.
+- **`skip`** short-circuits on first match — the first skip hook encountered cancels the unit entirely. An optional `skip_if` condition file can gate the skip: the unit is only skipped if that file exists at the unit's artifact path.
+- **`replace`** short-circuits on first match — the first replace hook encountered swaps the entire unit prompt and optionally overrides the unit type label.
 
-Skip and replace always take precedence over modify hooks.
+Because iteration is order-based, any `modify` hooks that appear *before* a `skip` or `replace` in the config will still run. Once a skip or replace fires, remaining hooks are bypassed.
 
 ### Cycle Persistence
 

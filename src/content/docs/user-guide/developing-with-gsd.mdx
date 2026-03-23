@@ -161,7 +161,7 @@ For larger projects spanning multiple milestones, GSD handles each milestone's r
 
 GSD writes a `DISCUSSION-MANIFEST.json` after each gate decision. Auto-mode will not start until all gates are recorded.
 
-For milestones that depend on others, GSD writes `depends_on` frontmatter into each `CONTEXT.md`:
+For milestones that depend on others, GSD writes `depends_on` frontmatter into each `CONTEXT.md`. This is **mandatory** — the state machine reads this field to determine execution order:
 
 ```yaml
 ---
@@ -290,17 +290,27 @@ This is where code gets written. Run `/gsd auto` and GSD takes over.
 
 ### How auto mode works
 
-Auto mode is a **dispatch state machine** — a declarative table of rules evaluated in order. It reads the `.gsd/` directory structure to determine what phase the project is in, then the first matching rule fires:
+Auto mode is a **declarative dispatch table** — an ordered list of rules evaluated per cycle. Each rule checks a condition; the first match fires. GSD reads the `.gsd/` directory structure to determine what phase the project is in, then evaluates the rules in sequence:
 
 ```mermaid
 flowchart TD
     Start([Read disk state]) --> OG{Active overrides?}
     OG -->|Yes| RD[rewrite-docs]
-    OG -->|No| Check{Phase?}
+    OG -->|No| Sum{phase=summarizing?}
 
-    Check -->|needs-discussion| Stop1[Stop: run /gsd to discuss]
+    Sum -->|Yes| CS[complete-slice]
+    Sum -->|No| UAT{Slice needs UAT?}
+
+    UAT -->|Yes| RU[run-uat]
+    UAT -->|No| UATv{UAT verdict non-PASS?}
+    UATv -->|Yes| StopUAT[Stop: fix UAT failures]
+    UATv -->|No| RA{Needs reassess?}
+    RA -->|Yes| RAss[reassess-roadmap]
+    RA -->|No| Check{Phase?}
+
+    Check -->|needs-discussion| DM[discuss-milestone]
     Check -->|pre-planning| NeedCtx{Has context?}
-    NeedCtx -->|No| Stop2[Stop: run /gsd to discuss]
+    NeedCtx -->|No| DM2[discuss-milestone]
     NeedCtx -->|Yes| NeedRes{Has research?}
     NeedRes -->|No| RM[research-milestone]
     NeedRes -->|Yes| PM[plan-milestone]
@@ -311,42 +321,43 @@ flowchart TD
 
     Check -->|replanning-slice| RP[replan-slice]
 
-    Check -->|executing| ET[execute-task]
-
-    Check -->|summarizing| NeedUAT{Needs UAT?}
-    NeedUAT -->|Yes| UAT[run-uat]
-    NeedUAT -->|No| NeedRA{Needs reassess?}
-    NeedRA -->|Yes| RA[reassess-roadmap]
-    NeedRA -->|No| CS[complete-slice]
+    Check -->|executing| Reactive{Reactive mode?}
+    Reactive -->|Yes, multiple ready| RE[reactive-execute]
+    Reactive -->|No| ET[execute-task]
 
     Check -->|validating-milestone| VM[validate-milestone]
     Check -->|completing-milestone| CM[complete-milestone]
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style OG fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Sum fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style UAT fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style UATv fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style RA fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Check fill:#0d180d,stroke:#39ff14,color:#39ff14
     style NeedCtx fill:#0d180d,stroke:#39ff14,color:#39ff14
     style NeedRes fill:#0d180d,stroke:#39ff14,color:#39ff14
     style SR fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style NeedUAT fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style NeedRA fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Reactive fill:#0d180d,stroke:#39ff14,color:#39ff14
     style RD fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RU fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RAss fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DM2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style PM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style PS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RP fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RE fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ET fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style UAT fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style RA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style CS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style VM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Stop1 fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
-    style Stop2 fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style StopUAT fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
 ```
 
-The dispatch rules evaluate in order — the first match wins. This is what happens during Cookmate's S01 execution:
+The first rule that matches wins. This is what happens during Cookmate's S01 execution:
 
 1. **State check** → phase is `executing`, active task is `T01`
 2. **Dispatch** → creates a fresh agent session with T01's plan pre-loaded
@@ -372,6 +383,12 @@ This is how GSD maintains quality across long projects — each unit starts fres
 ### Blocker detection and replan
 
 If an executor discovers a plan-invalidating issue, it sets `blocker_discovered: true` in its summary. On the next dispatch cycle, GSD transitions to `replanning-slice` and dispatches a `replan-slice` agent to rewrite the remaining tasks before execution continues. A `REPLAN.md` file is written to prevent infinite replan loops.
+
+Triage can also trigger a replan: when a capture is classified as `replan`, triage writes a `REPLAN-TRIGGER.md` file in the slice directory. On the next dispatch cycle, GSD detects this and transitions to `replanning-slice`. The same `REPLAN.md` loop protection applies.
+
+### Reactive execution
+
+When `reactive_execution.enabled: true` is set in preferences, GSD derives a dependency graph from the task I/O declarations in the slice plan. If multiple tasks are ready at once (their declared dependencies are satisfied), GSD dispatches them in parallel — up to `max_parallel` tasks per cycle. If the graph is ambiguous or only one task is ready, execution falls back to sequential dispatch.
 
 ### What execution looks like on disk
 
@@ -410,16 +427,14 @@ When the last task in a slice finishes, GSD transitions to the **summarizing** p
 
 ### Slice completion
 
-After all tasks are done, GSD runs through a sequence of post-completion steps:
+After all tasks are done, GSD runs through a post-completion sequence. The order matters — each step is a distinct dispatch cycle:
 
-1. **Run UAT** — if `uat_dispatch` is enabled and a UAT script exists, executes the acceptance test script
-2. **Reassess roadmap** — checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices (can be skipped via `skip_reassess` preference)
-3. **Complete slice** — writes the slice summary, compresses all task summaries, marks the slice done in the roadmap
+1. **Complete slice** — runs all slice-level verification, fixes failures, writes `S01-SUMMARY.md`, marks the slice done in the roadmap. This is the `summarizing` phase.
+2. **Run UAT** — if `uat_dispatch` is enabled and a UAT script (`S01-UAT.md`) exists, executes the acceptance test script and writes `S01-UAT-RESULT.md`.
+3. **UAT verdict gate** — if UAT ran and the verdict is not `PASS`, auto-mode stops. You must fix the failures and re-run `/gsd auto` to continue.
+4. **Reassess roadmap** — checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices. Skipped if `skip_reassess: true` is set.
 
-The completion agent:
-- Runs all slice-level verification — the objective stopping condition defined in the slice plan
-- Fixes failures before proceeding
-- Writes `S01-SUMMARY.md` — compressed slice record
+The completion agent (step 1) also:
 - Writes `S01-UAT.md` — concrete test cases derived from what was actually built
 - Updates requirements — moves requirements between Active, Validated, Deferred based on evidence
 - Checks the box in the roadmap
@@ -436,13 +451,15 @@ The reassessment either confirms the plan or adjusts it. This is how GSD adapts 
 
 ### Milestone validation
 
-When all slices are done, GSD enters `validating-milestone` before writing the milestone summary. The validation agent:
+When all slices are done, GSD enters `validating-milestone` before writing the milestone summary. Before dispatching the validation agent, GSD performs a safety check: every slice in the roadmap must have a `SUMMARY.md` file. If any are missing, auto-mode stops with an error rather than falsely validating an incomplete milestone.
+
+The validation agent:
 
 1. Reads the milestone's success criteria and definition of done
 2. Verifies the assembled work delivers the milestone goal
 3. Writes `M001-VALIDATION.md` with a verdict: `pass`, `needs-attention`, or `needs-remediation`
 
-If remediation is needed and remediation slices exist in the roadmap, GSD executes them before re-validating. Once the validation is terminal (`pass` or `needs-attention`), GSD proceeds to completion.
+If remediation is needed and remediation slices exist in the roadmap, GSD executes them before re-validating. A `needs-remediation` verdict without any remediation slices is treated as terminal to prevent infinite loops — the report is preserved on disk for manual review.
 
 :::note[Skipping validation]
 Set `skip_milestone_validation: true` in preferences to write a pass-through validation file and proceed directly to completion. Useful for projects where the milestone definition of done is verified by other means.
@@ -452,9 +469,10 @@ Set `skip_milestone_validation: true` in preferences to write a pass-through val
 
 When validation passes, the milestone completion agent:
 
-1. Writes `M001-SUMMARY.md` — the milestone-level record
-2. Updates `PROJECT.md` with current state
-3. If another milestone exists (M002), GSD continues into its discussion/research cycle
+1. Verifies that actual implementation files exist outside `.gsd/` — a milestone with only planning artifacts will not be marked complete
+2. Writes `M001-SUMMARY.md` — the milestone-level record
+3. Updates `PROJECT.md` with current state
+4. If another milestone exists (M002), GSD continues into its discussion/research cycle
 
 ### Final directory structure
 
@@ -477,6 +495,7 @@ After S01 completes and S02 is in progress, the `.gsd/` tree looks like this:
             │   ├── S01-PLAN.md
             │   ├── S01-SUMMARY.md    ← compressed slice record
             │   ├── S01-UAT.md        ← concrete test script
+            │   ├── S01-UAT-RESULT.md ← UAT verdict
             │   └── tasks/
             │       ├── T01-PLAN.md
             │       ├── T01-SUMMARY.md
@@ -500,35 +519,39 @@ GSD derives its state entirely from files on disk. There's no database, no hidde
 The state derivation algorithm:
 
 1. Find all milestone directories (M001, M002, ...)
-2. Check milestone-level `depends_on` frontmatter in each `CONTEXT.md` — skip milestones whose dependencies aren't complete
-3. The first incomplete, unblocked milestone becomes the **active milestone**
-4. Within that milestone, check if all slices are done and whether a `VALIDATION` file with a terminal verdict exists
-5. If all slices done but no terminal validation → phase is `validating-milestone`
-6. If all slices done and validation terminal but no summary → phase is `completing-milestone`
-7. Otherwise, find the first incomplete slice (with dependencies met) → **active slice**
-8. If the slice has no plan → phase is `planning`
-9. If all tasks done but slice not marked complete → phase is `summarizing`
-10. If a completed task has `blocker_discovered: true` and no `REPLAN.md` → phase is `replanning-slice`
-11. Otherwise → phase is `executing` with the first incomplete task as the **active task**
+2. Skip **ghost milestones** — directories containing only `META.json` with no substantive files (`CONTEXT`, `ROADMAP`, or `SUMMARY`)
+3. Skip **parked milestones** — directories with a `PARKED` file; these do not satisfy `depends_on` for other milestones
+4. Check milestone-level `depends_on` frontmatter in each `CONTEXT.md` — skip milestones whose dependencies aren't complete
+5. The first incomplete, unblocked milestone becomes the **active milestone**
+6. Within that milestone, check if all slices are done and whether a `VALIDATION` file with a terminal verdict exists
+7. If all slices done but no terminal validation → phase is `validating-milestone`
+8. If all slices done and validation terminal but no summary → phase is `completing-milestone`
+9. Otherwise, find the first incomplete slice (with dependencies met) → **active slice**
+10. If the slice has no plan → phase is `planning`
+11. If all tasks done but slice not marked complete → phase is `summarizing`
+12. If a completed task has `blocker_discovered: true` and no `REPLAN.md` → phase is `replanning-slice`
+13. If a `REPLAN-TRIGGER.md` exists in the slice directory and no `REPLAN.md` → phase is `replanning-slice`
+14. If a `CONTINUE.md` (or `continue.md`) exists in the slice directory → phase is `executing` with a resume prompt
+15. Otherwise → phase is `executing` with the first incomplete task as the **active task**
 
 ### All phases
 
 | Phase | What it means |
 |-------|--------------|
-| `pre-planning` | Active milestone has context but no roadmap yet |
+| `pre-planning` | Active milestone has context but no roadmap yet; or no milestones exist |
 | `needs-discussion` | Active milestone has a `CONTEXT-DRAFT.md` seed — run `/gsd` to discuss |
 | `planning` | Active slice needs a plan |
 | `executing` | Active task is ready to run |
-| `summarizing` | All tasks done — run UAT, reassess, complete slice |
-| `replanning-slice` | A task discovered a blocker — replan remaining tasks |
+| `summarizing` | All tasks done — complete slice, then UAT and reassess |
+| `replanning-slice` | A task blocker or triage trigger — replan remaining tasks |
 | `validating-milestone` | All slices done — validate before completing |
 | `completing-milestone` | Validation passed — write milestone summary |
-| `blocked` | No eligible slice (dep cycle) or all milestones dep-blocked |
+| `blocked` | No eligible slice (dep cycle) or all remaining milestones are dep-blocked |
 | `complete` | All milestones done |
 
 This means you can always understand where GSD is by looking at the files. And if something goes wrong, you can fix it by editing the markdown — check a box, rename a file, adjust a plan.
 
-State derivation uses a native Rust batch parser when available, reading all `.gsd/` markdown files in a single pass for speed. It falls back to sequential JS file reads if the native module is absent.
+State derivation uses a native Rust batch parser when available, reading all `.gsd/` markdown files in a single pass for speed. It falls back to sequential JS file reads if the native module is absent. Results are cached for 100ms per base path to avoid redundant re-reads during a single dispatch cycle.
 
 ---
 
@@ -551,13 +574,14 @@ You're never locked out of the process.
 
 ### Quick tasks
 
-For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <description>`. Quick tasks live in `.gsd/quick/` and are tracked in `STATE.md`. They get GSD's execution guarantees (atomic commits, verification) without a full slice plan.
+For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <description>`. Quick tasks are created as numbered, slug-named directories inside `.gsd/quick/` (e.g., `.gsd/quick/1-add-rate-limiting/`). They get GSD's execution guarantees (atomic commits, verification) without a full slice plan.
 
 ### When things go wrong
 
 - **`/gsd doctor`** — diagnoses issues in your `.gsd/` directory structure and optionally fixes them
 - **`/gsd forensics`** — post-mortem analysis of auto-mode failures
 - **Task blockers** — if an executor discovers a plan-invalidating issue, it sets `blocker_discovered: true` in its summary, triggering an automatic replan of the slice
+- **Triage replan** — captures classified as `replan` write a `REPLAN-TRIGGER.md` file, which is detected on the next dispatch cycle
 
 ---
 
@@ -569,10 +593,12 @@ For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <de
 | **Fresh sessions** | Every unit gets a clean context window with pre-loaded, focused context |
 | **Risk-first ordering** | High-risk slices execute first to surface problems early |
 | **Summaries as context** | Each completed unit writes a summary that feeds into the next unit's context |
-| **Reassessment** | After each slice, GSD checks if the remaining plan still makes sense |
+| **Ordered dispatch rules** | Auto-mode is a table of rules evaluated in sequence — the first match wins |
+| **Post-completion hooks** | UAT and roadmap reassessment run after slice completion, before the next slice starts |
+| **UAT verdict gate** | A non-PASS UAT result blocks auto-mode until you fix the failures |
 | **Capability contract** | `REQUIREMENTS.md` tracks every requirement with status, ownership, and traceability |
 | **Milestone validation** | Before completing a milestone, GSD verifies the assembled work delivers the goal |
-| **Blocker replanning** | Tasks that discover plan-invalidating issues trigger automatic slice replanning |
+| **Blocker replanning** | Tasks or triage that discover plan-invalidating issues trigger automatic slice replanning |
 | **Observable artifacts** | Every phase produces readable markdown files — you can always see what happened |
 | **Intervention points** | Stop, pause, steer, edit plans, or fix things manually at any time |
 

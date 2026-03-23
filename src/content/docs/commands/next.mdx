@@ -42,7 +42,7 @@ flowchart TD
     DeriveState --> NoMilestone{"Active milestone?"}
     NoMilestone -->|No| Noop(["Notify: nothing to dispatch"])
     NoMilestone -->|Yes| MapPhase["Map phase → unit type"]
-    MapPhase --> LoadMetrics["Load ledger + preferences"]
+    MapPhase --> LoadMetrics["Load metrics + preferences"]
     LoadMetrics --> Preview["Show preview with cost,\nduration, budget, progress"]
     Preview --> Exit(["Done — nothing executed"])
 
@@ -82,7 +82,7 @@ When `--dry-run` is active, GSD:
 | `blocked` | `blocked` |
 | any other phase | phase name verbatim |
 
-4. **Loads historical metrics** — Reads the in-memory ledger (or falls back to the ledger on disk) to calculate average cost and duration for units of the same type. Loads preferences to check the budget ceiling.
+4. **Loads historical metrics** — Reads the in-memory metrics ledger (or falls back to the ledger on disk at `.gsd/metrics.json`) to calculate average cost and duration for units of the same type. Loads `.gsd/preferences.md` to check the budget ceiling.
 5. **Shows preview** — Displays the unit type, ID, milestone, phase, estimated cost and duration (computed as averages over historical units of the same type), total spent, budget remaining, and task/slice progress.
 
 ### Step mode (no --dry-run)
@@ -97,11 +97,11 @@ Read-only. Writes nothing.
 
 | File | Purpose |
 |------|---------|
-| `.gsd/<MID>/ROADMAP.md` | Read to derive active milestone and phase |
-| `.gsd/<MID>/<SID>/PLAN.md` | Read to derive active slice and task |
-| `.gsd/<MID>/<SID>/SUMMARY.md` | Read to determine slice completion |
-| `.gsd/ledger.json` | Read for historical unit cost and duration averages |
-| GSD preferences file | Read for budget ceiling (`budget_ceiling`) |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Read to derive active milestone and phase |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Read to derive active slice and task |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-SUMMARY.md` | Read to determine slice completion |
+| `.gsd/metrics.json` | Read for historical unit cost and duration averages |
+| `.gsd/preferences.md` | Read for budget ceiling (`budget_ceiling`) |
 
 ### Without --dry-run
 

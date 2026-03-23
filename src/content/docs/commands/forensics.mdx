@@ -103,8 +103,8 @@ flowchart TD
 
 The forensic report builder collects data from five sources:
 
-1. **Activity logs** (`.gsd/activity/*.jsonl`) — Scanned from both the active auto-worktree and the project root. All matching JSONL files are collected, sorted by modification time, and the five most recent are parsed. Each log records tool calls, reasoning traces, errors, and files written during a unit's execution. The filename encodes sequence number, unit type, and unit ID.
-2. **Metrics ledger** (`.gsd/metrics.json`) — Cost, token count, timing, and model data for every completed unit. Used to compute averages and detect spikes.
+1. **Activity logs** (`.gsd/activity/*.jsonl`) — Scanned from both the active auto-worktree and the project root. All matching JSONL files from each directory are sorted alphabetically (the filename encodes a sequence number, unit type, and unit ID) and the five most recent from each directory are read. Results are then merged and sorted by modification time, keeping the five most recent overall. Each log records tool calls, reasoning traces, errors, and files written during a unit's execution. Worktree logs take priority over root logs when both exist.
+2. **Metrics ledger** (`.gsd/metrics.json`) — Cost, token count, timing, and model data for every completed unit. Used to compute per-type averages and detect cost spikes. The ten most recent units are included in the report.
 3. **Crash lock** (`.gsd/runtime/crash.lock`) — Written at auto-mode startup with PID, unit type, and unit ID. If the PID is dead, it's a crash indicator.
 4. **Doctor checks** — The full doctor scan runs internally. Error-severity issues become forensic anomalies.
 5. **Completed keys** (`.gsd/completed-units.json`) — List of units marked as done. Cross-referenced against expected artifacts in both the project root and the active worktree to detect stale completions.
@@ -129,7 +129,7 @@ Before writing, the report is redacted: absolute paths are replaced with relativ
 
 ### LLM Dispatch
 
-The report is formatted into a structured prompt (capped at 30KB) and dispatched to the LLM with `triggerTurn: true`. The LLM receives the problem description, all anomalies, recent unit history (top 3 activity traces), and the path to the GSD extension source code. The LLM may read these key files to trace the specific code path that caused the failure:
+The report is formatted into a structured prompt (capped at 30KB) and dispatched to the LLM with `triggerTurn: true`. The LLM receives the problem description, all anomalies, a table of the ten most recent units from the metrics ledger, the top three activity log traces (tool calls, files written, errors, last reasoning), and the path to the GSD extension source code. The LLM may read these key files to trace the specific code path that caused the failure:
 
 | File | What it covers |
 |------|---------------|
@@ -149,23 +149,23 @@ The issue template includes GSD version, model, the failing unit, reproduction c
 
 ## What Files It Touches
 
-### Reads
-
-| File | Purpose |
-|------|---------|
-| `.gsd/activity/*.jsonl` | Activity logs from project root (top 5 by mtime) |
-| `.gsd/worktrees/<MID>/.gsd/activity/*.jsonl` | Activity logs from active auto-worktree (top 5 by mtime, merged with root) |
-| `.gsd/metrics.json` | Cost and timing metrics for anomaly detection |
-| `.gsd/runtime/crash.lock` | Crash detection |
-| `.gsd/completed-units.json` | Stale completion detection |
-| `.gsd/STATE.md` | Current project state (active milestone and slice) |
-| `.gsd/milestones/*/` | Doctor scan (run internally) |
-
 ### Creates
 
 | File | Purpose |
 |------|---------|
 | `.gsd/forensics/report-*.md` | Timestamped, redacted forensic report |
+
+### Reads
+
+| File | Purpose |
+|------|---------|
+| `.gsd/activity/*.jsonl` | Activity logs from project root (last 5 by sequence, merged by mtime) |
+| `.gsd/worktrees/<MID>/.gsd/activity/*.jsonl` | Activity logs from active auto-worktree (merged with root, top 5 overall) |
+| `.gsd/metrics.json` | Cost and timing metrics for anomaly detection |
+| `.gsd/runtime/crash.lock` | Crash detection |
+| `.gsd/completed-units.json` | Stale completion detection |
+| `.gsd/STATE.md` | Current project state (active milestone and slice) |
+| `.gsd/milestones/*/` | Doctor scan (run internally) |
 
 ## Examples
 

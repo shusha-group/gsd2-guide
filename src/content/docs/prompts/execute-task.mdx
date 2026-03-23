@@ -44,13 +44,15 @@ flowchart TD
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
 | `workingDirectory` | Absolute path to the project working directory | Yes |
 | `overridesSection` | Optional override instructions that supersede or amend the default task plan behavior | Yes |
+| `runtimeContext` | Injected runtime context block (available tools, model info, environment state) assembled by the dispatcher | Yes |
 | `resumeSection` | Resume state block indicating where execution should pick up if this is a continuation run | Yes |
 | `carryForwardSection` | Context carried forward from a previous partial execution of this task, if the task is being resumed | Yes |
 | `taskPlanInline` | Full task plan content inlined directly into the prompt for the executor agent | Yes |
 | `slicePlanExcerpt` | Relevant excerpt from the slice plan providing goal and verification context for the executor | Yes |
-| `planPath` | File path to the full task plan document (T01-PLAN.md) | Yes |
-| `taskPlanPath` | File path to the task plan document for reference | Yes |
+| `planPath` | File path to the full slice plan document (e.g. S01-PLAN.md) | Yes |
+| `taskPlanPath` | File path to the task plan document for reference (e.g. T01-PLAN.md) | Yes |
 | `priorTaskLines` | Summary lines from previously completed tasks in this slice, providing continuity context | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills that match the current task context | Yes |
 | `verificationBudget` | Maximum number of verification attempts the executor agent is allowed for this task | Yes |
 | `taskSummaryPath` | File path where the task summary should be written upon completion | Yes |
 

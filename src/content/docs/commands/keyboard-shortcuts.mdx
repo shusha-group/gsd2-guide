@@ -1,96 +1,122 @@
 ---
 title: "Keyboard Shortcuts"
-description: "Quick-access keyboard shortcuts for GSD — toggle the dashboard, voice transcription, and background process manager without leaving the terminal."
+description: "Five instant-access shortcuts for the GSD dashboard, voice mode, background processes, clipboard vision, and aborting auto mode — no typing required."
 ---
 
 ## What It Does
 
-GSD registers three keyboard shortcuts for actions that benefit from instant access. These work during any active session — whether you're in auto mode, reviewing architecture, or watching a build.
+GSD registers five keyboard shortcuts for actions that benefit from instant access over a slash command. These work during any active session — whether auto mode is running, you're reviewing output, or watching a build.
 
-All shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or `modifyOtherKeys` for reliable detection. In terminals that don't support either, GSD appends a slash-command fallback hint to the shortcut description rather than hiding the feature.
+Four shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable detection. In terminals that don't support the protocol (macOS Terminal.app, Warp, JetBrains IDEs), GSD appends a slash-command fallback hint to the shortcut description rather than silently dropping it.
 
-Pressing `Escape` during an active auto-mode session has a separate effect: it aborts the current agent turn and the `agent_end` handler automatically calls pause, so auto mode suspends with state preserved.
+The fifth shortcut — `Ctrl+V` / `Alt+V` — pastes an image from your clipboard directly into the conversation as vision input. Use `Alt+V` in terminals where `Ctrl+V` is reserved for paste (e.g. Warp).
 
-## Shortcuts
+## Usage
 
 | Shortcut | Action | Fallback |
 |----------|--------|----------|
-| `Ctrl+Alt+G` | Open GSD dashboard | `/gsd status` |
-| `Ctrl+Alt+V` | Toggle voice mode | `/voice` |
-| `Ctrl+Alt+B` | Open background process manager | `/bg` |
-| `Escape` | Abort current turn (pauses auto mode) | `/gsd pause` |
+| `Ctrl+Alt+G` | Toggle dashboard overlay | `/gsd status` |
+| `Ctrl+Alt+V` | Toggle voice transcription | `/voice` |
+| `Ctrl+Alt+B` | Show background shell processes | `/bg` |
+| `Ctrl+V` / `Alt+V` | Paste image from clipboard (screenshot → vision input) | — |
+| `Escape` | Abort current turn and pause auto mode | `/gsd stop` |
 
 ## How It Works
 
-### Ctrl+Alt+G — GSD Dashboard
+### Ctrl+Alt+G — Dashboard Overlay
 
-Opens a full-screen overlay showing milestone progress, active slice and task, completed units, timing, and the activity log. Same view as [`/gsd status`](../status/), but toggled in place without leaving the conversation. Press `Escape`, `Ctrl+C`, or `Ctrl+Alt+G` again to close.
+Opens a full-screen overlay showing milestone progress, the active slice and task, completed units, timing, and cost metrics. Same view as [`/gsd status`](../status/), but toggled in place without breaking the conversation. Press `Escape`, `Ctrl+C`, or `Ctrl+Alt+G` again to close.
 
 Only activates when a `.gsd/` directory is present in the current working directory. If not found, a notice is shown: _"No .gsd/ directory found. Run /gsd to start."_
 
-### Ctrl+Alt+V — Voice Mode
+### Ctrl+Alt+V — Voice Transcription
 
-Toggles real-time speech-to-text transcription. Requires a microphone. Same as running `/voice`.
+Toggles real-time speech-to-text transcription on and off. Requires a microphone. Equivalent to running `/voice`. Supported on macOS and Linux.
 
 ### Ctrl+Alt+B — Background Process Manager
 
-Opens an overlay listing all running background shell processes — dev servers, file watchers, build processes. Shows process ID, command, status, and uptime. Same as running `/bg`. Press `Escape` or `q` to close.
+Opens an overlay listing all running background shell processes — dev servers, file watchers, build processes. Shows process ID, command, status, and uptime. Equivalent to running `/bg`. Press `Escape` or `q` to close.
 
-### Escape — Abort and Pause
+### Ctrl+V / Alt+V — Clipboard Image Paste
 
-When auto mode is running, pressing `Escape` aborts the current agent turn immediately. GSD's `agent_end` hook detects the `aborted` stop reason and calls pause automatically, suspending auto mode with all state preserved. Run `/gsd auto` to resume from where it left off.
+Pastes an image from your system clipboard into the conversation as vision input. Useful for attaching screenshots, mockups, or error dialogs without saving them as files first. GSD passes the image directly to the model.
 
-This is distinct from [`/gsd pause`](../pause/), which sets a flag to pause cleanly after the current unit finishes rather than aborting mid-turn.
+Use `Ctrl+V` in most terminals. Use `Alt+V` in terminals where `Ctrl+V` is reserved for paste (e.g. Warp).
 
-### Terminal Fallback Hints
+### Escape — Abort and Pause Auto Mode
 
-When GSD detects an unsupported terminal, the shortcut description shown in the UI changes from:
+When auto mode is running, pressing `Escape` aborts the current agent turn immediately. GSD's `agent_end` hook detects the `aborted` stop reason and calls pause automatically, suspending auto mode with all state preserved. Run [`/gsd auto`](../auto/) to resume from where it left off.
 
-```
-Open GSD dashboard
-```
+This is distinct from a graceful [`/gsd stop`](../stop/), which lets the current unit finish before stopping.
 
-to:
+### Terminal Compatibility
+
+The `Ctrl+Alt` shortcuts require the **Kitty keyboard protocol** — a modern terminal extension that enables precise modifier key detection. GSD auto-detects terminal capabilities at startup using the `TERM_PROGRAM` and `TERMINAL_EMULATOR` environment variables.
+
+**Supported terminals:** Kitty, WezTerm, Ghostty, iTerm2 (recent versions).
+
+In terminals without protocol support, GSD appends a fallback hint to the affected shortcut descriptions:
 
 ```
 Open GSD dashboard — shortcut may not work in this terminal, use /gsd status
 ```
 
-This happens for all three `Ctrl+Alt` shortcuts automatically. The slash-command fallbacks always work regardless of terminal.
-
-## Terminal Compatibility
-
-These shortcuts rely on the **Kitty keyboard protocol** or **modifyOtherKeys**, modern terminal extensions that enable precise detection of modifier key combinations. Terminals with support include:
-
-- **Kitty** — Full support (protocol originator)
-- **WezTerm** — Full support
-- **Ghostty** — Full support
-- **iTerm2** — Supported in recent versions
-
-### Terminals Without Support
-
-In terminals that don't implement the Kitty protocol or modifyOtherKeys, `Ctrl+Alt` key combinations can't be reliably detected. GSD detects this at startup and appends a fallback hint to the shortcut description — shortcuts that would be silently swallowed show their slash-command equivalent instead.
-
 Known unsupported terminals:
 
-- **macOS Terminal.app** (`TERM_PROGRAM=apple_terminal`) — No Kitty protocol support
-- **Warp** (`TERM_PROGRAM=warpterm`) — Not supported
-- **JetBrains IDE terminals** (`TERMINAL_EMULATOR` contains `JetBrains`) — Built-in terminals don't support the protocol
-
-| Instead of | Use |
-|-----------|-----|
-| `Ctrl+Alt+G` | `/gsd status` |
-| `Ctrl+Alt+V` | `/voice` |
-| `Ctrl+Alt+B` | `/bg` |
-| `Escape` | `/gsd pause` |
+| Terminal | Detection | Fallback behavior |
+|----------|-----------|-------------------|
+| macOS Terminal.app | `TERM_PROGRAM=apple_terminal` | Slash-command hints shown |
+| Warp | `TERM_PROGRAM=warpterm` | Slash-command hints shown |
+| JetBrains IDE terminals | `TERMINAL_EMULATOR` contains `JetBrains` | Slash-command hints shown |
 
 :::note
-GSD auto-detects terminal capabilities at startup using the `TERM_PROGRAM` and `TERMINAL_EMULATOR` environment variables. You don't need to configure anything — if your terminal supports the protocol, shortcuts just work. If it doesn't, fallback commands are always available.
+You don't need to configure anything — GSD detects terminal capabilities automatically at startup. If your terminal supports the protocol, shortcuts just work. If it doesn't, fallback slash commands are always available.
 :::
+
+## What Files It Touches
+
+Keyboard shortcuts are entirely read-only and in-memory. No files are created, modified, or deleted by pressing a shortcut. The dashboard overlay reads planning files the same way [`/gsd status`](../status/) does.
+
+## Examples
+
+Checking milestone progress mid-execution without typing:
+
+```
+[Auto mode running...]
+→ Press Ctrl+Alt+G
+[Dashboard overlay opens — shows S03/T02 in progress, 4/7 tasks done]
+→ Press Escape to close and return to the conversation
+```
+
+Pasting a screenshot for analysis:
+
+```
+> Cmd+Shift+4    (macOS — capture screenshot to clipboard)
+> Ctrl+V         (or Alt+V in Warp)
+[Image appears inline in the conversation]
+> What's wrong with this error message?
+```
+
+Aborting a runaway auto-mode turn:
+
+```
+[Auto mode dispatched a task you want to stop...]
+→ Press Escape
+● Auto mode paused — state preserved.
+> /gsd auto    ← resume when ready
+```
+
+Using voice instead of typing a long thought:
+
+```
+→ Press Ctrl+Alt+V
+● Voice transcription active
+[Speak your message — it types into the input bar]
+→ Press Ctrl+Alt+V again to stop
+```
 
 ## Related Commands
 
 - [`/gsd status`](../status/) — Dashboard (same as `Ctrl+Alt+G`)
-- [`/gsd pause`](../pause/) — Pause auto mode gracefully after current unit
-- [`/gsd auto`](../auto/) — Resume auto mode after a pause
-- [CLI Flags](../cli-flags/) — Command-line flags for starting GSD sessions
+- [`/gsd stop`](../stop/) — Stop auto mode gracefully after the current unit finishes
+- [`/gsd auto`](../auto/) — Start or resume autonomous mode

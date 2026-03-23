@@ -1,79 +1,98 @@
 ---
 title: "Recipe: Small Change"
-description: "Make a quick, self-contained change without milestone ceremony using /gsd quick — branch, execute, commit in one flow."
+description: "Make a quick, self-contained change without milestone ceremony using /gsd:quick — plan, execute, commit in one flow."
 ---
 
 ## What It Does
 
-`/gsd quick` executes a focused, self-contained task without the full milestone/slice/plan ceremony. You describe what you want in plain English, and GSD creates a branch, dispatches the work to an agent, commits atomically, and writes a summary — all in one shot.
+`/gsd:quick` executes a focused, self-contained task without the full milestone/phase/plan ceremony. You describe what you want in plain English, and GSD spawns a planner agent to create a minimal plan, then an executor agent to implement it — with atomic commits and STATE.md tracking throughout.
 
 Use it when the change is well-understood, bounded, and doesn't need investigation or coordination across multiple concerns. Adding a button, fixing a label, updating a config value, writing a utility function — these are quick tasks. For anything that requires digging into root causes or touching multiple layers of the system, use the [full lifecycle](../fix-a-bug/) instead.
+
+Quick tasks live in `.planning/quick/` and are tracked separately from planned phases. They don't modify `ROADMAP.md`.
 
 ## Usage
 
 ```
-/gsd quick <task description>
+/gsd:quick [--full] <task description>
 ```
 
-Quotes are optional.
+Quotes are optional. If no description is provided, GSD will prompt you interactively.
 
 ```
-/gsd quick add a back-to-top button to recipe pages
-/gsd quick "fix the off-by-one in pagination"
-/gsd quick update the API timeout to 30 seconds
+/gsd:quick add a back-to-top button to recipe pages
+/gsd:quick "fix the off-by-one in pagination"
+/gsd:quick update the API timeout to 30 seconds
+/gsd:quick --full refactor the auth token refresh logic
 ```
+
+The `--full` flag enables plan-checking (up to 2 revision iterations) and post-execution verification via gsd-verifier. Use it when you want quality guarantees without full milestone ceremony.
 
 ## How It Works
 
 ### Execution Flow
 
-1. **Validate** — Checks that `.gsd/` exists. Fails fast with a clear error if the project hasn't been initialized.
-2. **Generate slug** — Lowercases and hyphenates the description, truncated to 40 characters.
-3. **Number the task** — Scans `.gsd/quick/` for existing directories and increments from the highest number found. Returns `1` if no quick tasks exist yet.
-4. **Create branch** — Creates `gsd/quick/<N>-<slug>`. If your working tree has uncommitted changes, GSD auto-commits them first with a `chore(QN): auto-commit after quick-task` message before switching. If branch creation fails for any reason, execution continues on the current branch with a warning.
-5. **Create task directory** — Creates `.gsd/quick/<N>-<slug>/` to hold the summary.
-6. **Dispatch** — Sends the quick-task prompt to the agent with your description, the task directory, branch name, summary path, task number, and date.
-7. **Execute** — The agent reads existing code, builds the real thing (no stubs), handles edge cases, writes or updates tests where appropriate, and commits atomically with conventional commit messages.
-8. **Write summary** — Agent writes `<N>-SUMMARY.md` to the task directory documenting what changed, files modified, and what was verified.
-9. **Update STATE.md** — Agent appends a row to the "Quick Tasks Completed" table in `.gsd/STATE.md` and updates the "Last activity" line.
+1. **Parse arguments** — Strips `--full` flag if present. If no description remains, prompts you interactively.
+2. **Initialize** — Runs `gsd-tools init quick`. Validates that `.planning/ROADMAP.md` exists — quick mode requires an active project. Generates a slug (lowercased, hyphenated, max 40 chars) and determines the next task number by scanning `.planning/quick/`.
+3. **Create task directory** — Creates `.planning/quick/<N>-<slug>/` to hold all artifacts.
+4. **Spawn planner** — Dispatches to gsd-planner (quick mode) with your description and STATE.md as context. Planner creates a focused `<N>-PLAN.md` with 1–3 atomic tasks.
+5. **(--full) Plan-checker loop** — gsd-plan-checker validates the plan. If issues are found, the planner revises — up to 2 iterations. After 2 failed iterations, you can force-proceed or abort.
+6. **Spawn executor** — gsd-executor reads the plan and STATE.md, implements the work, commits each task atomically, and writes `<N>-SUMMARY.md`.
+7. **(--full) Verification** — gsd-verifier checks the `must_haves` in the plan against the actual codebase and writes `<N>-VERIFICATION.md`.
+8. **Update STATE.md** — Appends a row to the "Quick Tasks Completed" table (with a Status column when `--full`). Updates the "Last activity" line.
+9. **Final commit** — Commits all artifacts: plan, summary, STATE.md, and (if `--full`) verification file.
 
 ### Flow Diagram
 
 ```mermaid
 flowchart TD
-    Start(["/gsd quick '...'"]) --> Validate{.gsd/ exists?}
-    Validate -->|No| Fail([Error: run /gsd first])
-    Validate -->|Yes| Slug[Generate slug + task number]
-    Slug --> Branch[Create gsd/quick/N-slug branch]
-    Branch --> TaskDir[Create task directory]
-    TaskDir --> Execute[Agent executes task]
-    Execute --> Summary[Write N-SUMMARY.md]
-    Summary --> Commit[Atomic commit]
-    Commit --> State[Update STATE.md table]
-    State --> Done([Ready to merge])
+    Start(["/gsd:quick '...'"]) --> Parse[Parse args / get description]
+    Parse --> Validate{ROADMAP.md exists?}
+    Validate -->|No| Fail([Error: run /gsd:new-project first])
+    Validate -->|Yes| Init[Generate slug + task number]
+    Init --> TaskDir[Create .planning/quick/N-slug/]
+    TaskDir --> Planner[Spawn gsd-planner → N-PLAN.md]
+    Planner --> FullCheck{--full?}
+    FullCheck -->|Yes| Checker[Spawn gsd-plan-checker]
+    Checker --> Issues{Issues found?}
+    Issues -->|Yes, iter < 2| Planner
+    Issues -->|Yes, iter ≥ 2| OfferChoice[Force proceed or abort]
+    Issues -->|No| Executor
+    FullCheck -->|No| Executor[Spawn gsd-executor → N-SUMMARY.md]
+    Executor --> FullVerify{--full?}
+    FullVerify -->|Yes| Verifier[Spawn gsd-verifier → N-VERIFICATION.md]
+    FullVerify -->|No| State
+    Verifier --> State[Update STATE.md table]
+    State --> Commit[Commit artifacts]
+    Commit --> Done([Quick task complete])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Fail fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Parse fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Validate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Slug fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Branch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Init fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style TaskDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Planner fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style FullCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Checker fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Issues fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style OfferChoice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Executor fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style FullVerify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Verifier fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style State fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
 ### Summary File Format
 
-The agent writes a numbered summary file (e.g., `1-SUMMARY.md`) to the task directory:
+The executor writes a numbered summary file (e.g., `1-SUMMARY.md`) to the task directory:
 
 ```markdown
 # Quick Task: add a back-to-top button to recipe pages
 
 **Date:** 2026-03-19
-**Branch:** gsd/quick/1-add-a-back-to-top-button-to-re
 
 ## What Changed
 - Added BackToTopButton component with smooth scroll
@@ -91,12 +110,24 @@ The agent writes a numbered summary file (e.g., `1-SUMMARY.md`) to the task dire
 
 ### STATE.md Tracking
 
-After completion, the agent updates `.gsd/STATE.md` with a new row in the "Quick Tasks Completed" table and updates the "Last activity" line. If the section doesn't exist yet, the agent creates it after the "Blockers/Concerns" section:
+After completion, the agent updates `.planning/STATE.md` with a new row in the "Quick Tasks Completed" table and updates the "Last activity" line. If the section doesn't exist yet, it is inserted after the "Blockers/Concerns" section.
+
+**Default mode** (no `--full`):
 
 ```markdown
+### Quick Tasks Completed
+
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | add a back-to-top button to recipe pages | 2026-03-19 | a1b2c3d | [1-add-a-back-to-top-button-to-re](./quick/1-add-a-back-to-top-button-to-re/) |
+```
+
+**Full mode** (`--full`) adds a Status column populated by the verifier result (`Verified`, `Needs Review`, or `Gaps`):
+
+```markdown
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 2 | refactor auth token refresh logic | 2026-03-20 | b2c3d4e | Verified | [2-refactor-auth-token-refresh-lo](./quick/2-refactor-auth-token-refresh-lo/) |
 ```
 
 ## What Files It Touches
@@ -105,23 +136,28 @@ After completion, the agent updates `.gsd/STATE.md` with a new row in the "Quick
 
 | File | Purpose |
 |------|---------|
-| `.gsd/quick/<N>-<slug>/` | Task directory created before dispatch |
-| `.gsd/quick/<N>-<slug>/<N>-SUMMARY.md` | Summary written by agent after execution |
-| `gsd/quick/<N>-<slug>` branch | Git branch for the change |
+| `.planning/quick/<N>-<slug>/` | Task directory created before dispatch |
+| `.planning/quick/<N>-<slug>/<N>-PLAN.md` | Plan created by gsd-planner |
+| `.planning/quick/<N>-<slug>/<N>-SUMMARY.md` | Summary written by gsd-executor |
+| `.planning/quick/<N>-<slug>/<N>-VERIFICATION.md` | Verification report written by gsd-verifier (`--full` only) |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/quick/` | Scanned to determine the next task number |
-| `.gsd/STATE.md` | Read before updating the quick tasks table |
+| `.planning/quick/` | Scanned to determine the next task number |
+| `.planning/ROADMAP.md` | Validated to exist before proceeding |
+| `.planning/STATE.md` | Read before updating the quick tasks table |
+| `CLAUDE.md` | Project-specific guidelines passed to planner and executor |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/quick/<N>-<slug>/<N>-SUMMARY.md` | Task summary written by agent |
-| `.gsd/STATE.md` | "Quick Tasks Completed" table row added; "Last activity" line updated |
+| `.planning/quick/<N>-<slug>/<N>-PLAN.md` | Task plan written by planner |
+| `.planning/quick/<N>-<slug>/<N>-SUMMARY.md` | Task summary written by executor |
+| `.planning/quick/<N>-<slug>/<N>-VERIFICATION.md` | Verification report (`--full` only) |
+| `.planning/STATE.md` | "Quick Tasks Completed" table row added; "Last activity" line updated |
 | Source files | Whatever the task requires |
 
 ## Examples
@@ -129,44 +165,67 @@ After completion, the agent updates `.gsd/STATE.md` with a new row in the "Quick
 **Scenario:** Cookmate recipe pages are long and users have to scroll back to the top manually. You want to add a "back to top" button.
 
 ```
-> /gsd quick add a back-to-top button to recipe pages
+> /gsd:quick add a back-to-top button to recipe pages
 ```
 
-GSD starts working immediately — no discussion, no research phase, no planning phase:
+GSD starts working immediately — no discussion, no research phase:
 
 ```
-● Quick task 1: add a back-to-top button to recipe pages
-  Directory: .gsd/quick/1-add-a-back-to-top-button-to-re
-  Branch: gsd/quick/1-add-a-back-to-top-button-to-re
+Creating quick task 1: add a back-to-top button to recipe pages
+Directory: .planning/quick/1-add-a-back-to-top-button-to-re
 
-● Switched to branch gsd/quick/1-add-a-back-to-top-button-to-re
-  ─────────────────────────────────────────────────────────
+Plan created: .planning/quick/1-add-a-back-to-top-button-to-re/1-PLAN.md
 
-  ✓ Created BackToTopButton component
-  ✓ Added to RecipePage layout
-  ✓ Smooth scroll with fade-in on scroll
-  ✓ Summary written to .gsd/quick/1-.../1-SUMMARY.md
-  ✓ STATE.md updated
+---
 
-  Quick task 1 complete.
+GSD > QUICK TASK COMPLETE
+
+Quick Task 1: add a back-to-top button to recipe pages
+
+Summary: .planning/quick/1-add-a-back-to-top-button-to-re/1-SUMMARY.md
+Commit: a1b2c3d
+
+---
+
+Ready for next task: /gsd:quick
 ```
 
-Once the agent finishes, review the diff and merge when satisfied:
+**Scenario:** You want the extra quality guarantees of plan-checking and verification:
 
-```bash
-git diff main
-git checkout main
-git merge gsd/quick/1-add-a-back-to-top-button-to-re
+```
+> /gsd:quick --full refactor the auth token refresh logic
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► QUICK TASK (FULL MODE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+◆ Plan checking + verification enabled
 ```
 
-GSD doesn't auto-merge quick branches — that's your call.
+After planning, checking, execution, and verification:
+
+```
+---
+
+GSD > QUICK TASK COMPLETE (FULL MODE)
+
+Quick Task 2: refactor the auth token refresh logic
+
+Summary: .planning/quick/2-refactor-auth-token-refresh-lo/2-SUMMARY.md
+Verification: .planning/quick/2-refactor-auth-token-refresh-lo/2-VERIFICATION.md (Verified)
+Commit: b2c3d4e
+
+---
+
+Ready for next task: /gsd:quick
+```
 
 ## Prompts Used
 
-- [`quick-task`](../../prompts/quick-task/) — Lightweight task execution prompt
+- [`quick-task`](../../prompts/quick-task/) — Quick task workflow prompt
 
 ## Related Commands
 
-- [`/gsd quick`](../../commands/quick/) — full command reference
-- [Recipe: Fix a Bug](../fix-a-bug/) — when the change needs investigation and planning
-- [`/gsd capture`](../../commands/capture/) — fire-and-forget thought capture for ideas to act on later
+- [`/gsd:quick`](../../commands/quick/) — Full command reference
+- [Recipe: Fix a Bug](../fix-a-bug/) — When the change needs investigation and planning
+- [`/gsd:capture`](../../commands/capture/) — Fire-and-forget thought capture for ideas to act on later
