@@ -5,6 +5,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 
 const REPO = "gsd-build/gsd-2";
 const API_BASE = "https://api.github.com";
@@ -93,6 +94,17 @@ export async function buildManifest(options = {}) {
     headSha = fs.readFileSync(cacheShaFile, "utf8").trim();
   }
 
+  // Capture installed gsd-pi version for impact analysis (export-diff fallback)
+  let gsdPiVersion = null;
+  try {
+    const out = execSync("npm list -g gsd-pi --json 2>/dev/null", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    const parsed = JSON.parse(out);
+    gsdPiVersion = parsed?.dependencies?.["gsd-pi"]?.version || null;
+  } catch {}
+
   // Build file map: only blobs (not trees)
   const files = {};
   for (const item of data.tree) {
@@ -105,6 +117,7 @@ export async function buildManifest(options = {}) {
     version: MANIFEST_VERSION,
     generatedAt: new Date().toISOString(),
     headSha,
+    gsdPiVersion,
     files,
   };
 

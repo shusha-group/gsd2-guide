@@ -166,12 +166,21 @@ async function main() {
     token,
   };
 
-  // Snapshot: save current manifest as previous before extraction overwrites it
+  // Snapshot: save current manifest + structured outputs as previous before extraction overwrites them
   const manifestPath = path.join(outputDir, "manifest.json");
   const prevManifestPath = path.join(outputDir, "previous-manifest.json");
   if (fs.existsSync(manifestPath)) {
     fs.copyFileSync(manifestPath, prevManifestPath);
     console.log("[orchestrator] Saved previous manifest snapshot\n");
+  }
+
+  // Snapshot structured outputs used by impact analysis
+  for (const name of ["commands.json", "prompts.json", "extensions.json", "skills.json"]) {
+    const src = path.join(outputDir, name);
+    const dst = path.join(outputDir, `previous-${name}`);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dst);
+    }
   }
 
   // Phase 1: Run local + GitHub extraction in parallel (independent)

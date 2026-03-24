@@ -29,9 +29,14 @@ import { detectChanges, resolveStalePages } from './lib/diff-sources.mjs';
 import { detectNewAndRemovedCommands, createNewPages, removePages, detectNewAndRemovedPrompts, createNewPromptPages, removePromptPages } from './lib/manage-pages.mjs';
 import { regeneratePage, findClaude } from './lib/regenerate-page.mjs';
 import { getStalePages, stampPages } from './check-page-freshness.mjs';
+import { analyzeImpact } from './lib/impact-analysis.mjs';
 
 const DIST_DIR = 'dist';
 const GENERATED_DIR = join('content', 'generated');
+
+// Shared state: impact analysis populates this so regenerate can consume it.
+// null = impact analysis hasn't run yet (fall back to full stale list).
+let impactFilteredPages = null;
 
 // ── Diff report step (runs between extract and build) ───────────────
 function runDiffReport() {
@@ -159,25 +164,65 @@ export async function runManagePrompts() {
   }
 }
 
-// ── Regenerate stale pages step ─────────────────────────────────────
-async function runRegenerateStale() {
-  const { stalePages, freshCount } = getStalePages();
+// ── Impact analysis step ─────────────────────────────────────────────────
+async function runImpactAnalysis() {
+  const { stalePages } = getStalePages();
 
   if (stalePages.length === 0) {
+    console.log('  ✓ No stale pages — nothing to analyse.');
+    impactFilteredPages = [];
+    return;
+  }
+
+  const { mustRegenerate, skipped, report } = analyzeImpact(stalePages);
+
+  if (report.length) {
+    for (const line of report) {
+      if (line) console.log(`  ${line}`);
+    }
+  }
+
+  if (skipped.length > 0) {
+    console.log(`\n  ✓ Skipping ${skipped.length} page(s) — no user-visible content change:`);
+    for (const { page, reason } of skipped) {
+      console.log(`    - ${page}: ${reason}`);
+    }
+  }
+
+  if (mustRegenerate.length > 0) {
+    console.log(`\n  ⚠ ${mustRegenerate.length} page(s) need regeneration:`);
+    for (const { page, reason } of mustRegenerate) {
+      console.log(`    - ${page}: ${reason}`);
+    }
+  }
+
+  console.log(`\n  Impact: ${mustRegenerate.length} to regenerate, ${skipped.length} skipped of ${stalePages.length} stale`);
+  impactFilteredPages = mustRegenerate.map(({ page, changedDeps }) => ({ page, changedDeps }));
+}
+
+// ── Regenerate stale pages step ─────────────────────────────────────
+async function runRegenerateStale() {
+  // Use impact-filtered list if available, otherwise fall back to full stale list
+  const pagesToRegenerate = impactFilteredPages !== null
+    ? impactFilteredPages
+    : getStalePages().stalePages;
+
+  if (pagesToRegenerate.length === 0) {
+    const { freshCount } = getStalePages();
     console.log(`  ✓ All ${freshCount} pages are current — no regeneration needed.`);
     return;
   }
 
   if (!findClaude()) {
-    console.log(`  ⚠ ${stalePages.length} stale page(s) found but claude CLI not available — skipping regeneration.`);
-    for (const { page, changedDeps } of stalePages) {
+    console.log(`  ⚠ ${pagesToRegenerate.length} page(s) need regeneration but claude CLI not available — skipping.`);
+    for (const { page, changedDeps } of pagesToRegenerate) {
       const depNames = changedDeps.map(f => f.split('/').pop());
       console.log(`    - ${page} (${depNames.join(', ')})`);
     }
     return;
   }
 
-  console.log(`  Regenerating ${stalePages.length} stale page(s)...\n`);
+  console.log(`  Regenerating ${pagesToRegenerate.length} page(s)...\n`);
 
   // Read page-source-map for dep resolution
   const mapPath = join(GENERATED_DIR, 'page-source-map.json');
@@ -186,7 +231,7 @@ async function runRegenerateStale() {
   let success = 0;
   let failed = 0;
 
-  for (const { page, changedDeps } of stalePages) {
+  for (const { page, changedDeps } of pagesToRegenerate) {
     const sourceFiles = pageSourceMap[page] || [];
     const depNames = changedDeps.map(f => f.split('/').pop());
     console.log(`    ${page} (${depNames.join(', ')})...`);
@@ -227,6 +272,7 @@ export const steps = [
   { name: 'update gsd-pi', cmd: 'npm i -g gsd-pi@latest', capture: false },
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
   { name: 'diff report', fn: runDiffReport },
+  { name: 'impact analysis', fn: runImpactAnalysis },
   { name: 'manage commands', fn: runManageCommands },
   { name: 'manage prompts', fn: runManagePrompts },
   { name: 'regenerate',  fn: runRegenerateStale },
