@@ -5,9 +5,9 @@ description: "Hard-steer plan documents during execution — register an overrid
 
 ## What It Does
 
-`/gsd steer` registers a plan override that changes the direction of ongoing work. You describe the change in plain English, and GSD saves it to `OVERRIDES.md` and injects it into all future task prompts. This is how you course-correct without stopping auto-mode.
+`/gsd steer` registers a plain-English override that changes the direction of ongoing work. GSD saves it to `.gsd/OVERRIDES.md`, injects it into all future task prompts, and tells the agent what to do next — all without stopping anything.
 
-The behavior differs depending on whether auto-mode is running. When active, the override is stored and the dispatch loop's first rule fires a `rewrite-docs` unit at the next cycle — that unit updates all active plan documents and marks the override resolved. When inactive, a `gsd-hard-steer` message instructs the agent to update plans directly in the current conversation.
+The behavior differs depending on whether auto-mode is running. When active, the dispatch loop's first rule detects the pending override at the next cycle and fires a `rewrite-docs` unit before any other work runs — that unit updates all active plan documents and marks the override resolved. When auto-mode is not running, the `gsd-hard-steer` message instructs the agent to update plans directly in the current conversation.
 
 Overrides are tagged with execution context — the active milestone, slice, and task IDs are recorded in the `Applied-at` field so the system knows exactly when and where the override was applied.
 
@@ -29,11 +29,11 @@ The description is plain English. Quotes are optional — everything after `stee
 
 ```mermaid
 flowchart TD
-    Start(["/gsd steer '...'"]) --> Scope[Derive context from active M/S/T]
+    Start(["/gsd steer '...'"]) --> Scope[Derive context via deriveState<br/>active M/S/T IDs]
     Scope --> Save[Append override to OVERRIDES.md<br/>with Scope: active]
     Save --> Mode{Auto-mode active?}
     Mode -->|Yes| Active[Send gsd-hard-steer message]
-    Active --> Rewrite[rewrite-docs unit queued<br/>before next task]
+    Active --> Rewrite[rewrite-docs unit fires at<br/>next dispatch cycle]
     Rewrite --> Resolved[Overrides marked resolved<br/>in OVERRIDES.md]
     Resolved --> Done([Override propagated])
     Mode -->|No| Inactive[Send gsd-hard-steer message]
@@ -41,22 +41,22 @@ flowchart TD
     Manual --> Done
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Mode fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Scope fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Mode fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Active fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Rewrite fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Resolved fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Inactive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Manual fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Override Registration
 
-1. **Context derivation** — The command calls `deriveState()` to get the active milestone, slice, and task IDs. These are stored in the `Applied-at` field as `M001/S01/T02` (or `none` for components without an active counterpart).
-2. **Append to OVERRIDES.md** — The override text, timestamp, and execution context are appended to `.gsd/OVERRIDES.md`. New overrides always start with `**Scope:** active` — this flag signals that the override hasn't been propagated yet.
-3. **Prompt injection** — Active overrides (scope `active`) are automatically injected into every future task prompt as an "Active Overrides" section that supersedes any conflicting plan content. This injection happens through the system context builder for each dispatched task.
+1. **Context derivation** — Calls `deriveState()` to get the active milestone, slice, and task IDs. These are stored in the `Applied-at` field as `M001/S01/T02` (or `none` for components without an active counterpart).
+2. **Append to OVERRIDES.md** — The override text, timestamp, and execution context are appended to `.gsd/OVERRIDES.md`. New overrides always start with `**Scope:** active` — this flag signals the override hasn't been propagated yet.
+3. **Prompt injection** — Active overrides (scope `active`) are automatically injected into every future task prompt as an "Active Overrides" section that supersedes any conflicting plan content. This injection is built by reading `OVERRIDES.md` at dispatch time for each unit.
 
 ### Override Entry Format
 
@@ -72,17 +72,19 @@ Each override is stored as a markdown section. New files start with a `# GSD Ove
 ---
 ```
 
-After the `rewrite-docs` unit runs, `**Scope:** active` is changed to `**Scope:** resolved`. The `rewrite-docs` unit itself performs this change as its final step — once no `**Scope:** active` entries remain, the dispatch loop moves on to the next task.
+After the `rewrite-docs` unit runs, `**Scope:** active` is changed to `**Scope:** resolved`. The post-unit handler calls `resolveAllOverrides()` (a global regex replace across `OVERRIDES.md`) immediately after the unit completes, then resets the attempt counter to zero.
 
 ### Auto-mode Active Path
 
 When auto-mode is running, the command sends a `gsd-hard-steer` message to the active agent. This message:
 
-- Tells the agent the override has been saved and will be injected into all future task prompts
+- Confirms the override has been saved and will be injected into all future task prompts
 - Instructs the agent to finish current work respecting the override
-- Triggers a **`rewrite-docs` unit** at the next dispatch cycle — `rewrite-docs` is the first rule in the dispatch table and fires whenever active overrides exist, reading `OVERRIDES.md` and propagating changes across all active plan documents before any other work runs
+- Notes that a document rewrite unit will run before the next task
 
-The `rewrite-docs` unit updates these document types based on what the override affects:
+The dispatch loop's **first rule** is `rewrite-docs (override gate)`. At every cycle, it calls `loadActiveOverrides()` — if any exist, it dispatches a `rewrite-docs` unit before any other work. The `rewrite-docs` unit reads `OVERRIDES.md` and propagates changes across all active plan documents.
+
+The unit updates these document types based on what the override affects:
 
 | Document | What changes |
 |----------|-------------|
@@ -92,10 +94,9 @@ The `rewrite-docs` unit updates these document types based on what the override 
 | `REQUIREMENTS.md` | Updates requirement descriptions if the override changes what "done" means. |
 | `PROJECT.md` | Updated only if the override changes project-level facts. |
 | `<MID>-ROADMAP.md` | Included in the document list; updated if the override changes roadmap scope or structure. |
+| `<MID>-CONTEXT.md` | Listed as reference only — never modified by `rewrite-docs`. |
 
-The milestone `CONTEXT.md` file is listed as reference-only and is never modified by `rewrite-docs`.
-
-A circuit breaker limits rewrite attempts to 3 per override set — if the unit fails to complete after 3 tries, all active overrides are force-resolved (a regex replace of `**Scope:** active` → `**Scope:** resolved` across the entire file) to prevent an infinite rewrite loop.
+A circuit breaker limits rewrite attempts to 3 per override set (`MAX_REWRITE_ATTEMPTS = 3`). If the dispatch rule fires 3 times without the unit successfully resolving the overrides, it calls `resolveAllOverrides()` directly — force-flipping all `**Scope:** active` entries to `resolved` via regex — and skips dispatching the unit entirely, preventing an infinite rewrite loop.
 
 ### Auto-mode Inactive Path
 
@@ -164,13 +165,15 @@ User-issued overrides that supersede plan document content.
 ---
 ```
 
+After `rewrite-docs` completes, `**Scope:** active` becomes `**Scope:** resolved` and the entry is preserved for the project history.
+
 ## Prompts Used
 
 - [`rewrite-docs`](../../prompts/rewrite-docs/) — Document rewrite prompt used to propagate overrides across plan files
 
 ## Related Commands
 
-- [`/gsd auto`](../auto/) — Auto-mode that respects overrides
+- [`/gsd auto`](../auto/) — Auto-mode that detects and processes active overrides at every dispatch cycle
 - [`/gsd capture`](../capture/) — Lighter-weight thought capture (no plan rewrite)
 - [`/gsd queue`](../queue/) — Reorder or add future milestones
 - [`/gsd discuss`](../discuss/) — Discuss changes before committing to an override

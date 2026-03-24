@@ -12,7 +12,7 @@ This is GSD's entry point for automation — CI pipelines that run auto-mode on 
 ## Usage
 
 ```bash
-gsd headless [subcommand] [flags]
+gsd headless [flags] [subcommand] [args...]
 ```
 
 Any `/gsd` subcommand works as a positional argument. If no subcommand is given, it defaults to `auto`.
@@ -198,7 +198,16 @@ The headless runner spawns GSD with `--mode rpc`, creating a structured communic
 
 ### Auto-Response
 
-When the child process sends an interactive prompt (e.g., confirmation dialogs, next-action choices), the headless controller automatically responds with the recommended action. This keeps execution flowing without human intervention. Quick commands (`status`, `doctor`, `export`, `steer`, etc.) resolve on the first `agent_end` event rather than waiting for a terminal notification.
+When the child process sends an interactive prompt, the headless controller applies built-in defaults to keep execution flowing without human intervention:
+
+| Prompt type | Default behaviour |
+|-------------|------------------|
+| `select` | Picks the first available option |
+| `confirm` | Auto-confirms |
+| `input` | Submits an empty string |
+| `editor` | Returns the prefill text, or empty if none |
+
+Quick commands (`status`, `doctor`, `export`, `steer`, etc.) resolve on the first `agent_end` event rather than waiting for a terminal notification. Use `--answers` to override these defaults with specific answers for predictable decision trees.
 
 ### Completion Detection
 
@@ -249,16 +258,66 @@ On failure, the last 5 events are also printed to aid diagnostics.
 ```
 
 - **`questions`** — Map of question ID to the label of the answer to select. Multi-select questions accept an array.
-- **`secrets`** — Environment variables injected into the RPC child process (useful for API keys that shouldn't appear in shell history).
+- **`secrets`** — Environment variables injected into the RPC child process. The child's `checkExistingEnvKeys()` detects them in `process.env` and marks them as already configured — no interactive prompt is shown. Secrets are never logged or included in event streams.
 - **`defaults.strategy`** — What to do when a question isn't in the file: `"first_option"` (default) selects the first available option; `"cancel"` cancels the prompt.
 
-The injector only handles `select`-type prompts. Confirmations and text inputs are handled by the standard auto-responder.
+The injector correlates `tool_execution_start` events for `ask_user_questions` with subsequent `extension_ui_request` events. It handles out-of-order events via a deferred processing queue with a 500ms timeout.
 
 ### Supervised Mode
 
 `--supervised` turns headless into an interactive orchestrator bridge. Rather than auto-responding to every prompt, the headless process forwards `extension_ui_request` events to the outer process via stdout JSONL, and waits for responses on stdin. If no response arrives within `--response-timeout` milliseconds, it falls back to auto-response.
 
-This enables external orchestrators to make real decisions for some prompts while letting the auto-responder handle routine ones.
+Both `--answers` and `--supervised` can be active simultaneously: the answer injector tries first, supervised mode handles unmatched prompts next, and the auto-responder catches any remaining ones.
+
+### Multi-Session Orchestration
+
+Headless supports concurrent parallel workers for multi-milestone execution. Workers coordinate through file-based IPC in `.gsd/parallel/` — no sockets or ports.
+
+**Spawning workers:**
+
+```bash
+GSD_MILESTONE_LOCK=M001 GSD_PARALLEL_WORKER=1 \
+  gsd headless --json auto 2>logs/M001.log &
+```
+
+Each worker isolates its state via `GSD_MILESTONE_LOCK=<MID>` — state derivation only sees its assigned milestone. Workers write heartbeat files atomically to `.gsd/parallel/<milestoneId>.status.json`:
+
+```json
+{
+  "milestoneId": "M001",
+  "pid": 12345,
+  "state": "running",
+  "currentUnit": { "type": "task", "id": "T03", "startedAt": 1710000000000 },
+  "completedUnits": 7,
+  "cost": 1.23,
+  "lastHeartbeat": 1710000015000,
+  "startedAt": 1710000000000,
+  "worktreePath": ".gsd/worktrees/M001"
+}
+```
+
+**Worker states:** `running`, `paused`, `stopped`, `error`
+
+**Monitoring workers:**
+
+```bash
+for f in .gsd/parallel/*.status.json; do
+  jq -r '[.milestoneId, .state, (.currentUnit.id // "idle"), "\(.cost)$"] | join("\t")' "$f"
+done
+```
+
+**Sending signals:** write a signal file — the worker consumes and deletes it on the next dispatch cycle:
+
+```bash
+echo '{"signal":"pause","sentAt":'$(date +%s000)',"from":"coordinator"}' \
+  > .gsd/parallel/M001.signal.json
+```
+
+**Signal commands:** `pause`, `resume`, `stop`, `rebase`
+
+**Liveness:** a session is stale when its PID is dead (`kill -0 $pid` fails) or its `lastHeartbeat` is older than 30 seconds. Use `gsd headless query` for an instant aggregate cost snapshot across all workers.
+
+See [`/gsd parallel`](../parallel/) for the built-in parallel orchestration commands.
 
 ## Exit Codes
 
@@ -276,6 +335,13 @@ This enables external orchestrators to make real decisions for some prompts whil
 |------|---------|
 | `.gsd/runtime/headless-context.md` | Temp file written for `new-milestone` — passes the context spec to the RPC child. Deleted by the child after reading. |
 | `.gsd/` | Bootstrapped if missing during `new-milestone` |
+| `.gsd/PROJECT.md` | Written by `new-milestone` — full project vision |
+| `.gsd/REQUIREMENTS.md` | Written by `new-milestone` — capability contract |
+| `.gsd/DECISIONS.md` | Seeded by `new-milestone` — initial decisions log |
+| `.gsd/milestones/<MID>/<MID>-CONTEXT.md` | Written by `new-milestone` — milestone scope and assumptions |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Written by `new-milestone` — slice breakdown with checkboxes |
+| `.gsd/milestones/<MID>/slices/` | Created by `new-milestone` for subsequent slice planning |
+| `.gsd/parallel/<MID>.status.json` | Written by parallel workers — heartbeat and state |
 
 ### Reads
 
@@ -284,6 +350,12 @@ This enables external orchestrators to make real decisions for some prompts whil
 | `.gsd/` | Checked for existence before spawning RPC child (except `new-milestone`) |
 | `--answers <file>` | Answer injection JSON file, if provided |
 | `--context <file>` | Context spec for `new-milestone`, or stdin if `-` |
+
+### Writes
+
+| File | Purpose |
+|------|---------|
+| `.gsd/parallel/<MID>.signal.json` | Written by external coordinators to send signals to workers |
 
 ## Examples
 
@@ -313,6 +385,8 @@ Stream only specific event types:
 gsd headless --events tool_execution_start,agent_end auto
 ```
 
+Available event types: `agent_start`, `agent_end`, `tool_execution_start`, `tool_execution_end`, `tool_execution_update`, `extension_ui_request`, `message_start`, `message_end`, `message_update`, `turn_start`, `turn_end`
+
 Run a specific dispatch phase:
 
 ```bash
@@ -331,6 +405,17 @@ Pre-supply answers for a non-interactive setup wizard:
 gsd headless --answers answers.json new-milestone --context brief.md --auto
 ```
 
+Poll-and-react loop (no LLM cost between checks):
+
+```bash
+PHASE=$(gsd headless query | jq -r '.state.phase')
+case "$PHASE" in
+  complete) echo "Done" ;;
+  blocked)  echo "Needs intervention" ;;
+  *)        gsd headless next ;;
+esac
+```
+
 ## Prompts Used
 
 - [`discuss-headless`](../../prompts/discuss-headless/) — Non-interactive milestone creation prompt
@@ -339,5 +424,6 @@ gsd headless --answers answers.json new-milestone --context brief.md --auto
 
 - [`/gsd auto`](../auto/) — Interactive auto-mode (TUI version)
 - [`/gsd new-milestone`](../new-milestone/) — Interactive milestone creation
+- [`/gsd parallel`](../parallel/) — Built-in parallel milestone orchestration
 - [CLI Flags](../cli-flags/) — All command-line flags for GSD
 - [`/gsd doctor`](../doctor/) — Health checks (can be run headless)

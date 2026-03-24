@@ -114,6 +114,7 @@ export default defineConfig({
             {
               label: 'Reference',
               items: [
+            { label: '/gsd fast', link: '/commands/fast/' },
                 { label: 'Keyboard Shortcuts', link: '/commands/keyboard-shortcuts/' },
                 { label: 'CLI Flags', link: '/commands/cli-flags/' },
                 { label: 'Headless Mode', link: '/commands/headless/' },

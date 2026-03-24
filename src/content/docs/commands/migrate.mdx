@@ -82,7 +82,7 @@ Scans the `.planning/` directory for structural issues. Issues are classified as
 Reads the `.planning/` directory into a typed in-memory representation. The parser handles all subdirectories and file naming conventions used by older GSD versions:
 
 - **Top-level files** — `PROJECT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `STATE.md`, `config.json`
-- **`phases/NN-slug/`** — directories named `NN-slug` (e.g., `29-auth-system`) or `NN.N-slug` (decimal for inserted phases). Within each phase: plan files (`29-01-PLAN.md`) with YAML frontmatter and XML-in-markdown sections (`<objective>`, `<tasks>`, `<context>`, `<verification>`), summary files (`29-01-SUMMARY.md`) with YAML frontmatter, research files (any filename containing `research`), and verification files (any filename containing `verification`)
+- **`phases/NN-slug/`** — directories named `NN-slug` (e.g., `29-auth-system`) or `NN.N-slug` (decimal for inserted phases). Directories with a leading `.` (e.g., `.archive/`) are skipped. Within each phase: plan files (`29-01-PLAN.md`) with YAML frontmatter and XML-in-markdown sections (`<objective>`, `<tasks>`, `<context>`, `<verification>`, `<success_criteria>`), summary files (`29-01-SUMMARY.md`) with YAML frontmatter, research files (any filename containing `research`), and verification files (any filename containing `verification`)
 - **`quick/NNN-slug/`** — quick task directories with `NNN-PLAN.md` and `NNN-SUMMARY.md`
 - **`milestones/`** — milestone-level files like `v2.2-ROADMAP.md` and `v2.2-REQUIREMENTS.md`
 - **`research/`** — top-level research files
@@ -123,6 +123,10 @@ Within each milestone, **phases become slices** and **plan files become tasks**:
 | `STATE.md` | `STATE.md` (stub — recomputed by `deriveState()`) |
 | Key decisions from phase summaries | `DECISIONS.md` |
 
+Task titles are derived from the plan's YAML frontmatter `phase` and `plan` fields (e.g., `"29 01"`). If those fields are missing, the title falls back to `"Plan NN"`.
+
+Research files within each phase are consolidated into a single blob before writing. Files are sorted in a preferred order — `SUMMARY.md`, `ARCHITECTURE.md`, `STACK.md`, `FEATURES.md`, `PITFALLS.md` first, then all remaining files alphabetically.
+
 Requirement statuses from the old format are normalized: `complete`, `completed`, `done`, and `shipped` all map to `validated`. The statuses `active`, `validated`, and `deferred` are kept as-is. All other unrecognised statuses (including `out-of-scope`) default to `active`.
 
 `DECISIONS.md` is always written. When phase summaries contain `key-decisions` frontmatter entries, they are aggregated into bullet-list form. If no decisions are found, the file is seeded with a standard empty decision-register table.
@@ -143,7 +147,7 @@ The preview is shown via an interactive confirmation UI. You can proceed or canc
 
 Creates the `.gsd/` directory and writes all transformed files. Reports the total file count on completion.
 
-For fully-completed milestones (all slices done), the writer also produces a `M001-VALIDATION.md` stub (so `deriveState()` doesn't enter the validating-milestone phase for historical milestones) and a `M001-SUMMARY.md` stub. Research and summary files are skipped when `null` — no empty stubs are written.
+For fully-completed milestones (all slices done), the writer also produces a `M001-VALIDATION.md` stub (with `verdict: pass` and `migrated: true` frontmatter, so `deriveState()` doesn't enter the validating-milestone phase for historical milestones) and a `M001-SUMMARY.md` stub. Research and summary files are skipped when `null` — no empty stubs are written.
 
 ### Optional Agent Review
 

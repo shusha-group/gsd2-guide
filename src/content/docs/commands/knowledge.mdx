@@ -5,7 +5,7 @@ description: "Add persistent project knowledge — record rules, patterns, and l
 
 ## What It Does
 
-`/gsd knowledge` appends an entry to `.gsd/KNOWLEDGE.md`. This file is injected into both the base system context and each individual unit prompt — research, planning, execution, slice completion, and more — so rules, patterns, and lessons you add here influence all future agent work without needing to repeat them.
+`/gsd knowledge` appends an entry to `.gsd/KNOWLEDGE.md`. This file is injected into both the base system context and each individual unit prompt — research, planning, execution, slice completion, milestone completion, reassess, and more — so rules, patterns, and lessons you add here influence all future agent work without needing to repeat them.
 
 Each entry is typed as a `rule`, `pattern`, or `lesson` and assigned an auto-incrementing ID (`K001`, `P001`, `L001`) scoped to the active milestone and slice. The scope helps future agents understand the context where the knowledge was discovered.
 
@@ -35,8 +35,30 @@ Where `<type>` is one of:
 
 ### Entry Flow
 
+```mermaid
+flowchart TD
+    Start(["/gsd knowledge rule|pattern|lesson <text>"]) --> ParseArgs[Parse type and description text]
+    ParseArgs --> ValidType{Valid type?}
+    ValidType -->|No| ShowUsage([Show usage hint])
+    ValidType -->|Yes| HasText{Has description?}
+    HasText -->|No| ShowTypeHint([Show per-type usage hint])
+    HasText -->|Yes| DeriveScope[Derive scope via deriveState]
+    DeriveScope --> AppendKnowledge[appendKnowledge — insert table row]
+    AppendKnowledge --> Notify([Notify: Added type to KNOWLEDGE.md])
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ValidType fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style HasText fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ShowUsage fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ShowTypeHint fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Notify fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ParseArgs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DeriveScope fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AppendKnowledge fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
 1. **Parse arguments** — Extracts the type (`rule`, `pattern`, or `lesson`) and the description text. Shows usage help if either is missing or the type is invalid.
-2. **Derive scope** — Reads the current project state to determine the active milestone and slice. The scope is formatted as `M001/S02`, `M001`, or `global` if no milestone is active.
+2. **Derive scope** — Reads the current project state to determine the active milestone and slice. The scope is formatted as `M001/S01`, `M001`, or `global` if no milestone is active.
 3. **Append to KNOWLEDGE.md** — Calls `appendKnowledge()` which inserts a new table row with an auto-incrementing ID into the appropriate section of the file.
 
 ### File Structure
@@ -53,7 +75,7 @@ Agents read this before every unit. Add entries when you discover something wort
 
 | # | Scope | Rule | Why | Added |
 |---|-------|------|-----|-------|
-| K001 | M001/S02 | Always use parameterized queries | — | manual |
+| K001 | M001/S01 | Always use parameterized queries | — | manual |
 
 ## Patterns
 
@@ -88,9 +110,25 @@ Entries are never removed or modified. If a rule becomes obsolete, add a new ent
 
 KNOWLEDGE.md is surfaced to agents in two ways:
 
-**Base system context** — At the start of every agent session, the file is injected under a `[PROJECT KNOWLEDGE — Rules, patterns, and lessons learned]` block, appended after the GSD persona and preferences.
+**Base system context** — At the start of every agent session, the file is read from disk and injected under a `[PROJECT KNOWLEDGE — Rules, patterns, and lessons learned]` block, appended after preferences and before memory/skills context. This gives every agent session passive awareness of all recorded knowledge.
 
-**Unit prompts** — The file is also inlined directly into the prompt for each unit: research, planning, task execution, slice completion, milestone completion, and more. This means agents see the knowledge both globally and in context of the specific work they're about to do.
+**Unit prompts** — The file is also inlined directly into the prompt for each unit. Most unit types (research, plan milestone, research slice, plan slice, complete slice, complete milestone, validate milestone, reassess roadmap) use a simple full-file inline. The execute-task prompt uses **smart chunking**: if KNOWLEDGE.md exceeds 3,000 characters, it's truncated at a section boundary rather than cut off mid-entry, with the task and slice titles used as relevance hints.
+
+The following unit types inject KNOWLEDGE.md:
+
+| Unit | Injection method |
+|------|-----------------|
+| Research milestone | Full file inline |
+| Plan milestone | Full file inline |
+| Research slice | Full file inline |
+| Plan slice | Full file inline |
+| Execute task | Smart-chunked (3,000-char threshold, query = task + slice title) |
+| Complete slice | Full file inline |
+| Complete milestone | Full file inline |
+| Validate milestone | Full file inline |
+| Reassess roadmap | Full file inline |
+
+Replan-slice and discuss-milestone do not inject KNOWLEDGE.md.
 
 If `.gsd/KNOWLEDGE.md` doesn't exist, both injection points are silently skipped — no error, no empty block. The file only appears in prompts once at least one entry has been added.
 

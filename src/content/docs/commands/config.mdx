@@ -9,7 +9,7 @@ description: "Tool API key wizard — configure search engines and context tools
 
 Keys are saved to `~/.gsd/agent/auth.json` and immediately activated — no restart needed. At startup, GSD automatically loads any saved keys from `auth.json` into the environment, but only if the variable isn't already set by other means (shell exports, `.env` files, etc. take precedence).
 
-After saving any changes, GSD reloads extensions automatically so new credentials are active in the current session.
+After saving any changes, GSD waits for the current operation to idle, then reloads extensions automatically so new credentials are active in the current session.
 
 `/gsd config` covers tool API keys only. For LLM providers (Anthropic, OpenAI, etc.), remote integrations (Discord, Slack, Telegram), and full per-key management (add, remove, test, rotate), use [`/gsd keys`](../keys/) instead. For workflow preferences — model selection, timeouts, git configuration — use [`/gsd prefs`](../prefs/).
 
@@ -25,8 +25,8 @@ No arguments — the wizard is fully interactive.
 
 ```mermaid
 flowchart TD
-    Start(["/gsd config"]) --> Load[Load auth.json]
-    Load --> Status[Show current tool status]
+    Start(["/gsd config"]) --> LoadAuth[Load auth.json]
+    LoadAuth --> Status[Show current tool status]
     Status --> Loop{Select a tool}
     Loop -->|tool selected| Input[Prompt for API key]
     Input --> Save[Save to auth.json]
@@ -34,7 +34,8 @@ flowchart TD
     Activate --> UpdateLabel[Update option label to configured ✓]
     UpdateLabel --> Loop
     Loop -->|done / escape| Changed{Any changes?}
-    Changed -->|yes| Reload[Reload extensions]
+    Changed -->|yes| Idle[Wait for idle]
+    Idle --> Reload[Reload extensions]
     Reload --> Confirm[Show confirmation]
     Confirm --> End([Done])
     Changed -->|no| End
@@ -42,15 +43,16 @@ flowchart TD
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Loop fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Changed fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Load fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style End fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style LoadAuth fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Status fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Input fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Activate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style UpdateLabel fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Idle fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Reload fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Confirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style End fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Wizard Flow
@@ -59,7 +61,7 @@ flowchart TD
 2. **Show status** — Displays a summary of all configurable tools with ✓ (configured) or ✗ (not set) for each, including the dashboard URL for any unconfigured tool.
 3. **Select loop** — Presents the tool list as a select menu. Choose a tool to configure it, or press Escape / select "(done)" to exit.
 4. **Key input** — For the selected tool, prompts to paste the API key. Shows the key's dashboard URL as a hint.
-5. **Save and activate** — The key is written to `auth.json` and immediately set as an environment variable in the current process. The option label updates to show "(configured ✓)".
+5. **Save and activate** — The key is written to `auth.json` as `{ type: "api_key", key }` and immediately set as an environment variable in the current process. The option label updates to show "(configured ✓)".
 6. **Reload** — Once the loop exits, if any keys changed, GSD waits for the current operation to idle, then reloads extensions so the new credentials are active immediately.
 
 ### Configurable Tools

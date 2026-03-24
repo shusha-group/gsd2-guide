@@ -7,15 +7,17 @@ description: "Non-interactive milestone creation prompt — creates a full GSD m
 
 `discuss-headless` is the automated counterpart to the interactive `discuss` prompt. Where `discuss` opens a back-and-forth conversation, `discuss-headless` accepts a pre-written specification document and works through the full milestone creation ceremony silently — no questions, no clarification rounds, no wrapping gate. It is designed for automated pipelines that need discussion-style reasoning and artifact production without any user interaction in the loop.
 
-The prompt executes a five-step flow: reflect on the specification to surface a concrete summary, investigate the codebase briefly (limited to 5-6 tool calls), make explicit decisions for any gaps or ambiguities, assess scope to determine single vs. multi-milestone, and then write artifacts. Any judgment calls made during that process are documented as assumptions in the context file, so a future agent or human reviewer can audit exactly what choices were made and why. The prompt explicitly prohibits asking the user questions — if information is missing from the specification, the prompt infers the most sensible default and documents it.
+The prompt executes a five-step flow: reflect on the specification to surface a concrete summary, investigate the codebase briefly (limited to 5–6 tool calls), make explicit decisions for any gaps or ambiguities, assess scope to determine single vs. multi-milestone, and then write artifacts. Any judgment calls made during that process are documented as assumptions in the context file, so a future agent or human reviewer can audit exactly what choices were made and why. The prompt explicitly prohibits asking the user questions — if information is missing from the specification, the prompt infers the most sensible default and documents it.
 
-Artifact output mirrors the interactive `discuss` flow exactly: `PROJECT.md`, `REQUIREMENTS.md`, a context file, a roadmap, and seeded `DECISIONS.md` entries. For multi-milestone visions, the prompt calls `gsd_generate_milestone_id` for each milestone, writes full context for the primary, and produces rich context files for each remaining milestone so future sessions can pick them up without needing the original conversation. The prompt ends by saying exactly `"Milestone {{milestoneId}} ready."` — the phrase that triggers auto-mode detection downstream.
+The prompt also enforces an **anti-reduction rule**: if the specification describes a big vision, the full vision is planned. Scope is never quietly trimmed. Complex or risky work is phased into later milestones rather than cut.
+
+Artifact output mirrors the interactive `discuss` flow exactly: `PROJECT.md`, `REQUIREMENTS.md`, a context file, a roadmap, and seeded `DECISIONS.md` entries. For multi-milestone visions, the prompt calls `gsd_milestone_generate_id` for each milestone, writes full context for the primary, and produces rich context files for each remaining milestone so future sessions can pick them up without needing the original conversation. Each remaining milestone context includes `depends_on` frontmatter so the state machine can determine execution order. The prompt ends by saying exactly `"Milestone {milestoneId} ready."` — the phrase that triggers auto-mode detection downstream.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    HeadlessCommand["/headless command"] --> DiscussHeadless["discuss-headless"]
+    HeadlessCommand["/gsd headless command"] --> DiscussHeadless["discuss-headless"]
     DiscussHeadless --> Investigation["brief codebase investigation"]
     Investigation --> Artifacts["write PROJECT / REQUIREMENTS / ROADMAP"]
     Artifacts --> AutoStart["auto-mode starts"]
@@ -27,17 +29,17 @@ flowchart TD
     style AutoStart fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-`discuss-headless` runs once per session, invoked by the `/headless` command. It replaces the interactive discussion ceremony entirely — the specification document provided via `seedContext` plays the role of the user. After artifacts are written the session ends and auto-mode begins, making this prompt the entry point for fully automated GSD project creation.
+`discuss-headless` runs once per session, invoked by the `/gsd headless` command. It replaces the interactive discussion ceremony entirely — the specification document provided via `seedContext` plays the role of the user. After artifacts are written the session ends and auto-mode begins, making this prompt the entry point for fully automated GSD project creation.
 
 ## Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `seedContext` | Initial context or question text that seeds the headless discussion without requiring interactive user input | Yes |
-| `milestoneId` | Current active milestone identifier for scoping the discussion | Yes |
+| `seedContext` | Initial context or specification text that seeds the headless discussion without requiring interactive user input | Yes |
+| `milestoneId` | Current active milestone identifier for scoping the discussion and naming artifacts | Yes |
 | `inlinedTemplates` | Pre-assembled block of GSD templates for reference during the headless discussion session | Yes |
-| `contextPath` | File path to a context document providing background for the headless discussion | Yes |
-| `roadmapPath` | File path to the project roadmap for reference | Yes |
+| `contextPath` | File path to the context document to write (e.g. `M001-CONTEXT.md`) | Yes |
+| `roadmapPath` | File path to the roadmap document to write (e.g. `M001-ROADMAP.md`) | Yes |
 | `commitInstruction` | Instruction block telling the headless agent how to commit GSD state changes at session end | Yes |
 | `multiMilestoneCommitInstruction` | Extended commit instruction used when the discussion spans multiple milestones | Yes |
 

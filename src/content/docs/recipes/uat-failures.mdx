@@ -5,12 +5,13 @@ description: "Step-by-step guide to handling UAT failures in GSD — when a slic
 
 ## When to Use This
 
-You're running GSD auto-mode and a slice completes all its tasks, but the UAT (User Acceptance Test) step fails or surfaces checks for manual review. Auto-mode pauses and shows the failure details — it doesn't automatically replan or retry. This recipe walks through how to read the failure, understand your options, and get the pipeline moving again.
+You're running GSD auto-mode and a slice completes all its tasks, but the UAT (User Acceptance Test) step fails or surfaces checks requiring human follow-up. Auto-mode pauses and shows the failure details — it doesn't automatically replan or retry. This recipe walks through how to read the failure, understand your options, and get the pipeline moving again.
 
 This covers three UAT pause scenarios:
-- **Artifact-driven UAT fails** — automated checks ran and one or more returned FAIL
-- **Artifact-driven UAT partial** — some checks passed, some failed; auto-mode pauses for investigation
-- **Non-artifact-driven UAT** — visual tests, live-runtime checks, or manual flows that can't be mechanically executed; auto-mode surfaces them for you to perform manually
+
+- **Automated UAT fails** — GSD ran the checks mechanically (`artifact-driven`, `browser-executable`, or `runtime-executable` mode) and one or more returned FAIL or the overall verdict is PARTIAL
+- **Live/mixed UAT pauses for review** — auto-mode dispatches the `run-uat` unit but immediately pauses for UAT modes that require live app access or human judgment (`live-runtime`, `mixed`, `human-experience`)
+- **Human-experience UAT** — GSD automates what it can, marks taste-based or subjective checks as `NEEDS-HUMAN`, and writes a PARTIAL verdict; you review the result and decide whether to accept or fix
 
 ## Prerequisites
 
@@ -46,24 +47,30 @@ GSD finishes executing T01 (build search API), T02 (build search UI), and T03 (a
 
 ### 2. Auto-mode runs UAT
 
-After `complete-slice` finishes, GSD automatically dispatches a `run-uat` unit. Because `S01-UAT.md` is `artifact-driven`, the runner executes every check mechanically — shell commands, `grep` checks, file reads, script invocations — and records the actual result and a PASS or FAIL verdict for each. The overall result is PASS (all checks passed), FAIL (one or more failed), or PARTIAL (some passed, some failed).
+After `complete-slice` finishes, GSD automatically dispatches a `run-uat` unit. The runner examines `S01-UAT.md` to determine the UAT mode, then executes checks accordingly.
 
-In this case, the UAT includes a check for special characters in search queries. That check fails:
+**Automated modes** (`artifact-driven`, `browser-executable`, `runtime-executable`) run checks mechanically and write a result file before auto-mode checks whether to advance. GSD pauses only if the verdict is not PASS.
+
+**Live and experience modes** (`live-runtime`, `mixed`, `human-experience`) cause auto-mode to pause immediately after dispatch — the unit runs while paused, and you can watch it execute or wait for the result file to appear.
+
+In this scenario, `S01-UAT.md` is `artifact-driven`. The runner executes every check with shell commands, `grep`, file reads, and script invocations, then records the evidence mode, actual result, and a PASS, FAIL, or NEEDS-HUMAN verdict for each check. The overall result is PASS (all checks passed), FAIL (one or more failed), or PARTIAL (some passed, some failed or require human judgment).
+
+The UAT includes a check for special characters in search queries. That check fails:
 
 ```
-| Check                              | Result | Notes                                    |
-|------------------------------------|--------|------------------------------------------|
-| Search returns results for "pasta" | PASS   | 3 results returned                       |
-| Search handles pagination          | PASS   | Page 2 shows next batch                  |
-| Search for "Grandma's Cookies"     | FAIL   | SQL error: unterminated string literal    |
-| Search for "Mac & Cheese"          | FAIL   | Returns 0 results, expected 1            |
+| Check                              | Mode     | Result | Notes                                    |
+|------------------------------------|----------|--------|------------------------------------------|
+| Search returns results for "pasta" | artifact | PASS   | 3 results returned                       |
+| Search handles pagination          | artifact | PASS   | Page 2 shows next batch                  |
+| Search for "Grandma's Cookies"     | artifact | FAIL   | SQL error: unterminated string literal   |
+| Search for "Mac & Cheese"          | artifact | FAIL   | Returns 0 results, expected 1            |
 ```
 
 GSD writes the result to `S01-UAT-RESULT.md` with verdict: **FAIL**.
 
 ### 3. Auto-mode pauses
 
-When UAT verdict is FAIL, PARTIAL, or `human-review`, auto-mode **pauses** — it does not automatically replan or retry. You'll see output like:
+When UAT verdict is FAIL or PARTIAL, auto-mode **pauses** — it does not automatically replan or retry. You'll see output like:
 
 ```
 ● UAT result: FAIL — S01 (Recipe Search)
@@ -83,9 +90,9 @@ date: 2025-01-15T14:30:00.000Z
 ---
 ```
 
-followed by the checks table and a summary of what failed.
+followed by the checks table (with `Check | Mode | Result | Notes` columns) and a summary of what failed.
 
-Non-artifact-driven UAT (live-runtime, visual, manual flows) also pauses auto-mode — but instead of FAIL, the verdict is `human-review`. In this case, GSD can't execute the checks itself; it surfaces them so you can perform them manually.
+A PARTIAL verdict occurs when some checks pass but others are marked `NEEDS-HUMAN` — for example, in `human-experience` mode when a check involves taste, visual judgment, or subjective assessment that GSD can't honestly automate. Auto-mode blocks progression for PARTIAL just as it does for FAIL, since "some checks require human review" is not the same as "the slice is ready to ship."
 
 ### 4. Investigate the failure
 
@@ -113,7 +120,7 @@ You have a few options depending on how significant the fix is:
 
 This writes the override to `OVERRIDES.md` and propagates it across active plan documents so the next task dispatch reflects the corrected approach.
 
-**Option C — Manual UAT (`human-review` verdict).** Perform the surfaced checks yourself. Once you've verified the behavior (or determined whether it passes), either fix and proceed to step 6, or skip the UAT unit entirely if you're satisfied the slice is complete:
+**Option C — PARTIAL / NEEDS-HUMAN verdict.** When the UAT result is PARTIAL, review the `NEEDS-HUMAN` checks in the result file and perform them manually. If you're satisfied with the slice, delete the result file and mark the UAT passed by restarting auto-mode (it will re-run UAT, which should now PASS the subjective checks that you've verified). Alternatively, skip the UAT unit entirely if you've confirmed the slice is complete:
 
 ```
 /gsd skip run-uat/M002/S01
@@ -164,18 +171,34 @@ Key artifacts involved in a UAT failure cycle:
 
 The result file uses YAML frontmatter with four fields: `sliceId`, `uatType`, `verdict`, and `date`. The dispatcher reads `verdict` mechanically to decide whether to advance or pause. Only a `PASS` verdict advances auto-mode to the next slice.
 
+## UAT Modes
+
+GSD supports six UAT modes, split by whether auto-mode pauses immediately after dispatch or waits for the verdict:
+
+| Mode | How checks run | Pause behavior |
+|------|---------------|----------------|
+| `artifact-driven` | Shell, grep, file reads, scripts | Pauses only if verdict ≠ PASS |
+| `browser-executable` | Browser navigation, screenshots, assertions | Pauses only if verdict ≠ PASS |
+| `runtime-executable` | Command or script execution, stdout/stderr | Pauses only if verdict ≠ PASS |
+| `live-runtime` | Real app/service, browser/network/runtime checks | Pauses immediately after dispatch |
+| `mixed` | All automatable checks + explicit human-only list | Pauses immediately after dispatch |
+| `human-experience` | Objective checks automated; taste/visual checks marked `NEEDS-HUMAN` | Pauses immediately after dispatch |
+
+For `human-experience` mode, GSD automates setup, preconditions, screenshots, logs, and objective checks — but does **not** invent subjective PASS results. Taste-based or purely human-judgment checks are marked `NEEDS-HUMAN`, and the overall verdict is `PARTIAL` unless every required check was objective and passed.
+
 ## Flow Diagram
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a3a1a', 'primaryTextColor': '#e8f4e8', 'primaryBorderColor': '#39ff14', 'lineColor': '#39ff14', 'secondaryColor': '#0d180d', 'tertiaryColor': '#0d180d', 'background': '#0a0e0a', 'mainBkg': '#1a3a1a', 'nodeBorder': '#39ff14', 'clusterBkg': '#0d180d', 'titleColor': '#39ff14', 'edgeLabelBackground': '#0a0e0a'}}}%%
 flowchart TD
     Start([All tasks complete]) --> CompleteSlice[complete-slice\nwrites SUMMARY + UAT script]
-    CompleteSlice --> UAT[run-uat executes checks]
+    CompleteSlice --> CheckMode{UAT mode?}
+    CheckMode -->|artifact / browser / runtime| UAT[run-uat executes checks]
+    CheckMode -->|live / mixed / human-experience| PauseEarly[Auto-mode pauses\nrun-uat unit dispatched]
+    PauseEarly --> UAT
     UAT --> Result{"verdict?"}
     Result -->|PASS| NextSlice([Next slice begins])
     Result -->|FAIL| Pause[Auto-mode pauses\nshows failure details]
     Result -->|PARTIAL| Pause
-    Result -->|human-review| Pause
     Pause --> Investigate[Read UAT-RESULT.md\nidentify root cause]
     Investigate --> Fix[Fix the code\nor steer the approach]
     Fix --> Delete[Delete UAT-RESULT.md]
@@ -183,10 +206,12 @@ flowchart TD
     Restart --> UAT
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CheckMode fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Result fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NextSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CompleteSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style UAT fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Result fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style NextSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style PauseEarly fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Pause fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Investigate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Fix fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8

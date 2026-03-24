@@ -9,7 +9,9 @@ description: "The in-conversation research prompt — scouts the codebase for a 
 
 The prompt instructs the agent to read `.gsd/DECISIONS.md` and `.gsd/REQUIREMENTS.md` first, targeting research toward active requirements the slice owns. From there the agent explores relevant code using `rg`/`find` for targeted reads or `scout` for broader unfamiliar subsystems, and checks libraries with `resolve_library`/`get_library_docs` for anything not already used in the codebase.
 
-Rather than the elaborate depth-calibration and numbered steps of the auto-mode version, `guided-research-slice` uses five **Strategic Questions** to structure the agent's thinking: what to prove first, what existing patterns to reuse, what boundary contracts matter, what constraints the codebase imposes, and what failure modes should shape slice ordering. These questions ensure the output is decision-driving rather than just fact-collecting. The result is a `{sliceId}-RESEARCH.md` file written to the slice directory, consumed by `guided-plan-slice` or `plan-slice` in the next step.
+A key framing distinguishes this prompt from raw exploration: **you are the scout, not the planner**. A planner agent reads the output in a fresh context to decompose the slice into tasks. The research document must be written for that planner — surfacing key files, where the work divides naturally, what to build first, and how to verify. If the research doc is vague, the planner re-explores code the scout already read; if it's precise, the planner decomposes immediately. This framing keeps the output decision-driving rather than just fact-collecting.
+
+Rather than the elaborate depth-calibration and numbered steps of the auto-mode version, `guided-research-slice` uses five **Strategic Questions** to structure the agent's thinking: what to prove first, what existing patterns to reuse, what boundary contracts matter, what constraints the codebase imposes, and what failure modes should shape slice ordering. The result is a `{sliceId}-RESEARCH.md` file written to the slice directory, consumed by `guided-plan-slice` or `plan-slice` in the next step.
 
 ## Pipeline Position
 
@@ -17,7 +19,7 @@ Rather than the elaborate depth-calibration and numbered steps of the auto-mode 
 flowchart TD
     GsdCommand["/gsd"] --> PlanningPhase["planning phase (slice needs research)"]
     PlanningPhase --> GuidedResearchSlice["guided-research-slice"]
-    GuidedResearchSlice --> ResearchArtifact["writes {sliceId}-RESEARCH.md"]
+    GuidedResearchSlice --> ResearchArtifact["writes SID-RESEARCH.md"]
     ResearchArtifact --> GuidedPlanSlice["guided-plan-slice"]
 
     style GuidedResearchSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -27,7 +29,7 @@ flowchart TD
     style GuidedPlanSlice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-When the user runs `/gsd` during the planning phase and selects **"Research first"** from the smart entry wizard, the guided flow dispatches `guided-research-slice` in the current conversation. Once the research artifact is written, the user can run `/gsd` again to proceed to planning, where `guided-plan-slice` consumes the `RESEARCH.md` output.
+When the user runs `/gsd` during the planning phase and selects **"Research slice first"** from the smart entry wizard (shown only when no `RESEARCH.md` exists yet), the guided flow dispatches `guided-research-slice` in the current conversation. Once the research artifact is written, the user can run `/gsd` again to proceed to planning, where `guided-plan-slice` consumes the `RESEARCH.md` output.
 
 ## Variables
 

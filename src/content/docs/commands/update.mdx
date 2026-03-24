@@ -31,7 +31,37 @@ No arguments — it always updates to the latest stable release.
 
 ### Terminal Update Flow (`gsd update`)
 
-1. **Read current version** — Checks `GSD_VERSION` environment variable (set at startup from `package.json`).
+```mermaid
+flowchart TD
+    Start(["gsd update"]) --> ReadVersion[Read GSD_VERSION from env]
+    ReadVersion --> QueryNpm["Run: npm view gsd-pi version"]
+    QueryNpm --> NetFail{Network error?}
+    NetFail -->|Yes| ExitFail([Exit with error])
+    NetFail -->|No| Compare{Latest > current?}
+    Compare -->|No| AlreadyCurrent([Print: Already up to date.])
+    Compare -->|Yes| PrintUpdating["Print: Updating v<current> → v<latest>"]
+    PrintUpdating --> Install["npm install -g gsd-pi@latest\n(stdio: inherit — live output)"]
+    Install --> InstallFail{Install failed?}
+    InstallFail -->|Yes| ExitFail2([Print fallback command, exit 1])
+    InstallFail -->|No| PrintDone([Print: Updated to v<latest>])
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NetFail fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Compare fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style InstallFail fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ExitFail fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ExitFail2 fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style AlreadyCurrent fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style PrintDone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ReadVersion fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style QueryNpm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PrintUpdating fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Install fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+The full pipeline:
+
+1. **Read current version** — Checks the `GSD_VERSION` environment variable (set at startup from `package.json`).
 2. **Query npm registry** — Runs `npm view gsd-pi version` to fetch the latest published version.
 3. **Compare** — If already up to date, exits immediately with a confirmation message.
 4. **Install** — Runs `npm install -g gsd-pi@latest` with live output streamed to the terminal (`stdio: 'inherit'`).
@@ -39,21 +69,22 @@ No arguments — it always updates to the latest stable release.
 
 ### In-Session Update Flow (`/gsd update`)
 
-Same steps as the terminal flow, but uses `execSync` with output suppressed (`stdio: ['ignore', 'pipe', 'ignore']`) and results delivered through the session's notification system. After a successful update, you need to **restart your GSD session** to load the new version — the running session is not hot-reloaded.
+Same steps as the terminal flow, but uses `execSync` with output captured (`stdio: ['ignore', 'pipe', 'ignore']`) and results delivered through the session's notification system. After a successful update, you need to **restart your GSD session** to load the new version — the running session is not hot-reloaded.
 
 ### Startup Version Check
 
 When GSD launches in interactive mode, it runs a non-blocking background check:
 
-1. **Cache check** — Reads `~/.gsd/.update-check`. If checked within the last 24 hours, uses the cached result immediately.
-2. **Registry fetch** — If the cache is stale, fetches `https://registry.npmjs.org/gsd-pi/latest` with a 5-second timeout. Silently ignores network errors.
-3. **Banner** — If a newer version is found, prints a two-line banner to stderr before the session starts. The banner is informational only — it never blocks launch or prompts for input.
+1. **Cache check** — Reads `~/.gsd/.update-check`. If checked within the last 24 hours, uses the cached result immediately (no network request).
+2. **Registry fetch** — If the cache is stale, fetches `https://registry.npmjs.org/gsd-pi/latest` using the Fetch API with a 5-second timeout. Silently ignores network errors.
+3. **Cache write** — Saves the fetched version and timestamp for next time.
+4. **Banner** — If a newer version is found, prints a two-line banner to stderr before the session starts. The banner is informational only — it never blocks launch or prompts for input.
 
 The startup check only runs in interactive mode. Print mode and subagent spawns skip it.
 
 ### Version Comparison
 
-GSD uses its own semver comparison (no external dependency). The `compareSemver` function splits both versions on `.`, pads shorter arrays with zeros, and compares numerically field by field.
+GSD uses its own semver comparison (no external dependency). The `compareSemver` function splits both versions on `.`, pads shorter arrays with zeros, and compares numerically field by field. Returns `1` if `a > b`, `-1` if `a < b`, `0` if equal.
 
 ## What Files It Touches
 
@@ -101,7 +132,7 @@ Inside a session:
 /gsd update
 # Current version: v2.36.0
 # Checking npm registry...
-# Updated to v2.37.0. Restart GSD to use the new version.
+# Updated to v2.37.0. Restart your GSD session to use the new version.
 ```
 
 Startup banner when an update is waiting (printed to stderr before the session starts):

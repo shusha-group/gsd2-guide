@@ -1,88 +1,133 @@
 ---
 title: "/gsd cleanup"
-description: "Archive accumulated phase directories from completed milestones into organized milestone archives."
+description: "Git hygiene tool — remove merged branches, prune old snapshots, cull stale worktrees, and audit orphaned project state."
 ---
 
 ## What It Does
 
-`/gsd cleanup` moves phase directories from `.planning/phases/` into per-milestone archive folders under `.planning/milestones/`. It's a housekeeping command you run after one or more milestones have shipped but their phase directories were left in place.
+`/gsd cleanup` is a housekeeping command that removes accumulated git debris from a GSD project. It covers four categories of stale artifacts: merged GSD branches, old execution snapshot refs, merged worktrees, and orphaned project-state directories in `~/.gsd/projects/`.
 
-When you run [`/gsd complete-milestone`](../complete-milestone/), you're offered the option to archive phase directories on the spot. If you skipped that step — or want to archive directories from multiple past milestones at once — `/gsd cleanup` handles it retroactively.
+Running `/gsd cleanup` with no arguments handles the two most common cases at once — merged branches and old snapshots. Each category can also be targeted individually with a subcommand.
 
-The command shows a dry-run summary before making any changes. Nothing moves until you confirm. If all completed milestones already have phase archives, or if there are no phase directories left to move, cleanup exits with a clear message and does nothing.
+The command reports what it removed (or why it skipped), then exits. There's no dry-run confirmation step for branches and snapshots — cleanup is low-risk because it only removes artifacts that are already merged or are old copies of data that's been superseded.
 
 ## Usage
 
 ```
 /gsd cleanup
+/gsd cleanup branches
+/gsd cleanup snapshots
+/gsd cleanup worktrees
+/gsd cleanup projects
+/gsd cleanup projects --fix
 ```
 
-Cleanup takes no subcommands or arguments.
+| Form | What it does |
+|------|-------------|
+| `/gsd cleanup` | Runs both `branches` and `snapshots` cleanup together |
+| `/gsd cleanup branches` | Delete merged `gsd/*` branches and detached stale milestone branches |
+| `/gsd cleanup snapshots` | Prune old `refs/gsd/snapshots/` refs, keeping the 5 most recent per label |
+| `/gsd cleanup worktrees` | Remove worktrees that are merged into main and have no uncommitted changes |
+| `/gsd cleanup projects` | Audit `~/.gsd/projects/` for orphaned state directories (dry-run) |
+| `/gsd cleanup projects --fix` | Delete orphaned project state directories (permanent) |
 
 ## How It Works
 
+### Branch Cleanup
+
 ```mermaid
 flowchart TD
-    A[Read .planning/MILESTONES.md] --> B{Any completed milestones?}
-    B -- No --> C[Nothing to clean up\nStop]
-    B -- Yes --> D[Check milestones/ for existing\nv{X.Y}-phases archives]
-    D --> E{Any milestones without\na phases archive?}
-    E -- No --> F[All already archived\nStop]
-    E -- Yes --> G[Read v{X.Y}-ROADMAP.md\nfor each unarchived milestone]
-    G --> H[Match phase dirs in\n.planning/phases/]
-    H --> I{Any phase dirs found?}
-    I -- No --> J[No directories to archive\nStop]
-    I -- Yes --> K[Show dry-run summary]
-    K --> L{User confirms?}
-    L -- Cancel --> M[Stop]
-    L -- Yes --> N[mkdir milestones/v{X.Y}-phases/\nfor each milestone]
-    N --> O[mv phases/ dirs to\nmilestone archive]
-    O --> P[Commit changes]
-    P --> Q[Report archived counts]
+    A(["/gsd cleanup branches"]) --> B[List gsd/* branches]
+    B --> C{Any branches?}
+    C -- No --> D[Nothing to clean up]
+    C -- Yes --> E[Detect main branch]
+    E --> F[Find merged gsd/* branches<br/>excluding gsd/quick/*]
+    F --> G[Delete each merged branch]
+    G --> H[Find milestone/* branches<br/>not attached to a worktree]
+    H --> I[Check if milestone is complete<br/>via ROADMAP]
+    I --> J[Force-delete stale<br/>milestone branches]
+    J --> K[Report summary]
 
-    style A fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style B fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style C fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style A fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style C fill:#0d180d,stroke:#39ff14,color:#39ff14
     style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style E fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style B fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style F fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style I fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style L fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style M fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style N fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style O fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style P fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Q fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-### Step-by-Step
+Branch cleanup runs in two passes:
 
-1. **Read MILESTONES.md** — Parses `.planning/MILESTONES.md` to get a list of completed milestone versions (e.g., `v1.0`, `v1.1`).
+1. **Merged GSD branches** — Lists all branches matching `gsd/*`, then uses `git branch --merged` to find which ones are already in the main branch. Deletes each merged branch. `gsd/quick/*` branches are always skipped — quick-task branches are short-lived and managed separately.
 
-2. **Check for existing archives** — Lists `.planning/milestones/` and filters out milestones that already have a `v{X.Y}-phases/` directory. Only milestones without an existing phases archive proceed.
+2. **Stale milestone branches** — Lists all `milestone/*` branches and cross-references the currently registered worktrees. Any `milestone/*` branch that is **not** attached to a live worktree and whose milestone is marked complete in the roadmap is force-deleted. These accumulate when parallel milestone work finishes and the worktree is removed but the branch lingers.
 
-3. **Determine phase membership** — For each unarchived milestone, reads its roadmap archive at `.planning/milestones/v{X.Y}-ROADMAP.md` to extract the phase numbers and names that belong to it.
+### Snapshot Cleanup
 
-4. **Match existing directories** — Checks which of those phase directories still exist in `.planning/phases/`. Directories that have already been removed or moved elsewhere are skipped.
+GSD uses `refs/gsd/snapshots/` to store undo snapshots during task execution. These accumulate over time. Snapshot cleanup:
 
-5. **Show dry-run summary** — Presents a summary listing which phase directories will be moved to which destination for each milestone. No changes happen yet.
+1. Lists all refs under `refs/gsd/snapshots/`
+2. Groups them by label (the path prefix, excluding the final segment)
+3. For each label group, **keeps the 5 most recent** refs and deletes the rest
 
-6. **Confirm** — Asks: *"Proceed with archiving?"*. Selecting Cancel stops without changes.
+This means you always have at least 5 rollback points per label. Old snapshots beyond that window are pruned.
 
-7. **Move directories** — Creates `.planning/milestones/v{X.Y}-phases/` for each milestone and moves the matching phase directories into it.
+### Worktree Cleanup
 
-8. **Commit** — Commits the changes with message `chore: archive phase directories from completed milestones`, staging both `.planning/milestones/` and `.planning/phases/`.
+```mermaid
+flowchart TD
+    A(["/gsd cleanup worktrees"]) --> B[Inspect all GSD worktrees<br/>under .gsd/worktrees/]
+    B --> C{Any worktrees?}
+    C -- No --> D[Nothing to clean up]
+    C -- Yes --> E[Compute health status<br/>per worktree]
+    E --> F{Is worktree merged into main<br/>AND has no dirty files?}
+    F -- Yes --> G[Safe to remove]
+    F -- No --> H{No commits in 14+ days<br/>and not merged?}
+    H -- Yes --> I[Flag as stale — manual review]
+    H -- No --> J[Flag as active]
+    G --> K[Auto-remove each safe worktree<br/>skip if current dir]
+    K --> L[Report removed, stale, active]
 
-### Early Exit Conditions
+    style A fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style C fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style F fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style H fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style B fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style L fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
 
-Cleanup stops without error when there's nothing to do:
+Worktree cleanup inspects all GSD-managed worktrees under `.gsd/worktrees/` and classifies each into one of three buckets:
 
-- **All milestones already archived** — Reports "All completed milestones already have phase directories archived. Nothing to clean up."
-- **No phase directories remain** — Reports "No phase directories found to archive. Phases may have been removed or archived previously."
+| Category | Criteria | Action |
+|----------|----------|--------|
+| **Safe to remove** | Merged into main AND no uncommitted changes | Auto-removed (branch deleted) |
+| **Stale** | Not merged AND no commits in 14+ days | Listed for manual review — not removed |
+| **Active** | In progress | Listed for reference — not removed |
+
+A worktree that is currently your working directory is always skipped, even if it would otherwise be safe to remove.
+
+### Project State Cleanup
+
+GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, keyed by a hash of the project's git remote URL. When a project is deleted or moved, its state directory becomes orphaned.
+
+`/gsd cleanup projects` (dry-run) inspects each directory, reads its `META.json`, and checks whether the recorded git root path still exists on disk:
+
+- **Active** — git root exists → listed but left alone
+- **Orphaned** — git root is gone → listed as candidates for deletion
+- **Unknown** — no metadata yet → listed with a note to open the project in GSD once
+
+`/gsd cleanup projects --fix` deletes the orphaned directories. This is permanent and cannot be undone.
 
 ## What Files It Touches
 
@@ -90,73 +135,95 @@ Cleanup stops without error when there's nothing to do:
 
 | File | Purpose |
 |------|---------|
-| `.planning/MILESTONES.md` | Identifies completed milestones and their versions |
-| `.planning/milestones/v{X.Y}-ROADMAP.md` | Determines which phases belong to each milestone |
-| `.planning/phases/` | Lists phase directories available to archive |
+| git branch list (`gsd/*`, `milestone/*`) | Identifies GSD-managed branches for cleanup |
+| git refs (`refs/gsd/snapshots/`) | Finds snapshot refs to prune |
+| `.gsd/worktrees/` | Lists active worktrees for health checks |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Checks milestone completion before deleting stale milestone branches |
+| `~/.gsd/projects/<hash>/META.json` | Reads git root path to detect orphaned state directories |
 
-### Creates
+### Deletes
 
-| File | Purpose |
-|------|---------|
-| `.planning/milestones/v{X.Y}-phases/` | Archive directory created per milestone |
-
-### Writes
-
-| File | Purpose |
-|------|---------|
-| `.planning/milestones/v{X.Y}-phases/{phase-dir}/` | Phase directories moved here from `.planning/phases/` |
+| File / Artifact | Purpose |
+|---------|---------|
+| git branches (`gsd/*`, `milestone/*`) | Merged or stale branches removed |
+| git refs (`refs/gsd/snapshots/<label>/<old>`) | Old snapshot refs beyond the 5-per-label window |
+| `.gsd/worktrees/<name>/` | Worktree directory removed (with its branch) |
+| `~/.gsd/projects/<hash>/` | Orphaned project state directory (only with `--fix`) |
 
 ## Examples
 
-Archiving two milestones' worth of phase directories:
+Default cleanup — branches and snapshots together:
 
 ```
 > /gsd cleanup
 
-## Cleanup Summary
-
-### v1.0 — MVP
-These phase directories will be archived:
-- 01-foundation/
-- 02-auth/
-- 03-core-features/
-
-Destination: .planning/milestones/v1.0-phases/
-
-### v1.1 — Security
-These phase directories will be archived:
-- 04-security/
-- 05-hardening/
-
-Destination: .planning/milestones/v1.1-phases/
-
-Proceed with archiving? [Yes — archive listed phases / Cancel]
-
-Archived:
-- v1.0: 3 phase directories → .planning/milestones/v1.0-phases/
-- v1.1: 2 phase directories → .planning/milestones/v1.1-phases/
-
-.planning/phases/ cleaned up.
+Cleaned up 3 merged branches. Deleted 2 stale milestone branches. Skipped 1 quick branch (gsd/quick/*).
+Pruned 12 old snapshot refs. 10 remain.
 ```
 
-Nothing left to do:
+Nothing to clean up:
 
 ```
-> /gsd cleanup
+> /gsd cleanup branches
 
-All completed milestones already have phase directories archived. Nothing to clean up.
+No non-quick GSD branches to clean up.
 ```
 
-Phase directories were deleted manually before cleanup ran:
+Branches exist but none merged yet:
 
 ```
-> /gsd cleanup
+> /gsd cleanup branches
 
-No phase directories found to archive. Phases may have been removed or archived previously.
+4 GSD branches found, none merged into main yet.
+```
+
+Worktree cleanup with a mix of states:
+
+```
+> /gsd cleanup worktrees
+
+3 worktrees found.
+
+Safe to remove (1) — merged into main, clean:
+  ✓ M003-auth  removed (branch worktree/M003-auth deleted)
+
+Removed 1 merged worktree.
+
+Stale (1) — no recent commits, not merged (review manually):
+  ⚠ M004-payments  no commits in 21 days
+
+Active (1) — in progress:
+  ● M005-api  last commit 2d ago
+```
+
+Project state audit (dry-run):
+
+```
+> /gsd cleanup projects
+
+~/.gsd/projects  3 project state directories
+
+Active (2) — git root present on disk:
+  + a3f9b2c1  /Users/alice/dev/myapp  [github.com/alice/myapp]
+  + b8d4e7f0  /Users/alice/dev/backend  [github.com/alice/backend]
+
+Orphaned (1) — git root no longer exists:
+  - c1e6a9b2  /Users/alice/dev/old-project  [github.com/alice/old-project]
+
+Run /gsd cleanup projects --fix to permanently delete 1 orphaned directory.
+```
+
+Delete orphaned project state:
+
+```
+> /gsd cleanup projects --fix
+
+...
+Removed 1 orphaned directory.
 ```
 
 ## Related Commands
 
-- [`/gsd complete-milestone`](../complete-milestone/) — Archive a shipped milestone; offers phase archival inline
-- [`/gsd health`](../health/) — Diagnose `.planning/` directory health and repair structural issues
-- [`/gsd audit-milestone`](../audit-milestone/) — Audit milestone completion before archiving
+- [`/gsd health`](../health/) — Diagnose `.gsd/` directory health and repair structural issues
+- [`/gsd complete-milestone`](../complete-milestone/) — Archive a shipped milestone
+- [`/gsd parallel`](../parallel/) — Manage parallel milestone worktrees (start, status, merge, stop)

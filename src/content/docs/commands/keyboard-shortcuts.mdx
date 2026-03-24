@@ -1,6 +1,6 @@
 ---
 title: "Keyboard Shortcuts"
-description: "Five instant-access shortcuts for the GSD dashboard, voice mode, background processes, clipboard vision, and aborting auto mode — no typing required."
+description: "Five instant-access shortcuts for the GSD dashboard, voice mode, background processes, clipboard vision, and pausing auto mode — no typing required."
 ---
 
 ## What It Does
@@ -19,7 +19,7 @@ The fifth shortcut — `Ctrl+V` / `Alt+V` — pastes an image from your clipboar
 | `Ctrl+Alt+V` | Toggle voice transcription | `/voice` |
 | `Ctrl+Alt+B` | Show background shell processes | `/bg` |
 | `Ctrl+V` / `Alt+V` | Paste image from clipboard (screenshot → vision input) | — |
-| `Escape` | Abort current turn and pause auto mode | `/gsd stop` |
+| `Escape` | Pause auto mode (preserves conversation) | — |
 
 ## How It Works
 
@@ -43,9 +43,9 @@ Pastes an image from your system clipboard into the conversation as vision input
 
 Use `Ctrl+V` in most terminals. Use `Alt+V` in terminals where `Ctrl+V` is reserved for paste (e.g. Warp).
 
-### Escape — Abort and Pause Auto Mode
+### Escape — Pause Auto Mode
 
-When auto mode is running, pressing `Escape` aborts the current agent turn immediately. GSD's `agent_end` hook detects the `aborted` stop reason and calls pause automatically, suspending auto mode with all state preserved. Run [`/gsd auto`](../auto/) to resume from where it left off.
+When auto mode is running, pressing `Escape` pauses it with all state and conversation preserved. GSD's `agent_end` hook detects the `aborted` stop reason and calls pause automatically, suspending auto mode so you can review, redirect, or step away. Run [`/gsd auto`](../auto/) to resume from where it left off.
 
 This is distinct from a graceful [`/gsd stop`](../stop/), which lets the current unit finish before stopping.
 
@@ -97,10 +97,10 @@ Pasting a screenshot for analysis:
 > What's wrong with this error message?
 ```
 
-Aborting a runaway auto-mode turn:
+Pausing a running auto-mode turn to review progress:
 
 ```
-[Auto mode dispatched a task you want to stop...]
+[Auto mode dispatched a task you want to pause...]
 → Press Escape
 ● Auto mode paused — state preserved.
 > /gsd auto    ← resume when ready

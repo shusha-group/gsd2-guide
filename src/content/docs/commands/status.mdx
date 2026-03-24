@@ -5,9 +5,11 @@ description: "Open a real-time TUI dashboard showing auto-mode state, milestone 
 
 ## What It Does
 
-`/gsd status` opens a TUI dashboard overlay that shows the current state of your project at a glance — what auto-mode is doing right now, milestone and slice progress, task breakdown for the active slice, completed units, and cost metrics. The dashboard refreshes every 2 seconds.
+`/gsd status` opens a TUI dashboard overlay that shows the current state of your project at a glance — what auto-mode is doing right now, milestone and slice progress, task breakdown for the active slice, completed units, cost metrics, and environment health. The dashboard refreshes every 2 seconds.
 
 The dashboard is read-only. It doesn't modify any files or interrupt a running auto-mode session. You can open it while auto-mode is running to monitor progress without disrupting execution. When no session is active, it still shows project state (phase, milestone, slice, tasks remaining) derived from the planning files on disk.
+
+If the TUI is unavailable (e.g. non-interactive terminal), a plain-text summary is printed instead, showing phase, active milestone/slice/task, progress counts, and milestone registry.
 
 ## Usage
 
@@ -52,7 +54,7 @@ flowchart TD
 
 The dashboard builds its view from two data sources:
 
-1. **Planning files** — `deriveState()` reads roadmap and plan files directly from disk to determine current phase, active milestone, active slice, and task completion state. This is the same source-of-truth traversal the dispatch engine uses. Results are memoized for 100ms so repeated calls within a single refresh cycle don't re-read the entire `.gsd/` tree.
+1. **Planning files** — `deriveState()` reads roadmap and plan files directly from disk to determine current phase, active milestone, active slice, and task completion state. This is the same source-of-truth traversal the dispatch engine uses. Results are memoized for 100ms so repeated calls within a single refresh cycle don't re-read the entire `.gsd/` tree. When the native Rust batch parser is available, all `.md` files under `.gsd/` are read in a single pass and served from an in-memory cache.
 2. **Live session data** — `getAutoDashboardData()` returns in-memory state from the running auto-mode session: what unit is executing right now, how long it's been running, which units completed this session, and whether the session is active, paused, or idle.
 
 For cost and token metrics, the dashboard reads the metrics ledger (in-memory, populated by the running session) and aggregates it by phase, slice, and model.
@@ -68,7 +70,7 @@ For cost and token metrics, the dashboard reads the metrics ledger (in-memory, p
 | `complete` | All slices done and milestone summary written |
 | `parked` | Explicitly parked via a `PARKED` sentinel file — excluded from active selection |
 
-**Ghost milestones** (directories containing only `META.json` with no `CONTEXT`, `ROADMAP`, or `SUMMARY` file) are silently skipped — they don't appear in the registry.
+**Ghost milestones** (directories where none of `CONTEXT.md`, `CONTEXT-DRAFT.md`, `ROADMAP.md`, or `SUMMARY.md` exist) are silently skipped — they don't appear in the registry.
 
 **Milestone dependencies** declared in `CONTEXT.md` or `CONTEXT-DRAFT.md` frontmatter (`depends_on`) are evaluated before a milestone is promoted to `active`. If its deps aren't complete yet, the milestone shows as `pending` in the registry.
 
@@ -80,13 +82,18 @@ The dashboard header reflects the current phase derived from disk:
 |-------|--------------|
 | `pre-planning` | No roadmap yet — milestone needs planning |
 | `needs-discussion` | Milestone has a `CONTEXT-DRAFT.md` but no `CONTEXT.md` — discussion required before planning |
+| `discussing` | Active discussion in progress for a milestone or slice |
+| `researching` | Research phase running before planning |
 | `planning` | Active slice has no plan file, or plan exists but has no tasks |
 | `executing` | Tasks are being executed |
+| `verifying` | Post-task verification gate running |
 | `summarizing` | All tasks done but slice not yet marked complete |
+| `advancing` | Transitioning between units |
 | `replanning-slice` | A task flagged `blocker_discovered`, or a triage replan was triggered |
 | `validating-milestone` | All slices complete — milestone validation running |
 | `completing-milestone` | Validation passed — milestone summary being written |
-| `blocked` | All remaining milestones have unmet dependencies |
+| `paused` | Auto-mode explicitly paused |
+| `blocked` | All remaining milestones have unmet dependencies, or no slice is eligible within a milestone due to dependency ordering |
 | `complete` | All milestones done |
 
 ### Dashboard layout
@@ -94,13 +101,15 @@ The dashboard header reflects the current phase derived from disk:
 The overlay renders at 70% of terminal width (minimum 60 columns, maximum 90% of terminal height), anchored to the center. Content wider than 128 columns is capped and centered. It contains these sections:
 
 - **Header** — "GSD Dashboard" title, blinking `● AUTO` / `⏸ PAUSED` / `idle` status indicator, elapsed time, and ETA if estimable. Shows the active worktree name when running inside a worktree.
-- **Current unit** — What's actively running (unit type and ID), how long it's been executing. Shows "No unit running · /gsd auto to start" when idle.
+- **Progress score** — Visible when auto-mode is active or paused. A traffic-light `●` (green / yellow / red) with a one-line summary. When degraded, individual signal lines are shown below the summary.
+- **Current unit** — What's actively running (unit type and ID), how long it's been executing. Shows "No unit running · /gsd auto to start" when idle, or "/gsd auto to resume" when paused.
 - **Parallel workers** — Visible only when subagent workers are active. Shows batch ID, worker agent, task preview, and elapsed time per worker.
 - **Pending captures badge** — Shown when there are pending captures awaiting triage.
-- **Milestone progress** — Active milestone ID and title, followed by filled progress bars for Tasks (active slice), Slices (current milestone), and Milestones (overall). Parked milestones are shown distinctly.
+- **Milestone progress** — Active milestone ID and title, followed by filled progress bars for Tasks (active slice), Slices (current milestone), and Milestones (overall).
 - **Slice breakdown** — Every slice with status icon (✓ done / ▸ active / ○ pending) and risk level. For the active slice, each task is listed with its own status icon.
-- **Completed units** — Last 10 units from this session in reverse order with duration. Units that triggered context-pressure wrap-up are flagged with `→ wrap-up`; truncated units show a section count indicator.
-- **Cost & Usage** — Total cost, tokens, tool calls, and unit count. Token breakdown by input / output / cache-read / cache-write. Cost broken down by phase and by slice. Per-slice cost projection for remaining work (if budget ceiling is configured). Cost broken down by model.
+- **Completed units** — Last 10 units from this session in reverse order with duration. Units that triggered context-pressure wrap-up are flagged with `→ wrap-up`; truncated units show a section count indicator (`▼N`).
+- **Cost & Usage** — Total cost (or request count for subscription users), tokens, tool calls, and unit count. Token breakdown by input / output / cache-read / cache-write. Budget aggregate line (truncation sections and continue-here count) when applicable. Cost broken down by phase and by slice. Per-slice cost projection for remaining work (if budget ceiling is configured). Cost broken down by model with context window size. Average cost and token count per unit. Cache hit rate when non-zero.
+- **Environment** — Shown only when environment checks report issues. Lists errors (✗) and warnings (⚠) with detail lines.
 
 ### Keyboard navigation
 
@@ -150,6 +159,8 @@ Checking progress during an active auto-mode run:
   ╭──────────────────────────────────────────────────────────╮
   │  GSD Dashboard  ● AUTO                        1h 14m     │
   │                                                           │
+  │  ● On track: 1/2 tasks, 5/8 slices                       │
+  │                                                           │
   │  Now: Execute T02  (current: 8m)                         │
   │                                                           │
   │  M001: Core Recipe Platform                              │
@@ -178,6 +189,9 @@ Checking progress during an active auto-mode run:
   │                                                           │
   │  $3.66 total  ·  127K tokens  ·  48 tools  ·  12 units  │
   │  in: 98K  out: 18K  cache-r: 9K  cache-w: 2K            │
+  │                                                           │
+  │  avg/unit: $0.31  ·  10.6K tokens                        │
+  │  cache hit rate: 42%                                      │
   │                                                           │
   │  ──────────────────────────────────────────────────────  │
   │              ↑↓ scroll · g/G top/end · esc close         │

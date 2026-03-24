@@ -9,7 +9,11 @@ import ReferenceCard from '../../../../src/components/ReferenceCard.astro';
 export const topLevel = skills.filter(s => !s.parentSkill);
 export const getSubSkills = (name) => skills.filter(s => s.parentSkill === name);
 
-{skills.length} bundled skills extend the agent's capabilities. Skills are auto-detected based on task context and activated when needed — no need to invoke them explicitly. Some skills accept arguments when invoked as slash commands (e.g., `/lint src/ --fix`). Click any card to expand for details.
+{skills.length} skills are bundled with GSD. Skills are loaded automatically when relevant — the agent detects the context and activates the appropriate skill without you needing to invoke it explicitly. Detection is keyword- and context-based: phrases like "optimize my code", "a11y audit", or "create a workflow" each trigger specific skills.
+
+Some skills can also be invoked directly as slash commands and accept arguments (e.g., `/lint src/ --fix`, `/test run`). Sub-skills are nested under their parent and share its detection context.
+
+Click any card to expand for details.
 
 {topLevel.map((skill) => (
   <>

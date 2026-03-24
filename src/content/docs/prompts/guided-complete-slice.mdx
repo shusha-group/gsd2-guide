@@ -1,35 +1,37 @@
 ---
 title: "guided-complete-slice"
-description: "The guided-flow counterpart to complete-slice — completes a slice by compressing task summaries, writing the slice summary and UAT artifact, surfacing key decisions, and marking the roadmap checkbox done."
+description: "The guided-flow counterpart to complete-slice — closes out a finished slice by compressing task summaries, writing the slice summary and UAT artifact, surfacing key decisions, and marking the roadmap checkbox done."
 ---
 
 ## What It Does
 
-`guided-complete-slice` closes out a completed slice in the guided (user-facing) workflow. It performs the same operations as the auto-mode `complete-slice` prompt: compress all task summaries into `{{sliceId}}-SUMMARY.md`, produce `{{sliceId}}-UAT.md` with the `UAT Type` and `Not Proven By This UAT` sections explicitly filled in, audit task summaries for `key_decisions` and ensure significant ones land in `.gsd/DECISIONS.md`, mark the slice checkbox done in the roadmap, and update the milestone summary. The system handles commit and merge after the unit completes — the agent does not commit or merge manually.
+`guided-complete-slice` closes out a completed slice in the guided (user-facing) workflow. It performs the same operations as the auto-mode `complete-slice` prompt: compress all task summaries into `{sliceId}-SUMMARY.md`, produce `{sliceId}-UAT.md` with the `UAT Type` and `Not Proven By This UAT` sections explicitly filled in, review task summaries for `key_decisions` and ensure significant ones land in `.gsd/DECISIONS.md`, mark the slice checkbox done in the roadmap, and update the milestone summary. The system handles commit and merge after the unit completes — the agent does not commit or merge manually.
 
 The slice summary is the primary record of what was built. Downstream agents — `reassess-roadmap`, future slice researchers, and plan generators — read it to understand what this slice delivered and what to watch out for. Because downstream context depends on this artifact, the summary must be substantive: what was built, key decisions made, and anything that remains unproven by the UAT.
 
-The prompt is a compact dispatch: one instruction block followed by `{{inlinedTemplates}}`, which supplies the Slice Summary and UAT output templates inline so the agent has the exact format contract at hand.
+The prompt is a compact dispatch: one instruction block followed by `{inlinedTemplates}`, which supplies the Slice Summary and UAT output templates inline so the agent has the exact format contract at hand.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
-    SelectUnit --> GuidedCompleteSlice["guided-complete-slice"]
+    GsdCommand["/gsd"] --> SmartEntry["guided flow\n(showSmartEntry)"]
+    SmartEntry --> UserSelectsComplete["user selects 'complete'"]
+    UserSelectsComplete --> GuidedCompleteSlice["guided-complete-slice"]
     GuidedCompleteSlice --> SummaryWritten["SUMMARY.md + UAT.md written"]
     SummaryWritten --> DecisionsUpdated[".gsd/DECISIONS.md updated"]
     DecisionsUpdated --> RoadmapMarked["slice checkbox marked done"]
 
     style GuidedCompleteSlice fill:#0d180d,stroke:#39ff14,color:#39ff14
     style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UserSelectsComplete fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style SummaryWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style DecisionsUpdated fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RoadmapMarked fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The `/gsd` command dispatches `guided-complete-slice` when the user wants to close out a slice from the guided workflow. The resulting summary artifacts are identical in format to auto-mode outputs and are consumed by the same downstream agents.
+The `/gsd` command's guided flow presents the user with contextual next-action options after all tasks in a slice are done. When the user selects "complete", `guided-complete-slice` is dispatched. The resulting summary artifacts are identical in format to auto-mode outputs and are consumed by the same downstream agents.
 
 ## Variables
 
@@ -44,4 +46,4 @@ The `/gsd` command dispatches `guided-complete-slice` when the user wants to clo
 
 ## Used By
 
-- [`/gsd`](../../commands/gsd/) — dispatched when the user completes a slice in guided (interactive) mode
+- [`/gsd`](../../commands/gsd/) — dispatched when the user selects "complete" for a finished slice in guided (interactive) mode

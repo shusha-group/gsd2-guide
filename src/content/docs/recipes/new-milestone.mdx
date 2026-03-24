@@ -5,82 +5,120 @@ description: "Start a new milestone on a project that already has completed GSD 
 
 ## What It Does
 
-Starting a new milestone on an existing GSD project is a single command: run `/gsd`. GSD reads the `.gsd/` state, detects that no milestone is active, and routes to a structured discussion. After discussion, it writes the milestone artifacts — `CONTEXT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, and updates `PROJECT.md` and `DECISIONS.md`. Auto-mode then starts automatically.
+Starting a new milestone on an existing GSD project is a single command: [`/gsd:new-milestone`](../../commands/new-milestone/). GSD reads your existing `.planning/` context, detects what shipped previously, and walks you through scoping the next cycle — interactive goal-gathering, optional parallel domain research, requirement scoping by category, and roadmap generation via the `gsd-roadmapper` agent.
 
-Prior milestones stay completely intact. Their summaries, plans, decisions, and knowledge entries remain as reference material. The new milestone inherits that accumulated context — the researcher reads prior summaries before planning the new work.
+Prior milestone work stays completely intact. `MILESTONES.md` keeps the full build history, `PROJECT.md` carries validated requirements forward, and phase numbering **continues** from where the last milestone left off — if v1.0 shipped phases 1–5, v1.1 starts at phase 6.
 
-For multi-milestone visions (social features, platform migrations, large capabilities), GSD maps the full landscape, sequences the milestones, and walks through each one with a readiness gate so you decide whether to discuss now, write a draft for later, or just queue it.
+For large visions that span multiple milestones, you can prepare a `MILESTONE-CONTEXT.md` in advance to skip the goal-gathering Q&A entirely, or name the milestone directly in the command to front-load the label.
 
 ## Usage
 
 ```
-/gsd
+/gsd:new-milestone [milestone name]
 ```
 
-No arguments needed. GSD detects that the prior milestone is complete and prompts for the next vision. If you want to add a queued milestone to the stack first, use [`/gsd queue`](../../commands/queue/) before running `/gsd`.
+The milestone name is optional. If omitted, GSD asks what you want to build next and explores features, priorities, and constraints interactively.
+
+```
+/gsd:new-milestone
+/gsd:new-milestone "v2.0 Social Features"
+/gsd:new-milestone v1.1 Notifications
+```
 
 ## How It Works
 
-### Discussion Flow
+### New Milestone Flow
 
-When you run `/gsd` with no active milestone, GSD enters discussion mode. The flow has distinct stages:
+```mermaid
+flowchart TD
+    Start(["/gsd:new-milestone"]) --> LoadCtx[Load project context\nPROJECT.md · MILESTONES.md · STATE.md]
+    LoadCtx --> ContextFile{MILESTONE-CONTEXT.md\nexists?}
+    ContextFile -->|Yes| UseCtx[Use pre-gathered context\nPresent summary for confirmation]
+    ContextFile -->|No| QA[Ask: What to build next?\nExplore features and constraints]
+    UseCtx --> Version[Determine milestone version\nv1.0 → v1.1 · confirm with user]
+    QA --> Version
+    Version --> UpdateFiles[Update PROJECT.md + STATE.md\nDelete context file if present · Commit]
+    UpdateFiles --> Init[Resolve agent models\ngsd-tools init new-milestone]
+    Init --> Research{Research\nneeded?}
+    Research -->|Yes| Parallel[4 parallel researcher agents\nStack · Features · Architecture · Pitfalls]
+    Parallel --> Synth[gsd-research-synthesizer\nWrite SUMMARY.md]
+    Synth --> Reqs[Scope requirements by category\nmulti-select per feature group]
+    Research -->|No| Reqs
+    Reqs --> WriteReqs[Write REQUIREMENTS.md\nREQ-IDs · Commit]
+    WriteReqs --> Roadmap[Spawn gsd-roadmapper\nContinue phase numbering from last milestone]
+    Roadmap --> Approve{Roadmap\napproved?}
+    Approve -->|Adjust| Roadmap
+    Approve -->|Yes| Commit[Commit ROADMAP.md · STATE.md\nREQUIREMENTS.md traceability]
+    Commit --> Done(["Done — next: /gsd:discuss-phase N\nor /gsd:plan-phase N"])
 
-1. **"What's the vision?"** — GSD asks once. Whatever you describe becomes the starting point.
-2. **Reflection** — Before asking anything, GSD proves it understood: a concrete summary, an honest size read (how many milestones, roughly how many slices), and a capabilities list. You confirm or correct.
-3. **Vision mapping** — If the work spans multiple milestones, GSD proposes a milestone sequence for your approval before drilling into details. Single-milestone work goes straight to questioning.
-4. **Mandatory investigation** — Before the first question round, GSD scouts the codebase, checks library docs, and runs web searches. Your codebase's existing patterns and constraints shape the questions.
-5. **Questioning** — Adaptive Q&A as a thinking partner. GSD probes vague answers, challenges abstract claims, and follows your energy. It uses position-first framing ("I'd lean toward X because Y — does that match your thinking?"), asks for negative constraints ("what should it never feel like?"), and weaves your exact terminology back into subsequent questions.
-6. **Depth verification** — A structured checkpoint before wrapping up. GSD prints a synthesis in chat — your exact terminology, the constraints you emphasized, the trade-offs you shaped — and asks for confirmation. This is the write gate. GSD will not write any files until depth verification passes.
-7. **Roadmap preview** — After depth verification, GSD produces or updates `REQUIREMENTS.md`, then prints the planned roadmap as a markdown table in your terminal. One row per slice: Slice, Title, Risk, Depends, Demo. You approve the structure before anything is written to disk.
-
-### Capability Contract
-
-`REQUIREMENTS.md` is produced or updated on every discussion — not just the first one. Before writing a roadmap, GSD presents candidate requirements in a chat table with columns: ID, Title, Status, Owner, Source. Groups by status (Active, Deferred, Out of Scope). You confirm, adjust, or add before they're locked.
-
-For new projects (or any project without an existing `REQUIREMENTS.md`), GSD runs a focused research pass first. It surfaces:
-
-- Table stakes the product space typically expects
-- Likely omissions that would make the product feel incomplete
-- Domain-standard behaviors you may or may not want
-- Scope traps to avoid
-
-Research findings are presented as candidate requirements — not silently turned into scope.
-
-### Auto-Start After Discussion
-
-After writing all artifacts, auto-mode starts automatically — no need to run `/gsd auto` separately. The transition is seamless: discuss, confirm, and auto-mode picks up immediately.
-
-### Multi-Milestone Handling
-
-When the vision spans multiple milestones, GSD processes them sequentially after writing the primary milestone's artifacts. For each remaining milestone, a readiness gate asks:
-
-- **Discuss now** — Run a focused discussion for this milestone in the current session while context is still fresh. Before writing `CONTEXT.md`, GSD performs a mandatory technical assumption verification — reading actual code files, checking APIs exist, and presenting findings with a per-milestone depth verification gate. Writes a full `CONTEXT.md` when confirmed.
-- **Write draft for later** — Capture the seed material as `CONTEXT-DRAFT.md`. When auto-mode reaches this milestone, it pauses and prompts you to run `/gsd` to complete the discussion from the draft.
-- **Just queue it** — Create the milestone directory without any context. Auto-mode pauses when it arrives and starts a full discussion from scratch.
-
-GSD writes `.gsd/DISCUSSION-MANIFEST.json` after each gate decision and verifies it's complete before auto-mode starts. Auto-mode will not start if any gates are unresolved.
-
-Milestones that depend on others must have `depends_on` frontmatter in their `CONTEXT.md`:
-
-```yaml
----
-depends_on: [M001, M002]
----
-
-# M003: Title
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ContextFile fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Research fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Approve fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style LoadCtx fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UseCtx fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style QA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Version fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UpdateFiles fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Init fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Parallel fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Synth fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reqs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteReqs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Roadmap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The state machine reads this field to enforce execution order. Without it, a milestone may start before its dependencies complete.
+### Step-by-Step
 
-### What Research and Planning Do
+**1. Load context** — Reads `PROJECT.md` (existing stack, decisions, validated requirements), `MILESTONES.md` (what shipped, last phase number), and `STATE.md` (pending todos, blockers). Checks for `MILESTONE-CONTEXT.md`.
 
-Once discussion completes and auto-mode starts, the pipeline continues:
+**2. Gather milestone goals** — If `MILESTONE-CONTEXT.md` exists, its features and scope are used directly and presented for confirmation. Otherwise, GSD shows what shipped in the last milestone and asks: "What do you want to build next?" — then follows up with focused questions on features, priorities, and constraints.
 
-- **Research** reads the prior milestone summaries, scouts the codebase, and checks library docs for new technology. Findings are advisory — they surface candidate requirements rather than silently expanding scope.
-- **Planning** decomposes the milestone into demoable vertical slices ordered by risk. Each slice is real, shippable product progress — not a foundation layer or spike. If the milestone has only one slice, the planner also writes the slice plan and task plans inline, skipping a separate plan-slice cycle.
-- **Slice execution** follows the familiar research → plan → execute → verify cycle.
+**3. Determine milestone version** — Parses the last version from `MILESTONES.md` and suggests the next increment (`v1.0 → v1.1`, or `v2.0` for a major reboot). You confirm the label.
 
-Prior milestone artifacts — decisions, knowledge entries, summaries — are available as context throughout.
+**4. Update planning files** — Adds a `## Current Milestone` section to `PROJECT.md` with the goal and target features. Resets `STATE.md` to `Phase: Not started (defining requirements)`, preserving the Accumulated Context from the previous milestone. Deletes `MILESTONE-CONTEXT.md` if it existed, then commits both files.
+
+**5. Resolve models** — Runs `gsd-tools init new-milestone` to extract agent model assignments (`researcher_model`, `synthesizer_model`, `roadmapper_model`) and workflow config flags.
+
+**6. Research decision** — Asks whether to research the domain ecosystem before defining requirements. The choice is persisted to config so future commands honor it.
+
+**7. Parallel research (optional)** — If research is selected, 4 `gsd-project-researcher` agents run in parallel, each focused on a different dimension:
+
+| Dimension | Question answered |
+|-----------|-----------------|
+| **Stack** | What library/version additions are needed for the new features? |
+| **Features** | How do the target features typically work? Table stakes vs differentiators? |
+| **Architecture** | How do new features integrate with the existing architecture? |
+| **Pitfalls** | Common mistakes when adding these features to an existing system? |
+
+After all 4 complete, a `gsd-research-synthesizer` agent writes `SUMMARY.md` and key findings are displayed inline.
+
+**8. Define requirements** — Presents features by category (from research or gathered via conversation). For each category, a multi-select prompt lets you scope what's in this milestone vs deferred vs out of scope. Requirements are written with REQ-IDs in `[CATEGORY]-[NUMBER]` format (e.g., `AUTH-01`, `NOTIF-02`), continuing from any existing requirement numbers. You confirm the full list before it's committed.
+
+**9. Create roadmap** — Spawns `gsd-roadmapper` with the starting phase number read from `MILESTONES.md` (so phase numbering is continuous across milestones). The roadmapper maps every requirement to exactly one phase, derives 2–5 success criteria per phase, and validates 100% coverage. The roadmap is presented inline — you can request adjustments and the roadmapper re-runs until you approve.
+
+**10. Final commit** — Commits `ROADMAP.md`, `STATE.md`, and `REQUIREMENTS.md` together (with traceability filled in by the roadmapper). Displays a completion summary and the next command.
+
+### Milestone Version Numbering
+
+GSD reads the last version from `MILESTONES.md` and suggests the next increment:
+
+- `v1.0` → suggests `v1.1` (minor increment)
+- Suggest `v2.0` yourself for major reboots
+
+Phase numbering **continues** across milestones — if v1.0 delivered phases 1–5, v1.1's roadmap starts at phase 6. This preserves the full build history in a single continuous phase sequence.
+
+### Context File Shortcut
+
+If a `MILESTONE-CONTEXT.md` file is present in `.planning/` when you run the command, the goal-gathering Q&A step is skipped entirely — GSD uses that file's features and scope directly and presents a confirmation summary. This is the fastest path when the goals are already clear. The file is deleted (consumed) after the milestone is initialized.
+
+### What Research Does
+
+Research findings are **advisory** — they surface candidate requirements rather than silently expanding scope. After research completes, every feature category is presented back to you for explicit in/defer/out-of-scope scoping. Nothing gets added to requirements without your confirmation.
+
+Research agents are milestone-aware: they only investigate what's needed for the **new** features, not the existing validated capabilities.
 
 ## What Files It Touches
 
@@ -88,217 +126,156 @@ Prior milestone artifacts — decisions, knowledge entries, summaries — are av
 
 | File | Purpose |
 |------|---------|
-| `.gsd/milestones/MXXX/` | New milestone directory |
-| `.gsd/milestones/MXXX/MXXX-CONTEXT.md` | Milestone scope, goals, constraints, key decisions from discussion |
-| `.gsd/milestones/MXXX/MXXX-ROADMAP.md` | Slice plan with risk ordering, success criteria, proof strategy, verification classes, requirement coverage, and boundary map |
-| `.gsd/milestones/MXXX/MXXX-RESEARCH.md` | Milestone-level research findings (codebase, libraries, risks) |
-| `.gsd/REQUIREMENTS.md` | Capability contract with requirement IDs, status, ownership, and traceability (created if missing) |
+| `.planning/REQUIREMENTS.md` | Scoped requirements with REQ-IDs, categories, future and out-of-scope sections |
+| `.planning/ROADMAP.md` | Phased execution plan with success criteria and continuous phase numbering |
+| `.planning/research/STACK.md` | Stack additions needed for new features (research only) |
+| `.planning/research/FEATURES.md` | Feature analysis: table stakes vs differentiators (research only) |
+| `.planning/research/ARCHITECTURE.md` | Integration points and build order (research only) |
+| `.planning/research/PITFALLS.md` | Common mistakes and prevention strategies (research only) |
+| `.planning/research/SUMMARY.md` | Synthesized research summary (research only) |
 
 ### Writes (updates existing)
 
 | File | Purpose |
 |------|---------|
-| `.gsd/PROJECT.md` | Updated to show new milestone in the sequence |
-| `.gsd/DECISIONS.md` | New entries appended for architectural decisions made during discussion |
-| `.gsd/REQUIREMENTS.md` | Updated with requirements from the new milestone's discussion (when file already exists) |
-
-### Creates (conditional)
-
-| File | Purpose |
-|------|---------|
-| `.gsd/milestones/MXXX/MXXX-CONTEXT-DRAFT.md` | Seed material for a secondary milestone chosen as "write draft for later" |
-| `.gsd/DISCUSSION-MANIFEST.json` | Gate tracking for multi-milestone discussions — automatically deleted after auto-start |
-| `.gsd/milestones/MXXX/MXXX-SECRETS-MANIFEST.md` | Predicted external API keys required by the milestone (created during planning if detected) |
+| `.planning/PROJECT.md` | Updated with `## Current Milestone` section and active requirements |
+| `.planning/STATE.md` | Reset to `Phase: Not started (defining requirements)` for the new milestone |
+| `.planning/REQUIREMENTS.md` | Traceability section filled by roadmapper after roadmap creation |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/milestones/M*/M*-SUMMARY.md` | Prior milestone summaries — read during research for context continuity |
-| `.gsd/DECISIONS.md` | Prior decisions carried forward as reference |
-| `.gsd/KNOWLEDGE.md` | Patterns and discoveries from prior milestones |
+| `.planning/PROJECT.md` | Existing stack, decisions, validated requirements |
+| `.planning/MILESTONES.md` | What shipped previously; last phase number for continuation |
+| `.planning/STATE.md` | Pending todos and blockers from the previous milestone |
+| `.planning/MILESTONE-CONTEXT.md` | Pre-gathered milestone goals — optional, skips goal Q&A if present |
+
+### Deletes
+
+| File | Purpose |
+|------|---------|
+| `.planning/MILESTONE-CONTEXT.md` | Consumed and deleted after goals are extracted |
 
 ## Examples
 
-**M001 complete, starting M002 with social features:**
+**v1.0 complete, starting v1.1 with notifications:**
 
 ```
-> /gsd
+> /gsd:new-milestone
 
-● M001: Core Recipe Platform — complete ✓
-  No active milestone. Ready to discuss the next one.
+● v1.0 Core Platform — shipped ✓
+  No active milestone. What do you want to build next?
 
-  What's the vision?
-
-> I want to add social features to Cookmate. Users should be
-> able to follow other cooks, see an activity feed of new
-> recipes from people they follow, comment on recipes, and
-> share recipes via link.
+> Add push notifications. Users should get alerts when
+> someone comments on their post or follows them. Also
+> want an in-app notification center so they can review
+> past alerts.
 ```
 
-GSD reflects back the scope and size estimate before questioning:
+GSD confirms the milestone version and asks about research:
 
 ```
-● Got it. Here's what I'm hearing:
-  - Follow system between users
-  - Activity feed showing new recipes from followed cooks
-  - Recipe comments
-  - Shareable recipe links
+● Milestone: v1.1 Notifications
 
-  Size read: probably 1 milestone, 4 slices. The feed query
-  is the technical risk — worth proving early.
-
-  Does that capture it? If not, tell me what I missed.
+  Research the domain ecosystem before defining requirements?
+  ● Research first (Recommended) — Discover patterns for new capabilities
+    Skip research — Go straight to requirements
 ```
 
-After discussion and depth verification, GSD prints the requirements table then the roadmap preview:
+After parallel research completes:
 
 ```
-● Requirements for M002: Social Features
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► RESEARCH COMPLETE ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  | ID   | Title                  | Status | Owner | Source |
-  |------|------------------------|--------|-------|--------|
-  | R001 | Follow system          | Active | S01   | user   |
-  | R002 | Activity feed          | Active | S02   | user   |
-  | R003 | Recipe comments        | Active | S03   | user   |
-  | R004 | Shareable recipe links | Active | S04   | user   |
-
-  Confirm, adjust, or add?
-
-> Looks right.
-
-● Roadmap for M002: Social Features
-
-  | Slice | Title                     | Risk   | Depends | Demo |
-  |-------|---------------------------|--------|---------|------|
-  | S01   | User profiles + following | high   | []      | User visits another cook's profile and follows them |
-  | S02   | Activity feed             | high   | [S01]   | User sees new recipes from followed cooks in their feed |
-  | S03   | Recipe comments           | medium | [S01]   | User adds a comment and sees it appear immediately |
-  | S04   | Recipe sharing            | low    | []      | User copies a share link that opens the recipe for others |
-
-  Ready to write, or want to adjust?
-```
-
-After confirmation, files are written and auto-mode starts:
-
-```
-● Milestone M002 ready.
-● Auto-mode starting...
+Stack additions: expo-notifications 0.28, @supabase/realtime-js
+Feature table stakes: delivery receipts, badge counts, opt-out per type
+Watch Out For: APNs certificate expiry, notification permission timing
 ```
 
 ---
 
-**Multi-milestone vision — three milestones with sequential gates:**
+**Requirements scoping — selecting what's in vs deferred:**
+
+After research (or Q&A), GSD scopes each category interactively:
 
 ```
-> /gsd
+## Push Notifications
+Table stakes: Delivery receipts, Badge counts
+Differentiators: Rich media, Scheduled sends
 
-> I want to build a marketplace: buyers browse and purchase,
-> sellers list inventory and manage orders, and then add a
-> recommendation engine that learns from purchase history.
-
-● Got it. Three distinct capabilities with clear sequencing...
-  [reflection + milestone sequence proposal]
-
-  Milestone sequence:
-  - M001: Core marketplace (browse, purchase, seller listings) — 6 slices
-  - M002: Order management + seller dashboard — 4 slices
-  - M003: Recommendation engine — 3 slices
-
-  Does this split match your thinking?
+Which features are in scope for v1.1? (multi-select)
+✓ Delivery receipts
+✓ Badge counts
+  Rich media — deferred to v1.2
+  Scheduled sends — out of scope
 ```
 
-After discussing M001 in depth, GSD walks the readiness gates:
+After confirmation, the full requirements list is presented:
 
 ```
-● M002: Order management + seller dashboard
+## Milestone v1.1 Requirements
 
-  Discuss now — full discussion in this session
-  Write draft for later — capture seed material, discuss in next session
-  Just queue it — create the milestone, discuss when auto-mode arrives
+### Notifications
+- [ ] NOTIF-01: User receives push alert when someone comments on their post
+- [ ] NOTIF-02: User receives push alert when someone follows them
+- [ ] NOTIF-03: User can view past notifications in in-app center
+- [ ] NOTIF-04: User can opt out of notification types
 
-> Write draft for later
-
-● M002-CONTEXT-DRAFT.md written with seed material from today's discussion.
-  When auto-mode reaches M002, you'll be prompted to run /gsd to finalize.
+Does this capture what you're building? (yes / adjust)
 ```
 
 ---
 
-**Checking what the new milestone produced:**
-
-After discussion completes and auto-mode is running, the `.gsd/` tree shows:
+**Roadmap preview after requirements are confirmed:**
 
 ```
-.gsd/
-├── PROJECT.md                    ← updated with M002 in sequence
-├── REQUIREMENTS.md               ← capability contract updated
-├── DECISIONS.md                  ← new decisions from discussion appended
-├── KNOWLEDGE.md                  ← patterns from M001 intact
-└── milestones/
-    ├── M001/                     ← complete, untouched
-    │   ├── M001-CONTEXT.md
-    │   ├── M001-ROADMAP.md       ← all slices ✓
-    │   ├── M001-SUMMARY.md
-    │   └── slices/
-    └── M002/
-        ├── M002-CONTEXT.md       ← scope, goals, constraints from discussion
-        ├── M002-ROADMAP.md       ← slices with risk ordering
-        └── M002-RESEARCH.md      ← written by auto-mode's first unit
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► CREATING ROADMAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+◆ Spawning roadmapper...
+
+## Proposed Roadmap
+
+3 phases | 4 requirements mapped | All covered ✓
+
+| # | Phase | Goal | Requirements | Success Criteria |
+|---|-------|------|--------------|------------------|
+| 6 | Notification delivery | Push alerts for social events | NOTIF-01, NOTIF-02 | 3 |
+| 7 | In-app notification center | Browse and manage past alerts | NOTIF-03 | 2 |
+| 8 | Notification preferences | Per-type opt-out controls | NOTIF-04 | 2 |
+
+Approve / Adjust phases / Review full file
 ```
 
-## Flow Diagram
+---
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a3a1a', 'primaryTextColor': '#e8f4e8', 'primaryBorderColor': '#39ff14', 'lineColor': '#39ff14', 'secondaryColor': '#0d180d', 'tertiaryColor': '#0d180d', 'background': '#0a0e0a', 'mainBkg': '#1a3a1a', 'nodeBorder': '#39ff14', 'clusterBkg': '#0d180d', 'titleColor': '#39ff14', 'edgeLabelBackground': '#0a0e0a'}}}%%
-flowchart TD
-    Start([Prior milestone complete]) --> GSD["/gsd — no active milestone"]
-    GSD --> Reflect[Reflect scope back to user]
-    Reflect --> VisionMap{Multi-milestone?}
-    VisionMap -->|Yes| MilestoneSeq[Propose milestone sequence]
-    MilestoneSeq --> Confirm[User confirms split]
-    Confirm --> Investigate
-    VisionMap -->|No| Investigate[Mandatory codebase investigation]
-    Investigate --> QA[Adaptive Q&A rounds]
-    QA --> DepthCheck[Depth verification — write gate]
-    DepthCheck --> ReqPass[Requirements table + roadmap preview]
-    ReqPass --> WriteFiles[Write CONTEXT · ROADMAP · REQUIREMENTS · PROJECT]
-    WriteFiles --> MultiGate{More milestones?}
-    MultiGate -->|Yes| Gate["Sequential readiness gate\n(discuss / draft / queue)"]
-    Gate --> MultiGate
-    MultiGate -->|No| AutoStart[Auto-mode starts automatically]
-    AutoStart --> Research[Research milestone]
-    Research --> Plan[Plan roadmap → slices]
-    Plan --> SliceLoop{More slices?}
-    SliceLoop -->|Yes| Execute[Plan + execute + verify slice]
-    Execute --> SliceLoop
-    SliceLoop -->|No| Done([Milestone complete ✓])
+**What the `.planning/` tree looks like after initialization:**
 
-    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style GSD fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Reflect fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style VisionMap fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style MilestoneSeq fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Confirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Investigate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style QA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style DepthCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ReqPass fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style WriteFiles fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style MultiGate fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Gate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style AutoStart fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Research fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Plan fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SliceLoop fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
+.planning/
+├── PROJECT.md              ← updated with v1.1 milestone section
+├── STATE.md                ← reset for new milestone
+├── MILESTONES.md           ← v1.0 history intact
+├── REQUIREMENTS.md         ← v1.1 requirements with REQ-IDs
+├── ROADMAP.md              ← phases 6–8 added (continues from v1.0's phase 5)
+└── research/
+    ├── STACK.md
+    ├── FEATURES.md
+    ├── ARCHITECTURE.md
+    ├── PITFALLS.md
+    └── SUMMARY.md
+```
+
+Phase numbers continue — `v1.0` ended at phase 5, `v1.1` starts at phase 6. The full history is visible in a single `ROADMAP.md` with completed milestones collapsed in `<details>` tags.
 
 ## Related Commands
 
-- [`/gsd`](../../commands/gsd/) — The main entry point that routes to discussion when no milestone is active
-- [`/gsd queue`](../../commands/queue/) — Add a future milestone to the stack before discussing
-- [`/gsd discuss`](../../commands/discuss/) — Re-run discussion for the current milestone
-- [`/gsd auto`](../../commands/auto/) — Start auto-mode manually after discussion (normally starts automatically)
-- [Developing with GSD](../../user-guide/developing-with-gsd/) — Full lifecycle walkthrough from first milestone
+- [`/gsd:new-milestone`](../../commands/new-milestone/) — Full command reference with all options
+- [`/gsd:complete-milestone`](../../commands/complete-milestone/) — Archive the current milestone before starting a new one
+- [`/gsd:discuss-phase`](../../commands/discuss-phase/) — Clarify implementation decisions for the first phase
+- [`/gsd:plan-phase`](../../commands/plan-phase/) — Skip discussion and plan the first phase directly
+- [`/gsd:new-project`](../../commands/new-project/) — Greenfield equivalent — initializes a brand-new project from scratch

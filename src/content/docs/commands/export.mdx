@@ -1,46 +1,106 @@
 ---
 title: "/gsd export"
-description: "Generate a self-contained HTML report snapshot of milestone work — progress, cost, timeline, and more."
+description: "Export milestone data as a self-contained HTML report, JSON, or Markdown — shareable snapshots of progress, cost, and timeline."
 ---
 
 ## What It Does
 
-`/gsd export --html` generates a self-contained HTML report of your milestone work and saves it to `.gsd/reports/`. The file embeds all CSS and JavaScript inline — no external dependencies — so it can be opened in any browser, shared as a single file, or printed to PDF.
+`/gsd export` generates a shareable snapshot of your milestone work in three formats:
 
-Reports capture the same data pipeline as the TUI [`/gsd visualize`](../visualize/) overlay: progress tree, dependency graph, cost and token metrics, execution timeline, changelog, knowledge base, and more.
-
-An auto-generated `index.html` in the reports directory links all snapshots with progression metrics and a cost sparkline across milestones.
+- **`--html`** — A self-contained HTML file with progress tree, dependency graph, cost metrics, execution timeline, changelog, knowledge base, blockers, and more. All CSS and JavaScript are inlined — no external dependencies. Opens in your browser automatically.
+- **`--json`** — A machine-readable JSON file with totals, cost by phase, cost by slice, cost by model, and the full unit history. Useful for CI dashboards and tooling.
+- **`--markdown`** — A human-readable Markdown summary with cost and unit tables. Good for pasting into PRs or Notion.
 
 HTML reports are also generated **automatically** after each milestone completes. This is enabled by default.
+
+An auto-generated `index.html` in the reports directory links all HTML snapshots with progression metrics and a cost sparkline across milestones.
 
 ## Usage
 
 ```
 /gsd export --html
 /gsd export --html --all
+/gsd export --json
+/gsd export --markdown
 ```
 
 ## How It Works
 
+### Export Flow
+
+```mermaid
+flowchart TD
+    Start(["/gsd export <flags>"]) --> CheckFlag{Flag?}
+    CheckFlag -->|"--html"| CheckAll{"--all?"}
+    CheckFlag -->|"--json"| LoadLedger[Load metrics ledger]
+    CheckFlag -->|"--markdown"| LoadLedger
+
+    CheckAll -->|Yes| LoadIndex[Load reports index]
+    LoadIndex --> FindTargets[Find milestones not yet in index]
+    FindTargets --> NoTargets{Any targets?}
+    NoTargets -->|No| Notify([Notify — all covered])
+    NoTargets -->|Yes| GenAll[Generate HTML for each target]
+    GenAll --> WriteAll[Write snapshots + update index.html]
+    WriteAll --> OpenIndex[Open index.html in browser]
+    OpenIndex --> Done([Done])
+
+    CheckAll -->|No| LoadViz[Load visualizer data]
+    LoadViz --> GenHTML[Generate HTML report]
+    GenHTML --> WriteSnap[Write snapshot + update index.html]
+    WriteSnap --> OpenReport[Open report in browser]
+    OpenReport --> Done
+
+    LoadLedger --> NoUnits{Units exist?}
+    NoUnits -->|No| NotifyEmpty([Notify — nothing to export])
+    NoUnits -->|Yes| Format{Format}
+    Format -->|JSON| WriteJSON[Write export-timestamp.json]
+    Format -->|Markdown| WriteMD[Write export-timestamp.md]
+    WriteJSON --> Done
+    WriteMD --> Done
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CheckFlag fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CheckAll fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NoTargets fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style NoUnits fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Format fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style NotifyEmpty fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadIndex fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style FindTargets fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GenAll fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteAll fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style OpenIndex fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadViz fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GenHTML fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteSnap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style OpenReport fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style LoadLedger fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteJSON fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteMD fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
 ### HTML Export
 
-Generates a self-contained HTML snapshot at `.gsd/reports/<milestone-id>-<timestamp>.html` (e.g., `M003-20260317T103000.html`). The report renders eleven sections:
+Generates a self-contained HTML snapshot at `.gsd/reports/<milestone-id>-<timestamp>.html` (e.g., `M003-2026-03-17T10-30-00.html`). The report renders twelve sections:
 
 | Section | Contents |
 |---------|----------|
 | Summary | Project name, phase, overall progress bar, key metrics |
-| Progress | Milestones and slices tree with status |
+| Blockers | Active blockers across all slices |
+| Progress | Milestones and slices tree with status and critical path |
 | Timeline | Chronological unit execution history |
-| Dependencies | Slice dependency graph |
-| Metrics | Cost/token/duration charts by phase and model |
+| Dependencies | Slice dependency graph (SVG DAG per milestone) |
+| Metrics | Cost/token/duration charts by phase, slice, model, and tier |
 | Health | Configuration overview and missing changelogs |
-| Changelog | Completed slice summaries |
+| Changelog | Completed slice summaries and file modifications |
 | Knowledge | Rules, patterns, and lessons from KNOWLEDGE.md |
 | Captures | Pending and resolved captures |
 | Artifacts | Tracked file and artifact status |
 | Planning | Milestone planning notes and discussion |
 
-All CSS and JavaScript are inlined — no external dependencies. The file is printable to PDF from any browser.
+All CSS and JavaScript are inlined — no external dependencies. The file is printable to PDF from any browser. After writing the file, GSD opens it automatically using your system's default browser.
 
 Each snapshot has a `kind` tag that indicates how it was created:
 
@@ -59,9 +119,41 @@ Each time a new snapshot is written, the reports directory is updated with:
 
 ### `--html --all`
 
-Generates a report snapshot for every milestone that does not already have one in the reports index. The check is by milestone ID — if any snapshot exists for a milestone, it is skipped. If all milestones already have snapshots, the command notifies you and exits without writing new files.
+Generates a report snapshot for every milestone that does not already have an entry in the reports registry (`reports.json`). The check is by milestone ID — if any snapshot exists for a milestone, it is skipped. If all milestones already have snapshots, the command notifies you and exits without writing new files.
+
+After generating all snapshots, the reports `index.html` opens in your browser automatically.
 
 Run without `--all` to manually create a new snapshot for the active milestone at any time.
+
+### JSON Export
+
+Writes `.gsd/export-<timestamp>.json` containing:
+
+```json
+{
+  "exportedAt": "...",
+  "project": "my-app",
+  "totals": { "units": 42, "cost": 1.23, "tokens": { "total": 120000 }, "duration": 18000, "toolCalls": 340 },
+  "byPhase": [ ... ],
+  "bySlice": [ ... ],
+  "byModel": [ ... ],
+  "units": [ ... ]
+}
+```
+
+Useful for CI dashboards, custom reporting scripts, or feeding into other tooling.
+
+### Markdown Export
+
+Writes `.gsd/export-<timestamp>.md` — a plain-text summary with:
+
+- Project header and generation metadata
+- Key totals: units, cost, tokens, duration, tool calls
+- **Cost by Phase** table (phase, units, cost, tokens, duration)
+- **Cost by Slice** table (slice ID, units, cost, tokens, duration)
+- **Unit History** table (type, ID, model, cost, tokens, duration)
+
+Good for pasting into PR descriptions, Notion, or any Markdown-capable destination.
 
 ### Auto-Report
 
@@ -74,7 +166,9 @@ auto_report: false   # set to false to disable auto-generation on milestone comp
 
 ### Data Sources
 
-Export reads from the metrics ledger at `.gsd/metrics.json` and project state files. If the active session has executed units, the in-memory ledger is used; otherwise the on-disk file is read.
+For HTML exports, data is loaded through the full visualizer-data pipeline, which reads planning files, metrics, changelogs, captures, and knowledge on disk.
+
+For JSON and Markdown exports, export reads the in-memory metrics ledger if the current session has executed units; otherwise it falls back to reading `.gsd/metrics.json` from disk. If neither source has any units, the command exits with a notification rather than writing an empty file.
 
 ## What Files It Touches
 
@@ -85,25 +179,27 @@ Export reads from the metrics ledger at `.gsd/metrics.json` and project state fi
 | `.gsd/reports/<milestone-id>-<timestamp>.html` | HTML report snapshot |
 | `.gsd/reports/index.html` | Report index page (regenerated on each new snapshot) |
 | `.gsd/reports/reports.json` | Report registry for programmatic access |
+| `.gsd/export-<timestamp>.json` | JSON export (cost, token, and unit data) |
+| `.gsd/export-<timestamp>.md` | Markdown export (summary tables) |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/metrics.json` | Cost, token, and duration data |
+| `.gsd/metrics.json` | Cost, token, and duration data (fallback for JSON/Markdown) |
 | `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Milestone progress and slice status |
 | `.gsd/KNOWLEDGE.md` | Rules and lessons for the Knowledge section |
 | `.gsd/CAPTURES.md` | Pending and resolved captures |
 
 ## Examples
 
-Generate an HTML report for the active milestone:
+Generate an HTML report for the active milestone (opens in browser):
 
 ```
 > /gsd export --html
 
-● HTML report saved: .gsd/reports/M003-20260317T103000.html
-  Browse all reports: .gsd/reports/index.html
+● HTML report saved: .gsd/reports/M003-2026-03-17T10-30-00.html
+  Opening in browser...
 ```
 
 Retrospective snapshots for all milestones without reports:
@@ -112,10 +208,10 @@ Retrospective snapshots for all milestones without reports:
 > /gsd export --html --all
 
 ● Generated 3 report snapshots:
-    M001-20260310T091500.html
-    M002-20260314T140000.html
-    M003-20260317T103000.html
-  Browse all reports: .gsd/reports/index.html
+    M001-2026-03-10T09-15-00.html
+    M002-2026-03-14T14-00-00.html
+    M003-2026-03-17T10-30-00.html
+  Opening reports index in browser...
 ```
 
 If all milestones already have reports:
@@ -124,6 +220,22 @@ If all milestones already have reports:
 > /gsd export --html --all
 
 ● All milestones already have report snapshots. Run without --all to create a new snapshot for the active milestone.
+```
+
+Export cost data for CI tooling:
+
+```
+> /gsd export --json
+
+● Exported to .gsd/export-2026-03-17T10-30-00.json
+```
+
+Export a readable summary to paste into a PR:
+
+```
+> /gsd export --markdown
+
+● Exported to .gsd/export-2026-03-17T10-30-00.md
 ```
 
 ## Related Commands

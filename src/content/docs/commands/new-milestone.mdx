@@ -7,9 +7,9 @@ description: "Start a new milestone cycle — update PROJECT.md, scope requireme
 
 `/gsd new-milestone` is the brownfield equivalent of [`/gsd new-project`](../new-project/). Your project already exists, `PROJECT.md` has history, and phases have shipped — this command starts the next cycle. It loads your existing project context, gathers what you want to build next, updates `PROJECT.md` and `STATE.md`, optionally runs parallel domain research, scopes requirements with REQ-IDs, and spawns the roadmapper to produce a phased execution plan that continues your phase numbering from where the last milestone left off.
 
-The command accepts an optional milestone name as an argument. If no `MILESTONE-CONTEXT.md` file exists (written by [`/gsd discuss-phase`](../discuss-phase/) or a prior discussion), it falls back to interactive Q&A — asking what you want to build next and exploring features, priorities, and constraints.
+The command accepts an optional milestone name as an argument. If no `MILESTONE-CONTEXT.md` file exists (a pre-gathered context file you can prepare in advance), it falls back to interactive Q&A — asking what you want to build next and exploring features, priorities, and constraints.
 
-After the roadmap is approved and committed, you get a clear next step: `/gsd:discuss-phase [N]` or `/gsd:plan-phase [N]` to start execution.
+After the roadmap is approved and committed, you get a clear next step: `/gsd:discuss-phase [N]` to clarify the first phase, or `/gsd:plan-phase [N]` to start execution directly.
 
 ## Usage
 
@@ -34,11 +34,12 @@ flowchart TD
     Start(["/gsd new-milestone"]) --> LoadCtx[Load project context\nPROJECT.md · MILESTONES.md · STATE.md]
     LoadCtx --> ContextFile{MILESTONE-CONTEXT.md\nexists?}
     ContextFile -->|Yes| UseCtx[Use pre-gathered context\nPresent summary for confirmation]
-    ContextFile -->|No| QA[Interactive Q&A\nWhat to build next?]
+    ContextFile -->|No| QA[Freeform ask: What to build next?\nthen AskUserQuestion for specifics]
     UseCtx --> Version[Determine milestone version\nv1.0 → v1.1 · confirm with user]
     QA --> Version
-    Version --> UpdateFiles[Update PROJECT.md + STATE.md\nCommit]
-    UpdateFiles --> Research{Research\nneeded?}
+    Version --> UpdateFiles[Update PROJECT.md + STATE.md\nDelete context file · Commit]
+    UpdateFiles --> Init[Resolve agent models\ngsd-tools init new-milestone]
+    Init --> Research{Research\nneeded?}
     Research -->|Yes| Parallel[4 parallel researcher agents\nStack · Features · Architecture · Pitfalls]
     Parallel --> Synth[Synthesizer agent\nWrite SUMMARY.md]
     Synth --> Reqs[Scope requirements\nby category with AskUserQuestion]
@@ -48,7 +49,7 @@ flowchart TD
     Roadmap --> Approve{Roadmap\napproved?}
     Approve -->|Adjust| Roadmap
     Approve -->|Yes| Commit[Commit ROADMAP.md\nSTATE.md · REQUIREMENTS.md]
-    Commit --> Done([Done — next: /gsd:plan-phase N])
+    Commit --> Done([Done — next: /gsd:discuss-phase N\nor /gsd:plan-phase N])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -60,6 +61,7 @@ flowchart TD
     style QA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Version fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style UpdateFiles fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Init fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Parallel fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Synth fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Reqs fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -70,19 +72,21 @@ flowchart TD
 
 ### Step-by-Step
 
-**1. Load context** — Reads `PROJECT.md` (existing stack, decisions, validated requirements), `MILESTONES.md` (what has shipped), and `STATE.md` (pending todos, blockers). Calls `init new-milestone` to resolve agent models and config.
+**1. Load context** — Reads `PROJECT.md` (existing stack, decisions, validated requirements), `MILESTONES.md` (what has shipped), and `STATE.md` (pending todos, blockers). Checks for a pre-existing `MILESTONE-CONTEXT.md`.
 
-**2. Gather milestone goals** — If `MILESTONE-CONTEXT.md` exists (written by a prior discussion), its features and scope are used and presented for confirmation. Otherwise, GSD shows what shipped in the last milestone and asks: "What do you want to build next?" — using `AskUserQuestion` to explore features, priorities, constraints, and scope.
+**2. Gather milestone goals** — If `MILESTONE-CONTEXT.md` exists (a pre-prepared context file), its features and scope are used and presented for confirmation. Otherwise, GSD shows what shipped in the last milestone and asks inline (freeform): "What do you want to build next?" — then follows up with `AskUserQuestion` to probe features, priorities, constraints, and scope.
 
 **3. Determine milestone version** — Parses the last version from `MILESTONES.md`, suggests the next increment (e.g., `v1.0 → v1.1`, or `v2.0` for a major), and confirms with you.
 
-**4. Update PROJECT.md and STATE.md** — Adds a `## Current Milestone` section to `PROJECT.md` with the goal and target features. Resets `STATE.md` with `Phase: Not started (defining requirements)`, preserving the Accumulated Context section from the previous milestone. Commits both files.
+**4. Update PROJECT.md and STATE.md** — Adds a `## Current Milestone` section to `PROJECT.md` with the goal and target features. Resets `STATE.md` with `Phase: Not started (defining requirements)`, preserving the Accumulated Context section from the previous milestone.
 
-**5. Consume MILESTONE-CONTEXT.md** — If the context file existed, it's deleted (consumed).
+**5. Consume MILESTONE-CONTEXT.md** — If the context file existed, it's deleted (consumed). Then both updated files are committed.
 
-**6. Research decision** — Asks whether to research the domain ecosystem for new features before defining requirements. The choice is persisted to config so future commands honor it. If "Research first" is selected, 4 parallel `gsd-project-researcher` agents run (see below).
+**6. Resolve models** — Runs `gsd-tools init new-milestone` to extract `researcher_model`, `synthesizer_model`, `roadmapper_model`, and workflow config flags.
 
-**7. Research (optional)** — Spawns 4 parallel agents, each focused on a different dimension:
+**7. Research decision** — Asks whether to research the domain ecosystem for new features before defining requirements. The choice is persisted to config so future commands honor it. If "Research first" is selected, 4 parallel `gsd-project-researcher` agents run (see below).
+
+**8. Research (optional)** — Spawns 4 parallel agents, each focused on a different dimension:
 
 | Dimension | Question answered |
 |-----------|------------------|
@@ -93,11 +97,11 @@ flowchart TD
 
 After all 4 complete, a `gsd-research-synthesizer` agent writes `SUMMARY.md` with key findings displayed inline.
 
-**8. Define requirements** — Presents features by category (from research or gathered via conversation). For each category, `AskUserQuestion` (multi-select) lets you scope what's in vs deferred vs out of scope. Requirements are written with REQ-IDs in `[CATEGORY]-[NUMBER]` format (e.g., `AUTH-01`, `NOTIF-02`), continuing numbering from existing requirements. You confirm the full list before it's committed.
+**9. Define requirements** — Presents features by category (from research or gathered via conversation). For each category, `AskUserQuestion` (multi-select) lets you scope what's in vs deferred vs out of scope. Requirements are written with REQ-IDs in `[CATEGORY]-[NUMBER]` format (e.g., `AUTH-01`, `NOTIF-02`), continuing numbering from existing requirements. You confirm the full list before it's committed.
 
-**9. Create roadmap** — Spawns `gsd-roadmapper` with the phase starting number taken from `MILESTONES.md` (e.g., if v1.0 ended at phase 5, v1.1 starts at phase 6). The roadmapper maps every requirement to exactly one phase, derives 2–5 success criteria per phase, and validates 100% coverage. The roadmap is presented inline for approval — you can request adjustments and the roadmapper is re-spawned until you approve.
+**10. Create roadmap** — Spawns `gsd-roadmapper` with the phase starting number taken from `MILESTONES.md` (e.g., if v1.0 ended at phase 5, v1.1 starts at phase 6). The roadmapper maps every requirement to exactly one phase, derives 2–5 success criteria per phase, and validates 100% coverage. The roadmap is presented inline for approval — you can request adjustments and the roadmapper is re-spawned until you approve.
 
-**10. Final commit** — Commits `ROADMAP.md`, `STATE.md`, and `REQUIREMENTS.md` together. Displays a completion summary with the artifact table and the next command.
+**11. Final commit** — Commits `ROADMAP.md`, `STATE.md`, and `REQUIREMENTS.md` together (with the traceability section filled in by the roadmapper). Displays a completion summary with the artifact table and the next command.
 
 ### Milestone Version Numbering
 
@@ -110,7 +114,7 @@ Phase numbering **continues** across milestones — if v1.0 delivered phases 1�
 
 ### Context File Shortcut
 
-If you ran [`/gsd discuss-phase`](../discuss-phase/) or another discussion command that wrote `MILESTONE-CONTEXT.md`, the Q&A step is skipped entirely — GSD uses that file's features and scope directly and presents a summary for confirmation. This is the fastest path through new-milestone when the goals are already clear.
+If a `MILESTONE-CONTEXT.md` file is present in `.planning/` when you run new-milestone, the Q&A step is skipped entirely — GSD uses that file's features and scope directly and presents a summary for confirmation. This is the fastest path through new-milestone when the goals are already clear.
 
 ## What Files It Touches
 
@@ -168,9 +172,9 @@ GSD loads your project history, shows what shipped in v1.0, and jumps straight t
 
 GSD asks what you want to build next, explores priorities and constraints, suggests a version number, then proceeds through research → requirements → roadmap.
 
-**Fastest path — pre-discuss then plan:**
+**Fastest path — pre-prepare context then plan:**
 
-If you've already worked through what to build (e.g., with `/gsd discuss-phase`), a `MILESTONE-CONTEXT.md` file will be present. Running `/gsd new-milestone` then skips the goal-gathering Q&A entirely:
+If you've created a `MILESTONE-CONTEXT.md` file in `.planning/` ahead of time, running `/gsd new-milestone` skips the goal-gathering Q&A entirely:
 
 ```
 /gsd new-milestone
@@ -216,6 +220,5 @@ Which features are in scope for v1.1? (multi-select)
 
 - [`/gsd new-project`](../new-project/) — Greenfield equivalent — initializes a brand-new project from scratch
 - [`/gsd complete-milestone`](../complete-milestone/) — Archive the current milestone before running new-milestone
-- [`/gsd discuss-phase`](../discuss-phase/) — Gather phase context before planning (also writes MILESTONE-CONTEXT.md)
+- [`/gsd discuss-phase`](../discuss-phase/) — Clarify implementation decisions for a specific phase before planning
 - [`/gsd plan-phase`](../plan-phase/) — Create a detailed phase plan after the roadmap is ready
-- [`/gsd queue`](../queue/) — Add future milestones to the backlog

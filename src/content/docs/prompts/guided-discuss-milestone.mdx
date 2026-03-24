@@ -19,12 +19,12 @@ The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact 
 
 ```mermaid
 flowchart TD
-    GsdCommand["/gsd"] --> SelectUnit["select-unit"]
+    GsdCommand["/gsd discuss"] --> SelectUnit["guided flow dispatch"]
     SelectUnit --> GuidedDiscussMilestone["guided-discuss-milestone"]
-    GuidedDiscussMilestone --> QuestionRounds["question-rounds"]
+    GuidedDiscussMilestone --> QuestionRounds["question rounds"]
     QuestionRounds --> DepthVerification{"depth verified?"}
     DepthVerification -->|"no"| QuestionRounds
-    DepthVerification -->|"yes"| ArtifactWritten["artifact-written\n(milestoneId-CONTEXT.md)"]
+    DepthVerification -->|"yes"| ArtifactWritten["artifact written\n(milestoneId-CONTEXT.md)"]
 
     style GuidedDiscussMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
     style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -34,7 +34,7 @@ flowchart TD
     style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-`guided-discuss-milestone` typically runs before `guided-plan-milestone` or `plan-milestone`. The context file it writes is read by both planning prompts and, via the slice-level planning prompts, by `research-slice` and `plan-slice` to ground their work in the user's stated intent.
+`guided-discuss-milestone` runs before `guided-plan-milestone` or `plan-milestone`. The context file it writes is read by both planning prompts and, via the slice-level planning prompts, by `research-slice` and `plan-slice` to ground their work in the user's stated intent. In the auto pipeline, it is dispatched whenever a milestone is in the `needs-discussion` phase or enters `pre-planning` without an existing context file.
 
 ## Variables
 
@@ -48,4 +48,6 @@ flowchart TD
 
 ## Used By
 
-- [`/gsd`](../../commands/gsd/) — dispatched when the user starts a milestone discussion or scoping session
+- [`/gsd discuss`](../../commands/discuss/) — the primary entry point; dispatches this prompt for the active milestone
+- [`/gsd`](../../commands/gsd/) — dispatched as part of the smart-entry guided flow when starting or resuming a milestone discussion
+- [`/gsd auto`](../../commands/auto/) — dispatched automatically by the auto-dispatch rules when a milestone enters `needs-discussion` or `pre-planning` without a context file

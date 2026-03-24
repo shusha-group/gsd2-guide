@@ -12,7 +12,7 @@ Unlike [`/gsd forensics`](../forensics/), which uses an LLM to investigate anoma
 GSD writes three diagnostic data streams automatically during auto-mode:
 
 - **Activity logs** (`.gsd/activity/*.jsonl`) — Full session transcript for each unit: every tool call, tool result, and assistant message. Written before each context wipe.
-- **Debug logs** (`.gsd/debug/debug-*.log`) — Internal timing and dispatch diagnostics. Only written when `GSD_DEBUG=1` is set.
+- **Debug logs** (`.gsd/debug/debug-*.log`) — Internal timing and dispatch diagnostics. Only written when debug mode is enabled.
 - **Metrics ledger** (`.gsd/metrics.json`) — Cost, token count, and duration for every completed unit. Persists across sessions.
 
 ## Usage
@@ -40,7 +40,7 @@ The default view shows three sections:
 flowchart TD
     Auto(["auto-mode runs"]) --> AL[Activity logs\n.gsd/activity/*.jsonl]
     Auto --> ML[Metrics ledger\n.gsd/metrics.json]
-    DebugFlag(["GSD_DEBUG=1"]) --> DL[Debug logs\n.gsd/debug/debug-*.log]
+    DebugFlag(["GSD_DEBUG=1 or --debug"]) --> DL[Debug logs\n.gsd/debug/debug-*.log]
 
     AL --> LV["/gsd logs\nOverview table\nwith size + age"]
     AL --> LS["/gsd logs N\nTool calls, errors,\nfiles written"]
@@ -95,11 +95,13 @@ Useful for a quick health check after a long auto-mode session.
 
 ### Debug Logs (`/gsd logs debug` / `/gsd logs debug <N>`)
 
-Debug logging is off by default. Enable it with:
+Debug logging is off by default. Enable it with the `GSD_DEBUG=1` environment variable or the `--debug` flag:
 
 ```
 GSD_DEBUG=1 gsd auto
 GSD_DEBUG=1 gsd next
+/gsd auto --debug
+/gsd next --debug
 ```
 
 When enabled, a timestamped log file is created at `.gsd/debug/debug-<timestamp>.log`. GSD keeps a maximum of 5 debug log files, pruning the oldest when a new session starts.
@@ -116,7 +118,7 @@ The debug log captures state derivation timing, dispatch decisions, token-to-siz
 
 - File size and age
 - Total event count, session duration, and dispatch count
-- Any error or failure events captured
+- Any error or failure events captured (up to 10, shown as `[event] message`)
 
 A `debug-summary` event is written as the final entry when auto-mode stops:
 
@@ -193,7 +195,7 @@ The [`/gsd history`](../history/) command is the primary way to read the metrics
 | `.gsd/activity/*.jsonl` | Activity logs | Before each context wipe in auto-mode |
 | `.gsd/worktrees/<MID>/.gsd/activity/*.jsonl` | Activity logs (parallel) | Same, but scoped to a worktree |
 | `.gsd/metrics.json` | Metrics ledger | After each unit completes |
-| `.gsd/debug/debug-<timestamp>.log` | Debug logs | When `GSD_DEBUG=1` is set |
+| `.gsd/debug/debug-<timestamp>.log` | Debug logs | When debug mode is enabled |
 
 ## What Files It Touches
 

@@ -7,10 +7,12 @@ description: "Configure GSD preferences — workflow mode, model selection, time
 
 `/gsd prefs` opens an interactive wizard for configuring GSD's behavior. Preferences are stored as YAML frontmatter in markdown files and control model selection per phase, auto-mode timeouts, git commit behavior, skill discovery, budget ceilings, and notification settings. Preferences can be set at two levels:
 
-- **Global** (`~/.gsd/preferences.md`) — Applies to all projects. Default when no scope is specified.
+- **Global** (`~/.gsd/preferences.md`) — Applies to all projects. Default when no scope is specified. The base directory can be overridden with the `GSD_HOME` environment variable.
 - **Project** (`.gsd/preferences.md`) — Overrides global settings for this project only.
 
 Project preferences take precedence over global when both exist. The wizard shows current values for each category so you can see what's configured before making changes. After saving, extensions are reloaded automatically.
+
+Many preference fields not exposed by the wizard (such as `token_profile`, `always_use_skills`, `prefer_skills`, `avoid_skills`, `skill_rules`, `custom_instructions`, `verification_commands`, `parallel`, and others) can be set by editing the preferences file directly. See `~/.gsd/agent/extensions/gsd/docs/preferences-reference.md` for full field documentation.
 
 ## Usage
 
@@ -54,7 +56,7 @@ flowchart TD
     Cat -->|Models| CfgModels[Provider + model per phase, optional fallbacks]
     Cat -->|Timeouts| CfgTime[soft / idle / hard timeout]
     Cat -->|Git| CfgGit[branch, push, snapshots, commit type, isolation, merge strategy]
-    Cat -->|Skills| CfgSkills[discovery, staleness days, UAT dispatch]
+    Cat -->|Skills| CfgSkills[discovery mode, UAT dispatch]
     Cat -->|Budget| CfgBudget[ceiling, enforcement, context pause]
     Cat -->|Notifications| CfgNotify[event-based alert toggles]
     Cat -->|Advanced| CfgAdv[unique milestone IDs]
@@ -107,7 +109,7 @@ flowchart TD
 | **Models** | Model selection per execution phase, with optional per-phase fallbacks | `models.research`, `models.planning`, `models.execution`, `models.completion` |
 | **Timeouts** | Auto-mode supervisor timeouts | `auto_supervisor.soft_timeout_minutes`, `idle_timeout_minutes`, `hard_timeout_minutes` |
 | **Git** | Branch naming, push behavior, WIP snapshots, commit type, isolation, merge strategy | `git.main_branch`, `git.auto_push`, `git.push_branches`, `git.snapshots`, `git.remote`, `git.pre_merge_check`, `git.commit_type`, `git.merge_strategy`, `git.isolation` |
-| **Skills** | Skill discovery mode, staleness threshold, and UAT dispatch behavior | `skill_discovery` (`auto`/`suggest`/`off`), `skill_staleness_days`, `uat_dispatch` |
+| **Skills** | Skill discovery mode and UAT dispatch behavior | `skill_discovery` (`auto`/`suggest`/`off`), `uat_dispatch` |
 | **Budget** | Cost ceiling, enforcement policy, context pause | `budget_ceiling`, `budget_enforcement` (`warn`/`pause`/`halt`), `context_pause_threshold` |
 | **Notifications** | Event-based alert toggles | `notifications.enabled`, `on_complete`, `on_error`, `on_budget`, `on_milestone`, `on_attention` |
 | **Advanced** | Unique milestone IDs | `unique_milestone_ids` |
@@ -151,9 +153,12 @@ The Git category exposes all git-related settings in one place:
 
 ### Skills Category
 
+The wizard configures:
+
 - **`skill_discovery`** (`auto`/`suggest`/`off`) — Controls how GSD discovers and loads skills at dispatch time. `auto` loads relevant skills silently; `suggest` proposes them for confirmation; `off` disables discovery entirely.
-- **`skill_staleness_days`** — Skills that haven't been used in this many days are deprioritized during discovery. Set to `0` to disable staleness tracking. Defaults to `60`.
 - **`uat_dispatch`** — When `true`, GSD dispatches a UAT agent after each slice completes.
+
+`skill_staleness_days` (skills deprioritized after this many days of disuse; defaults to `60`) is not exposed in the wizard and must be set by editing the preferences file directly.
 
 ### Status Subcommand
 

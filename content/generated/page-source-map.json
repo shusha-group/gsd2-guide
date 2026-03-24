@@ -1096,5 +1096,10 @@
   ],
   "prompts/worktree-merge.mdx": [
     "src/resources/extensions/gsd/prompts/worktree-merge.md"
+  ],
+  "commands/fast.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
   ]
 }

@@ -1,53 +1,65 @@
 ---
 title: "complete-milestone"
-description: "Archives a shipped milestone — verifies readiness, collects stats, archives roadmap and requirements, evolves PROJECT.md, writes a retrospective, tags the release, and hands off to the next milestone."
+description: "The auto-mode milestone close-out prompt — verifies code changes and success criteria against the roadmap, writes the milestone summary, transitions requirement statuses, updates PROJECT.md and KNOWLEDGE.md, then signals the system to auto-commit and hand off to the next milestone."
 ---
 
 ## What It Does
 
-`complete-milestone` is the formal close-out ceremony for a shipped version. When all phases in a milestone are done and their SUMMARY.md files are written, this command assembles a permanent historical record and prepares the planning directory for the next milestone cycle.
+`complete-milestone` is the final stage of the auto-mode pipeline for a milestone. It runs after all slices are done and their summaries written. Its job is to verify that the assembled work actually delivers the promised outcome, produce a permanent milestone summary, and leave the project state in a clean, accurate condition before the system merges the worktree back to the integration branch.
 
-The process begins with a pre-flight check: if no milestone audit exists, the command recommends running `/gsd:audit-milestone` first. If the audit found gaps, it offers the option to close them with `/gsd:plan-milestone-gaps` or proceed and accept the gaps as known tech debt. Once the readiness check passes, the command verifies that every phase in the milestone has a completed plan, then collects statistics from git — commit ranges, file changes, lines of code, and timeline.
+The prompt begins with a hard verification step: it diffs `HEAD` against the merge-base with the integration branch, excluding `.gsd/` files, to confirm that actual code changes exist. If only planning artifacts appear in the diff and no real code was shipped, the milestone does **not** pass verification — the gap is documented explicitly in the summary rather than silently marked as success.
 
-Accomplishments are extracted from each phase's SUMMARY.md one-liner and presented for approval before the archive is created. The archival step uses `gsd-tools milestone complete` to create two versioned archive files — `milestones/v[X.Y]-ROADMAP.md` and `milestones/v[X.Y]-REQUIREMENTS.md` — and appends a MILESTONES.md entry. After archival, the command performs a full PROJECT.md evolution review: "What This Is" accuracy, Core Value check, requirement status transitions (Active → Validated), Out of Scope audit, tech context update, and Key Decisions extraction from all phase summaries.
+With that baseline established, the prompt works through each success criterion from the milestone definition in the roadmap, confirming every criterion with specific evidence from slice summaries, test results, or observable behavior, and listing any that were not met. It then checks the definition of done: all slices marked `[x]`, all slice summaries present, and cross-slice integration points working.
 
-With planning artifacts updated, the command reorganizes ROADMAP.md to group completed milestone phases under a collapsible section and deletes the originals. A retrospective section is written or appended to RETROSPECTIVE.md, cross-milestone trends are updated, and STATE.md is refreshed. Finally, the command handles branches (offering squash merge, merge with history, or delete), creates a semver git tag, commits the milestone completion, and closes with the next step: `/gsd:new-milestone`.
+Requirement status transitions come next. Any requirement that changed status during the milestone (Active → Validated, Deferred, Blocked, Out of Scope, etc.) must be backed by proof before the transition is recorded. The milestone summary is then written using the milestone-summary template with all frontmatter fields filled and `requirement_outcomes` listing every validated transition. After the summary, the prompt updates `.gsd/REQUIREMENTS.md` for validated transitions, updates `.gsd/PROJECT.md` to reflect current project state, and scans all slice summaries for cross-cutting lessons worth adding to `.gsd/KNOWLEDGE.md`.
+
+The prompt does not commit manually — the system auto-commits all changes after the unit completes. If queued milestones exist, the next one starts its own research → plan → execute cycle and uses the milestone summary as its primary record of what was already built.
 
 ## Pipeline Position
 
 ```mermaid
 flowchart TD
-    AuditMilestone["audit-milestone"] --> CompleteMilestone["complete-milestone"]
-    CompleteMilestone --> AuditCheck{"audit status?"}
-    AuditCheck -->|"gaps found"| PlanGaps["plan-milestone-gaps"]
-    AuditCheck -->|"passed or skip"| ReadinessCheck["verify phase readiness"]
-    PlanGaps --> CompleteMilestone
-    ReadinessCheck --> Archive["archive roadmap + requirements"]
-    Archive --> EvolveProject["evolve PROJECT.md"]
-    EvolveProject --> Retrospective["write RETROSPECTIVE.md"]
-    Retrospective --> GitTag["git tag + commit"]
-    GitTag --> NewMilestone["new-milestone"]
+    ExecuteSlices["execute slices (all [x])"] --> CompleteMilestone["complete-milestone"]
+    CompleteMilestone --> CodeCheck{"code changes exist?"}
+    CodeCheck -->|"no"| DocumentGap["document gap in summary"]
+    CodeCheck -->|"yes"| VerifyCriteria["verify success criteria"]
+    DocumentGap --> WriteSummary["write milestoneSummaryPath"]
+    VerifyCriteria --> VerifyDoD["verify definition of done"]
+    VerifyDoD --> ValidateRequirements["validate requirement transitions"]
+    ValidateRequirements --> WriteSummary
+    WriteSummary --> UpdateRequirements["update REQUIREMENTS.md"]
+    UpdateRequirements --> UpdateProject["update PROJECT.md"]
+    UpdateProject --> UpdateKnowledge["append to KNOWLEDGE.md"]
+    UpdateKnowledge --> AutoCommit["system auto-commit + merge"]
 
     style CompleteMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style AuditMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style AuditCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style PlanGaps fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ReadinessCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Archive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style EvolveProject fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Retrospective fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style GitTag fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style NewMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ExecuteSlices fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style CodeCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DocumentGap fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style VerifyCriteria fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style VerifyDoD fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ValidateRequirements fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteSummary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UpdateRequirements fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UpdateProject fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style UpdateKnowledge fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AutoCommit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-`complete-milestone` runs once per shipped version. It is invoked manually by the user after all phases are complete, typically after `/gsd:audit-milestone` confirms coverage. The command gates on user confirmation at readiness verification (unless `yolo` mode is active) and presents three options when requirements are incomplete: proceed with known gaps, run the audit first, or abort. After a successful run, ROADMAP.md and REQUIREMENTS.md are deleted — the next milestone starts fresh via `/gsd:new-milestone`.
+`complete-milestone` runs once per milestone in auto-mode, dispatched automatically by the system after the last slice completes. All context it needs — the roadmap, slice summaries, requirements, decisions, and project context — is preloaded via `{inlinedContext}` so the prompt can begin verifying immediately without re-reading files. The milestone summary it writes becomes the authoritative record that future milestones consult to understand what was already built.
 
 ## Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `version` | Semver version string for the milestone being completed (e.g. `1.0`, `1.1`, `2.0`) | Yes |
+| `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
+| `milestoneTitle` | Human-readable title of the milestone being completed | Yes |
+| `workingDirectory` | Absolute path to the project working directory | Yes |
+| `inlinedContext` | Preloaded context block containing the roadmap, all slice summaries, requirements, decisions, and project context | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills relevant to milestone close-out | Yes |
+| `roadmapPath` | File path to the roadmap document containing milestone success criteria (e.g. `.gsd/ROADMAP.md`) | Yes |
+| `milestoneSummaryPath` | File path where the milestone summary must be written (e.g. `.gsd/milestones/M001-SUMMARY.md`) | Yes |
 
 ## Used By
 
-- [`/gsd complete-milestone`](../../commands/complete-milestone/) — the primary entry point; users invoke this command directly with a version argument after all phases ship
+- [`/gsd auto`](../../commands/auto/) — dispatched automatically as the final unit after all slices in a milestone are marked complete

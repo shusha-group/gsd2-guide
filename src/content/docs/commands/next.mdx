@@ -66,23 +66,24 @@ flowchart TD
 When `--dry-run` is active, GSD:
 
 1. **Derives project state** — Calls `deriveState()`, which reads all roadmap and plan files under `.gsd/` to determine the active milestone, active slice, active task, and current phase.
-2. **Checks for an active milestone** — If there's no active milestone, it exits with "nothing to dispatch."
+2. **Checks for an active milestone** — If there's no active milestone (e.g. all milestones are complete and the registry is empty), it exits with "nothing to dispatch." Note: when phase is `complete`, `activeMilestone` is still set to the last milestone entry, so the dry-run does proceed — it will display `nextType: complete`.
 3. **Maps phase to unit type** — Uses a direct phase-to-unit-type mapping (not the full dispatch loop):
 
-| Phase | Unit type dispatched |
-|-------|----------------------|
-| `pre-planning` | `research-milestone` |
-| `planning` | `plan-slice` |
-| `executing` | `execute-task` |
-| `summarizing` | `complete-slice` |
-| `completing-milestone` | `complete-milestone` |
-| `validating-milestone` | `validating-milestone` |
-| `replanning-slice` | `replanning-slice` |
-| `needs-discussion` | `needs-discussion` |
-| `blocked` | `blocked` |
-| any other phase | phase name verbatim |
+| Phase | Unit type dispatched | Notes |
+|-------|----------------------|-------|
+| `pre-planning` | `research-milestone` | |
+| `planning` | `plan-slice` | Requires `activeSlice` to be set |
+| `executing` | `execute-task` | Requires both `activeSlice` and `activeTask` |
+| `summarizing` | `complete-slice` | Requires `activeSlice` to be set |
+| `completing-milestone` | `complete-milestone` | |
+| `validating-milestone` | `validating-milestone` | Falls through to verbatim |
+| `replanning-slice` | `replanning-slice` | Falls through to verbatim |
+| `needs-discussion` | `needs-discussion` | Falls through to verbatim |
+| `blocked` | `blocked` | Falls through to verbatim |
+| `discussing`, `researching`, `verifying`, `advancing`, `complete` | phase name verbatim | Falls through to verbatim |
+| any other phase | phase name verbatim | Catch-all for unknown phases |
 
-4. **Loads historical metrics** — Reads the in-memory metrics ledger (or falls back to the ledger on disk at `.gsd/metrics.json`) to calculate average cost and duration for units of the same type. Loads `.gsd/preferences.md` to check the budget ceiling.
+4. **Loads historical metrics** — Reads the in-memory metrics ledger (or falls back to the ledger on disk at `.gsd/metrics.json`) to calculate average cost and duration for units of the same type. Loads preferences to check the budget ceiling.
 5. **Shows preview** — Displays the unit type, ID, milestone, phase, estimated cost and duration (computed as averages over historical units of the same type), total spent, budget remaining, and task/slice progress.
 
 ### Step mode (no --dry-run)

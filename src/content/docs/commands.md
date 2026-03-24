@@ -24,6 +24,7 @@ title: "Commands Reference"
 | [`/gsd export --html --all`](./export/) | Generate retrospective reports for all milestones at once |
 | [`/gsd update`](./update/) | Update GSD to the latest version in-session |
 | [`/gsd knowledge`](./knowledge/) | Add persistent project knowledge (rule, pattern, or lesson) |
+| [`/gsd fast`](./fast/) | Toggle service tier for supported models (prioritized API routing) |
 | `/gsd help` | Categorized command reference with descriptions for all GSD subcommands |
 
 ## Configuration & Diagnostics

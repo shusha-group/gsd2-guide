@@ -27,9 +27,9 @@ In all cases, a selection prompt opens to choose between solo, team, (none), or 
 
 ```mermaid
 flowchart TD
-    A["/gsd mode"] --> B{scope arg?}
-    B -- "project" --> C[Load .gsd/preferences.md]
-    B -- "global or none" --> D[Load ~/.gsd/preferences.md]
+    A(["/gsd mode"]) --> B{scope arg?}
+    B -- "project" --> C[Resolve .gsd/preferences.md]
+    B -- "global or none" --> D[Resolve ~/.gsd/preferences.md]
     C --> E{File exists?}
     D --> E
     E -- no --> F[Create from template]
@@ -43,11 +43,14 @@ flowchart TD
     I --> M[Save preferences file]
     J --> M
     K --> M
+    M --> Done([Done])
+    L --> Done
 
     style A fill:#0d180d,stroke:#39ff14,color:#39ff14
     style B fill:#0d180d,stroke:#39ff14,color:#39ff14
     style E fill:#0d180d,stroke:#39ff14,color:#39ff14
     style H fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
     style C fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style F fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -66,7 +69,9 @@ The command presents four options:
 3. **(none)** — configure everything manually
 4. **(keep current)** — exit without changes
 
-When you select a mode, only the `mode` key is written to your preferences file (`mode: solo` or `mode: team`). The individual git and ID settings are **not written** — they are resolved at runtime via `applyModeDefaults`, which merges mode defaults as the lowest-priority layer. Any explicitly set preference value wins over the mode default.
+When you select a mode, the `mode` key is written to your preferences file (`mode: solo` or `mode: team`), and the entire preferences file is serialized and saved. The individual git and ID settings are **not written** — they are resolved at runtime via `applyModeDefaults`, which merges mode defaults as the lowest-priority layer. Any explicitly set preference value wins over the mode default.
+
+Selecting `(none)` removes the `mode` key entirely — all settings revert to whatever you've explicitly configured (or their built-in defaults if nothing is set).
 
 ### Scope
 
@@ -74,17 +79,17 @@ By default, `/gsd mode` writes to the **global** preferences at `~/.gsd/preferen
 
 ### File Creation
 
-Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If the target preferences file doesn't exist, it creates one from the built-in template before proceeding. You won't be dropped into the selector against a missing file.
+Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If the target preferences file doesn't exist, it is created from the built-in `templates/preferences.md` template before proceeding. You won't be dropped into the selector against a missing file.
 
 ### Mode Comparison
 
 | Setting | Solo | Team |
 |---------|------|------|
-| `auto_push` | `true` — pushes after each commit | `false` — commits stay local |
-| `push_branches` | `false` — no feature branches pushed | `true` — milestone branches pushed for review |
-| `pre_merge_check` | `false` — merge without CI gate | `true` — wait for CI before merging |
-| `merge_strategy` | `squash` | `squash` |
-| `isolation` | `worktree` | `worktree` |
+| `git.auto_push` | `true` — pushes after each commit | `false` — commits stay local |
+| `git.push_branches` | `false` — no feature branches pushed | `true` — milestone branches pushed for review |
+| `git.pre_merge_check` | `false` — merge without CI gate | `true` — wait for CI before merging |
+| `git.merge_strategy` | `squash` | `squash` |
+| `git.isolation` | `worktree` | `worktree` |
 | `unique_milestone_ids` | `false` — simple `M001`, `M002` | `true` — `M001-eh88as`, `M002-k4m9xz` (prevents ID collisions) |
 
 ### Unique Milestone IDs
@@ -94,6 +99,17 @@ In solo mode, milestone IDs are simple sequential numbers: `M001`, `M002`, `M003
 In team mode, milestone IDs include a random 6-character suffix: `M001-eh88as`. This prevents collisions when multiple contributors queue milestones on different branches — two developers creating "M003" independently would get `M003-abc123` and `M003-def456` instead of conflicting.
 
 The unique ID format affects directory names (`.gsd/milestones/M001-eh88as/`), branch names (`milestone/M001-eh88as`), and all references in state files.
+
+### Priority Layers
+
+When GSD loads effective preferences it merges layers in this order (last wins for explicit values, earlier fills gaps):
+
+1. **Mode defaults** — lowest priority, filled in last for any undefined fields
+2. **Token profile defaults** — filled in before mode defaults
+3. **Global preferences** (`~/.gsd/preferences.md`) — explicit values override everything below
+4. **Project preferences** (`.gsd/preferences.md`) — highest priority, wins over global
+
+Mode defaults are applied via `applyModeDefaults`, which calls `mergePreferences(modeDefaults, userPrefs)`. Because `mergePreferences` lets the right-hand side win for any defined value, user preferences always take precedence.
 
 ## What Files It Touches
 
@@ -108,15 +124,15 @@ The unique ID format affects directory names (`.gsd/milestones/M001-eh88as/`), b
 
 | File | Purpose |
 |------|---------|
-| `~/.gsd/preferences.md` | Current global preferences |
+| `~/.gsd/preferences.md` | Current global preferences (loaded before editing) |
 | `.gsd/preferences.md` | Current project preferences (when `project` scope) |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `~/.gsd/preferences.md` | Updated `mode` key (global scope, default) |
-| `.gsd/preferences.md` | Updated `mode` key (project scope, when `project` arg passed) |
+| `~/.gsd/preferences.md` | Full preferences file saved with updated `mode` key (global scope, default) |
+| `.gsd/preferences.md` | Full preferences file saved with updated `mode` key (project scope, when `project` arg passed) |
 
 ## Examples
 
@@ -163,7 +179,7 @@ Removing mode defaults entirely (configure each preference manually):
 
   → (none)
 
-(mode key removed from preferences)
+Saved global preferences to /Users/you/.gsd/preferences.md
 ```
 
 ## Related Commands

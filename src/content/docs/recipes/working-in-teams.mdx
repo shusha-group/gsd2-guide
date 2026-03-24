@@ -83,6 +83,8 @@ Share planning artifacts while keeping runtime state local:
 > git push
 ```
 
+If you manage your own `.gitignore` and don't want GSD touching it, set `git.manage_gitignore: false` in your preferences — GSD will not add or modify any `.gitignore` entries.
+
 ### 3. Alice starts her milestone
 
 Alice discusses the auth feature and starts auto-mode:
@@ -167,7 +169,9 @@ GSD checks `depends_on` during state derivation. A milestone whose dependencies 
 
 ### 6. Milestones complete and merge
 
-When Alice's milestone finishes, GSD squash-merges her `milestone/M001-eh88as` branch to main. Before the squash, GSD runs the pre-merge check if configured — this executes a test command to verify the work passes. By default the check is skipped; you can enable it with a custom command or let GSD auto-detect `npm test` from `package.json`:
+When Alice's milestone finishes, GSD squash-merges her `milestone/M001-eh88as` branch to main using an LLM-guided merge process. Before committing, GSD categorizes all changes — new source files, modified code, updated GSD artifacts — and assesses any conflicts between the worktree and main. If both branches have changed the same file, GSD flags the divergence and proposes a reconciliation before applying anything.
+
+The pre-merge check runs if configured — this executes a test command to verify the work passes. By default the check is skipped; enable it with a custom command or let GSD auto-detect `npm test` from `package.json`:
 
 ```yaml
 # .gsd/preferences.md
@@ -192,14 +196,17 @@ f5e6d7c M002-k4m9px: Recipe search (squash)
 a1b2c3d M001-eh88as: User authentication (squash)
 ```
 
+After the merge, GSD removes the worktree directory and branch. Planning artifacts remain in `milestones/` as a historical record and travel with the squash commit to `main`.
+
 ### Optional: Auto-create pull requests
 
-If your team uses a code-review workflow before merging to main, set `auto_pr: true`. GSD will open a pull request after the milestone branch is pushed, targeting the configured `pr_target_branch` (defaults to `main`):
+If your team uses a code-review workflow before merging to main, set `auto_pr: true`. GSD will open a pull request after the milestone branch is pushed, targeting the configured `pr_target_branch` (defaults to `main`). This requires `auto_push: true` and the `gh` CLI installed and authenticated:
 
 ```yaml
 # .gsd/preferences.md
 ---
 git:
+  auto_push: true
   push_branches: true
   auto_pr: true
   pr_target_branch: "develop"   # optional, defaults to main
@@ -252,6 +259,18 @@ git:
 ---
 ```
 
+## How the Worktree Merge Works
+
+When a milestone completes, GSD runs a structured, LLM-guided merge from the worktree branch into `main`. This is not a raw `git merge` — it's a five-step process that prevents silently discarding changes from either side:
+
+1. **Categorize changes** — Every file in the diff is classified: new source files, modified code, config changes, deleted files, new GSD artifacts (roadmaps, summaries, decisions, requirements, plans), and updated existing artifacts.
+2. **Assess conflicts** — For each modified file, GSD checks whether `main` has also changed since the worktree branched off (using `git merge-base` for the common ancestor). Diverged files are flagged as conflicts that need reconciliation; untouched files are marked as clean merges.
+3. **Present a merge plan** — GSD shows clean merges, side-by-side conflict comparisons with a proposed reconciliation, new files to add, and deletions to confirm. Nothing is applied until the merge plan is approved.
+4. **Execute the merge** — From the main tree path, GSD applies any pre-reconciled files, runs `git merge --squash`, reviews staged changes, and commits with a `merge(worktree/<name>):` message.
+5. **Clean up** — The worktree directory and milestone branch are removed. Planning artifacts remain in `.gsd/milestones/` as a historical record.
+
+The LLM never silently discards changes. When a conflict is ambiguous, it shows both versions and asks.
+
 ## What Gets Created
 
 The git and `.gsd/` structure after both milestones complete:
@@ -278,22 +297,9 @@ main branch:
 
 Worktrees are cleaned up after merge. Planning artifacts remain in `milestones/` as a historical record. Because planning artifacts are tracked in git (not gitignored), they travel with each milestone branch and merge cleanly to `main` as part of the squash commit.
 
-## Merging a General Worktree
-
-The worktree system is also available outside of auto-mode for any parallel work stream. When you run `/worktree merge`, GSD dispatches an LLM-guided merge session that:
-
-1. **Categorizes changes** — classifies each file as new code, modified code, new GSD artifacts, updated plans, decisions, requirements, etc.
-2. **Assesses conflicts** — for each modified file, checks whether `main` has also changed since the worktree branched off. Flags diverged files that need manual reconciliation.
-3. **Presents a merge plan** — shows clean merges, conflicts (both versions side-by-side with a proposed reconciliation), new files to add, and removals to confirm. Asks for user approval before proceeding.
-4. **Executes the merge** — runs `git merge --squash <worktree-branch>` from the main tree and commits with a descriptive message.
-5. **Offers cleanup** — asks whether to remove the worktree directory and branch, or keep it for continued parallel work.
-
-The LLM never silently discards changes. When a conflict is ambiguous, it shows both versions and asks.
-
 ## Flow Diagram
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a3a1a', 'primaryTextColor': '#e8f4e8', 'primaryBorderColor': '#39ff14', 'lineColor': '#39ff14', 'secondaryColor': '#0d180d', 'tertiaryColor': '#0d180d', 'background': '#0a0e0a', 'mainBkg': '#1a3a1a', 'nodeBorder': '#39ff14', 'clusterBkg': '#0d180d', 'titleColor': '#39ff14', 'edgeLabelBackground': '#0a0e0a'}}}%%
 flowchart TD
     Start([Enable team mode]) --> Setup["Configure preferences + .gitignore"]
     Setup --> DevA["Alice: /gsd auto — M001"]
@@ -307,9 +313,9 @@ flowchart TD
     DepCheck -->|no| CompleteB[M002 complete]
     CompleteA --> CheckA{pre_merge_check\nconfigured?}
     CompleteB --> CheckB{pre_merge_check\nconfigured?}
-    CheckA -->|passes / skipped| MergeA["squash merge → main"]
+    CheckA -->|passes / skipped| MergeA["LLM-guided squash merge → main"]
     CheckA -->|fails| BlockA["❌ Blocked — fix and retry"]
-    CheckB -->|passes / skipped| MergeB["squash merge → main"]
+    CheckB -->|passes / skipped| MergeB["LLM-guided squash merge → main"]
     CheckB -->|fails| BlockB["❌ Blocked — fix and retry"]
     MergeA --> Done([Both milestones merged ✓])
     MergeB --> Done
@@ -339,4 +345,3 @@ flowchart TD
 - [`/gsd prefs`](../../commands/prefs/) — Configure project preferences including team mode and git settings
 - [`/gsd auto`](../../commands/auto/) — Start auto-mode to execute a milestone
 - [`/gsd queue`](../../commands/queue/) — Manage milestone order and dependencies
-- [`/worktree`](../../commands/worktree/) — Create, list, merge, and remove parallel worktrees

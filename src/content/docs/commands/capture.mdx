@@ -29,12 +29,45 @@ Quotes around the thought are optional — they're stripped if present.
 
 ### Capture Flow
 
+```mermaid
+flowchart TD
+    Start(["/gsd capture '...'"]) --> Parse[Strip surrounding quotes]
+    Parse --> EnsureDir[Ensure .gsd/ exists]
+    EnsureDir --> Resolve[Resolve CAPTURES.md path<br/>worktree-aware]
+    Resolve --> GenID[Generate CAP-XXXXXXXX ID]
+    GenID --> Append[Append entry to CAPTURES.md]
+    Append --> Notify[Notify with ID and truncated text]
+    Notify --> Threshold{Captures past threshold?}
+    Threshold -->|Yes| AutoTriage[Auto-triage fires at next seam]
+    Threshold -->|No| Done([Done])
+    AutoTriage --> Done
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Threshold fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Parse fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style EnsureDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Resolve fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GenID fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Append fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AutoTriage fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+The full pipeline is:
+
 1. **Parse input** — Strips surrounding quotes (single or double) from the argument.
 2. **Ensure `.gsd/` exists** — Creates the directory if missing. Captures work even before any milestone is created.
 3. **Resolve path** — Determines the correct `CAPTURES.md` path, accounting for worktree isolation.
 4. **Generate ID** — Creates a unique ID like `CAP-a1b2c3d4` using the first 8 characters of a UUID.
 5. **Append entry** — Adds an H3 section with the capture text, timestamp, and `pending` status.
 6. **Notify** — Shows a confirmation with the capture ID and text (truncated to 60 characters if longer).
+
+### Automatic Triage
+
+When captures accumulate past a threshold, triage fires automatically at the next natural seam between tasks — no manual intervention needed. The progress widget shows a pending capture count badge so you can see how many are waiting.
+
+You can also trigger triage at any time with [`/gsd triage`](../triage/).
 
 ### Worktree Awareness
 
@@ -101,6 +134,13 @@ When triage runs, the LLM reads the **current slice plan** and **active roadmap*
 - **`defer`** — If the target milestone doesn't exist yet, creates its directory and seeds a `<MID>-CONTEXT-DRAFT.md` with the deferred captures listed. This ensures `deriveState()` discovers the milestone and routes to the discussion phase.
 
 Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
+
+### Context Injection
+
+Capture context flows into downstream prompts automatically:
+
+- **Replan-slice prompts** — know what capture triggered the replan, so the replan is informed by the original thought.
+- **Reassess-roadmap prompts** — deferred captures appear as input, letting the roadmap reflect work that was intentionally pushed out.
 
 ## What Files It Touches
 

@@ -19,11 +19,45 @@ No arguments — the command reads hook configuration from preferences and displ
 
 ## How It Works
 
-The command calls `formatHookStatus()` from the hook engine facade, which delegates to the `RuleRegistry` singleton via `getOrCreateRegistry()`. The registry calls `getHookStatus()` to collect all configured hooks and their live cycle counts, then formats them for terminal display.
+### Display Flow
+
+```mermaid
+flowchart TD
+    Start(["/gsd hooks"]) --> Facade["Call formatHookStatus()\nfrom post-unit-hooks facade"]
+    Facade --> Registry["Delegate to RuleRegistry\nvia getOrCreateRegistry()"]
+    Registry --> GetStatus["getHookStatus() collects\nall configured hook entries"]
+    GetStatus --> PostHooks["resolvePostUnitHooks()\nreads post_unit_hooks from preferences"]
+    GetStatus --> PreHooks["resolvePreDispatchHooks()\nreads pre_dispatch_hooks from preferences"]
+    PostHooks --> BuildPost["Build entry: name, enabled,\ntargets, cycle counts from memory"]
+    PreHooks --> BuildPre["Build entry: name, enabled, targets"]
+    BuildPost --> Format["formatHookStatus() groups\nand formats for display"]
+    BuildPre --> Format
+    Format --> Empty{Any hooks\nconfigured?}
+    Empty -->|No| NoHooks["Show 'No hooks configured'\nmessage pointing to preferences"]
+    Empty -->|Yes| ShowHooks["Display grouped by type:\nPost-Unit then Pre-Dispatch"]
+    NoHooks --> Done([Done])
+    ShowHooks --> Done
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Empty fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Facade fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Registry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GetStatus fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PostHooks fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PreHooks fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style BuildPost fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style BuildPre fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Format fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style NoHooks fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ShowHooks fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
+
+The command calls `formatHookStatus()` from the hook engine facade (`post-unit-hooks.ts`), which delegates to the `RuleRegistry` singleton via `getOrCreateRegistry()`. The registry calls `getHookStatus()` to collect all configured hooks and their live cycle counts from in-memory state, then formats them for terminal display.
 
 ### Data Collection
 
-1. **Reads post-unit hooks** from `resolvePostUnitHooks()` — these are defined in `.gsd/preferences.md` under `post_unit_hooks`. For each hook, it collects the name, enabled state, target unit types (from the `after` field), and any active cycle counts from the in-memory cycle tracker.
+1. **Reads post-unit hooks** from `resolvePostUnitHooks()` — these are defined in `.gsd/preferences.md` under `post_unit_hooks`. For each hook, it collects the name, enabled state, target unit types (from the `after` field), and any accumulated cycle counts from the in-memory cycle tracker.
 
 2. **Reads pre-dispatch hooks** from `resolvePreDispatchHooks()` — defined under `pre_dispatch_hooks` in preferences. These have a `before` field listing which unit types they intercept.
 
@@ -39,7 +73,7 @@ The hook engine prevents runaway chains by never triggering hooks for:
 - `triage-captures` units
 - `quick-task` units
 
-Each hook can run multiple times for the same trigger unit, controlled by `max_cycles` (default `1`, maximum `10`). Idempotency is enforced via an `artifact` file — if the artifact already exists at the expected path, the hook is skipped entirely.
+Each hook can run multiple times for the same trigger unit, controlled by `max_cycles` (default `1`). Idempotency is enforced via an `artifact` file — if the artifact already exists at the expected path, the hook is skipped entirely.
 
 If a hook produces a `retry_on` artifact instead of the normal artifact, the hook engine signals the caller to re-dispatch the original trigger unit. This allows a hook to force a task to re-run (for example, a review hook flags issues → task re-runs → hook fires again on the next completion). The cycle count is checked before allowing a retry — once `max_cycles` is reached, the retry is suppressed.
 
@@ -93,7 +127,7 @@ For each hook, the display shows:
 | Name | The hook identifier (e.g., `code-review`, `security-scan`) |
 | Status | `enabled` or `disabled` — disabled hooks are skipped during dispatch |
 | Targets | Unit types this hook applies to (e.g., `execute-task`, `plan-slice`) |
-| Active cycles | Number of unique trigger keys with in-progress cycles (post-unit only) |
+| Active cycles | Count of distinct trigger keys that have recorded cycles since last reset (post-unit only) |
 
 ## What Files It Touches
 
@@ -102,7 +136,7 @@ For each hook, the display shows:
 | File | Purpose |
 |------|---------|
 | `.gsd/preferences.md` | Source of hook configuration (`post_unit_hooks`, `pre_dispatch_hooks`) |
-| `.gsd/hook-state.json` | Persisted cycle counts from active or crashed auto-mode sessions |
+| `.gsd/hook-state.json` | Cycle counts restored into memory during auto-mode startup; reflects accumulated run state |
 
 ### Creates / Writes
 

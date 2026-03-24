@@ -9,7 +9,7 @@ description: "API key manager — list, add, remove, test, rotate, and health-ch
 
 Keys can come from two sources: `auth.json` (managed by this command) or environment variables (e.g. `ANTHROPIC_API_KEY`). `auth.json` takes priority. When multiple keys are stored for the same provider, GSD uses them in round-robin order. Providers that support OAuth (like Anthropic and GitHub Copilot) show a prompt directing you to use [`/login`](../login/) for browser-based authentication instead.
 
-Keys are always masked in output — only the first 4 and last 4 characters are shown (e.g. `sk-a***4cde`).
+Keys are always masked in output — only the first 4 and last 4 characters are shown (e.g. `sk-a***cdef`). Keys shorter than 12 characters show only the first 2 and last 2.
 
 ## Usage
 
@@ -21,7 +21,7 @@ With no arguments, shows the full key status dashboard.
 
 ```
 /gsd keys                      Show key status dashboard
-/gsd keys list                 Same as above
+/gsd keys list                 Same as above (aliases: status)
 /gsd keys add [provider]       Add a key interactively
 /gsd keys remove [provider]    Remove a key (aliases: rm, delete)
 /gsd keys test [provider]      Validate key(s) with a live API call (alias: validate)
@@ -32,6 +32,46 @@ With no arguments, shows the full key status dashboard.
 The `provider` argument is optional for all subcommands — omitting it triggers an interactive picker.
 
 ## How It Works
+
+### Command Flow
+
+```mermaid
+flowchart TD
+    Start(["/gsd keys [sub] [provider]"]) --> Parse[Parse subcommand and provider]
+    Parse --> Route{Subcommand?}
+    Route -->|list / status / empty| List[Format grouped dashboard\nby category]
+    Route -->|add| Add[Provider picker → OAuth check\n→ key input → prefix validate → save]
+    Route -->|remove / rm / delete| Remove[Show configured providers\n→ confirm → remove + clear env]
+    Route -->|test / validate| Test[Live API call per provider\n15s timeout]
+    Route -->|rotate| Rotate[Show current key → new key input\n→ optional test → save]
+    Route -->|doctor / health| Doctor[Static checks — no network calls]
+    Route -->|unknown| Usage[Print usage help]
+    Add --> Reload1[waitForIdle → reload session]
+    Remove --> Reload2[waitForIdle → reload session]
+    Rotate --> Reload3[waitForIdle → reload session]
+    List --> Done([Done])
+    Test --> Done
+    Doctor --> Done
+    Usage --> Done
+    Reload1 --> Done
+    Reload2 --> Done
+    Reload3 --> Done
+
+    style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Route fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Parse fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style List fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Add fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Remove fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Test fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Rotate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Doctor fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Usage fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reload1 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reload2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reload3 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+```
 
 ### Subcommands
 
@@ -70,7 +110,7 @@ Makes a live API call to validate the key. Tests all configured providers when n
 
 #### `rotate [provider]`
 
-Shows the current masked key, prompts for a new one, then optionally validates it with a live API call before saving. If the new key returns `invalid` (HTTP 401/403), rotation is cancelled. Any other test outcome (`error`, `rate_limited`, `skipped`) shows a warning but proceeds. OAuth credentials for the same provider are preserved when the API key is replaced.
+Shows only providers with API key credentials. Shows the current masked key, prompts for a new one, then optionally validates it with a live API call before saving. If the new key returns `invalid` (HTTP 401/403), rotation is cancelled. Any other test outcome (`error`, `rate_limited`, `skipped`) shows a warning but proceeds. OAuth credentials for the same provider are preserved when the API key is replaced.
 
 After rotating, the session reloads so the new key is immediately active.
 
@@ -94,6 +134,8 @@ Runs static checks without making network calls:
 | Search | Tavily Search, Brave Search |
 | Tool | Context7 Docs, Jina Page Extract |
 | Remote | Discord Bot, Slack Bot, Telegram Bot |
+
+Providers with OAuth support (Anthropic, GitHub Copilot, ChatGPT Plus/Pro, Google Gemini CLI, Antigravity) redirect to [`/login`](../login/) instead of accepting an API key directly.
 
 ### Storage Details
 

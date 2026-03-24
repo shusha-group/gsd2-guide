@@ -14,33 +14,42 @@ Quick tasks live in `.planning/quick/` and are tracked separately from planned p
 ## Usage
 
 ```
-/gsd:quick [--full] <task description>
+/gsd:quick [--discuss] [--full] <task description>
 ```
 
-Quotes are optional. If no description is provided, GSD will prompt you interactively.
+Quotes are optional. If no description is provided, GSD prompts you interactively.
 
 ```
 /gsd:quick add a back-to-top button to recipe pages
 /gsd:quick "fix the off-by-one in pagination"
 /gsd:quick update the API timeout to 30 seconds
+/gsd:quick --discuss add a user avatar to the nav bar
 /gsd:quick --full refactor the auth token refresh logic
+/gsd:quick --discuss --full redesign the checkout summary component
 ```
 
-The `--full` flag enables plan-checking (up to 2 revision iterations) and post-execution verification via gsd-verifier. Use it when you want quality guarantees without full milestone ceremony.
+The flags are independent and composable:
+
+| Flag | What it adds |
+|------|-------------|
+| `--discuss` | Lightweight discussion phase before planning — surfaces gray areas, captures decisions in `N-CONTEXT.md`, and locks them so the planner doesn't revisit them |
+| `--full` | Plan-checking (up to 2 revision iterations) and post-execution verification via gsd-verifier |
+| Both | Discussion + plan-checking + verification |
 
 ## How It Works
 
 ### Execution Flow
 
-1. **Parse arguments** — Strips `--full` flag if present. If no description remains, prompts you interactively.
+1. **Parse arguments** — Strips `--discuss` and `--full` flags if present. If no description remains, prompts you interactively.
 2. **Initialize** — Runs `gsd-tools init quick`. Validates that `.planning/ROADMAP.md` exists — quick mode requires an active project. Generates a slug (lowercased, hyphenated, max 40 chars) and determines the next task number by scanning `.planning/quick/`.
 3. **Create task directory** — Creates `.planning/quick/<N>-<slug>/` to hold all artifacts.
-4. **Spawn planner** — Dispatches to gsd-planner (quick mode) with your description and STATE.md as context. Planner creates a focused `<N>-PLAN.md` with 1–3 atomic tasks.
-5. **(--full) Plan-checker loop** — gsd-plan-checker validates the plan. If issues are found, the planner revises — up to 2 iterations. After 2 failed iterations, you can force-proceed or abort.
-6. **Spawn executor** — gsd-executor reads the plan and STATE.md, implements the work, commits each task atomically, and writes `<N>-SUMMARY.md`.
-7. **(--full) Verification** — gsd-verifier checks the `must_haves` in the plan against the actual codebase and writes `<N>-VERIFICATION.md`.
-8. **Update STATE.md** — Appends a row to the "Quick Tasks Completed" table (with a Status column when `--full`). Updates the "Last activity" line.
-9. **Final commit** — Commits all artifacts: plan, summary, STATE.md, and (if `--full`) verification file.
+4. **(--discuss) Discussion phase** — Identifies 2–4 gray areas in your description, presents them via `AskUserQuestion`, asks 1–2 focused questions per selected area, and writes decisions to `<N>-CONTEXT.md`. If you select "All clear", skips CONTEXT.md entirely.
+5. **Spawn planner** — Dispatches to gsd-planner (quick mode) with your description and STATE.md as context. When `--discuss` is active, passes the CONTEXT.md as locked decisions. Planner creates a focused `<N>-PLAN.md` with 1–3 atomic tasks.
+6. **(--full) Plan-checker loop** — gsd-plan-checker validates the plan. If issues are found, the planner revises — up to 2 iterations. After 2 failed iterations, you can force-proceed or abort.
+7. **Spawn executor** — gsd-executor reads the plan and STATE.md, implements the work, commits each task atomically, and writes `<N>-SUMMARY.md`.
+8. **(--full) Verification** — gsd-verifier checks the `must_haves` in the plan against the actual codebase and writes `<N>-VERIFICATION.md`.
+9. **Update STATE.md** — Appends a row to the "Quick Tasks Completed" table (with a Status column when `--full`). Updates the "Last activity" line.
+10. **Final commit** — Commits all artifacts: plan, summary, STATE.md, and (if applicable) context and verification files.
 
 ### Flow Diagram
 
@@ -51,7 +60,15 @@ flowchart TD
     Validate -->|No| Fail([Error: run /gsd:new-project first])
     Validate -->|Yes| Init[Generate slug + task number]
     Init --> TaskDir[Create .planning/quick/N-slug/]
-    TaskDir --> Planner[Spawn gsd-planner → N-PLAN.md]
+    TaskDir --> DiscussCheck{--discuss?}
+    DiscussCheck -->|Yes| GrayAreas[Identify gray areas]
+    GrayAreas --> AskUser[Present to user via AskUserQuestion]
+    AskUser --> AllClear{All clear?}
+    AllClear -->|No| Discuss[Discuss selected areas]
+    Discuss --> WriteCtx[Write N-CONTEXT.md]
+    WriteCtx --> Planner
+    AllClear -->|Yes| Planner
+    DiscussCheck -->|No| Planner[Spawn gsd-planner → N-PLAN.md]
     Planner --> FullCheck{--full?}
     FullCheck -->|Yes| Checker[Spawn gsd-plan-checker]
     Checker --> Issues{Issues found?}
@@ -73,6 +90,12 @@ flowchart TD
     style Validate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Init fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style TaskDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DiscussCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GrayAreas fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AskUser fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style AllClear fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Discuss fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style WriteCtx fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Planner fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style FullCheck fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Checker fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -84,6 +107,20 @@ flowchart TD
     style State fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
+
+### Discussion Phase (`--discuss`)
+
+When `--discuss` is active, GSD pauses before planning to surface implementation decisions that would change the outcome. It identifies 2–4 gray areas using a domain-aware heuristic — concrete decisions specific to your task, not generic categories.
+
+Examples of gray areas:
+- Something users **see** → layout, density, interactions, states
+- Something users **call** → API responses, errors, auth behavior
+- Something users **run** → output format, flags, error handling
+- Something users **read** → structure, tone, depth
+
+For each gray area you select, GSD asks 1–2 focused questions with concrete options. If you choose "You decide", that's recorded as Claude's discretion. Selecting "All clear" skips the entire discussion and no CONTEXT.md is written.
+
+Decisions captured in CONTEXT.md are passed to the planner as **locked** — the planner treats them as given, not open questions.
 
 ### Summary File Format
 
@@ -137,6 +174,7 @@ After completion, the agent updates `.planning/STATE.md` with a new row in the "
 | File | Purpose |
 |------|---------|
 | `.planning/quick/<N>-<slug>/` | Task directory created before dispatch |
+| `.planning/quick/<N>-<slug>/<N>-CONTEXT.md` | Discussion decisions written by orchestrator (`--discuss` only, skipped if user selects "All clear") |
 | `.planning/quick/<N>-<slug>/<N>-PLAN.md` | Plan created by gsd-planner |
 | `.planning/quick/<N>-<slug>/<N>-SUMMARY.md` | Summary written by gsd-executor |
 | `.planning/quick/<N>-<slug>/<N>-VERIFICATION.md` | Verification report written by gsd-verifier (`--full` only) |
@@ -149,11 +187,13 @@ After completion, the agent updates `.planning/STATE.md` with a new row in the "
 | `.planning/ROADMAP.md` | Validated to exist before proceeding |
 | `.planning/STATE.md` | Read before updating the quick tasks table |
 | `CLAUDE.md` | Project-specific guidelines passed to planner and executor |
+| `.claude/skills/` or `.agents/skills/` | Project skill rules read by planner and executor if either directory exists |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
+| `.planning/quick/<N>-<slug>/<N>-CONTEXT.md` | Discussion decisions (`--discuss` only) |
 | `.planning/quick/<N>-<slug>/<N>-PLAN.md` | Task plan written by planner |
 | `.planning/quick/<N>-<slug>/<N>-SUMMARY.md` | Task summary written by executor |
 | `.planning/quick/<N>-<slug>/<N>-VERIFICATION.md` | Verification report (`--full` only) |
@@ -190,6 +230,24 @@ Commit: a1b2c3d
 Ready for next task: /gsd:quick
 ```
 
+**Scenario:** The task has design decisions you want to lock in before planning — use `--discuss`:
+
+```
+> /gsd:quick --discuss add a user avatar to the nav bar
+```
+
+GSD surfaces gray areas before spawning the planner:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► QUICK TASK (DISCUSS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+◆ Discussion phase enabled — surfacing gray areas before planning
+```
+
+GSD asks about avatar fallback behavior, click destination, and size/placement — then writes your answers to `1-CONTEXT.md` before the planner sees them.
+
 **Scenario:** You want the extra quality guarantees of plan-checking and verification:
 
 ```
@@ -220,9 +278,17 @@ Commit: b2c3d4e
 Ready for next task: /gsd:quick
 ```
 
-## Prompts Used
+**Scenario:** A complex UI change where you want both decisions locked and verification checked:
 
-- [`quick-task`](../../prompts/quick-task/) — Quick task workflow prompt
+```
+> /gsd:quick --discuss --full redesign the checkout summary component
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► QUICK TASK (DISCUSS + FULL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+◆ Discussion + plan checking + verification enabled
+```
 
 ## Related Commands
 

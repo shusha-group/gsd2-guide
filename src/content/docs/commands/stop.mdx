@@ -32,15 +32,17 @@ flowchart TD
     Signal --> Remote[Remote SIGTERM handler\ncalls stopAuto]
     StopLocal --> Teardown
     Remote --> Teardown
-    Teardown[Clear auto.lock + OS lock + crash lock] --> Skills[Clear skill state]
+    Teardown[Clear timers + auto.lock + OS lock] --> Skills[Clear skill state]
     Skills --> Sigterm[Deregister SIGTERM handler]
     Sigterm --> Worktree[Exit worktree\npreserve branch]
     Worktree --> CloseDB[Close gsd.db]
     CloseDB --> Restore[Restore base path + chdir]
     Restore --> Summary[Show inline cost summary]
     Summary --> Rebuild[Rebuild state from disk]
-    Rebuild --> Cleanup[Reset metrics, hooks,\nmodel, browser]
-    Cleanup --> Done([Stopped])
+    Rebuild --> Cmux[Clear Cmux sidebar\nlog stop event]
+    Cmux --> Reset[Reset metrics, hooks, model\nunblock unit promise]
+    Reset --> Finally[Browser teardown\nUI cleanup + session reset]
+    Finally --> Done([Stopped])
 
     style Stop fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Running fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -57,14 +59,16 @@ flowchart TD
     style Restore fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Rebuild fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Cleanup fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Cmux fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reset fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Finally fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Teardown sequence
 
-1. **Clear timeout handles** — Cancels any active unit timeout, wrap-up warning, idle watchdog, and continue-here interval timers.
-2. **Clear session lock** — Removes `.gsd/auto.lock`, releases the OS-level lock held via `proper-lockfile` (the `.gsd.lock/` directory), and clears the crash lock.
+1. **Clear timeout handles** — Cancels any active unit timeout, wrap-up warning, idle watchdog, and continue-here interval timers. Also clears all in-flight tool records.
+2. **Clear session lock** — Removes `.gsd/auto.lock` via the crash-recovery subsystem (`clearLock`) and releases the OS-level exclusive lock held via `proper-lockfile` (`releaseSessionLock`). Together these prevent a concurrent session from starting.
 3. **Clear skill state** — Resets skill snapshot and telemetry accumulated during the session.
 4. **Deregister SIGTERM handler** — Removes the SIGTERM handler registered at auto-mode start.
 5. **Exit worktree** — If worktree isolation was active, exits the `.gsd/worktrees/<MID>/` working copy. The `milestone/<MID>` branch and all its commits are preserved — only the working copy is removed.
@@ -72,7 +76,14 @@ flowchart TD
 7. **Restore base path** — Resets to the original project root and changes the working directory back.
 8. **Cost summary** — Shows total cost, token count, and units completed for the session as an inline notification.
 9. **Rebuild state** — Re-derives GSD state from disk so the status display reflects the stopped session.
-10. **Reset session state** — Clears metrics, routing history, hook state, persisted hook state, browser processes, and in-flight tool records. Restores the original model if it was changed during the session. Removes `.gsd/runtime/paused-session.json` if it exists.
+10. **Cmux sidebar** — Clears the Cmux sidebar and logs a stop event to the event log (logged as a warning if the stop reason starts with `Blocked:`).
+11. **Debug summary** — If debug mode was enabled for the session, writes a full debug summary log to disk and notifies with the path.
+12. **Reset metrics and hooks** — Resets session metrics, routing history, hook state, and removes the persisted hook state file.
+13. **Remove paused session** — Removes `.gsd/runtime/paused-session.json` if it exists, preventing stale pause state from a previous `/gsd pause` from leaking into the next session.
+14. **Restore original model** — If the model was changed during the session (e.g. by auto model selection), restores it to the model active when auto-mode started.
+15. **Unblock pending unit promise** — Calls `resolveAgentEnd` to unblock the auto-loop's awaited unit promise, allowing it to detect `active === false` and exit cleanly. Without this step, the auto-loop would hang indefinitely and block the interactive session.
+
+**Finally block (critical invariants):** Regardless of any errors in the steps above, the teardown always: tears down any open browser process to prevent orphaned Chrome instances; clears in-flight tools, slice progress cache, activity log state, and level-change callbacks; resets proactive healing; clears the UI status badge, progress widget, and footer; and calls `s.reset()` to zero out all session state.
 
 ### Remote stop
 

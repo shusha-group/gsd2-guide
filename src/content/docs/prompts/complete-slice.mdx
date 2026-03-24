@@ -5,7 +5,7 @@ description: "Verifies that all tasks in a slice actually deliver the slice goal
 
 ## What It Does
 
-`complete-slice` is the closer. After all tasks in a slice are marked complete, this prompt dispatches an agent that verifies the assembled work actually delivers what the slice promised — not just that individual tasks finished, but that the whole slice goal is met end-to-end. If any slice-level verification checks fail, the closer fixes them before declaring the slice done.
+`complete-slice` is the closer. After all tasks in a slice are marked complete, this prompt dispatches an agent that verifies the assembled work actually delivers what the slice promised — not just that individual tasks finished, but that the whole slice goal is met end-to-end. If any slice-level verification checks fail, the closer fixes them before declaring the slice done. If the slice plan includes observability or diagnostic surfaces, the closer confirms those work too.
 
 Beyond verification, the closer has several primary outputs. The **slice summary** compresses all task summaries into a concise record of what the slice actually delivered — written not just for archival purposes but for the `reassess-roadmap` agent that reads it next, and for future slice researchers who depend on this slice. The slice summary's **Forward Intelligence** section is particularly important: it captures hard-won knowledge about what's fragile, what assumptions changed, and what downstream slices need to watch out for.
 
@@ -44,7 +44,7 @@ The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` bu
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
 | `workingDirectory` | Absolute path to the project working directory | Yes |
 | `inlinedContext` | Pre-assembled context block containing the slice plan, all task summaries, output templates, and the milestone roadmap | Yes |
-| `skillActivation` | Optional skill-loading instruction injected at runtime (e.g. to activate a domain-specific skill before verification) | Yes |
+| `skillActivation` | Injected skill-loading instruction block; activates any skills that match the current slice context | Yes |
 | `sliceSummaryPath` | File path where the slice completion summary should be written | Yes |
 | `sliceUatPath` | File path where the UAT script should be written | Yes |
 | `roadmapPath` | File path to the project roadmap document | Yes |

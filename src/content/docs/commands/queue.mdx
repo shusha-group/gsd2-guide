@@ -9,7 +9,7 @@ description: "Queue and reorder future milestones — manage execution order, ad
 
 The queue is safe to use while auto-mode is running. Queued milestones are picked up naturally when auto-mode advances past the current work — no restart needed. This makes `/gsd queue` the primary way to shape what comes next without interrupting what's happening now.
 
-When you have more than one non-complete, non-parked milestone (active or queued), the hub presents two options: reorder the existing queue or add new work. If only one such milestone exists, it skips straight to the add-new-work flow.
+When you have more than one non-complete, non-parked milestone (status `active` or `pending`), the hub presents two options: reorder the existing queue or add new work. If only one such milestone exists, it skips straight to the add-new-work flow.
 
 ## Usage
 
@@ -28,7 +28,7 @@ flowchart TD
     Check -->|Yes| Load[Load state via deriveState]
     Load --> Milestones{Any milestones\nexist?}
     Milestones -->|No| FailM([Warning: run /gsd first])
-    Milestones -->|Yes| Count{Pending or active\nmilestones > 1?}
+    Milestones -->|Yes| Count{Active or pending\nmilestones > 1?}
     Count -->|Yes| Hub[Show Queue Management Hub]
     Count -->|No| Add[Show Add New Work flow]
     Hub --> Choice{User choice}
@@ -79,6 +79,8 @@ flowchart TD
 
 The command reads the full project state via `deriveState()`, which scans the milestone registry to determine which milestones are complete, active, pending, or parked. The hub appears when there are more than one milestone with status `active` or `pending` — the currently running milestone counts toward this total. If the number is one or less, the command skips the hub and goes straight to the add-new-work flow.
 
+The hub summary line shows the complete and pending counts, and appends a parked count when any parked milestones exist (e.g. `2 complete, 3 pending. 1 parked.`).
+
 ### Reorder Flow
 
 The reorder UI shows completed milestones (dimmed) and all non-complete, non-parked milestones in their current execution order. Parked milestones are excluded from both lists. Use the keyboard to navigate and reposition items:
@@ -96,11 +98,11 @@ The `d` hint only appears in the status bar when the cursor item has active (non
 
 When you confirm:
 
-1. **QUEUE-ORDER.json** — The new order is saved to `.gsd/QUEUE-ORDER.json` as `{ order: string[], updatedAt: string }`. This file is committed to git and shared across sessions.
+1. **QUEUE-ORDER.json** — The new order is saved to `.gsd/QUEUE-ORDER.json` as `{ order: string[], updatedAt: string }`. This file is committed to git and shared across sessions. Milestone IDs that exist on disk but are not in the custom order are appended at the end in default numeric sort order; IDs in the order file that no longer exist on disk are silently skipped.
 2. **Dependency cleanup** — Any `depends_on` entry that a reorder has made contradictory (a milestone now appears before its dependency) is flagged as `would_block`. These are annotated inline in the UI as "— auto-removed on confirm" so you can see what will be cleaned up before pressing Enter. On confirm, the entries are automatically removed from the milestone's `CONTEXT.md` frontmatter.
 3. **Redundant deps** — Dependencies that are already satisfied by queue position (the dep comes earlier) are shown dimmed as "redundant" — they are not removed, just surfaced for awareness.
 4. **Missing/circular deps** — Dependencies referencing non-existent milestones or forming cycles are shown as errors in the UI.
-5. **PROJECT.md sync** — The milestone sequence table in `PROJECT.md` is updated to reflect the new order.
+5. **PROJECT.md sync** — The milestone sequence table in `PROJECT.md` is updated to reflect the new order, marking the first non-complete item as `📋 Next` and the rest as `📋 Queued`.
 6. **Auto-commit** — All changes are committed with the message `docs: reorder queue`.
 
 > **Non-interactive terminals**: If the reorder UI cannot display (RPC mode or headless context), a warning is shown with the current order and reordering is skipped. The add flow still works in all environments.
@@ -114,7 +116,7 @@ Once past any drafts, the discussion flow:
 1. **Investigates** — The LLM researches your codebase, relevant libraries, and existing milestones before each question round, so its questions are grounded in reality rather than assumptions.
 2. **Checks for overlap** — Dedup check against existing milestones, extension check for work that belongs with a pending milestone, and dependency check for prerequisites.
 3. **Assesses scope** — Determines whether the work is single-milestone (2–12 slices) or multi-milestone. If multi-milestone, proposes a split for your approval before writing anything.
-4. **Verifies before writing** — For each new milestone, a mandatory depth verification step presents the proposed scope and any technical risks. You confirm or correct before the context file is written. This gate cannot be skipped.
+4. **Verifies before writing** — For each new milestone, a mandatory depth verification step presents the proposed scope and any technical risks. You confirm or correct before the context file is written. This gate is mechanically enforced — the system blocks `CONTEXT.md` writes until depth verification passes and cannot be skipped.
 5. **Writes artifacts** — Uses `gsd_milestone_generate_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, and writes `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
 
 No roadmap is created — roadmaps are generated just-in-time when auto-mode reaches that milestone. The add flow does not auto-commit; artifacts are committed by auto-mode's normal post-unit commit cycle.
@@ -149,7 +151,10 @@ Auto-mode reads this field to enforce execution order. Without it, milestones ma
 | `.gsd/DECISIONS.md` | Architectural decisions (for add-flow LLM context) |
 | `.gsd/QUEUE.md` | Previous queue entries (for add-flow LLM context) |
 | `.gsd/QUEUE-ORDER.json` | Current custom execution order |
-| `.gsd/milestones/*/<ID>-CONTEXT-DRAFT.md` | Draft seed files surfaced during add flow |
+| `.gsd/milestones/*/<ID>-CONTEXT.md` | Full context for each milestone (dedup and scope checks) |
+| `.gsd/milestones/*/<ID>-CONTEXT-DRAFT.md` | Draft seed files surfaced during add flow; also used as fallback when CONTEXT.md is absent |
+| `.gsd/milestones/*/<ID>-ROADMAP.md` | Roadmap for active/pending/parked milestones (shows what's planned) |
+| `.gsd/milestones/*/<ID>-SUMMARY.md` | Summary for completed milestones |
 
 ### Writes
 

@@ -7,7 +7,7 @@ description: "Prevent a unit from auto-mode dispatch — add it to the completed
 
 `/gsd skip` marks a unit as already handled so auto-mode won't dispatch it. It appends the unit's key to `.gsd/completed-units.json` — the same idempotency log the dispatch loop checks before queuing any unit. Once a key is recorded there, auto-mode skips over it permanently.
 
-This is useful when you've already handled a task manually, when a unit type adds no value for a particular slice, or when a unit is stuck and you'd rather bypass it than retry. Unlike stuck detection (which attempts a graduated recovery — cache invalidation and retry, then stops auto-mode on repeated failure), `/gsd skip` lets you bypass a unit proactively — before it ever causes a problem.
+This is useful when you've already handled a task manually, when a unit type adds no value for a particular slice, or when a unit is stuck and you'd rather bypass it than retry. Unlike stuck detection (which re-dispatches up to 3 times and then either writes a blocker placeholder artifact or stops auto-mode with diagnostics), `/gsd skip` lets you bypass a unit proactively — before it ever causes a problem.
 
 You can also use it to permanently bypass optional unit types — for example, skipping `plan-slice` for a slice where you've already written the plan by hand, or skipping `research-slice` when the approach is already clear.
 
@@ -78,6 +78,8 @@ Any unit key that auto-mode would look up in `completed-units.json` can be skipp
 | `research-milestone` | You've already researched the codebase manually |
 | `discuss-milestone` | Milestone discussion already happened outside auto-mode |
 | `replan-slice` | Slice replan is unnecessary for this iteration |
+| `reactive-execute` | Parallel task batch was handled manually |
+| `reassess-roadmap` | Roadmap reassessment is not needed after this slice |
 | `complete-slice` | Slice wrap-up is unnecessary for this iteration |
 | `complete-milestone` | Milestone completion handled externally |
 | `validate-milestone` | Validation is handled externally |
@@ -85,10 +87,7 @@ Any unit key that auto-mode would look up in `completed-units.json` can be skipp
 
 ### Skip vs. stuck detection
 
-When auto-mode detects a unit is stuck (same unit dispatched 3+ consecutive times, repeated errors, or A→B→A→B oscillation), it enters a graduated recovery:
-
-- **Level 1**: GSD checks whether the expected artifact already exists on disk, invalidates caches, and retries.
-- **Level 2**: If stuck is detected again, GSD stops auto-mode entirely with an error notification.
+When auto-mode detects a unit is stuck (same unit dispatched 3+ consecutive times without producing its expected artifact, `MAX_UNIT_DISPATCHES = 3`), a lifetime limit of 6 stuck detections per session (`MAX_LIFETIME_DISPATCHES = 6`) prevents infinite loops. When stuck detection triggers, GSD either writes a blocker placeholder artifact to advance the pipeline or stops with a diagnostic message and manual remediation steps.
 
 `/gsd skip` gives you a different escape hatch — you add the unit key to `completed-units.json` manually, so the dispatch loop moves past it on the next cycle. This is useful before a stuck condition is triggered, or when you've investigated and decided not to retry at all.
 

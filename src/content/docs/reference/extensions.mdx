@@ -11,9 +11,19 @@ import ToolList from '../../../../src/components/ToolList.astro';
 export const sorted = [...extensions].sort((a, b) => b.tools.length - a.tools.length);
 export const categories = ["Has Tools", "No Tools"];
 
-Extensions are built-in capabilities bundled with the pi agent. Each extension registers one or more tools the agent can call, or provides hooks, commands, and stream-level guardrails that operate without direct tool calls.
+Extensions are built-in capabilities bundled with the pi agent. Each extension either registers tools the agent can call directly, or provides hooks, commands, and stream-level guardrails that operate transparently without direct tool calls.
 
-20 extensions are active by default. Cards are sorted by tool count — extensions with more tools appear first. Click any card to expand and see its registered tools.
+20 extensions are active by default. They fall into a few broad categories:
+
+- **Interaction** — collect user input and secrets through masked, paged TUI flows (`ask-user-questions`, `get-secrets-from-user`)
+- **Shell & process management** — run commands asynchronously, manage persistent background processes, and track their lifecycle (`async-jobs`, `bg-shell`)
+- **Browser automation** — full Playwright-powered browser control with 57 tools covering navigation, interaction, assertions, tracing, and network inspection (`browser-tools`)
+- **Search & documentation** — web search via Brave, page fetching, Google Search via Gemini grounding, and up-to-date library docs via Context7 (`search-the-web`, `google-search`, `context7`)
+- **macOS automation** — Accessibility API, window management, and screen capture for native app control (`mac-tools`)
+- **Infrastructure** — native MCP server client, subagent spawning, activity logging, and configuration discovery (`mcp-client`, `subagent`, `gsd`, `universal-config`)
+- **Guardrails & hooks** — zero-cost stream-level regex guardrails, AWS credential auto-refresh, GitHub sync, and remote configuration validation (`ttsr`, `aws-auth`, `github-sync`, `remote-questions`)
+
+Cards below are sorted by tool count — extensions with more tools appear first. Click any card to expand and see its registered tools.
 
 <ReferenceGrid categories={categories}>
   {sorted.map((ext) => (
