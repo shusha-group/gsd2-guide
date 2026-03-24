@@ -106,6 +106,72 @@ function normalisePrompts(arr) {
   return map;
 }
 
+// Patterns that represent no-op substitutions in prompt files — changes that
+// are purely internal refactors with no effect on user-visible doc content.
+const PROMPT_NOOP_SUBSTITUTIONS = [
+  // "GSD Skill Preferences" inline prose → {{skillActivation}} template variable.
+  // The doc pages describe skill loading behaviour already; this is just parameterisation.
+  // Matches both sentence-ending (with period) and list-item (without period) variants.
+  {
+    pattern: /If a `GSD Skill Preferences` block is present in system context, use it to decide which skills to load and follow during [^.\n]+\.?/g,
+    replacement: "{{skillActivation}}",
+  },
+];
+
+/**
+ * Normalise prompt file content by applying no-op substitutions, then
+ * collapse whitespace so minor formatting differences don't count.
+ */
+function normalisePromptContent(content) {
+  let s = content;
+  for (const { pattern, replacement } of PROMPT_NOOP_SUBSTITUTIONS) {
+    s = s.replace(pattern, replacement);
+  }
+  // Collapse multiple blank lines to one, trim trailing whitespace per line
+  return s
+    .split("\n")
+    .map((l) => l.trimEnd())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Diff two prompt file contents after stripping no-op substitutions.
+ * Returns { docRelevant: boolean, reason: string }
+ *
+ * "Doc relevant" means: after normalisation, content still differs —
+ * i.e. something user-visible actually changed.
+ */
+function diffPromptContent(oldContent, newContent) {
+  const oldNorm = normalisePromptContent(oldContent);
+  const newNorm = normalisePromptContent(newContent);
+
+  if (oldNorm === newNorm) {
+    return { docRelevant: false, reason: "only no-op substitutions (e.g. {{skillActivation}} parameterisation)" };
+  }
+
+  // Count changed lines for a terse summary
+  const oldLines = new Set(oldNorm.split("\n"));
+  const newLines = new Set(newNorm.split("\n"));
+  const added = [...newLines].filter((l) => l && !oldLines.has(l)).length;
+  const removed = [...oldLines].filter((l) => l && !newLines.has(l)).length;
+
+  // Detect new template variables introduced
+  const oldVars = new Set((oldNorm.match(/\{\{(\w+)\}\}/g) || []).map((v) => v.slice(2, -2)));
+  const newVars = new Set((newNorm.match(/\{\{(\w+)\}\}/g) || []).map((v) => v.slice(2, -2)));
+  const newVarNames = [...newVars].filter((v) => !oldVars.has(v));
+  const removedVarNames = [...oldVars].filter((v) => !newVars.has(v));
+
+  const parts = [];
+  if (added) parts.push(`+${added} lines`);
+  if (removed) parts.push(`-${removed} lines`);
+  if (newVarNames.length) parts.push(`new vars: {{${newVarNames.join("}}, {{")}}}`);
+  if (removedVarNames.length) parts.push(`removed vars: {{${removedVarNames.join("}}, {{")}}}`);
+
+  return { docRelevant: true, reason: parts.join(", ") || "content changed" };
+}
+
 /**
  * Compare extensions.json arrays — check tool names and descriptions.
  * Returns { same: boolean }
@@ -216,10 +282,14 @@ export function analyzeImpact(stalePages) {
 
   const prevCommands = readJson(path.join(GENERATED, "previous-commands.json"));
   const currCommands = readJson(path.join(GENERATED, "commands.json"));
-  const prevPrompts = readJson(path.join(GENERATED, "previous-prompts.json"));
-  const currPrompts = readJson(path.join(GENERATED, "prompts.json"));
   const prevExtensions = readJson(path.join(GENERATED, "previous-extensions.json"));
   const currExtensions = readJson(path.join(GENERATED, "extensions.json"));
+
+  // Previous gsd-pi version (for fetching old prompt files and ts exports)
+  const prevManifest = readJson(path.join(GENERATED, "previous-manifest.json"));
+  const prevVersion = prevManifest?.gsdPiVersion;
+  const tmpDir = path.join(ROOT, ".cache");
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
   // ── Pre-compute diffs ────────────────────────────────────────────────────
 
@@ -227,14 +297,6 @@ export function analyzeImpact(stalePages) {
   let commandsDiff = null;
   if (prevCommands && currCommands) {
     commandsDiff = diffCommands(prevCommands, currCommands);
-  }
-
-  // Prompts diff (keyed by slug)
-  let prevPromptsMap = null;
-  let currPromptsMap = null;
-  if (prevPrompts && currPrompts) {
-    prevPromptsMap = normalisePrompts(prevPrompts);
-    currPromptsMap = normalisePrompts(currPrompts);
   }
 
   // Extensions diff
@@ -294,32 +356,64 @@ export function analyzeImpact(stalePages) {
     const nonPromptNonBarrel = nonBarrelDeps.filter((d) => !d.includes("/prompts/"));
 
     if (promptDeps.length > 0 && nonPromptNonBarrel.length === 0) {
-      if (prevPromptsMap && currPromptsMap) {
-        // Extract slug from path: src/resources/extensions/gsd/prompts/execute-task.md → execute-task
-        const allPromptsUnchanged = promptDeps.every((dep) => {
-          const slug = path.basename(dep, ".md");
-          return prevPromptsMap[slug] && prevPromptsMap[slug] === currPromptsMap[slug];
-        });
-
-        if (allPromptsUnchanged) {
-          // Also check barrel deps haven't caused command changes
-          const barrelSafe = onlyBarrelDeps || commandsDiff?.same;
-          if (barrelSafe || changedDeps.every((d) => SHARED_BARREL_DEPS.has(d) || d.includes("/prompts/"))) {
-            skipped.push({ page, reason: "prompt content unchanged (variables and metadata identical)" });
-            continue;
-          }
-        }
-
-        // Prompt changed — note which ones
-        const changedPrompts = promptDeps.filter((dep) => {
-          const slug = path.basename(dep, ".md");
-          return !prevPromptsMap[slug] || prevPromptsMap[slug] !== currPromptsMap[slug];
-        });
-        mustRegenerate.push({ page, changedDeps, reason: `prompt content changed: ${changedPrompts.map((d) => path.basename(d)).join(", ")}` });
+      if (!globalPkgPath) {
+        mustRegenerate.push({ page, changedDeps, reason: "global gsd-pi path not found" });
         continue;
       }
-      // No prompt snapshot — regenerate
-      mustRegenerate.push({ page, changedDeps, reason: "no previous prompts.json snapshot" });
+
+      const docRelevantChanges = [];
+      const noopChanges = [];
+
+      for (const dep of promptDeps) {
+        const slug = path.basename(dep, ".md");
+        const promptName = path.basename(dep); // e.g. execute-task.md
+
+        // Read current file from global install
+        const currPath = path.join(globalPkgPath, dep);
+        if (!fs.existsSync(currPath)) {
+          docRelevantChanges.push(`${slug}: not found in current package`);
+          continue;
+        }
+        const currContent = fs.readFileSync(currPath, "utf-8");
+
+        // Read old file from previous version tarball
+        let oldContent = null;
+        if (prevVersion) {
+          oldContent = fetchOldFileFromNpm(dep, prevVersion, tmpDir);
+        }
+
+        if (!oldContent) {
+          // No old version available — can't assess, regenerate conservatively
+          docRelevantChanges.push(`${slug}: old version unavailable`);
+          continue;
+        }
+
+        const { docRelevant, reason } = diffPromptContent(oldContent, currContent);
+        if (docRelevant) {
+          docRelevantChanges.push(`${slug}: ${reason}`);
+        } else {
+          noopChanges.push(`${slug}: ${reason}`);
+        }
+      }
+
+      // Also check barrel deps haven't caused command changes
+      const barrelSafe = changedDeps
+        .filter((d) => SHARED_BARREL_DEPS.has(d))
+        .every(() => commandsDiff?.same);
+
+      if (docRelevantChanges.length === 0 && barrelSafe) {
+        const noopSummary = noopChanges.length > 0
+          ? noopChanges.join("; ")
+          : "prompt content unchanged after normalisation";
+        skipped.push({ page, reason: noopSummary });
+        continue;
+      }
+
+      const reasons = [...docRelevantChanges];
+      if (!barrelSafe && commandsDiff && !commandsDiff.same) {
+        reasons.push("commands changed");
+      }
+      mustRegenerate.push({ page, changedDeps, reason: reasons.join("; ") });
       continue;
     }
 
@@ -364,16 +458,12 @@ export function analyzeImpact(stalePages) {
     }
 
     // ── Case 4: command-specific .ts files ───────────────────────────────────
-    // Check if the non-barrel .ts deps have export-level changes.
-    // We do this by comparing exports from old gsd-pi version vs current.
-    // This is the most expensive check so we do it last.
     const tsDeps = nonBarrelDeps.filter((d) => d.endsWith(".ts"));
     if (tsDeps.length > 0 && globalPkgPath) {
       let allExportsUnchanged = true;
       const exportDiffReasons = [];
 
       for (const dep of tsDeps) {
-        // dep is like "src/resources/extensions/gsd/auto.ts"
         const currentPath = path.join(globalPkgPath, dep);
         if (!fs.existsSync(currentPath)) {
           allExportsUnchanged = false;
@@ -383,14 +473,6 @@ export function analyzeImpact(stalePages) {
 
         const currentContent = fs.readFileSync(currentPath, "utf-8");
         const currentExports = extractExports(currentContent);
-
-        // Find old version — check if we have a previous tarball cached
-        const tmpDir = path.join(ROOT, ".cache");
-        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-
-        // Get previous version from page-versions.json headSha or previous-manifest headSha
-        const prevManifest = readJson(path.join(GENERATED, "previous-manifest.json"));
-        const prevVersion = prevManifest?.gsdPiVersion;
 
         let oldExports = null;
         if (prevVersion) {
