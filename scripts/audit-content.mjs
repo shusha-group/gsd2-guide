@@ -137,6 +137,22 @@ function run() {
       // Strip parenthetical aliases like "(-c)" from the command before keyword extraction
       const cleanCmd = cmd.replace(/\s*\([^)]*\)\s*/g, " ").trim();
 
+      // If the command contains a --flag, use the flag name as the keyword (not the trailing arg).
+      // e.g. "gsd --print "msg"" → keyword "print", "gsd --mode <text\|...>" → keyword "mode"
+      const embeddedFlag = cleanCmd.match(/--([a-z][-a-z]*)/);
+      if (embeddedFlag) {
+        const flagKeyword = embeddedFlag[1];
+        if (!contentLower.includes(flagKeyword)) {
+          gaps.push({
+            page: slug,
+            type: "missing_subcommand",
+            detail: `Subcommand "${cmd}" not mentioned (looked for "${flagKeyword}")`,
+            description: entry.description,
+          });
+        }
+        continue;
+      }
+
       // Check if the specific subcommand or its distinguishing word is mentioned
       const words = cleanCmd.replace(/^\/gsd\s+/, "").replace(/^gsd\s+/, "").split(/\s+/);
       const keyWord = words[words.length - 1]; // last word is usually the distinguishing one
