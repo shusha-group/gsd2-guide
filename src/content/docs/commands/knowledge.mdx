@@ -11,6 +11,13 @@ Each entry is typed as a `rule`, `pattern`, or `lesson` and assigned an auto-inc
 
 Use `/gsd knowledge` when you discover something that would save time if the next agent knew it — a recurring gotcha, a non-obvious pattern in the codebase, or a constraint that should always be respected.
 
+There are two knowledge files:
+
+- **Project knowledge** — `.gsd/KNOWLEDGE.md`. Written by `/gsd knowledge`. Scoped to this project only.
+- **Global knowledge** — `~/.gsd/agent/KNOWLEDGE.md`. User-maintained, cross-project. Useful for personal preferences or rules that apply to all your GSD projects. Edit it directly; there is no command to write to it.
+
+Both files are injected into every agent session under a single `[KNOWLEDGE — Rules, patterns, and lessons learned]` block.
+
 ## Usage
 
 ```
@@ -110,9 +117,11 @@ Entries are never removed or modified. If a rule becomes obsolete, add a new ent
 
 KNOWLEDGE.md is surfaced to agents in two ways:
 
-**Base system context** — At the start of every agent session, the file is read from disk and injected under a `[PROJECT KNOWLEDGE — Rules, patterns, and lessons learned]` block, appended after preferences and before memory/skills context. This gives every agent session passive awareness of all recorded knowledge.
+**Base system context** — At the start of every agent session, both the global (`~/.gsd/agent/KNOWLEDGE.md`) and project (`.gsd/KNOWLEDGE.md`) knowledge files are read from disk and injected under a `[KNOWLEDGE — Rules, patterns, and lessons learned]` block, appended after preferences and before memory/skills context. When both files exist, global knowledge appears first under a `## Global Knowledge` sub-section, followed by project knowledge under `## Project Knowledge`. When only one file exists, its sub-section heading is omitted. If neither file exists, the block is skipped entirely.
 
-**Unit prompts** — The file is also inlined directly into the prompt for each unit. Most unit types (research, plan milestone, research slice, plan slice, complete slice, complete milestone, validate milestone, reassess roadmap) use a simple full-file inline. The execute-task prompt uses **smart chunking**: if KNOWLEDGE.md exceeds 3,000 characters, it's truncated at a section boundary rather than cut off mid-entry, with the task and slice titles used as relevance hints.
+If the global knowledge file exceeds 4KB, a warning notification fires at session start to prompt trimming.
+
+**Unit prompts** — The project KNOWLEDGE.md file is also inlined directly into the prompt for each unit. Most unit types (research, plan milestone, research slice, plan slice, complete slice, complete milestone, validate milestone, reassess roadmap) use a simple full-file inline. The execute-task prompt uses **smart chunking**: if KNOWLEDGE.md exceeds 3,000 characters, it's truncated at a section boundary rather than cut off mid-entry, with the task and slice titles used as relevance hints.
 
 The following unit types inject KNOWLEDGE.md:
 
@@ -128,9 +137,13 @@ The following unit types inject KNOWLEDGE.md:
 | Validate milestone | Full file inline |
 | Reassess roadmap | Full file inline |
 
-Replan-slice and discuss-milestone do not inject KNOWLEDGE.md.
+Replan-slice, discuss-milestone, and run-UAT do not inject KNOWLEDGE.md.
 
-If `.gsd/KNOWLEDGE.md` doesn't exist, both injection points are silently skipped — no error, no empty block. The file only appears in prompts once at least one entry has been added.
+If `.gsd/KNOWLEDGE.md` doesn't exist, unit prompt injection is silently skipped — no error, no empty block. The file only appears in unit prompts once at least one entry has been added.
+
+### Worktree Sync
+
+In auto-mode worktree isolation, `.gsd/KNOWLEDGE.md` is synced back to the main project tree when the milestone worktree merges. It is treated the same as `DECISIONS.md`, `REQUIREMENTS.md`, and `PROJECT.md` — root-level GSD files that travel with the project.
 
 ## What Files It Touches
 

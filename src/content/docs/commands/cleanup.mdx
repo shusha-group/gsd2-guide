@@ -44,28 +44,38 @@ flowchart TD
     E --> F[Find merged gsd/* branches<br/>excluding gsd/quick/*]
     F --> G[Delete each merged branch]
     G --> H[Find milestone/* branches<br/>not attached to a worktree]
-    H --> I[Check if milestone is complete<br/>via ROADMAP]
-    I --> J[Force-delete stale<br/>milestone branches]
-    J --> K[Report summary]
+    H --> I{DB available?}
+    I -- Yes --> J[Check milestone status in DB]
+    I -- No --> K[Parse ROADMAP.md from disk]
+    J --> L{Status complete/done?}
+    K --> L
+    L -- Yes --> M[Force-delete stale<br/>milestone branch]
+    L -- No --> N[Skip branch]
+    M --> O[Report summary]
+    N --> O
 
     style A fill:#0d180d,stroke:#39ff14,color:#39ff14
     style C fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style I fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style L fill:#0d180d,stroke:#39ff14,color:#39ff14
     style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style B fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style F fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style M fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style N fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style O fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
 Branch cleanup runs in two passes:
 
 1. **Merged GSD branches** — Lists all branches matching `gsd/*`, then uses `git branch --merged` to find which ones are already in the main branch. Deletes each merged branch. `gsd/quick/*` branches are always skipped — quick-task branches are short-lived and managed separately.
 
-2. **Stale milestone branches** — Lists all `milestone/*` branches and cross-references the currently registered worktrees. Any `milestone/*` branch that is **not** attached to a live worktree and whose milestone is marked complete in the roadmap is force-deleted. These accumulate when parallel milestone work finishes and the worktree is removed but the branch lingers.
+2. **Stale milestone branches** — Lists all `milestone/*` branches and cross-references the currently registered worktrees. Any `milestone/*` branch that is **not** attached to a live worktree is eligible for deletion if the milestone is complete. Completion is checked **DB-first**: if the GSD database is available and has a row for the milestone, it reads the status field directly. If the DB is unavailable or has no row for that milestone, it falls back to parsing the `ROADMAP.md` from disk. Branches for incomplete milestones are left untouched.
 
 ### Snapshot Cleanup
 
@@ -115,13 +125,13 @@ Worktree cleanup inspects all GSD-managed worktrees under `.gsd/worktrees/` and 
 | **Stale** | Not merged AND no commits in 14+ days | Listed for manual review — not removed |
 | **Active** | In progress | Listed for reference — not removed |
 
-A worktree that is currently your working directory is always skipped, even if it would otherwise be safe to remove.
+A worktree is safe to remove when its branch is fully contained in main and it has no dirty files (staged or unstaged). Unpushed commits don't block removal — if the branch is merged, the work is already in main. A worktree that is currently your working directory is always skipped, even if it would otherwise be safe to remove.
 
 ### Project State Cleanup
 
-GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, keyed by a hash of the project's git remote URL. When a project is deleted or moved, its state directory becomes orphaned.
+GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, keyed by a hash of the project's git remote URL. When a project is deleted or moved, its state directory becomes orphaned. The location can be overridden with the `GSD_STATE_DIR` environment variable.
 
-`/gsd cleanup projects` (dry-run) inspects each directory, reads its `META.json`, and checks whether the recorded git root path still exists on disk:
+`/gsd cleanup projects` (dry-run) inspects each directory, reads its `repo-meta.json`, and checks whether the recorded git root path still exists on disk:
 
 - **Active** — git root exists → listed but left alone
 - **Orphaned** — git root is gone → listed as candidates for deletion
@@ -138,8 +148,8 @@ GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, 
 | git branch list (`gsd/*`, `milestone/*`) | Identifies GSD-managed branches for cleanup |
 | git refs (`refs/gsd/snapshots/`) | Finds snapshot refs to prune |
 | `.gsd/worktrees/` | Lists active worktrees for health checks |
-| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Checks milestone completion before deleting stale milestone branches |
-| `~/.gsd/projects/<hash>/META.json` | Reads git root path to detect orphaned state directories |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Filesystem fallback — checks milestone completion when DB is unavailable |
+| `~/.gsd/projects/<hash>/repo-meta.json` | Reads git root path to detect orphaned state directories |
 
 ### Deletes
 
@@ -226,4 +236,4 @@ Removed 1 orphaned directory.
 
 - [`/gsd health`](../health/) — Diagnose `.gsd/` directory health and repair structural issues
 - [`/gsd complete-milestone`](../complete-milestone/) — Archive a shipped milestone
-- [`/gsd parallel`](../parallel/) — Manage parallel milestone worktrees (start, status, merge, stop)
+- [`/gsd undo`](../undo/) — Roll back to a recent snapshot

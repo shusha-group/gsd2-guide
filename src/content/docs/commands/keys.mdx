@@ -9,7 +9,7 @@ description: "API key manager — list, add, remove, test, rotate, and health-ch
 
 Keys can come from two sources: `auth.json` (managed by this command) or environment variables (e.g. `ANTHROPIC_API_KEY`). `auth.json` takes priority. When multiple keys are stored for the same provider, GSD uses them in round-robin order. Providers that support OAuth (like Anthropic and GitHub Copilot) show a prompt directing you to use [`/login`](../login/) for browser-based authentication instead.
 
-Keys are always masked in output — only the first 4 and last 4 characters are shown (e.g. `sk-a***cdef`). Keys shorter than 12 characters show only the first 2 and last 2.
+Keys are always masked in output — only the first 4 and last 4 characters are shown (e.g. `sk-a***cdef`). Keys with 8 or fewer characters show only the first 2 and last 2.
 
 ## Usage
 

@@ -1,24 +1,24 @@
 ---
 title: "Keyboard Shortcuts"
-description: "Five instant-access shortcuts for the GSD dashboard, voice mode, background processes, clipboard vision, and pausing auto mode — no typing required."
+description: "Four instant-access shortcuts registered by GSD — plus the platform-level paste-image and interrupt bindings — for the dashboard, voice mode, background processes, and pausing auto mode."
 ---
 
 ## What It Does
 
-GSD registers five keyboard shortcuts for actions that benefit from instant access over a slash command. These work during any active session — whether auto mode is running, you're reviewing output, or watching a build.
+GSD registers three keyboard shortcuts and inherits two from the underlying platform. Together they cover the actions that benefit most from instant access over a slash command — no typing, no context switch.
 
-Four shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable detection. In terminals that don't support the protocol (macOS Terminal.app, Warp, JetBrains IDEs), GSD appends a slash-command fallback hint to the shortcut description rather than silently dropping it.
+Three shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable detection. In terminals that don't support the protocol (macOS Terminal.app, Warp, JetBrains IDEs), GSD appends a slash-command fallback hint to the shortcut description rather than silently dropping it.
 
-The fifth shortcut — `Ctrl+V` / `Alt+V` — pastes an image from your clipboard directly into the conversation as vision input. Use `Alt+V` in terminals where `Ctrl+V` is reserved for paste (e.g. Warp).
+The remaining two — `Ctrl+V` for paste-image and `Escape` for interrupt — are platform-level bindings managed by the underlying pi coding agent. Both are configurable via `~/.gsd/agent/keybindings.json`.
 
 ## Usage
 
 | Shortcut | Action | Fallback |
 |----------|--------|----------|
-| `Ctrl+Alt+G` | Toggle dashboard overlay | `/gsd status` |
-| `Ctrl+Alt+V` | Toggle voice transcription | `/voice` |
-| `Ctrl+Alt+B` | Show background shell processes | `/bg` |
-| `Ctrl+V` / `Alt+V` | Paste image from clipboard (screenshot → vision input) | — |
+| `Ctrl+Alt+G` | Open GSD dashboard overlay | `/gsd status` |
+| `Ctrl+Alt+V` | Toggle voice mode | `/voice` |
+| `Ctrl+Alt+B` | Open background process manager | `/bg` |
+| `Ctrl+V` | Paste image from clipboard (screenshot → vision input) | — |
 | `Escape` | Pause auto mode (preserves conversation) | — |
 
 ## How It Works
@@ -29,19 +29,35 @@ Opens a full-screen overlay showing milestone progress, the active slice and tas
 
 Only activates when a `.gsd/` directory is present in the current working directory. If not found, a notice is shown: _"No .gsd/ directory found. Run /gsd to start."_
 
-### Ctrl+Alt+V — Voice Transcription
+### Ctrl+Alt+V — Voice Mode
 
-Toggles real-time speech-to-text transcription on and off. Requires a microphone. Equivalent to running `/voice`. Supported on macOS and Linux.
+Toggles real-time speech-to-text transcription on and off. Requires a microphone. Equivalent to running `/voice`.
+
+**macOS** — Compiles a Swift binary on first use (requires Xcode CLI tools). No external API key needed; transcription runs locally via the Speech framework.
+
+**Linux** — Uses a Python script powered by Groq's Whisper API. Requires:
+- `GROQ_API_KEY` set in your environment (run `/gsd keys add groq` to configure)
+- `python3` installed (`sudo apt install python3`)
+- `libportaudio2` installed (`sudo apt install libportaudio2`)
+- Python dependencies are auto-installed on first run
+
+When voice is active, a flashing `● transcribing` indicator appears in the footer. Press `Escape` or `Enter` to stop transcription and dismiss the voice overlay. Pressing `Ctrl+Alt+V` again also toggles it off if the overlay is not the focused input.
 
 ### Ctrl+Alt+B — Background Process Manager
 
 Opens an overlay listing all running background shell processes — dev servers, file watchers, build processes. Shows process ID, command, status, and uptime. Equivalent to running `/bg`. Press `Escape` or `q` to close.
 
-### Ctrl+V / Alt+V — Clipboard Image Paste
+### Ctrl+V — Clipboard Image Paste
 
 Pastes an image from your system clipboard into the conversation as vision input. Useful for attaching screenshots, mockups, or error dialogs without saving them as files first. GSD passes the image directly to the model.
 
-Use `Ctrl+V` in most terminals. Use `Alt+V` in terminals where `Ctrl+V` is reserved for paste (e.g. Warp).
+This is a platform-level keybinding. The default is `ctrl+v`. If your terminal reserves `Ctrl+V` for paste (e.g. Warp), remap it to `alt+v` or another key in `~/.gsd/agent/keybindings.json`:
+
+```json
+{
+  "pasteImage": "alt+v"
+}
+```
 
 ### Escape — Pause Auto Mode
 
@@ -77,6 +93,15 @@ You don't need to configure anything — GSD detects terminal capabilities autom
 
 Keyboard shortcuts are entirely read-only and in-memory. No files are created, modified, or deleted by pressing a shortcut. The dashboard overlay reads planning files the same way [`/gsd status`](../status/) does.
 
+The exception is first-run voice setup on macOS, which compiles a Swift binary to `~/.gsd/agent/speech-recognizer`. On Linux, Python dependencies are installed into `~/.gsd/voice-venv/` on first activation.
+
+### Creates (voice first-run only)
+
+| File | Purpose |
+|------|---------|
+| `~/.gsd/agent/speech-recognizer` | Compiled Swift speech recognizer binary (macOS, first run) |
+| `~/.gsd/voice-venv/` | Python virtualenv with speech dependencies (Linux, first run) |
+
 ## Examples
 
 Checking milestone progress mid-execution without typing:
@@ -92,7 +117,7 @@ Pasting a screenshot for analysis:
 
 ```
 > Cmd+Shift+4    (macOS — capture screenshot to clipboard)
-> Ctrl+V         (or Alt+V in Warp)
+> Ctrl+V
 [Image appears inline in the conversation]
 > What's wrong with this error message?
 ```
@@ -110,9 +135,17 @@ Using voice instead of typing a long thought:
 
 ```
 → Press Ctrl+Alt+V
-● Voice transcription active
+● transcribing  (footer indicator flashes)
 [Speak your message — it types into the input bar]
-→ Press Ctrl+Alt+V again to stop
+→ Press Escape or Enter to stop
+```
+
+Remapping paste-image for Warp users:
+
+```json title="~/.gsd/agent/keybindings.json"
+{
+  "pasteImage": "alt+v"
+}
 ```
 
 ## Related Commands
@@ -120,3 +153,4 @@ Using voice instead of typing a long thought:
 - [`/gsd status`](../status/) — Dashboard (same as `Ctrl+Alt+G`)
 - [`/gsd stop`](../stop/) — Stop auto mode gracefully after the current unit finishes
 - [`/gsd auto`](../auto/) — Start or resume autonomous mode
+- [`/gsd keys`](../keys/) — Manage API keys (including GROQ for Linux voice)

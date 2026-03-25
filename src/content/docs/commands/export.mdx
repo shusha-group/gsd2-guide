@@ -87,18 +87,18 @@ Generates a self-contained HTML snapshot at `.gsd/reports/<milestone-id>-<timest
 
 | Section | Contents |
 |---------|----------|
-| Summary | Project name, phase, overall progress bar, key metrics |
+| Summary | Project name, phase, overall progress bar, ETA line, and key metrics |
 | Blockers | Active blockers across all slices |
 | Progress | Milestones and slices tree with status and critical path |
 | Timeline | Chronological unit execution history |
 | Dependencies | Slice dependency graph (SVG DAG per milestone) |
-| Metrics | Cost/token/duration charts by phase, slice, model, and tier |
-| Health | Configuration overview and missing changelogs |
+| Metrics | Cost/token totals, budget burndown, cost-over-time chart, bar charts by phase/slice/model, and slice Gantt |
+| Health | Token profile, budget ceiling, truncation and continue-here rates, tier breakdown, progress score, and doctor run history |
 | Changelog | Completed slice summaries and file modifications |
 | Knowledge | Rules, patterns, and lessons from KNOWLEDGE.md |
 | Captures | Pending and resolved captures |
-| Artifacts | Tracked file and artifact status |
-| Planning | Milestone planning notes and discussion |
+| Artifacts | Missing changelogs and recently completed slices |
+| Planning | Milestone planning notes and discussion state |
 
 All CSS and JavaScript are inlined — no external dependencies. The file is printable to PDF from any browser. After writing the file, GSD opens it automatically using your system's default browser.
 

@@ -33,7 +33,12 @@ flowchart TD
     GSD -->|No| NoState([Error: no GSD state found])
     GSD -->|Yes| Prompt[Get problem description]
 
-    Prompt --> Build[Build forensic report]
+    Prompt --> DedupPref{forensics_dedup<br/>preference set?}
+    DedupPref -->|Yes| Build[Build forensic report]
+    DedupPref -->|No| DedupChoice[Show duplicate detection<br/>opt-in prompt]
+    DedupChoice -->|Enable| SavePref[Save forensics_dedup: true<br/>to global preferences]
+    DedupChoice -->|Skip| Build
+    SavePref --> Build
 
     Build --> State[Derive active milestone<br/>and slice from STATE.md]
     State --> Worktree[Resolve active<br/>auto-worktree]
@@ -73,9 +78,12 @@ flowchart TD
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Active fill:#0d180d,stroke:#39ff14,color:#39ff14
     style GSD fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style DedupPref fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Blocked fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style NoState fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style Prompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DedupChoice fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SavePref fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Build fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style State fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Worktree fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -98,6 +106,15 @@ flowchart TD
     style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style LLM fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
+
+### Duplicate Detection Opt-in
+
+The first time you run forensics (when `forensics_dedup` is not set in your global preferences), GSD shows an interactive choice:
+
+- **Enable duplicate detection** — Before filing a GitHub issue, the LLM will search closed issues, open PRs, and merged PRs to avoid creating duplicates. Uses additional AI tokens for the search.
+- **Skip for now** — File without checking for duplicates.
+
+If you enable it, the preference is saved to your global GSD preferences file (`~/.gsd/agent/preferences.md`) as `forensics_dedup: true`. You can also set it manually.
 
 ### Data Sources
 
@@ -140,8 +157,9 @@ The source map organizes GSD's source files by domain so the LLM can navigate di
 | **Forensics & recovery** | Trace extraction, crash lock lifecycle, session lock |
 | **Metrics & telemetry** | Cost/token ledger, skill telemetry, token counting |
 | **Health & diagnostics** | Doctor checks, environment checks, issue formatting |
+| **Prompts & context** | Prompt loading, prompt cache optimization, context budget |
 | **Git & worktrees** | Git service, worktree manager, self-healing |
-| **Commands** | Command dispatcher, maintenance commands |
+| **Commands** | Command dispatcher, inspect commands, maintenance commands |
 
 The LLM follows a structured investigation sequence:
 1. **Analyze** anomalies and trace data — treat automated findings as leads, not conclusions
@@ -152,6 +170,8 @@ The LLM follows a structured investigation sequence:
 
 Then the LLM **offers GitHub issue creation** at `gsd-build/gsd-2` with labels `bug, auto-generated`. The issue is created via `gh issue create --repo gsd-build/gsd-2` using the bash tool (not the `github_issues` tool, which can't target a specific repo). The issue template includes GSD version, model, the failing unit, reproduction context, forensic findings, and a concrete fix suggestion — automatically redacted of any user-specific data.
 
+When duplicate detection is enabled, the LLM first searches closed issues, open PRs, and merged PRs using keywords from its diagnosis. It presents any matches and lets you choose to skip issue creation (already fixed), add a comment to an existing issue, or create a new one anyway.
+
 ## What Files It Touches
 
 ### Creates
@@ -159,6 +179,7 @@ Then the LLM **offers GitHub issue creation** at `gsd-build/gsd-2` with labels `
 | File | Purpose |
 |------|---------|
 | `.gsd/forensics/report-*.md` | Timestamped, redacted forensic report |
+| `~/.gsd/agent/preferences.md` | Updated when user enables duplicate detection for the first time |
 
 ### Reads
 
@@ -171,6 +192,7 @@ Then the LLM **offers GitHub issue creation** at `gsd-build/gsd-2` with labels `
 | `.gsd/completed-units.json` | Stale completion detection |
 | `.gsd/STATE.md` | Current project state (active milestone and slice) |
 | `.gsd/milestones/*/` | Doctor scan (run internally) |
+| `~/.gsd/agent/preferences.md` | Global preferences (reads `forensics_dedup` setting) |
 
 ## Examples
 
@@ -178,9 +200,14 @@ Investigating a stuck auto-mode session:
 
 ```
 > /gsd forensics
-
 ● Describe what went wrong:
   auto-mode kept retrying T03 and never moved forward
+
+● Duplicate detection available
+  Before filing a GitHub issue, forensics can search existing issues and PRs
+  to avoid duplicates. This uses additional AI tokens for analysis.
+  > Enable duplicate detection (recommended)
+    Skip for now
 
 ● Building forensic report...
   Forensic report saved: .gsd/forensics/report-2026-03-17-14-30-22.md

@@ -7,7 +7,7 @@ description: "Command-line flags and subcommands for starting and managing GSD s
 
 `gsd` is invoked from the command line with optional flags and subcommands. Flags control how a session starts — which model to use, whether to resume, whether to run in headless or single-shot mode, or whether to start in an isolated worktree. Subcommands like `gsd config`, `gsd worktree`, and `gsd headless` exit immediately after their task without launching the TUI.
 
-Most day-to-day work happens inside the interactive TUI using [slash commands](../slash-commands/). The CLI flags listed here are for the binary entry point only.
+Most day-to-day work happens inside the interactive TUI using [slash commands](../gsd/). The CLI flags listed here are for the binary entry point only.
 
 ## Usage
 
@@ -36,8 +36,10 @@ gsd <subcommand> --help
 | `--model <id>` | | Override the default model for this session. Model ID depends on the provider (e.g. `claude-opus-4-6`, `gpt-4o`). |
 | `--no-session` | | Disable session persistence — conversation history is not saved. |
 | `--extension <path>` | | Load an additional extension from a file path. Can be repeated for multiple extensions. |
+| `--append-system-prompt <path>` | | Append extra text to the system prompt. Accepts a file path (read as UTF-8) or a literal string. Used internally by subagent dispatch. |
 | `--tools <a,b,c>` | | Restrict available tools to a comma-separated list. |
 | `--list-models [search]` | | List available models and exit. Optionally filter by a search term. |
+| `--web [path]` | | Launch browser-only web mode. Optionally specify a project path. Equivalent to `gsd web [path]`. |
 | `--debug` | | Enable structured JSONL diagnostic logging for troubleshooting dispatch and state issues. |
 | `--version` | `-v` | Print the installed GSD version and exit. |
 | `--help` | `-h` | Print help text and exit. |
@@ -48,9 +50,10 @@ gsd <subcommand> --help
 |------------|-------------|
 | [`gsd config`](../config/) | Re-run the interactive setup wizard to configure LLM providers, API keys, and tool integrations. |
 | `gsd update` | Update GSD to the latest version via npm (`npm install -g gsd-pi@latest`). |
-| `gsd sessions` | Interactive session picker — list all saved sessions for the current directory and choose one to resume. |
+| `gsd sessions` | Interactive session picker — list up to 20 saved sessions for the current directory and choose one to resume. |
 | `gsd worktree <cmd>` | Manage isolated git worktrees for parallel work streams. Alias: `gsd wt`. |
 | [`gsd headless`](../headless/) | Run `/gsd` commands without a TUI — for CI, cron jobs, and scripted automation. |
+| `gsd web [start\|stop] [path]` | Start or stop browser-only web mode. Omitting the action defaults to `start`. |
 
 ### Worktree Subcommands
 
@@ -61,7 +64,7 @@ gsd <subcommand> --help
 | `list` | List all worktrees with status (files changed, commits ahead, dirty state) |
 | `merge [name]` | Squash-merge a worktree into main and clean up |
 | `clean` | Remove all worktrees that have been merged or are empty |
-| `remove <name>` | Remove a worktree. Use `--force` to remove with unmerged changes. |
+| `remove <name>` | Remove a worktree. Alias: `rm`. Use `--force` to remove with unmerged changes. |
 
 Typical lifecycle:
 
@@ -89,13 +92,14 @@ Headless flags:
 
 | Flag | Description |
 |------|-------------|
-| `--timeout <ms>` | Overall timeout in milliseconds (default: 300000) |
+| `--timeout <ms>` | Overall timeout in milliseconds (default: 300000). For `new-milestone`, the timeout is automatically extended to 600000ms (10 minutes) if the default is used. |
 | `--json` | Emit a JSONL event stream to stdout |
 | `--model <id>` | Override model for this headless session |
+| `--max-restarts <n>` | Number of times to restart on crash before giving up (default: 3). Set to `0` to disable restarts. |
 | `--supervised` | Forward interactive UI requests to an orchestrator via stdout/stdin |
-| `--response-timeout <ms>` | Timeout for orchestrator response (default: 30000) |
+| `--response-timeout <ms>` | Timeout for orchestrator response in supervised mode (default: 30000) |
 | `--answers <path>` | Pre-supply answers and secrets from a JSON file — useful for unattended CI runs |
-| `--events <types>` | Filter JSONL output to specific event types (comma-separated) |
+| `--events <types>` | Filter JSONL output to specific event types (comma-separated). Implies `--json`. |
 
 `new-milestone` flags:
 
@@ -123,6 +127,7 @@ Exit codes for `gsd headless`: `0` = complete, `1` = error or timeout, `2` = blo
 |------|---------|
 | `~/.gsd/sessions/<project>/` | New session data created on each interactive launch |
 | `~/.gsd/agent/auth.json` | Updated by `gsd config` when credentials change |
+| `.gsd/runtime/headless-context.md` | Temporary context file written by `gsd headless new-milestone` before spawning the RPC child |
 
 ## Examples
 
@@ -205,6 +210,20 @@ Remove all merged or empty worktrees:
 gsd worktree clean
 ```
 
+Remove a specific worktree (using `rm` alias):
+
+```bash
+gsd wt rm auth-refactor
+```
+
+Launch web mode:
+
+```bash
+gsd --web
+gsd web start /path/to/project
+gsd web stop
+```
+
 Run headless auto-mode (no TUI, exits when done):
 
 ```bash
@@ -230,6 +249,12 @@ Run headless with pre-supplied answers (unattended CI):
 
 ```bash
 gsd headless --answers answers.json auto
+```
+
+Disable automatic restarts on crash:
+
+```bash
+gsd headless --max-restarts 0 auto
 ```
 
 Filter JSONL output to specific event types:
