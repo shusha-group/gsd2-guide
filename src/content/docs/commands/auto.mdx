@@ -45,8 +45,10 @@ flowchart TD
     Recover --> Derive[Derive project state from disk]
     Derive --> HasMilestone{Milestone exists?}
     HasMilestone -->|No| Discuss[discuss-milestone wizard]
-    HasMilestone -->|Yes| Worktree
-    Discuss --> Worktree[Create or re-enter worktree]
+    HasMilestone -->|Yes| IsoMode
+    Discuss --> IsoMode{Worktree isolation enabled?}
+    IsoMode -->|Yes| Worktree[Create or re-enter worktree]
+    IsoMode -->|No| DB
     Worktree --> DB[Open or auto-migrate SQLite DB]
     DB --> Metrics[Init metrics, routing history & skill snapshot]
     Metrics --> Secrets[Secrets collection gate]
@@ -54,7 +56,7 @@ flowchart TD
     Heal --> Preflight[Pre-flight milestone queue validation]
     Preflight --> Dispatch
 
-    Dispatch[Evaluate 18 dispatch rules] --> Execute[Execute unit in fresh session]
+    Dispatch[Evaluate 19 dispatch rules] --> Execute[Execute unit in fresh session]
     Execute --> Verify[Verify expected artifact on disk]
     Verify -->|Missing| Retry[Increment dispatch count]
     Retry -->|Count < 3| Dispatch
@@ -73,6 +75,7 @@ flowchart TD
     style Git fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Crash fill:#0d180d,stroke:#39ff14,color:#39ff14
     style HasMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style IsoMode fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Verify fill:#0d180d,stroke:#39ff14,color:#39ff14
     style More fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Escape fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -106,7 +109,7 @@ flowchart TD
 4. **Crash recovery** — Checks for a crash lock file in `.gsd/`. If found and the process is no longer alive, GSD synthesizes a recovery context from the prior session's tool call history and prepends it to the first dispatch prompt. If the lock belongs to a live process, GSD aborts to prevent two concurrent sessions.
 5. **Derive state** — Reads all `.gsd/` files to determine the current phase: which milestone is active, which slice, which task. This is the same algorithm used by [`/gsd status`](../status/).
 6. **Discuss-milestone** — If no milestone exists yet, or the active milestone has a draft context file that needs discussion, GSD dispatches a `discuss-milestone` unit to talk through the project goals and produce a `CONTEXT.md` before planning begins.
-7. **Worktree setup** — If using worktree isolation (the default), creates or re-enters `.gsd/worktrees/<MID>/` with a `milestone/<MID>` branch. When re-attaching to an existing branch, GSD forward-merges any plan checkpoint state from the project root into the worktree to handle crash scenarios. A user-configured post-create hook (`git.worktree_post_create` in preferences) is run after creation — useful for copying `.env` files or symlinking assets.
+7. **Worktree setup** — If worktree isolation is enabled (opt-in via `git.isolation: "worktree"` in preferences), creates or re-enters `.gsd/worktrees/<MID>/` with a `milestone/<MID>` branch. When re-attaching to an existing branch, GSD forward-merges any plan checkpoint state from the project root into the worktree to handle crash scenarios. A user-configured post-create hook (`git.worktree_post_create` in preferences) is run after creation — useful for copying `.env` files or symlinking assets. When worktree isolation is disabled (the default), GSD executes directly in the project root.
 8. **Database** — Opens or auto-migrates the SQLite database at `.gsd/gsd.db`. If the database doesn't exist yet but `.gsd/` has markdown files (decisions, requirements, milestones), GSD automatically imports them into the database before the first dispatch.
 9. **Metrics & routing initialization** — Initializes the metrics ledger, routing history, and (if skill discovery is enabled) takes a snapshot of installed skills. Begins session tracking for cost, tokens, and timing.
 10. **Secrets collection gate** — If a secrets manifest exists for the active milestone and contains uncollected keys, GSD prompts the user to provide them before the first unit is dispatched.
@@ -117,12 +120,12 @@ flowchart TD
 
 After initialization, GSD enters its core loop. Each iteration:
 
-1. **Dispatch** — Evaluates a declarative table of 18 ordered dispatch rules. The first matching rule determines the unit type and builds the prompt for that unit.
+1. **Dispatch** — Evaluates a declarative table of 19 ordered dispatch rules. The first matching rule determines the unit type and builds the prompt for that unit.
 2. **Execute** — Creates a fresh agent session with the unit's plan pre-loaded. The agent has no memory of prior sessions — everything it needs is in the dispatch prompt.
 3. **Artifact verification** — After the unit completes, GSD checks that the expected artifact was written to disk (e.g., a `PLAN.md` for `plan-slice`, a task `SUMMARY.md` and `[x]` checkbox for `execute-task`). For `complete-slice`, both a `SUMMARY.md` and `UAT.md` must exist and the slice must be marked `[x]` in the roadmap. If verification fails, the unit is re-dispatched.
 4. **Auto-commit** — All changes are committed to the active milestone branch with a structured commit message.
 5. **Doctor checks** — Runs health checks on the `.gsd/` directory structure. Catches file corruption, missing summaries, or inconsistent state.
-6. **Worktree sync** — Synchronizes state between the worktree and the project root.
+6. **Worktree sync** — Synchronizes state between the worktree and the project root (when worktree isolation is enabled).
 7. **Next dispatch** — Re-derives state from disk and loops back to step 1.
 
 When the final unit (`complete-milestone`) finishes, GSD squash-merges the `milestone/<MID>` branch into the integration branch (default: `main`) with a rich commit message listing all completed slices, then tears down the worktree.
@@ -138,6 +141,7 @@ The dispatch table maps project phases to these unit types:
 | `plan-milestone` | `pre-planning` | Creates the milestone ROADMAP.md |
 | `research-slice` | `planning` | Researches implementation approach for a slice (skipped for S01 when milestone research exists) |
 | `plan-slice` | `planning` | Decomposes a slice into tasks and writes PLAN.md + per-task PLAN files |
+| `gate-evaluate` | `evaluating-gates` | Evaluates pending verification gates for a slice; opt-in via `gate_evaluation.enabled` preference |
 | `execute-task` | `executing` | Implements a task in a fresh session |
 | `reactive-execute` | `executing` | Executes multiple dependency-independent tasks in parallel; only dispatched when `reactive_execution.enabled` is set and the task graph has ≥2 ready tasks |
 | `replan-slice` | `replanning-slice` | Rewrites the slice plan when a blocker is found; writes REPLAN.md |
@@ -147,6 +151,7 @@ The dispatch table maps project phases to these unit types:
 | `validate-milestone` | `validating-milestone` | Final QA check before milestone completion; can be skipped via `skip_milestone_validation` preference |
 | `complete-milestone` | `completing-milestone` | Writes milestone SUMMARY.md and triggers squash-merge |
 | `rewrite-docs` | any (override gate) | Applies a [`/gsd steer`](../steer/) override to plan documents |
+| `custom-step` | any (workflow) | Executes a custom workflow step defined in the active workflow template |
 
 Some phases can be skipped entirely via preferences: `skip_research` (milestone and slice research), `skip_slice_research` (slice research only), `skip_reassess` (roadmap reassessment), and `skip_milestone_validation` (milestone validation). Roadmap reassessment only runs when `phases.reassess_after_slice` is also set to `true`.
 
@@ -158,11 +163,16 @@ When the `uat_dispatch` preference is enabled, GSD checks all completed slices f
 
 When `reactive_execution.enabled` is set to `true` with `max_parallel > 1`, GSD derives a dependency graph from each slice's task I/O definitions before dispatching. If two or more tasks have no dependency on each other and no file-write conflicts, GSD dispatches them in parallel as a single `reactive-execute` unit. The batch is encoded in the unit ID (`M001/S01/reactive+T02,T03`) for verification and recovery. Setting `max_parallel: 1` keeps the graph derivation active (logged for observability) without enabling parallel dispatch — useful for inspecting graph quality before enabling parallelism.
 
+### Rewrite circuit breaker
+
+When a [`/gsd steer`](../steer/) override is pending, the `rewrite-docs` rule fires before all other rules. The circuit breaker caps retries at 3 attempts (`MAX_REWRITE_ATTEMPTS`). If the rewrite unit is dispatched 3 times without consuming the override, GSD automatically resolves all pending overrides and resets the counter — preventing the override gate from blocking the pipeline indefinitely.
+
 ### Safety guards
 
-Two safety guards block milestone completion when the pipeline state is inconsistent:
+Three safety guards block milestone completion when the pipeline state is inconsistent:
 
 - **Missing SUMMARY guard** — Both `validating-milestone` and `completing-milestone` check that every slice in the roadmap has a SUMMARY file before proceeding. If any slice is missing a summary, auto mode stops with an error and a list of the affected slices.
+- **Remediation verdict guard** — `completing-milestone` checks the VALIDATION file verdict. If the verdict is `needs-remediation`, GSD stops rather than completing — remediation work must be addressed first. (Note: the state machine treats `needs-remediation` as terminal to prevent validation loops, but completion is blocked regardless.)
 - **Implementation artifact guard** — `completing-milestone` verifies that the milestone branch contains at least one non-`.gsd/` file change compared to the integration branch. A milestone that only wrote plan files and no implementation code is not considered complete.
 
 ### Stuck detection
@@ -211,6 +221,7 @@ The selected mode is persisted to preferences so it survives restarts.
 | `.gsd/milestones/<MID>/<MID>-VALIDATION.md` | Written at milestone validation |
 | `.gsd/milestones/<MID>/<MID>-SUMMARY.md` | Written at milestone completion |
 | `.gsd/runtime/` | Lock files, per-unit runtime records, session metadata |
+| `.gsd/runtime/rewrite-count.json` | Disk-persisted rewrite attempt counter (survives restarts) |
 | `.gsd/activity/` | JSONL execution logs (timestamps, costs, outcomes) |
 | `.gsd/completed-units.json` | Disk-backed idempotency log of completed unit keys |
 
@@ -218,7 +229,7 @@ The selected mode is persisted to preferences so it survives restarts.
 
 | File | Condition |
 |------|-----------|
-| `.gsd/worktrees/<MID>/` | When isolation mode is `worktree` (default) |
+| `.gsd/worktrees/<MID>/` | When `git.isolation: "worktree"` is set in preferences |
 | `milestone/<MID>` git branch | When a new worktree is created for the milestone |
 | Milestone CONTEXT.md / RESEARCH.md / ROADMAP.md | When dispatch rules determine these are needed |
 | Slice RESEARCH.md / PLAN.md | When a new slice starts |
@@ -235,10 +246,6 @@ Starting auto mode on a project with an active milestone:
   Active slice: S01 (Database schema and auth)
   Phase: executing
   Active task: T01
-
-● Creating worktree at .gsd/worktrees/M001/
-  Branch: milestone/M001
-  ✓ Worktree ready
 
 ● Dispatching unit: execute T01 (Build Prisma schema and seed data)
   Type: execute-task
@@ -259,7 +266,6 @@ Starting auto mode on a project with an active milestone:
 
 ● Milestone M001 complete — squash-merging to main
   ✓ Merged: "feat(M001): Core Recipe Platform"
-  ✓ Worktree removed
 ```
 
 Resuming after a pause:
