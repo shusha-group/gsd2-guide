@@ -128,7 +128,7 @@ File overlaps are warnings, not blockers. Both milestones work in separate workt
 
 ## Configuration
 
-Add to `~/.gsd/preferences.md` or `.gsd/preferences.md`:
+Add to `~/.gsd/PREFERENCES.md` or `.gsd/PREFERENCES.md`:
 
 ```yaml
 ---

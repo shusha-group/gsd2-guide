@@ -1183,5 +1183,17 @@
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
     "src/resources/extensions/gsd/types.ts"
+  ],
+  "commands/mcp.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts"
+  ],
+  "commands/rethink.mdx": [
+    "src/resources/extensions/gsd/commands.ts",
+    "src/resources/extensions/gsd/state.ts",
+    "src/resources/extensions/gsd/types.ts",
+    "src/resources/extensions/gsd/rethink.ts",
+    "src/resources/extensions/gsd/prompts/rethink.md"
   ]
 }

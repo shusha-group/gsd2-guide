@@ -3,6 +3,7 @@
  * update.mjs — One-command update pipeline orchestrator.
  *
  * Chains: npm i -g gsd-pi@latest → extract → diff report →
+ *         impact analysis → confirm →
  *         manage commands → regenerate stale pages → build →
  *         check-links → audit content → stamp pages
  *
@@ -25,6 +26,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import readline from 'node:readline';
 import { detectChanges, resolveStalePages } from './lib/diff-sources.mjs';
 import { detectNewAndRemovedCommands, createNewPages, removePages, detectNewAndRemovedPrompts, createNewPromptPages, removePromptPages } from './lib/manage-pages.mjs';
 import { regeneratePage, findClaude } from './lib/regenerate-page.mjs';
@@ -200,6 +202,85 @@ async function runImpactAnalysis() {
   impactFilteredPages = mustRegenerate.map(({ page, changedDeps }) => ({ page, changedDeps }));
 }
 
+// ── Confirmation step ────────────────────────────────────────────────────
+async function runConfirm() {
+  const pagesToRegenerate = impactFilteredPages !== null
+    ? impactFilteredPages
+    : getStalePages().stalePages;
+
+  // Collect command and prompt changes
+  const cmdDetection = detectNewAndRemovedCommands();
+  const promptDetection = detectNewAndRemovedPrompts();
+
+  const newCmds = cmdDetection.newCommands.length;
+  const removedCmds = cmdDetection.removedCommands.length;
+  const newPrompts = promptDetection.newPrompts.length;
+  const removedPrompts = promptDetection.removedPrompts.length;
+  const regenCount = pagesToRegenerate.length;
+
+  // Collect version info from manifests
+  const prevPath = join(GENERATED_DIR, 'previous-manifest.json');
+  const currPath = join(GENERATED_DIR, 'manifest.json');
+  let versionLine = null;
+  if (existsSync(prevPath) && existsSync(currPath)) {
+    const prev = JSON.parse(readFileSync(prevPath, 'utf8'));
+    const curr = JSON.parse(readFileSync(currPath, 'utf8'));
+    if (prev.gsdPiVersion && curr.gsdPiVersion && prev.gsdPiVersion !== curr.gsdPiVersion) {
+      versionLine = `  gsd-pi: ${prev.gsdPiVersion} → ${curr.gsdPiVersion}`;
+    } else if (curr.gsdPiVersion) {
+      versionLine = `  gsd-pi: ${curr.gsdPiVersion} (unchanged)`;
+    }
+  }
+
+  // Print summary
+  console.log('  Update summary:');
+  if (versionLine) console.log(versionLine);
+
+  if (newCmds > 0) console.log(`  New commands (+${newCmds}): ${cmdDetection.newCommands.map(c => c.command || c).join(', ')}`);
+  if (removedCmds > 0) console.log(`  Removed commands (-${removedCmds}): ${cmdDetection.removedCommands.map(c => c.command || c).join(', ')}`);
+  if (newPrompts > 0) console.log(`  New prompts (+${newPrompts})`);
+  if (removedPrompts > 0) console.log(`  Removed prompts (-${removedPrompts})`);
+
+  if (regenCount > 0) {
+    const estimateMins = Math.round((regenCount * 160) / 60);
+    console.log(`  Pages to regenerate: ${regenCount} (est. ~${estimateMins} min)`);
+    for (const { page, changedDeps } of pagesToRegenerate) {
+      const depNames = (changedDeps || []).map(f => f.split('/').pop());
+      console.log(`    - ${page}${depNames.length ? ` (${depNames.join(', ')})` : ''}`);
+    }
+  } else {
+    console.log('  Pages to regenerate: 0');
+  }
+
+  const significant = newCmds + removedCmds + newPrompts + removedPrompts + regenCount > 0;
+
+  if (!significant) {
+    console.log('\n  ✓ Nothing significant to do — proceeding automatically.');
+    return;
+  }
+
+  // Non-interactive environments (CI, piped stdin) proceed automatically
+  if (!process.stdin.isTTY) {
+    console.log('\n  ⚠ Non-interactive environment — proceeding automatically.');
+    return;
+  }
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await new Promise(resolve => {
+    rl.question('\n  Proceed with update? [Y/n] ', ans => {
+      rl.close();
+      resolve(ans.trim().toLowerCase());
+    });
+  });
+
+  if (answer === 'n' || answer === 'no') {
+    console.log('\n[update] Aborted by user.');
+    process.exit(0);
+  }
+
+  console.log('');
+}
+
 // ── Regenerate stale pages step ─────────────────────────────────────
 async function runRegenerateStale() {
   // Use impact-filtered list if available, otherwise fall back to full stale list
@@ -273,6 +354,7 @@ export const steps = [
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
   { name: 'diff report', fn: runDiffReport },
   { name: 'impact analysis', fn: runImpactAnalysis },
+  { name: 'confirm', fn: runConfirm },
   { name: 'manage commands', fn: runManageCommands },
   { name: 'manage prompts', fn: runManagePrompts },
   { name: 'regenerate',  fn: runRegenerateStale },
