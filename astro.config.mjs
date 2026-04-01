@@ -37,6 +37,8 @@ export default defineConfig({
         {
           label: 'Getting Started',
           items: [
+            { label: 'Is GSD Right for Me?', link: '/is-gsd-right-for-me/' },
+            { label: 'Quick Reference', link: '/quick-reference/' },
             { label: 'Installation', link: '/getting-started/' },
             { label: 'Developing with GSD', link: '/user-guide/developing-with-gsd/' },
             { label: 'Discussing a Milestone', link: '/user-guide/discussing-a-milestone/' },
