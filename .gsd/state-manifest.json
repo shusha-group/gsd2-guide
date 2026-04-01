@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-01T23:38:51.503Z",
+  "exported_at": "2026-04-01T23:42:46.989Z",
   "milestones": [
     {
       "id": "M001",
@@ -186,14 +186,14 @@
       "milestone_id": "M007",
       "id": "S01",
       "title": "Quick Reference + Decision Guide",
-      "status": "pending",
+      "status": "complete",
       "risk": "low",
       "depends": [],
       "demo": "After this: new users can find the 15 most-used commands on one curated page and assess whether GSD suits their project in 30 seconds.",
       "created_at": "2026-04-01T22:10:51.255Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-01T23:39:41.721Z",
+      "full_summary_md": "---\nid: S01\nparent: M007\nmilestone: M007\nprovides:\n  - quick-reference.md — curated 15-command reference grouped by workflow phase\n  - is-gsd-right-me.md — 30-second fit assessment page\n  - Both pages in Getting Started sidebar group\nrequires:\n  []\naffects:\n  - S05 — Navigation Polish depends on S01 being complete; these pages are now available to cross-link\nkey_files:\n  - src/content/docs/quick-reference.md\n  - src/content/docs/is-gsd-right-for-me.md\n  - astro.config.mjs\nkey_decisions:\n  - Grouped quick-reference commands by workflow phase (Start/Plan/Execute/Monitor/Manage) for scannability\n  - Decision guide leads with positive use cases before limitations to match the conversational tone of why-gsd.mdx\npatterns_established:\n  - Hand-authored guide pages go in src/content/docs/ (not content/generated/docs/) and must NOT be added to .generated-manifest.json or page-source-map.json\n  - Sidebar placement in Getting Started group: Decision Guide first (before Installation), Quick Reference second\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M007/slices/S01/tasks/T01-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-01T23:39:41.722Z\nblocker_discovered: false\n---\n\n# S01: Quick Reference + Decision Guide\n\n**Created quick-reference.md (15 commands grouped by workflow phase) and is-gsd-right-for-me.md (30-second fit assessment) — both build, pass link checks, and appear in the Getting Started sidebar.**\n\n## What Happened\n\nSingle-task slice. T01 authored two new hand-written markdown pages and wired them into the Starlight sidebar under Getting Started. `quick-reference.md` groups the 15 most-used GSD commands across five workflow phases (Start, Plan, Execute, Monitor, Manage) with one-liners and usage snippets — opinionated, not a duplicate of commands.md. `is-gsd-right-for-me.md` leads with positive use cases (sustained multi-session projects, solo builders, brownfield codebases), then covers what GSD is NOT for (quick one-offs, team workflows, vibe coding), finishing with a checklist. Decision guide is first in Getting Started, Quick Reference is second. Both pages build cleanly, dist output confirmed, 18975 links checked with 0 broken.\n\n## Verification\n\nnpm run build: 142 pages built, exit 0. test -f dist/quick-reference/index.html: exit 0. test -f dist/is-gsd-right-for-me/index.html: exit 0. npm run check-links: 18975 links, 0 broken, exit 0.\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nNone.\n\n## Known Limitations\n\nNone.\n\n## Follow-ups\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/quick-reference.md` — New hand-authored page: 15 most-used GSD commands grouped by workflow phase\n- `src/content/docs/is-gsd-right-for-me.md` — New hand-authored page: 30-second project fit assessment with use-case checklist\n- `astro.config.mjs` — Added Decision Guide and Quick Reference entries to Getting Started sidebar group\n",
+      "full_uat_md": "# S01: Quick Reference + Decision Guide — UAT\n\n**Milestone:** M007\n**Written:** 2026-04-01T23:39:41.722Z\n\n## UAT: S01 — Quick Reference + Decision Guide\n\n### Preconditions\n- `npm run build` completes successfully (exit 0)\n- `dist/` directory is populated\n\n### Test Cases\n\n**TC-01: Quick Reference page renders**\n1. Check `dist/quick-reference/index.html` exists → file present\n2. Open the built site and navigate to `/quick-reference/`\n3. Expected: Page loads with title \"Quick Reference\" and lists commands grouped under workflow phase headings (Start, Plan, Execute, Monitor, Manage)\n\n**TC-02: Decision Guide page renders**\n1. Check `dist/is-gsd-right-for-me/index.html` exists → file present\n2. Navigate to `/is-gsd-right-for-me/`\n3. Expected: Page loads with fit-assessment content including positive use cases and what GSD is NOT for\n\n**TC-03: Sidebar placement**\n1. On any page in the built site, inspect the left sidebar\n2. Expected: \"Getting Started\" group contains \"Is GSD Right for Me?\" as first item, \"Quick Reference\" as second item (both before Installation)\n\n**TC-04: Link integrity**\n1. Run `npm run check-links`\n2. Expected: exit 0, 0 broken links (verified: 18975 links, 0 broken)\n\n**TC-05: Pages not in generated manifest**\n1. Run `grep -r \"quick-reference\\|is-gsd-right-for-me\" src/content/docs/.generated-manifest.json`\n2. Expected: no matches (hand-authored pages must not be in the generated manifest)\n\n**TC-06: Build with no errors**\n1. Run `npm run build`\n2. Expected: exit 0, 142 pages built, no errors or warnings about the new pages\n\n",
       "goal": "New users can find the 15 most-used commands on one curated page and assess whether GSD suits their project in 30 seconds.",
       "success_criteria": "- `src/content/docs/quick-reference.md` exists with curated command list (12–15 commands)\n- `src/content/docs/is-gsd-right-for-me.md` exists with decision guide\n- Both pages registered in `astro.config.mjs` sidebar\n- `npm run build` exits 0\n- `npm run check-links` exits 0\n- Both pages render in dist/ output",
       "proof_level": "Build verification — pages compile and all links resolve.",
@@ -214,11 +214,11 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Add pipeline-generated changelog summary digests and render-time GitHub issue auto-linking in ReleaseEntry.astro.",
-      "success_criteria": "Changelog highlights page exists with 2-4 line summaries per version; every #NNN in rendered changelog is a hyperlink to github.com/gsd-build/gsd-2; npm run update produces highlights; full changelog preserved unchanged.",
-      "proof_level": "integration — pipeline generates highlights; render-time transform produces correct links",
-      "integration_closure": "Highlights generation integrates with npm run update pipeline. Issue linking is self-contained in ReleaseEntry.astro.",
-      "observability_impact": "None — static content",
+      "goal": "Every `#NNN` in the changelog is a clickable GitHub link; a new highlights page shows scannable per-release summaries for solo builders.",
+      "success_criteria": "- `npm run build` exits 0\n- Rendered changelog HTML contains `github.com/gsd-build/gsd-2/issues/` links for `#NNN` references\n- `/changelog-highlights/` page exists and renders release summaries\n- Sidebar shows \"Changelog Highlights\" entry",
+      "proof_level": "Build + visual verification. No runtime required.",
+      "integration_closure": "- Upstream: `content/generated/releases.json` (existing pipeline output)\n- New wiring: highlights generator script, MDX page, sidebar entry\n- Remaining: S05 may adjust sidebar positioning",
+      "observability_impact": "None — static site content only.",
       "sequence": 0,
       "replan_triggered_at": null
     },
@@ -330,6 +330,87 @@
         "`src/content/docs/quick-reference.md` — new curated command reference page",
         "`src/content/docs/is-gsd-right-for-me.md` — new decision guide page",
         "`astro.config.mjs` — updated with 2 new sidebar entries in Getting Started group"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M007",
+      "slice_id": "S02",
+      "id": "T01",
+      "title": "Added #NNN → GitHub issue/PR auto-linking to ReleaseEntry.astro, producing 768 clickable links in the built changelog",
+      "status": "complete",
+      "one_liner": "Added #NNN → GitHub issue/PR auto-linking to ReleaseEntry.astro, producing 768 clickable links in the built changelog",
+      "narrative": "Added a regex replace pass immediately after the existing /gsd X command linkification block in ReleaseEntry.astro. The pattern (?<![\\w\\/\"'])#(\\d+)\\b matches bare #NNN references while avoiding double-linking text already wrapped in anchor tags or embedded in URLs. Each match links to https://github.com/gsd-build/gsd-2/issues/$1 with target=_blank and rel=noopener noreferrer. GitHub auto-redirects issue URLs to /pull/ for PRs.",
+      "verification_result": "Built the site and grep-counted occurrences of the GitHub issue URL pattern in the output HTML: 768 matches found vs requirement of >10.",
+      "duration": "",
+      "completed_at": "2026-04-01T23:42:46.955Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/components/ReleaseEntry.astro"
+      ],
+      "key_decisions": [
+        "Used negative lookbehind (?<![\\w/\"']) to avoid double-linking text already inside anchor tags or URLs"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S02\nmilestone: M007\nkey_files:\n  - src/components/ReleaseEntry.astro\nkey_decisions:\n  - Used negative lookbehind (?<![\\w/\"']) to avoid double-linking text already inside anchor tags or URLs\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-01T23:42:46.956Z\nblocker_discovered: false\n---\n\n# T01: Added #NNN → GitHub issue/PR auto-linking to ReleaseEntry.astro, producing 768 clickable links in the built changelog\n\n**Added #NNN → GitHub issue/PR auto-linking to ReleaseEntry.astro, producing 768 clickable links in the built changelog**\n\n## What Happened\n\nAdded a regex replace pass immediately after the existing /gsd X command linkification block in ReleaseEntry.astro. The pattern (?<![\\w\\/\"'])#(\\d+)\\b matches bare #NNN references while avoiding double-linking text already wrapped in anchor tags or embedded in URLs. Each match links to https://github.com/gsd-build/gsd-2/issues/$1 with target=_blank and rel=noopener noreferrer. GitHub auto-redirects issue URLs to /pull/ for PRs.\n\n## Verification\n\nBuilt the site and grep-counted occurrences of the GitHub issue URL pattern in the output HTML: 768 matches found vs requirement of >10.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 6800ms |\n| 2 | `grep -c 'github.com/gsd-build/gsd-2/issues/' dist/changelog/index.html` | 0 | ✅ pass (768 > 10) | 100ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/components/ReleaseEntry.astro`\n",
+      "description": "Add a regex replace to `ReleaseEntry.astro` that converts `#NNN` references in changelog entry HTML into clickable GitHub links. The component already post-processes `bodyHtml` with a regex for `/gsd X` command linkification (lines 68-75). Add a second regex pass immediately after that block.\n\nThe regex must:\n- Match `#` followed by digits (`#(\\d+)`) \n- Not match inside existing `<a>` tags or URLs (negative lookbehind for word chars and quotes)\n- Link to `https://github.com/gsd-build/gsd-2/issues/$1` (GitHub auto-redirects to /pull/ for PRs)\n- Add `target=\"_blank\"` and `rel=\"noopener noreferrer\"`\n\nPattern: `(?<![\\w\\/\"'])#(\\d+)\\b` → `<a href=\"https://github.com/gsd-build/gsd-2/issues/$1\" target=\"_blank\" rel=\"noopener noreferrer\">#$1</a>`",
+      "estimate": "15m",
+      "files": [
+        "src/components/ReleaseEntry.astro"
+      ],
+      "verify": "npm run build && grep -c 'github.com/gsd-build/gsd-2/issues/' dist/changelog/index.html | xargs test 10 -lt",
+      "inputs": [
+        "`src/components/ReleaseEntry.astro` — existing component with command linkification pattern to follow",
+        "`content/generated/releases.json` — source data with ~130 `#NNN` references across 88 releases"
+      ],
+      "expected_output": [
+        "`src/components/ReleaseEntry.astro` — updated with issue auto-linking regex"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M007",
+      "slice_id": "S02",
+      "id": "T02",
+      "title": "Create changelog highlights page with per-release summaries",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Create a scannable changelog highlights page that shows 1-2 sentence solo-builder-perspective summaries per release.\n\n**Step 1: Create highlights generator script**\nCreate `scripts/generate-highlights.mjs` that reads `content/generated/releases.json` and writes `content/generated/changelog-highlights.json`. For each release, generate a summary by concatenating the first item from each of `added`, `changed`, `fixed` arrays (heuristic approach — no LLM needed). Output format: `[{ tag_name, published_at, html_url, summary }]`. Skip releases where all three arrays are empty and body is minimal.\n\n**Step 2: Wire into update pipeline**\nAdd a call to the highlights generator in `update.mjs` after the extract step. Follow the existing pattern of sequential step functions with timing.\n\n**Step 3: Create MDX page**\nCreate `src/content/docs/changelog-highlights.mdx` that imports the generated JSON and renders a compact list. Each entry: version (linked to GitHub), date, summary text. Style consistently with existing changelog page.\n\n**Step 4: Add sidebar entry**\nIn `astro.config.mjs`, add a 'Changelog Highlights' entry above the existing 'Changelog' entry in the sidebar.\n\n**Step 5: Run generator and build**\nRun the generator to create the JSON, then `npm run build` to verify everything works.",
+      "estimate": "45m",
+      "files": [
+        "scripts/generate-highlights.mjs",
+        "content/generated/changelog-highlights.json",
+        "src/content/docs/changelog-highlights.mdx",
+        "astro.config.mjs",
+        "update.mjs"
+      ],
+      "verify": "node scripts/generate-highlights.mjs && npm run build && test -f dist/changelog-highlights/index.html && grep -q 'Changelog Highlights' dist/changelog-highlights/index.html",
+      "inputs": [
+        "`content/generated/releases.json` — source release data with structured added/changed/fixed arrays",
+        "`astro.config.mjs` — sidebar configuration (line 22 has existing Changelog entry)",
+        "`update.mjs` — pipeline script to add highlights generation step"
+      ],
+      "expected_output": [
+        "`scripts/generate-highlights.mjs` — highlights generator script",
+        "`content/generated/changelog-highlights.json` — generated highlights data",
+        "`src/content/docs/changelog-highlights.mdx` — highlights page",
+        "`astro.config.mjs` — updated sidebar with Changelog Highlights entry",
+        "`update.mjs` — updated pipeline with highlights generation step"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -1247,6 +1328,28 @@
       "verdict": "✅ pass",
       "duration_ms": 4000,
       "created_at": "2026-04-01T23:38:51.479Z"
+    },
+    {
+      "id": 4,
+      "task_id": "T01",
+      "slice_id": "S02",
+      "milestone_id": "M007",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6800,
+      "created_at": "2026-04-01T23:42:46.955Z"
+    },
+    {
+      "id": 5,
+      "task_id": "T01",
+      "slice_id": "S02",
+      "milestone_id": "M007",
+      "command": "grep -c 'github.com/gsd-build/gsd-2/issues/' dist/changelog/index.html",
+      "exit_code": 0,
+      "verdict": "✅ pass (768 > 10)",
+      "duration_ms": 100,
+      "created_at": "2026-04-01T23:42:46.955Z"
     }
   ]
 }

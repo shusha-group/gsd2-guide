@@ -79,6 +79,12 @@ bodyHtml = bodyHtml.replace(
   }
 );
 
+// Linkify #NNN → GitHub issue/PR links
+bodyHtml = bodyHtml.replace(
+  /(?<![\w\/"'])#(\d+)\b/g,
+  '<a href="https://github.com/gsd-build/gsd-2/issues/$1" target="_blank" rel="noopener noreferrer">#$1</a>'
+);
+
 const formattedDate = new Date(publishedAt).toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
