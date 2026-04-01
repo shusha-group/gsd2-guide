@@ -16,7 +16,7 @@ Pattern: `(?<![\w\/"'])#(\d+)\b` → `<a href="https://github.com/gsd-build/gsd-
   - Estimate: 15m
   - Files: src/components/ReleaseEntry.astro
   - Verify: npm run build && grep -c 'github.com/gsd-build/gsd-2/issues/' dist/changelog/index.html | xargs test 10 -lt
-- [ ] **T02: Create changelog highlights page with per-release summaries** — Create a scannable changelog highlights page that shows 1-2 sentence solo-builder-perspective summaries per release.
+- [x] **T02: Created changelog highlights page with 18 per-release summaries, generator script, sidebar entry, and pipeline hook** — Create a scannable changelog highlights page that shows 1-2 sentence solo-builder-perspective summaries per release.
 
 **Step 1: Create highlights generator script**
 Create `scripts/generate-highlights.mjs` that reads `content/generated/releases.json` and writes `content/generated/changelog-highlights.json`. For each release, generate a summary by concatenating the first item from each of `added`, `changed`, `fixed` arrays (heuristic approach — no LLM needed). Output format: `[{ tag_name, published_at, html_url, summary }]`. Skip releases where all three arrays are empty and body is minimal.

@@ -352,6 +352,7 @@ function runStampPages() {
 export const steps = [
   { name: 'update gsd-pi', cmd: 'npm i -g gsd-pi@latest', capture: false },
   { name: 'extract',    cmd: 'node scripts/extract.mjs', capture: true },
+  { name: 'highlights', cmd: 'node scripts/generate-highlights.mjs', capture: false },
   { name: 'diff report', fn: runDiffReport },
   { name: 'impact analysis', fn: runImpactAnalysis },
   { name: 'confirm', fn: runConfirm },

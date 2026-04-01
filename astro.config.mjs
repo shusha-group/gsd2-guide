@@ -19,6 +19,7 @@ export default defineConfig({
       },
       sidebar: [
         { label: 'Home', link: '/' },
+        { label: 'Changelog Highlights', link: '/changelog-highlights/' },
         { label: 'Changelog', link: '/changelog/' },
         {
           label: "Solo Builder's Guide",

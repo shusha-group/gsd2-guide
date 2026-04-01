@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-01T23:42:46.989Z",
+  "exported_at": "2026-04-01T23:44:56.415Z",
   "milestones": [
     {
       "id": "M001",
@@ -377,19 +377,28 @@
       "milestone_id": "M007",
       "slice_id": "S02",
       "id": "T02",
-      "title": "Create changelog highlights page with per-release summaries",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Created changelog highlights page with 18 per-release summaries, generator script, sidebar entry, and pipeline hook",
+      "status": "complete",
+      "one_liner": "Created changelog highlights page with 18 per-release summaries, generator script, sidebar entry, and pipeline hook",
+      "narrative": "Created scripts/generate-highlights.mjs that reads releases.json and produces changelog-highlights.json with heuristic summaries (first item from added/changed/fixed arrays, joined with · separators). 18 of 88 releases had structured content. Created the MDX page at src/content/docs/changelog-highlights.mdx with accent-bordered cards per release. Added sidebar entry above Changelog in astro.config.mjs. Wired generator into scripts/update.mjs pipeline after the extract step. update.mjs was at scripts/update.mjs (not root), corrected during execution.",
+      "verification_result": "Ran node scripts/generate-highlights.mjs (18 highlights written), npm run build (143 pages, 0 errors), confirmed dist/changelog-highlights/index.html exists and contains 'Changelog Highlights'.",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-04-01T23:44:56.396Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
-      "key_decisions": [],
-      "full_summary_md": "",
+      "deviations": "update.mjs lives at scripts/update.mjs, not root update.mjs as stated in the task plan.",
+      "known_issues": "None.",
+      "key_files": [
+        "scripts/generate-highlights.mjs",
+        "content/generated/changelog-highlights.json",
+        "src/content/docs/changelog-highlights.mdx",
+        "astro.config.mjs",
+        "scripts/update.mjs"
+      ],
+      "key_decisions": [
+        "Used heuristic summary (first item from added/changed/fixed) — no LLM needed, consistent factual output",
+        "Skipped releases where all arrays empty and body < 80 chars to filter stub releases"
+      ],
+      "full_summary_md": "---\nid: T02\nparent: S02\nmilestone: M007\nkey_files:\n  - scripts/generate-highlights.mjs\n  - content/generated/changelog-highlights.json\n  - src/content/docs/changelog-highlights.mdx\n  - astro.config.mjs\n  - scripts/update.mjs\nkey_decisions:\n  - Used heuristic summary (first item from added/changed/fixed) — no LLM needed, consistent factual output\n  - Skipped releases where all arrays empty and body < 80 chars to filter stub releases\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-01T23:44:56.396Z\nblocker_discovered: false\n---\n\n# T02: Created changelog highlights page with 18 per-release summaries, generator script, sidebar entry, and pipeline hook\n\n**Created changelog highlights page with 18 per-release summaries, generator script, sidebar entry, and pipeline hook**\n\n## What Happened\n\nCreated scripts/generate-highlights.mjs that reads releases.json and produces changelog-highlights.json with heuristic summaries (first item from added/changed/fixed arrays, joined with · separators). 18 of 88 releases had structured content. Created the MDX page at src/content/docs/changelog-highlights.mdx with accent-bordered cards per release. Added sidebar entry above Changelog in astro.config.mjs. Wired generator into scripts/update.mjs pipeline after the extract step. update.mjs was at scripts/update.mjs (not root), corrected during execution.\n\n## Verification\n\nRan node scripts/generate-highlights.mjs (18 highlights written), npm run build (143 pages, 0 errors), confirmed dist/changelog-highlights/index.html exists and contains 'Changelog Highlights'.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `node scripts/generate-highlights.mjs` | 0 | ✅ pass | 80ms |\n| 2 | `npm run build` | 0 | ✅ pass | 6600ms |\n| 3 | `test -f dist/changelog-highlights/index.html` | 0 | ✅ pass | 10ms |\n| 4 | `grep -q 'Changelog Highlights' dist/changelog-highlights/index.html` | 0 | ✅ pass | 10ms |\n\n\n## Deviations\n\nupdate.mjs lives at scripts/update.mjs, not root update.mjs as stated in the task plan.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `scripts/generate-highlights.mjs`\n- `content/generated/changelog-highlights.json`\n- `src/content/docs/changelog-highlights.mdx`\n- `astro.config.mjs`\n- `scripts/update.mjs`\n",
       "description": "Create a scannable changelog highlights page that shows 1-2 sentence solo-builder-perspective summaries per release.\n\n**Step 1: Create highlights generator script**\nCreate `scripts/generate-highlights.mjs` that reads `content/generated/releases.json` and writes `content/generated/changelog-highlights.json`. For each release, generate a summary by concatenating the first item from each of `added`, `changed`, `fixed` arrays (heuristic approach — no LLM needed). Output format: `[{ tag_name, published_at, html_url, summary }]`. Skip releases where all three arrays are empty and body is minimal.\n\n**Step 2: Wire into update pipeline**\nAdd a call to the highlights generator in `update.mjs` after the extract step. Follow the existing pattern of sequential step functions with timing.\n\n**Step 3: Create MDX page**\nCreate `src/content/docs/changelog-highlights.mdx` that imports the generated JSON and renders a compact list. Each entry: version (linked to GitHub), date, summary text. Style consistently with existing changelog page.\n\n**Step 4: Add sidebar entry**\nIn `astro.config.mjs`, add a 'Changelog Highlights' entry above the existing 'Changelog' entry in the sidebar.\n\n**Step 5: Run generator and build**\nRun the generator to create the JSON, then `npm run build` to verify everything works.",
       "estimate": "45m",
       "files": [
@@ -1350,6 +1359,50 @@
       "verdict": "✅ pass (768 > 10)",
       "duration_ms": 100,
       "created_at": "2026-04-01T23:42:46.955Z"
+    },
+    {
+      "id": 6,
+      "task_id": "T02",
+      "slice_id": "S02",
+      "milestone_id": "M007",
+      "command": "node scripts/generate-highlights.mjs",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 80,
+      "created_at": "2026-04-01T23:44:56.396Z"
+    },
+    {
+      "id": 7,
+      "task_id": "T02",
+      "slice_id": "S02",
+      "milestone_id": "M007",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6600,
+      "created_at": "2026-04-01T23:44:56.396Z"
+    },
+    {
+      "id": 8,
+      "task_id": "T02",
+      "slice_id": "S02",
+      "milestone_id": "M007",
+      "command": "test -f dist/changelog-highlights/index.html",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-01T23:44:56.396Z"
+    },
+    {
+      "id": 9,
+      "task_id": "T02",
+      "slice_id": "S02",
+      "milestone_id": "M007",
+      "command": "grep -q 'Changelog Highlights' dist/changelog-highlights/index.html",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-01T23:44:56.396Z"
     }
   ]
 }
