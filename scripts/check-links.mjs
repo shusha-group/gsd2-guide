@@ -17,7 +17,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const DIST_DIR = 'dist';
-const BASE_PATH = '/gsd2-guide';
+const BASE_PATH = '';
 
 // Segments to skip even if they start with BASE_PATH (build assets, search index)
 const SKIP_SEGMENTS = ['/_astro/', '/pagefind/'];

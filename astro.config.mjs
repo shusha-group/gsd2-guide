@@ -3,8 +3,8 @@ import starlight from '@astrojs/starlight';
 import starlightClientMermaid from '@pasqal-io/starlight-client-mermaid';
 
 export default defineConfig({
-  site: 'https://shusha-group.github.io',
-  base: '/gsd2-guide',
+  site: 'https://getshitdone.help',
+  base: '/',
   integrations: [
     starlight({
       title: 'GSD 2',

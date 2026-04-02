@@ -76,7 +76,7 @@ bodyHtml = bodyHtml.replace(
   (match, command) => {
     const slug = commandSlugs[command];
     if (!slug) return match; // No matching deep-dive page
-    return `<a href="/gsd2-guide/commands/${slug}/" class="command-link"><code>${command}</code></a>`;
+    return `<a href="/commands/${slug}/" class="command-link"><code>${command}</code></a>`;
   }
 );
 
