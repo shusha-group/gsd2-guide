@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T04:30:28.194Z",
+  "exported_at": "2026-04-02T04:36:05.009Z",
   "milestones": [
     {
       "id": "M001",
@@ -226,14 +226,14 @@
       "milestone_id": "M007",
       "id": "S03",
       "title": "Content Consolidation",
-      "status": "pending",
+      "status": "complete",
       "risk": "medium",
       "depends": [],
       "demo": "After this: auto mode breakdown, .gsd/ directory structure, verification ladder, and v1→v2 comparison are integrated into existing guide pages in the guide's own voice.",
       "created_at": "2026-04-01T22:10:51.256Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T04:31:53.878Z",
+      "full_summary_md": "---\nid: S03\nparent: M007\nmilestone: M007\nprovides:\n  - how-auto-mode-works.mdx deep-dive page\n  - gsd-directory.mdx deep-dive page\n  - v1-to-v2.mdx deep-dive page\n  - Deep Dives sidebar group in astro.config.mjs\n  - Cross-reference subsections in context-engineering, controlling-costs, building-rhythm solo-guide pages\nrequires:\n  []\naffects:\n  - S05\nkey_files:\n  - src/content/docs/how-auto-mode-works.mdx\n  - src/content/docs/gsd-directory.mdx\n  - src/content/docs/v1-to-v2.mdx\n  - astro.config.mjs\n  - src/content/docs/solo-guide/context-engineering.mdx\n  - src/content/docs/solo-guide/controlling-costs.mdx\n  - src/content/docs/solo-guide/building-rhythm.mdx\nkey_decisions:\n  - Deep Dives sidebar group placed between Solo Builder's Guide and Getting Started\n  - Steps component for 12-phase pipeline, CardGrid for verification ladder in how-auto-mode-works.mdx\n  - v1-to-v2 page covers philosophy comparison only (not migration steps) — migration steps are in the generated migration.md\npatterns_established:\n  - Deep-dive pages live at src/content/docs/ root (not inside solo-guide/) and link to generated reference pages with ../../slug/ format\n  - Cross-reference subsections appended to solo-guide pages before the final section marker line\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M007/slices/S03/tasks/T01-SUMMARY.md\n  - .gsd/milestones/M007/slices/S03/tasks/T02-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:31:53.879Z\nblocker_discovered: false\n---\n\n# S03: Content Consolidation\n\n**Added three deep-dive pages (auto mode, .gsd/ directory, v1→v2) and wired cross-reference subsections into three solo-guide pages; build passes at 146 pages with 0 broken links.**\n\n## What Happened\n\nS03 delivered the \"Content Consolidation\" goal in two tasks. T01 created three hand-authored MDX deep-dive pages: `how-auto-mode-works.mdx` (12-phase pipeline breakdown + verification ladder), `gsd-directory.mdx` (annotated FileTree of the .gsd/ directory with human-vs-machine-generated classification), and `v1-to-v2.mdx` (narrative philosophy comparison, not migration steps). All three were registered in a new \"Deep Dives\" sidebar group in astro.config.mjs placed between the Solo Builder's Guide and Getting Started for logical reading order. T02 appended cross-reference subsections to three existing solo-guide pages: a \"Preferences\" subsection in context-engineering.mdx linking to configuration and how-auto-mode-works, a \"Token Optimisation Deep Dive\" subsection in controlling-costs.mdx linking to token-optimization, and a \"Git Strategy\" subsection in building-rhythm.mdx linking to git-strategy, gsd-directory, and v1-to-v2. Both tasks verified clean with npm run build (146 pages) and npm run check-links (20092 links, 0 broken).\n\n## Verification\n\nnpm run build exits 0 (146 pages built). npm run check-links exits 0 with 20092 internal links checked, 0 broken. All 3 new MDX pages exist with valid frontmatter. grep -c returns 3 matches for the new page slugs in astro.config.mjs. Cross-reference subsections confirmed in all 3 solo-guide pages.\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nNone.\n\n## Known Limitations\n\nNone.\n\n## Follow-ups\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/how-auto-mode-works.mdx` — New deep-dive page: 12-phase auto mode breakdown + verification ladder\n- `src/content/docs/gsd-directory.mdx` — New deep-dive page: annotated .gsd/ directory structure with FileTree\n- `src/content/docs/v1-to-v2.mdx` — New deep-dive page: v1 vs v2 philosophy comparison\n- `astro.config.mjs` — Added Deep Dives sidebar group with 3 new page entries\n- `src/content/docs/solo-guide/context-engineering.mdx` — Appended Preferences cross-reference subsection\n- `src/content/docs/solo-guide/controlling-costs.mdx` — Appended Token Optimisation Deep Dive cross-reference subsection\n- `src/content/docs/solo-guide/building-rhythm.mdx` — Appended Git Strategy cross-reference subsection\n",
+      "full_uat_md": "# S03: Content Consolidation — UAT\n\n**Milestone:** M007\n**Written:** 2026-04-02T04:31:53.879Z\n\n## UAT: S03 Content Consolidation\n\n### Preconditions\n- `npm run build` exits 0\n- `npm run check-links` exits 0 with 0 broken links\n- Local dev server running or dist/ available for inspection\n\n### Test Cases\n\n**TC-01: Deep-dive pages exist and have valid frontmatter**\n1. Run `head -5 src/content/docs/how-auto-mode-works.mdx` — expect `title:` and `description:` frontmatter fields\n2. Run `head -5 src/content/docs/gsd-directory.mdx` — expect `title:` and `description:` frontmatter fields  \n3. Run `head -5 src/content/docs/v1-to-v2.mdx` — expect `title:` and `description:` frontmatter fields\n- Expected: All 3 files have valid YAML frontmatter\n\n**TC-02: Deep Dives sidebar group registered**\n1. Run `grep -c 'how-auto-mode-works\\|gsd-directory\\|v1-to-v2' astro.config.mjs`\n- Expected: output is `3`\n\n**TC-03: how-auto-mode-works.mdx covers required content**\n1. Open `src/content/docs/how-auto-mode-works.mdx`\n2. Confirm it contains a 12-phase pipeline section (Steps component or similar)\n3. Confirm it contains a verification ladder section (contract, integration, operational)\n4. Confirm it links to `../auto-mode/` for the generated reference\n- Expected: All three content requirements present\n\n**TC-04: gsd-directory.mdx uses FileTree component**\n1. Open `src/content/docs/gsd-directory.mdx`\n2. Confirm `<FileTree>` component is used\n3. Confirm it describes human-authored vs machine-generated files\n4. Confirm it links to `../architecture/`\n- Expected: FileTree present, human/machine distinction explained, architecture link present\n\n**TC-05: v1-to-v2.mdx is philosophy-focused, not migration steps**\n1. Open `src/content/docs/v1-to-v2.mdx`\n2. Confirm it discusses philosophy/differences (fresh-context model, quality gates, etc.)\n3. Confirm it links to `../migration/` for actual migration steps\n4. Confirm it does NOT duplicate the migration step-by-step content\n- Expected: Narrative comparison present, links to migration page\n\n**TC-06: Cross-reference subsections in solo-guide pages**\n1. Run `grep -n 'Preferences' src/content/docs/solo-guide/context-engineering.mdx` — expect a `## Preferences` section\n2. Run `grep -n 'Token Optim' src/content/docs/solo-guide/controlling-costs.mdx` — expect a `## Token Optimisation Deep Dive` section\n3. Run `grep -n 'Git Strategy' src/content/docs/solo-guide/building-rhythm.mdx` — expect a `## Git Strategy` section\n- Expected: All 3 subsections present\n\n**TC-07: Cross-links resolve in build output**\n1. Run `npm run check-links`\n- Expected: 0 broken links\n\n**TC-08: Page count unchanged or increased**\n1. Run `npm run build`\n2. Check page count in output\n- Expected: 146 pages (or more), build exits 0\n\n**TC-09: Voice and style match**\n1. Read the opening paragraph of `how-auto-mode-works.mdx`\n2. Confirm second person, practitioner-focused tone, no AI-generic filler\n3. Spot-check `gsd-directory.mdx` and `v1-to-v2.mdx` similarly\n- Expected: Consistent with solo-guide voice throughout\n\n**TC-10: No MDX curly-brace errors**\n1. Run `npm run build` and check for `ReferenceError` in output\n- Expected: No `ReferenceError: X is not defined` errors in build output\n\n",
       "goal": "Auto mode breakdown, .gsd/ directory structure, verification ladder, and v1→v2 comparison are integrated into the guide as standalone pages in the guide's own voice, with cross-references from existing solo-guide pages.",
       "success_criteria": "- Three new MDX pages exist: `how-auto-mode-works.mdx`, `gsd-directory.mdx`, `v1-to-v2.mdx`\n- Each page uses second-person Australian English, practitioner voice matching solo-guide tone\n- Cross-reference sections added to `context-engineering.mdx`, `controlling-costs.mdx`, and `building-rhythm.mdx`\n- All new pages appear in sidebar via `astro.config.mjs`\n- `npm run build` exits 0\n- `npm run check-links` exits 0",
       "proof_level": "contract",
@@ -254,11 +254,11 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Add a brief-writing guide with concrete examples and concrete cost examples with dollar ranges to existing guide sections.",
-      "success_criteria": "Brief-writing guide exists with bad-vs-good examples and downstream consequences; at least 3 cost scenarios with dollar ranges; Claude Max note included; comparison to Cursor Pro/Replit Core; Australian English; build passes.",
-      "proof_level": "contract — content exists, build passes",
-      "integration_closure": "New subsections within existing pages. No cross-slice dependencies.",
-      "observability_impact": "None — static content",
+      "goal": "Solo builders can see bad-vs-good requirement examples and approximate dollar costs for 3 milestone scenarios.",
+      "success_criteria": "- `writing-a-good-brief.mdx` exists with bad-vs-good requirement examples, discussion tips, and cross-links to solo-guide/first-project\n- `cost-examples.mdx` exists with 3 milestone cost scenarios (small/medium/large) with dollar ranges\n- Both pages use Australian English, Starlight frontmatter, and established cross-link patterns\n- `npm run build` exits 0\n- `dist/writing-a-good-brief/index.html` exists\n- `dist/cost-examples/index.html` exists\n- All cross-links resolve (no broken links in build output)",
+      "proof_level": "Build verification — pages render and links resolve",
+      "integration_closure": "No integration boundaries — static MDX content only",
+      "observability_impact": "None — static content pages",
       "sequence": 0,
       "replan_triggered_at": null
     },
@@ -518,6 +518,87 @@
         "src/content/docs/solo-guide/context-engineering.mdx",
         "src/content/docs/solo-guide/controlling-costs.mdx",
         "src/content/docs/solo-guide/building-rhythm.mdx"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M007",
+      "slice_id": "S04",
+      "id": "T01",
+      "title": "Created writing-a-good-brief.mdx with 4 bad-vs-good requirement pairs and cost-examples.mdx with 3 milestone cost scenarios, both building successfully",
+      "status": "complete",
+      "one_liner": "Created writing-a-good-brief.mdx with 4 bad-vs-good requirement pairs and cost-examples.mdx with 3 milestone cost scenarios, both building successfully",
+      "narrative": "Created two new MDX content pages. writing-a-good-brief.mdx covers four bad-vs-good requirement pairs (feature addition, bug fix, performance, acceptance criteria), discussion phase guidance linking to first-project, common mistakes, and a checklist. cost-examples.mdx covers three scenarios (small $1-5, medium $5-20, large $20-80) with token profiles and a cost driver breakdown, linking to controlling-costs and cost-management. Both use Australian English, title+description frontmatter, and Starlight callouts.",
+      "verification_result": "npm run build completed successfully (148 pages, 5.82s). test -f checks confirmed both dist/writing-a-good-brief/index.html and dist/cost-examples/index.html exist.",
+      "duration": "",
+      "completed_at": "2026-04-02T04:36:04.984Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/writing-a-good-brief.mdx",
+        "src/content/docs/cost-examples.mdx"
+      ],
+      "key_decisions": [
+        "Used Markdown table format for bad-vs-good pairs rather than Tabs component for better scannability at a glance"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S04\nmilestone: M007\nkey_files:\n  - src/content/docs/writing-a-good-brief.mdx\n  - src/content/docs/cost-examples.mdx\nkey_decisions:\n  - Used Markdown table format for bad-vs-good pairs rather than Tabs component for better scannability at a glance\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:36:04.985Z\nblocker_discovered: false\n---\n\n# T01: Created writing-a-good-brief.mdx with 4 bad-vs-good requirement pairs and cost-examples.mdx with 3 milestone cost scenarios, both building successfully\n\n**Created writing-a-good-brief.mdx with 4 bad-vs-good requirement pairs and cost-examples.mdx with 3 milestone cost scenarios, both building successfully**\n\n## What Happened\n\nCreated two new MDX content pages. writing-a-good-brief.mdx covers four bad-vs-good requirement pairs (feature addition, bug fix, performance, acceptance criteria), discussion phase guidance linking to first-project, common mistakes, and a checklist. cost-examples.mdx covers three scenarios (small $1-5, medium $5-20, large $20-80) with token profiles and a cost driver breakdown, linking to controlling-costs and cost-management. Both use Australian English, title+description frontmatter, and Starlight callouts.\n\n## Verification\n\nnpm run build completed successfully (148 pages, 5.82s). test -f checks confirmed both dist/writing-a-good-brief/index.html and dist/cost-examples/index.html exist.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build && test -f dist/writing-a-good-brief/index.html && test -f dist/cost-examples/index.html && echo 'Both pages built successfully'` | 0 | ✅ pass | 9400ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/writing-a-good-brief.mdx`\n- `src/content/docs/cost-examples.mdx`\n",
+      "description": "Create two new MDX pages at `src/content/docs/`:\n\n1. **writing-a-good-brief.mdx** — A guide showing what makes a good requirement brief. Include:\n   - Bad-vs-good requirement examples (at least 3 pairs showing vague vs specific)\n   - What makes a discussion phase productive (linking to `../solo-guide/first-project/` for the full walkthrough)\n   - Common mistakes (too vague, too prescriptive, missing acceptance criteria)\n   - Use Starlight callouts (:::tip, :::caution) for key takeaways\n\n2. **cost-examples.mdx** — Concrete dollar cost scenarios. Include:\n   - 3 milestone scenarios: small (bug fix / small feature, ~$1-5), medium (new feature with tests, ~$5-20), large (multi-slice milestone, ~$20-80)\n   - What drives the bill: token counts, model choice, verification loops, context size\n   - Link to `../solo-guide/controlling-costs/` for the mechanics of controlling spend\n   - Link to `../cost-management/` for the `/gsd status` cost tracking reference\n\n**Patterns to follow:**\n- Frontmatter: `title` and `description` fields only (match `gsd-directory.mdx`, `how-auto-mode-works.mdx`)\n- Cross-links: use `../sibling/` relative format with trailing slash\n- Australian English: \"optimise\", \"recognise\", \"organisation\", \"behaviour\"\n- MDX curly-brace escaping: wrap any `{variable}` template literals in backticks\n- Available Starlight components: `Card`, `CardGrid`, `Tabs`, `TabItem`, `Steps`, `FileTree` from `@astrojs/starlight/components`\n- Callouts: `:::tip`, `:::caution`, `:::note` directives\n\n**Important:** These are hand-authored content pages. Do NOT edit any generated files. The content should complement (not duplicate) existing solo-guide pages.",
+      "estimate": "25 minutes",
+      "files": [
+        "src/content/docs/writing-a-good-brief.mdx",
+        "src/content/docs/cost-examples.mdx"
+      ],
+      "verify": "npm run build && test -f dist/writing-a-good-brief/index.html && test -f dist/cost-examples/index.html && echo 'Both pages built successfully'",
+      "inputs": [
+        "`src/content/docs/solo-guide/first-project.mdx` — existing page to cross-link to (don't edit)",
+        "`src/content/docs/solo-guide/controlling-costs.mdx` — existing page to cross-link to (don't edit)",
+        "`src/content/docs/gsd-directory.mdx` — frontmatter pattern reference",
+        "`src/content/docs/how-auto-mode-works.mdx` — frontmatter pattern reference"
+      ],
+      "expected_output": [
+        "`src/content/docs/writing-a-good-brief.mdx` — new page with bad-vs-good brief examples",
+        "`src/content/docs/cost-examples.mdx` — new page with 3 milestone cost scenarios",
+        "`dist/writing-a-good-brief/index.html` — built output confirming page renders",
+        "`dist/cost-examples/index.html` — built output confirming page renders"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M007",
+      "slice_id": "S04",
+      "id": "T02",
+      "title": "Verify cross-links and final build",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Run the full link checker to confirm all cross-links in the new pages resolve correctly, and verify both pages exist in the build output.\n\n1. Run `npm run build` to rebuild\n2. Run `npm run check-links` to verify no broken links\n3. Verify `dist/writing-a-good-brief/index.html` contains expected content (bad-vs-good examples)\n4. Verify `dist/cost-examples/index.html` contains expected content (dollar amounts)\n5. Spot-check Australian English spelling in both files",
+      "estimate": "10 minutes",
+      "files": [
+        "src/content/docs/writing-a-good-brief.mdx",
+        "src/content/docs/cost-examples.mdx"
+      ],
+      "verify": "npm run build && npm run check-links && grep -l 'index.html' dist/writing-a-good-brief/index.html dist/cost-examples/index.html",
+      "inputs": [
+        "`src/content/docs/writing-a-good-brief.mdx` — page created in T01",
+        "`src/content/docs/cost-examples.mdx` — page created in T01"
+      ],
+      "expected_output": [
+        "`dist/writing-a-good-brief/index.html` — verified with content checks",
+        "`dist/cost-examples/index.html` — verified with content checks"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -1556,6 +1637,17 @@
       "verdict": "✅ pass",
       "duration_ms": 3300,
       "created_at": "2026-04-02T04:30:28.177Z"
+    },
+    {
+      "id": 15,
+      "task_id": "T01",
+      "slice_id": "S04",
+      "milestone_id": "M007",
+      "command": "npm run build && test -f dist/writing-a-good-brief/index.html && test -f dist/cost-examples/index.html && echo 'Both pages built successfully'",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 9400,
+      "created_at": "2026-04-02T04:36:04.984Z"
     }
   ]
 }

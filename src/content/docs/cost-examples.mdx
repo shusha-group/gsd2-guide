@@ -1,0 +1,119 @@
+---
+title: "Cost Examples"
+description: "Concrete dollar cost scenarios for small, medium, and large GSD milestones, plus what drives the bill and how to keep it under control."
+---
+
+GSD costs vary widely depending on what you're building, which model you're using, and how many verification loops the agent needs to run. This page gives you concrete benchmarks so you can estimate before you run.
+
+All figures use Claude Sonnet as the primary model (the default). Costs are approximate — they depend on your specific codebase size, how much context the agent loads, and whether the build passes first time.
+
+---
+
+## Scenario 1: Small — bug fix or minor feature (~$1–5)
+
+**Example:** Fix a redirect bug in the auth callback, or add a debounced search input to an existing list page.
+
+**What happens:**
+- Agent reads 3–8 files to understand the relevant code path
+- Makes 1–3 targeted edits
+- Runs tests once or twice to verify the fix
+
+**Token profile:**
+- Input tokens: ~40K–80K (context loading + conversation)
+- Output tokens: ~2K–6K (edits + summary)
+- Total cost: $1–5
+
+**What drives cost at this scale:**
+The dominant cost is context loading — the agent reading files to understand the codebase before making any changes. A clean, well-structured codebase with clear file names costs less to navigate than a large monolith where the agent has to read many files to find the relevant code.
+
+:::tip
+Helping the agent navigate quickly reduces cost. If you know exactly where the relevant code lives, mention the file path in the requirement. That skips the exploration phase and goes straight to editing.
+:::
+
+---
+
+## Scenario 2: Medium — new feature with tests (~$5–20)
+
+**Example:** Add a notification preferences page with a form, API endpoint, database migration, and test coverage.
+
+**What happens:**
+- Agent reads 10–20 files across the relevant feature area
+- Writes 3–6 new files (page, API route, migration, tests)
+- Edits 2–4 existing files (navigation, schema, types)
+- Runs tests, fixes any failures, re-runs to confirm
+
+**Token profile:**
+- Input tokens: ~150K–300K (larger context, multiple verification rounds)
+- Output tokens: ~10K–25K (new files, edits, summaries)
+- Total cost: $5–20
+
+**What drives cost at this scale:**
+Verification loops. Each time a test fails and the agent fixes it, that's another round of reading + writing. Milestones with clear acceptance criteria and a codebase that has good test infrastructure tend to land at the lower end. Milestones where the agent has to figure out testing patterns from scratch, or where TypeScript type errors cascade through multiple files, tend toward the higher end.
+
+:::note
+The agent writes task summaries after each slice. If a medium milestone splits across two slices, the second slice starts with context from the first — so you don't pay twice to re-learn the codebase structure.
+:::
+
+---
+
+## Scenario 3: Large — multi-slice milestone (~$20–80)
+
+**Example:** Implement a complete billing integration: Stripe webhook handling, subscription state management, plan-gating for features, upgrade/downgrade flows, and an admin view.
+
+**What happens:**
+- Agent plans 3–5 slices, each with 2–4 tasks
+- Reads 30–60+ files across auth, database, API, and frontend layers
+- Writes 10–20+ new files
+- Multiple verification rounds per slice, including integration tests and browser checks
+- Roadmap reassessment between slices as discoveries are made
+
+**Token profile:**
+- Input tokens: ~500K–1.5M+ (cumulative across all slices)
+- Output tokens: ~50K–150K (files, edits, planning, summaries)
+- Total cost: $20–80
+
+**What drives cost at this scale:**
+Cumulative context. Each slice loads the prior task summaries to maintain continuity. A 5-slice milestone where each slice reads 20 files plus all prior summaries adds up quickly. Model choice matters here — switching the planner or researcher to a lighter model can cut planning costs significantly without affecting code quality.
+
+:::caution
+Large milestones that span many areas of the codebase are expensive partly because they're genuinely complex, but also because vague requirements force extra exploration. A $60 milestone can sometimes be scoped down to two $15 milestones that deliver the same outcome more predictably.
+:::
+
+---
+
+## What drives the bill
+
+### Token counts
+
+The biggest variable. Every file the agent reads contributes to input tokens. Every file it writes contributes to output tokens. Output tokens cost roughly 3–5x more than input tokens per million, but output volume is typically much smaller than input volume.
+
+### Model choice
+
+GSD uses Claude Sonnet by default for most tasks. Switching the planner and researcher to a lighter model (Haiku) while keeping Sonnet for coding tasks can reduce planning costs by 60–70% with minimal quality loss. See `../solo-guide/controlling-costs/` for how to configure this.
+
+### Verification loops
+
+Each failed test, TypeScript error, or build failure that the agent fixes costs tokens. A codebase with good CI feedback — fast tests, clear error messages, minimal false positives — produces fewer loops. A codebase with flaky tests or noisy TypeScript errors drives the agent through more iterations.
+
+### Context size
+
+Large files cost more to read. A 2,000-line component costs more than ten 200-line components, even if the agent only needs to change one line. Keeping files small and well-named reduces the cost of navigation.
+
+### Conversation turns
+
+Each back-and-forth in the discussion phase uses tokens. Long exploratory discussions before the agent has enough information to plan cost more than targeted discussions with well-prepared requirements.
+
+---
+
+## Keeping costs predictable
+
+The most reliable way to manage costs is at the requirement level:
+
+1. **Scope milestones tightly.** A milestone that fits in one focused slice is cheaper and faster than one that sprawls.
+2. **Write specific requirements.** Vague requirements force the agent to explore more, ask more questions, and make more guesses — all of which cost tokens.
+3. **Use model routing.** Planning and research tasks don't need the strongest model. Code tasks do.
+4. **Check costs before each run.** GSD tracks cumulative spend in `.gsd/` and surfaces it in `/gsd status`.
+
+See `../solo-guide/controlling-costs/` for the mechanics of configuring model routing and setting spend limits.
+
+See `../cost-management/` for the `/gsd status` cost tracking reference and how to read the cost breakdown per milestone.

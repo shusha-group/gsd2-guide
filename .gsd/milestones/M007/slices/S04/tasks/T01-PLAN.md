@@ -1,10 +1,12 @@
-# S04: Brief Writing + Cost Examples
+---
+estimated_steps: 19
+estimated_files: 2
+skills_used: []
+---
 
-**Goal:** Solo builders can see bad-vs-good requirement examples and approximate dollar costs for 3 milestone scenarios.
-**Demo:** After this: After this: solo builders can see bad-vs-good requirement examples and approximate dollar costs for 3 milestone scenarios.
+# T01: Create Writing a Good Brief page and Cost Examples page
 
-## Tasks
-- [x] **T01: Created writing-a-good-brief.mdx with 4 bad-vs-good requirement pairs and cost-examples.mdx with 3 milestone cost scenarios, both building successfully** — Create two new MDX pages at `src/content/docs/`:
+Create two new MDX pages at `src/content/docs/`:
 
 1. **writing-a-good-brief.mdx** — A guide showing what makes a good requirement brief. Include:
    - Bad-vs-good requirement examples (at least 3 pairs showing vague vs specific)
@@ -27,16 +29,21 @@
 - Callouts: `:::tip`, `:::caution`, `:::note` directives
 
 **Important:** These are hand-authored content pages. Do NOT edit any generated files. The content should complement (not duplicate) existing solo-guide pages.
-  - Estimate: 25 minutes
-  - Files: src/content/docs/writing-a-good-brief.mdx, src/content/docs/cost-examples.mdx
-  - Verify: npm run build && test -f dist/writing-a-good-brief/index.html && test -f dist/cost-examples/index.html && echo 'Both pages built successfully'
-- [ ] **T02: Verify cross-links and final build** — Run the full link checker to confirm all cross-links in the new pages resolve correctly, and verify both pages exist in the build output.
 
-1. Run `npm run build` to rebuild
-2. Run `npm run check-links` to verify no broken links
-3. Verify `dist/writing-a-good-brief/index.html` contains expected content (bad-vs-good examples)
-4. Verify `dist/cost-examples/index.html` contains expected content (dollar amounts)
-5. Spot-check Australian English spelling in both files
-  - Estimate: 10 minutes
-  - Files: src/content/docs/writing-a-good-brief.mdx, src/content/docs/cost-examples.mdx
-  - Verify: npm run build && npm run check-links && grep -l 'index.html' dist/writing-a-good-brief/index.html dist/cost-examples/index.html
+## Inputs
+
+- ``src/content/docs/solo-guide/first-project.mdx` — existing page to cross-link to (don't edit)`
+- ``src/content/docs/solo-guide/controlling-costs.mdx` — existing page to cross-link to (don't edit)`
+- ``src/content/docs/gsd-directory.mdx` — frontmatter pattern reference`
+- ``src/content/docs/how-auto-mode-works.mdx` — frontmatter pattern reference`
+
+## Expected Output
+
+- ``src/content/docs/writing-a-good-brief.mdx` — new page with bad-vs-good brief examples`
+- ``src/content/docs/cost-examples.mdx` — new page with 3 milestone cost scenarios`
+- ``dist/writing-a-good-brief/index.html` — built output confirming page renders`
+- ``dist/cost-examples/index.html` — built output confirming page renders`
+
+## Verification
+
+npm run build && test -f dist/writing-a-good-brief/index.html && test -f dist/cost-examples/index.html && echo 'Both pages built successfully'

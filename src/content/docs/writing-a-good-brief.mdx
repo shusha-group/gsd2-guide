@@ -1,0 +1,123 @@
+---
+title: "Writing a Good Brief"
+description: "How to write requirement briefs that get great results from GSD: bad-vs-good examples, common mistakes, and what makes a discussion phase productive."
+---
+
+A well-written brief is the difference between an agent that delivers exactly what you wanted and one that builds something technically correct but completely wrong. GSD can only work from what you give it. The quality of your brief determines the quality of the milestone.
+
+---
+
+## Bad-vs-good examples
+
+### Example 1: Adding a feature
+
+| | Requirement |
+|---|---|
+| ❌ **Too vague** | "Add search to the app" |
+| ✅ **Specific** | "Add a search bar to the top navigation that filters the `/products` list by name as the user types. Results should update on each keystroke with a 300ms debounce. Empty results should show a 'No products found' message rather than a blank list." |
+
+The vague version leaves everything open: what to search, where to put it, how it behaves, what happens when nothing matches. The specific version pins the scope, the location, the interaction model, and the edge case.
+
+---
+
+### Example 2: Fixing a bug
+
+| | Requirement |
+|---|---|
+| ❌ **Too vague** | "Fix the login bug" |
+| ✅ **Specific** | "The login form submits successfully but the user is redirected to `/dashboard` instead of `/onboarding` when `user.onboarding_complete` is false. Fix the redirect logic in `src/app/auth/callback/route.ts` to check that flag and route accordingly." |
+
+"Fix the login bug" forces the agent to guess which bug, where it lives, and what the correct behaviour should be. The specific version gives the agent the file, the condition, and the expected outcome.
+
+---
+
+### Example 3: Improving performance
+
+| | Requirement |
+|---|---|
+| ❌ **Too vague** | "Make the dashboard faster" |
+| ✅ **Specific** | "The `/dashboard` page makes 4 separate API calls on mount that could be batched. Consolidate them into a single `/api/dashboard-summary` endpoint that returns user stats, recent activity, pending tasks, and billing status in one response. Target: dashboard load time under 500ms on a 4G connection." |
+
+The vague version is impossible to verify. The specific version defines what's being changed, why, and how you'll know it worked.
+
+---
+
+### Example 4: Adding acceptance criteria
+
+| | Requirement |
+|---|---|
+| ❌ **Missing acceptance criteria** | "Add email notifications when a task is completed" |
+| ✅ **With acceptance criteria** | "Send a notification email when a task status changes to 'complete'. The email should include the task title, completion timestamp, and a link back to the project. Do not send if the user has opted out in their notification preferences. Acceptance criteria: (1) email arrives within 60 seconds of completion, (2) no email sent when `user.notify_on_complete` is false, (3) existing tests still pass." |
+
+Acceptance criteria are the verification contract. Without them, there's no clear bar for "done" — and the agent can't write meaningful tests.
+
+---
+
+## What makes a discussion phase productive
+
+Before running auto mode on a milestone, GSD offers a discussion phase where it asks clarifying questions. This phase is only as useful as the answers you give it.
+
+**What to bring to a discussion:**
+- The user journey you're optimising, not just the technical change
+- Any constraints the agent can't see (existing contracts with third-party APIs, regulatory requirements, performance SLAs)
+- What "done" looks like from a user's perspective, not just from a code perspective
+- Known gotchas in the relevant part of the codebase
+
+**What slows a discussion down:**
+- Answering "I'm not sure, use your judgement" on things you actually do have a preference about
+- Leaving edge cases ambiguous when you know what the correct behaviour should be
+- Treating it as a rubber-stamp step rather than a genuine alignment check
+
+:::tip
+If the agent asks a question you can't answer, that's a signal the requirement is underdefined. Either research the answer before proceeding, or narrow the scope to something you *can* define completely.
+:::
+
+See `../solo-guide/first-project/` for a full walkthrough of how the discussion phase fits into a real project.
+
+---
+
+## Common mistakes
+
+### Too vague
+
+The most common failure mode. Requirements like "improve the UX", "add caching", or "clean up the code" give the agent almost no signal. Every word in a requirement should constrain the solution space.
+
+:::caution
+Vague requirements don't just produce bad outputs — they produce outputs the agent *thinks* are correct. The agent will build something that satisfies the words you used. Make sure those words mean what you intend.
+:::
+
+### Too prescriptive
+
+The opposite problem. "Use a Redis sorted set with a score based on Unix timestamp, TTL of 3600 seconds, and a key prefix of `user:session:`" tells the agent *how* to implement something rather than *what* it needs to accomplish. Over-specified requirements lock in implementation decisions you may not have thought through fully, and they prevent the agent from using a better approach.
+
+Write requirements at the behaviour level. Let the agent choose the implementation unless you have a specific technical reason to constrain it.
+
+### Missing acceptance criteria
+
+Requirements without acceptance criteria can't be verified. If you can't write a test for it, the agent can't either. Before finalising any requirement, ask: "How will I know this is working correctly?" The answer to that question is your acceptance criteria.
+
+### Assuming context the agent doesn't have
+
+The agent knows what's in the codebase and what you've told it. It doesn't know about the conversation you had with a client last week, the architectural decision your team made informally, or the quirk in a third-party API you discovered six months ago. If it's relevant, write it down.
+
+:::note
+GSD's `.gsd/KNOWLEDGE.md` exists precisely for this: recording project-specific rules, gotchas, and patterns that any agent (or new team member) needs to know. If you keep finding yourself explaining the same context to the agent, add it to KNOWLEDGE.md.
+:::
+
+### Bundling too much into one milestone
+
+A milestone that touches eight different areas of the codebase is hard to plan, hard to verify, and hard to recover from if something goes wrong. Smaller, focused milestones with clear scope produce better results. If a milestone takes more than a sentence to describe, consider splitting it.
+
+---
+
+## The brief-quality checklist
+
+Before handing a brief to GSD, check:
+
+- [ ] Does each requirement describe **observable behaviour**, not internal implementation?
+- [ ] Does each requirement have **acceptance criteria** that can be verified?
+- [ ] Are **edge cases** called out explicitly, or are they genuinely out of scope?
+- [ ] Have you noted any **known constraints** the agent can't discover from the codebase?
+- [ ] Is the scope small enough to **deliver and verify in one milestone**?
+
+A brief that passes this checklist will produce a milestone plan you can trust.
