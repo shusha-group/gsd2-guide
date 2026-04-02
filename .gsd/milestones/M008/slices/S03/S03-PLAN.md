@@ -17,7 +17,7 @@ Steps:
   - Estimate: 45m
   - Files: src/content/docs/recipes/control-your-costs.md, src/content/docs/cost-management.md, src/content/docs/token-optimization.md, src/content/docs/dynamic-model-routing.md, astro.config.mjs, src/content/docs/solo-guide/controlling-costs.md, src/content/docs/cost-examples.md
   - Verify: npm run build exits 0 and `test -f src/content/docs/recipes/control-your-costs.md`
-- [ ] **T02: Merge Skills/Extensions/Agents guide and deduplicate auto-mode pages** — Create a single 'Skills, Extensions & Agents' guide page merging content from skills.md. Deduplicate auto-mode by differentiating the recipe (practical) from the deep-dive (internals). Update sidebar and add cross-links.
+- [x] **T02: Created unified Skills, Extensions & Agents guide page, updated sidebar, deduplicated auto-mode.md with mutual cross-links to how-auto-mode-works.mdx** — Create a single 'Skills, Extensions & Agents' guide page merging content from skills.md. Deduplicate auto-mode by differentiating the recipe (practical) from the deep-dive (internals). Update sidebar and add cross-links.
 
 IMPORTANT: The reference pages (`reference/skills.mdx`, `reference/extensions.mdx`, `reference/agents.mdx`) are pipeline-generated from JSON and must stay untouched. The new guide page should explain skills/extensions/agents conceptually and link TO the reference pages for card listings.
 

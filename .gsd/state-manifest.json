@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T13:25:28.991Z",
+  "exported_at": "2026-04-02T13:28:13.629Z",
   "milestones": [
     {
       "id": "M001",
@@ -992,19 +992,28 @@
       "milestone_id": "M008",
       "slice_id": "S03",
       "id": "T02",
-      "title": "Merge Skills/Extensions/Agents guide and deduplicate auto-mode pages",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Created unified Skills, Extensions & Agents guide page, updated sidebar, deduplicated auto-mode.md with mutual cross-links to how-auto-mode-works.mdx",
+      "status": "complete",
+      "one_liner": "Created unified Skills, Extensions & Agents guide page, updated sidebar, deduplicated auto-mode.md with mutual cross-links to how-auto-mode-works.mdx",
+      "narrative": "Read all source files then created src/content/docs/skills-extensions-agents.md with three major sections drawing from existing skills.md content. Updated astro.config.mjs sidebar entry. Added caution redirect notice to skills.md. Stripped Pipeline Architecture internals from auto-mode.md to focus on practical usage and added cross-link to how-auto-mode-works.mdx. Added reciprocal cross-link at top of how-auto-mode-works.mdx.",
+      "verification_result": "npm run build exited 0 (6.6s). Build confirmed 150 pages including /skills-extensions-agents/index.html, /skills/index.html, /auto-mode/index.html, and /how-auto-mode-works/index.html.",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-04-02T13:28:13.611Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
-      "key_decisions": [],
-      "full_summary_md": "",
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/skills-extensions-agents.md",
+        "src/content/docs/skills.md",
+        "src/content/docs/auto-mode.md",
+        "src/content/docs/how-auto-mode-works.mdx",
+        "astro.config.mjs"
+      ],
+      "key_decisions": [
+        "Kept skills.md at its original URL with a redirect notice matching the T01 pattern",
+        "auto-mode.md trimmed to practical usage; verbose pipeline internals removed in favour of cross-link to how-auto-mode-works.mdx"
+      ],
+      "full_summary_md": "---\nid: T02\nparent: S03\nmilestone: M008\nkey_files:\n  - src/content/docs/skills-extensions-agents.md\n  - src/content/docs/skills.md\n  - src/content/docs/auto-mode.md\n  - src/content/docs/how-auto-mode-works.mdx\n  - astro.config.mjs\nkey_decisions:\n  - Kept skills.md at its original URL with a redirect notice matching the T01 pattern\n  - auto-mode.md trimmed to practical usage; verbose pipeline internals removed in favour of cross-link to how-auto-mode-works.mdx\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:28:13.611Z\nblocker_discovered: false\n---\n\n# T02: Created unified Skills, Extensions & Agents guide page, updated sidebar, deduplicated auto-mode.md with mutual cross-links to how-auto-mode-works.mdx\n\n**Created unified Skills, Extensions & Agents guide page, updated sidebar, deduplicated auto-mode.md with mutual cross-links to how-auto-mode-works.mdx**\n\n## What Happened\n\nRead all source files then created src/content/docs/skills-extensions-agents.md with three major sections drawing from existing skills.md content. Updated astro.config.mjs sidebar entry. Added caution redirect notice to skills.md. Stripped Pipeline Architecture internals from auto-mode.md to focus on practical usage and added cross-link to how-auto-mode-works.mdx. Added reciprocal cross-link at top of how-auto-mode-works.mdx.\n\n## Verification\n\nnpm run build exited 0 (6.6s). Build confirmed 150 pages including /skills-extensions-agents/index.html, /skills/index.html, /auto-mode/index.html, and /how-auto-mode-works/index.html.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 6600ms |\n| 2 | `test -f src/content/docs/skills-extensions-agents.md` | 0 | ✅ pass | 10ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/skills-extensions-agents.md`\n- `src/content/docs/skills.md`\n- `src/content/docs/auto-mode.md`\n- `src/content/docs/how-auto-mode-works.mdx`\n- `astro.config.mjs`\n",
       "description": "Create a single 'Skills, Extensions & Agents' guide page merging content from skills.md. Deduplicate auto-mode by differentiating the recipe (practical) from the deep-dive (internals). Update sidebar and add cross-links.\n\nIMPORTANT: The reference pages (`reference/skills.mdx`, `reference/extensions.mdx`, `reference/agents.mdx`) are pipeline-generated from JSON and must stay untouched. The new guide page should explain skills/extensions/agents conceptually and link TO the reference pages for card listings.\n\nSteps:\n1. Read `src/content/docs/skills.md` (190 lines) — this is the main guide content about skill directories, authoring, detection, triggers.\n2. Create `src/content/docs/skills-extensions-agents.md` with sections: What Are Skills (from skills.md content), What Are Extensions (brief explanation + link to reference/extensions), What Are Agents (brief explanation + link to reference/agents), Creating Your Own Skills (from skills.md authoring guide). Use Australian English.\n3. In `astro.config.mjs` Learn More section, replace the `{ label: 'Skills', link: '/skills/' }` entry (line 175) with `{ label: 'Skills, Extensions & Agents', link: '/skills-extensions-agents/' }`. Keep the reference page entries (lines 182-184) as they are.\n4. Update `src/content/docs/skills.md` to add a redirect notice pointing to the new page.\n5. Deduplicate auto-mode: Edit `src/content/docs/auto-mode.md` to focus on practical usage (when to use it, what to expect, how to intervene, tips). Remove the detailed pipeline walkthrough that duplicates how-auto-mode-works.mdx. Add a cross-link: 'For a detailed breakdown of the 12-phase pipeline, see [How Auto Mode Works](/gsd2-guide/how-auto-mode-works/)'.\n6. Edit `src/content/docs/how-auto-mode-works.mdx` to add a cross-link at top: 'For practical tips on running auto mode, see [Auto Mode](/gsd2-guide/auto-mode/)'.\n7. Verify: `npm run build` exits 0.",
       "estimate": "45m",
       "files": [
@@ -2367,6 +2376,28 @@
       "verdict": "✅ pass",
       "duration_ms": 50,
       "created_at": "2026-04-02T13:25:28.963Z"
+    },
+    {
+      "id": 33,
+      "task_id": "T02",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6600,
+      "created_at": "2026-04-02T13:28:13.611Z"
+    },
+    {
+      "id": 34,
+      "task_id": "T02",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "test -f src/content/docs/skills-extensions-agents.md",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-02T13:28:13.611Z"
     }
   ]
 }

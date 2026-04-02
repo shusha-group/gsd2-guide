@@ -170,7 +170,7 @@ export default defineConfig({
             { label: 'Architecture', link: '/architecture/' },
             { label: 'Web Interface', link: '/web-interface/' },
             { label: 'Custom Models', link: '/custom-models/' },
-            { label: 'Skills', link: '/skills/' },
+            { label: 'Skills, Extensions & Agents', link: '/skills-extensions-agents/' },
             { label: 'Workflow Visualizer', link: '/visualizer/' },
             { label: 'Remote Questions', link: '/remote-questions/' },
             { label: 'Migration from v1', link: '/migration/' },
