@@ -1,8 +1,37 @@
 ---
 title: "/gsd start"
-description: "Documentation for /gsd start"
+description: "Start a workflow from a template — the recommended way to begin common tasks like features, bugfixes, and spikes."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Launches a predefined workflow from a template. Templates encode best-practice sequences for common development tasks, so you don't have to remember the right steps each time.
+
+## Usage
+
+```
+/gsd start <template-name>
+```
+
+## Available Templates
+
+Common built-in templates include:
+
+- **feature** — full feature workflow (discuss → plan → execute → verify)
+- **bugfix** — bug investigation and fix (reproduce → diagnose → fix → verify)
+- **spike** — time-boxed research and prototyping
+- **hotfix** — expedited fix for production issues
+
+Run `/gsd templates` to see all available templates, including any custom ones you've defined.
+
+## How It Works
+
+Each template defines a sequence of phases with appropriate defaults for that workflow type. Starting a template:
+
+1. Prompts for any required context (e.g., bug description, feature requirements)
+2. Creates the appropriate GSD artifacts (milestone, slices, etc.)
+3. Begins execution of the first phase
+
+## Related Commands
+
+- [`/gsd templates`](../templates/) — list all available templates with descriptions
+- [`/gsd discuss`](../discuss/) — freeform discussion before starting work
+- [`/gsd auto`](../auto/) — autonomous execution (which templates may invoke)

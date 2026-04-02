@@ -1,8 +1,27 @@
 ---
 title: "/gsd widget"
-description: "Documentation for /gsd widget"
+description: "Cycle or set the dashboard widget display mode in the terminal."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Controls the auto-mode progress widget that displays in the terminal during execution. The widget shows current phase, active unit, and progress at a glance.
+
+## Usage
+
+```
+/gsd widget
+/gsd widget <mode>
+```
+
+| Mode | What It Shows |
+|------|---------------|
+| `full` | Detailed progress — phase, unit, timing, and recent activity |
+| `small` | Compact single-line progress indicator |
+| `min` | Minimal — just the current phase and unit ID |
+| `off` | Hide the widget entirely |
+
+Without arguments, cycles through modes in order: full → small → min → off → full.
+
+## Related Commands
+
+- [`/gsd status`](../status/) — full project status (not just the widget)
+- [`/gsd visualize`](../visualize/) — visual project overview

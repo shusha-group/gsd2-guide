@@ -1,8 +1,34 @@
 ---
 title: "/gsd mcp"
-description: "Documentation for /gsd mcp"
+description: "Check MCP server status and connectivity."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Shows the status of configured Model Context Protocol (MCP) servers and tests their connectivity. MCP servers provide external integrations — tools for interacting with services like GitHub, Linear, Railway, and others.
+
+## Usage
+
+```
+/gsd mcp
+/gsd mcp status
+/gsd mcp check <server>
+```
+
+| Subcommand | Effect |
+|------------|--------|
+| `status` | List all configured MCP servers and their connection state |
+| `check <server>` | Test connectivity to a specific server |
+
+Without arguments, shows the same output as `status`.
+
+## What It Shows
+
+For each configured server:
+
+- **Server name** and transport type (stdio, SSE, etc.)
+- **Connection state** — connected, disconnected, or error
+- **Available tools** — how many tools the server provides
+
+## Related Commands
+
+- [`/gsd setup`](../setup/) — configure global settings including integrations
+- [`/gsd extensions`](../extensions/) — view installed GSD extensions

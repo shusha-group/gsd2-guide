@@ -1,8 +1,32 @@
 ---
 title: "/gsd inspect"
-description: "Documentation for /gsd inspect"
+description: "Show SQLite database diagnostics — schema info, row counts, and recent entries."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+A debugging tool that exposes the internal state of GSD's SQLite database. Use it when project state seems wrong, checkboxes are out of sync, or you need to understand what the database actually contains.
+
+## Usage
+
+```
+/gsd inspect
+```
+
+## What It Shows
+
+- **Schema information** — tables, columns, and indexes in the GSD database
+- **Row counts** — how many records exist in each table (milestones, slices, tasks, decisions, etc.)
+- **Recent entries** — the most recent rows from key tables
+
+This is a read-only diagnostic. It doesn't modify any state.
+
+## When to Use
+
+- A task shows as complete in the database but the markdown checkbox is unchecked (or vice versa)
+- `/gsd status` shows unexpected state
+- You suspect data corruption after a crash or interrupted operation
+- You want to understand what GSD tracks internally
+
+## Related Commands
+
+- [`/gsd doctor`](../doctor/) — broader diagnostic checks beyond just the database
+- [`/gsd logs`](../logs/) — view execution logs rather than database state

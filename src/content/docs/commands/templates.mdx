@@ -1,8 +1,36 @@
 ---
 title: "/gsd templates"
-description: "Documentation for /gsd templates"
+description: "List available workflow templates that can be launched with /gsd start."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Shows all available workflow templates — both built-in and custom. Each template defines a reusable workflow for a common development task.
+
+## Usage
+
+```
+/gsd templates
+/gsd templates info <name>
+```
+
+| Subcommand | Effect |
+|------------|--------|
+| *(none)* | List all available templates with brief descriptions |
+| `info <name>` | Show detailed information about a specific template |
+
+## What It Shows
+
+For each template:
+
+- **Name** — the identifier used with `/gsd start`
+- **Description** — what the workflow does
+- **Phases** — the sequence of phases the template defines
+- **Source** — whether it's built-in or custom
+
+## Custom Templates
+
+You can define custom workflow templates for your project. See the [workflows documentation](../../reference/workflows/) for details on creating templates.
+
+## Related Commands
+
+- [`/gsd start`](../start/) — launch a workflow from a template
+- [`/gsd workflow`](../workflow/) — manage workflow execution

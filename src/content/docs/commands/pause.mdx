@@ -1,8 +1,27 @@
 ---
 title: "/gsd pause"
-description: "Documentation for /gsd pause"
+description: "Pause auto-mode after the current task completes, preserving all state."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Pauses auto-mode gracefully. The currently executing task runs to completion, then execution stops. All state is preserved — resume by running `/gsd auto` again.
+
+## Usage
+
+```
+/gsd pause
+```
+
+## Pause vs Stop
+
+| | `/gsd pause` | `/gsd stop` |
+|---|---|---|
+| Current task | Completes normally | Completes normally |
+| State | Fully preserved | Fully terminated |
+| Resume | `/gsd auto` picks up where it left off | `/gsd auto` restarts dispatch |
+
+Use `pause` when you want to review progress, make manual changes, or temporarily take over. Use `stop` when you want to fully end the auto-mode session.
+
+## Related Commands
+
+- [`/gsd auto`](../auto/) — start or resume autonomous execution
+- [`/gsd stop`](../stop/) — fully terminate auto-mode

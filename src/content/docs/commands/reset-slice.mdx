@@ -1,8 +1,37 @@
 ---
 title: "/gsd reset-slice"
-description: "Documentation for /gsd reset-slice"
+description: "Reset an entire slice and all its tasks — clears completion state in both the database and markdown."
 ---
 
+Resets a slice to its pre-execution state. Clears completion records from the SQLite database and unchecks all markdown checkboxes for the slice and its tasks. More aggressive than `/gsd undo-task`, which targets a single task.
+
+## Usage
+
+```
+/gsd reset-slice <slice-id>
+```
+
+The slice ID follows the standard format (e.g., `S01`, `S02`).
+
+## What Gets Reset
+
+- The slice's completion record in the database
+- All task completion records within the slice
+- Markdown checkboxes in the plan and roadmap files (`[x]` → `[ ]`)
+- Summary and UAT artifacts are **not deleted** — they remain on disk for reference
+
+## When to Use
+
+- A slice completed but the implementation was wrong and needs to be redone
+- Database state is out of sync with the actual file state
+- You want to re-execute a slice with a different approach
+
 :::caution
-This page is a scaffold — content has not been generated yet.
+This resets the entire slice. If you only need to redo a single task, use `/gsd undo-task` instead.
 :::
+
+## Related Commands
+
+- [`/gsd undo-task`](../undo-task/) — reset a single task rather than the whole slice
+- [`/gsd undo`](../undo/) — revert the most recently completed unit
+- [`/gsd doctor`](../doctor/) — diagnose state inconsistencies

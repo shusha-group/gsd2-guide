@@ -1,8 +1,37 @@
 ---
 title: "/gsd park"
-description: "Documentation for /gsd park"
+description: "Park a milestone — skip it without deleting, excluding it from auto-mode dispatch."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Parks a milestone so it's excluded from auto-mode dispatch without being deleted. Parked milestones retain all their planning data and can be reactivated later with `/gsd unpark`.
+
+## Usage
+
+```
+/gsd park
+/gsd park <milestone-id>
+/gsd park <milestone-id> <reason>
+```
+
+Without an ID, parks the currently active milestone. The optional reason is recorded for future reference.
+
+## When to Use
+
+- A milestone is blocked on external dependencies and you want auto-mode to skip it
+- Project priorities have shifted and a milestone should be deferred
+- You want to temporarily focus on other work without losing the milestone's planning
+
+## How It Works
+
+Parked milestones:
+
+- Are **excluded from auto-mode dispatch** — they won't be picked up automatically
+- **Retain all state** — plans, research, tasks, and progress are preserved
+- Can be **reactivated** at any time with `/gsd unpark`
+- Show as "parked" in `/gsd status`
+
+## Related Commands
+
+- [`/gsd unpark`](../unpark/) — reactivate a parked milestone
+- [`/gsd queue`](../queue/) — manage the milestone queue
+- [`/gsd rethink`](../rethink/) — reorganise milestones interactively

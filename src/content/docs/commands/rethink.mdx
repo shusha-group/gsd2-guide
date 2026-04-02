@@ -1,8 +1,35 @@
 ---
 title: "/gsd rethink"
-description: "Documentation for /gsd rethink"
+description: "Interactively reorganise your project's milestone roadmap."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Opens a conversational session for restructuring your project. Use it when project direction has changed significantly and you need to reorder, park, discard, or add milestones.
+
+## Usage
+
+```
+/gsd rethink
+```
+
+The command runs interactively — no arguments needed.
+
+## What You Can Do
+
+During a rethink session:
+
+- **Reorder milestones** — change execution priority
+- **Park milestones** — defer them without deleting (same as `/gsd park`)
+- **Discard milestones** — remove milestones that are no longer relevant
+- **Add milestones** — introduce new milestones based on changed requirements
+- **Restructure scope** — move work between milestones
+
+## When to Use
+
+- Project requirements have changed substantially
+- You've learned enough during execution to know the original plan was wrong
+- Multiple milestones need reorganisation at once (vs. `/gsd park` for individual milestones)
+
+## Related Commands
+
+- [`/gsd park`](../park/) — park a single milestone without a full reorganisation
+- [`/gsd queue`](../queue/) — view and manage the milestone queue

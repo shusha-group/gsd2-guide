@@ -1,8 +1,35 @@
 ---
 title: "/gsd remote"
-description: "Documentation for /gsd remote"
+description: "Run GSD headlessly with questions routed to Slack, Discord, or Telegram."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Enables remote auto-mode — GSD runs headlessly and routes any questions that need human input to your messaging platform of choice. This lets you monitor and respond to GSD from your phone or another machine.
+
+## Usage
+
+```
+/gsd remote slack
+/gsd remote discord
+/gsd remote status
+/gsd remote disconnect
+```
+
+| Subcommand | Effect |
+|------------|--------|
+| `slack` | Connect to Slack for remote questions |
+| `discord` | Connect to Discord for remote questions |
+| `status` | Show current remote connection state |
+| `disconnect` | Disconnect from the remote platform |
+
+## How It Works
+
+Once connected, auto-mode runs normally but any `ask_user_questions` prompts are forwarded to your messaging channel instead of the terminal. You respond in the channel, and GSD picks up your answer and continues.
+
+## Setup
+
+Configure remote integrations first with `/gsd setup remote`, which walks you through authentication and channel selection.
+
+## Related Commands
+
+- [`/gsd setup`](../setup/) — configure remote integrations via `/gsd setup remote`
+- [`/gsd auto`](../auto/) — local auto-mode (non-remote)

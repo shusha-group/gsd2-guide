@@ -1,8 +1,29 @@
 ---
 title: "/gsd rate"
-description: "Documentation for /gsd rate"
+description: "Rate the last unit's model selection to improve adaptive model routing."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+Provides feedback on whether the model chosen for the last execution unit was appropriate. This feedback trains GSD's adaptive model routing — over time, it learns which model tiers suit different task types.
+
+## Usage
+
+```
+/gsd rate over
+/gsd rate ok
+/gsd rate under
+```
+
+| Rating | Meaning |
+|--------|---------|
+| `over` | The model was more expensive than necessary — a cheaper model would have handled it |
+| `ok` | The model selection was appropriate |
+| `under` | The model wasn't capable enough — a more powerful model was needed |
+
+## How It Works
+
+GSD selects model tiers based on task complexity, phase, and historical performance. Your ratings adjust these selections for future units. Consistent "over" ratings on simple tasks will push GSD toward cheaper models; "under" ratings on complex work will push toward more capable ones.
+
+## Related Commands
+
+- [`/gsd auto`](../auto/) — autonomous execution where model routing applies
+- [`/gsd history`](../history/) — review which models were used for past units
