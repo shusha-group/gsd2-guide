@@ -1,8 +1,45 @@
 ---
-title: "gate-evaluate"
-description: "Prompt reference: gate-evaluate"
+title: "gate-evaluate prompt"
+description: "Parallel quality gate evaluation prompt — dispatches independent gate checks before task execution begins."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+The `gate-evaluate` prompt drives **parallel quality gate evaluation** for a slice. It runs before task execution begins, dispatching independent gate checks as subagents to catch issues early.
+
+## When It Runs
+
+Gate evaluation is triggered automatically during auto-mode after a slice is planned but before its tasks execute. It's part of the auto-mode pipeline — you don't invoke it directly.
+
+## What It Does
+
+1. **Receives the slice plan** and a list of quality gates (Q3–Q8) that apply to the slice
+2. **Dispatches all gates in parallel** using the `subagent` tool — each gate runs as an independent evaluation agent
+3. **Collects results** — each subagent calls `gsd_save_gate_result` with a verdict (`pass`, `flag`, or `omitted`)
+4. **Reports the batch outcome** — which gates passed, which flagged concerns, and which were omitted as not applicable
+
+## Gate Verdicts
+
+| Verdict | Meaning |
+|---------|---------|
+| `pass` | No concerns found |
+| `flag` | Concerns identified — recorded but doesn't block execution |
+| `omitted` | Gate not applicable to this slice (e.g. no auth surface for Q3) |
+
+Gates returning `omitted` is expected for simple slices that don't touch security, requirements, or other gate-specific surfaces.
+
+## Variables
+
+| Variable | Description |
+|----------|-------------|
+| `workingDirectory` | Absolute path to the working directory |
+| `milestoneId` / `milestoneTitle` | Active milestone context |
+| `sliceId` / `sliceTitle` | Slice being evaluated |
+| `slicePlanContent` | Full slice plan content for gate agents to analyse |
+| `gateCount` | Number of gates to evaluate |
+| `gateList` | Formatted list of gate IDs and descriptions |
+| `subagentPrompts` | Full prompts for each gate subagent |
+
+## Related Prompts
+
+- [execute-task](../execute-task/) — runs after gates pass
+- [plan-slice](../plan-slice/) — produces the slice plan that gates evaluate
+- [validate-milestone](../validate-milestone/) — milestone-level validation after all slices complete

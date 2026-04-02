@@ -1,8 +1,52 @@
 ---
-title: "rethink"
-description: "Prompt reference: rethink"
+title: "rethink prompt"
+description: "Conversational project reorganisation — reorder, park, discard, or add milestones interactively."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+The `rethink` prompt powers `/gsd rethink` — an interactive conversation for reorganising your project's milestone plan when priorities shift.
+
+## When to Use It
+
+Run `/gsd rethink` when:
+
+- Project direction has changed and milestone priorities need reordering
+- A milestone is no longer relevant and should be parked or discarded
+- New work has emerged that needs a new milestone
+- Dependencies between milestones need updating
+
+## What It Does
+
+1. **Presents the current milestone landscape** as a numbered list with status indicators (✅ complete, ▶ active, ⏳ pending, ⏸ parked)
+2. **Asks what you'd like to change** — this is a conversation, not a form
+3. **Executes changes** based on your instructions, confirming destructive operations before proceeding
+
+## Supported Operations
+
+| Operation | What happens |
+|-----------|-------------|
+| **Reorder** | Changes execution order of pending/active milestones by writing `QUEUE-ORDER.json` |
+| **Park** | Temporarily shelves a milestone (creates `{ID}-PARKED.md`) — reversible |
+| **Unpark** | Reactivates a parked milestone (removes the parked marker) |
+| **Discard** | Permanently deletes a milestone directory — always confirmed first |
+| **Add** | Creates a new milestone with auto-generated ID and context file |
+| **Update dependencies** | Edits `depends_on` in milestone context frontmatter |
+
+## Safety Rules
+
+- **Parking is preferred over discarding** when a milestone has any completed work
+- **Discards always require explicit user confirmation** with a warning if completed work exists
+- **Dependency validation** ensures no circular dependencies and that referenced milestones exist
+- **Completed milestones cannot be reordered, parked, or discarded**
+
+## Variables
+
+| Variable | Description |
+|----------|-------------|
+| `rethinkData` | Summary of all milestones with status, order, and dependencies |
+| `existingMilestonesContext` | Detailed context for each milestone (goals, progress, slices) |
+
+## Related
+
+- [/gsd park](../../commands/park/) — park a single milestone without the interactive conversation
+- [/gsd unpark](../../commands/unpark/) — reactivate a parked milestone
+- [/gsd queue](../../commands/queue/) — view the current execution queue

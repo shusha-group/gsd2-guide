@@ -1,8 +1,46 @@
 ---
-title: "reactive-execute"
-description: "Prompt reference: reactive-execute"
+title: "reactive-execute prompt"
+description: "Parallel task execution prompt — dispatches multiple independent tasks simultaneously based on dependency graph analysis."
 ---
 
-:::caution
-This page is a scaffold — content has not been generated yet.
-:::
+The `reactive-execute` prompt drives **parallel task execution** within a slice. When the task dependency graph shows multiple tasks with no mutual dependencies, this prompt dispatches them simultaneously as subagents instead of running them sequentially.
+
+## When It Runs
+
+Reactive execution is triggered during auto-mode when the dispatch engine detects two or more tasks in a slice that are ready for execution at the same time (their input dependencies are already satisfied). You don't invoke it directly.
+
+## What It Does
+
+1. **Analyses the task dependency graph** to identify which tasks can run in parallel
+2. **Dispatches all ready tasks simultaneously** using the `subagent` tool in parallel mode — each subagent gets a full `execute-task` prompt
+3. **Waits for all subagents** to complete
+4. **Verifies outputs** — checks that expected files were created, verification commands pass, and each task wrote its own `T##-SUMMARY.md`
+5. **Preserves successful work** — if one task fails, successful sibling tasks are kept as-is
+
+## Failure Handling
+
+The prompt follows strict rules when a parallel task fails:
+
+- **Successful tasks are never rolled back** — good work from sibling tasks is preserved exactly as it landed
+- **Failed tasks without summaries** get a failure summary written by the parent agent via `gsd_save_summary` with `blocker_discovered: true`
+- **Failed tasks are not marked complete** — they remain uncompleted so replan/retry can pick them up
+- **No batch commits** — the surrounding unit lifecycle owns commits, not this prompt
+
+## Variables
+
+| Variable | Description |
+|----------|-------------|
+| `workingDirectory` | Absolute path to the working directory |
+| `milestoneId` / `milestoneTitle` | Active milestone context |
+| `sliceId` / `sliceTitle` | Slice being executed |
+| `graphContext` | Task dependency graph showing relationships |
+| `readyTaskCount` | Number of tasks ready for parallel dispatch |
+| `readyTaskList` | Formatted list of ready tasks with descriptions |
+| `subagentPrompts` | Full execute-task prompts for each subagent |
+| `inlinedTemplates` | Any additional template content needed by subagents |
+
+## Related Prompts
+
+- [execute-task](../execute-task/) — the prompt each parallel subagent receives
+- [plan-slice](../plan-slice/) — produces the task graph that determines parallelism
+- [replan-slice](../replan-slice/) — triggered when a parallel task discovers a blocker
