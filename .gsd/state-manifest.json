@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T04:45:37.130Z",
+  "exported_at": "2026-04-02T13:12:40.021Z",
   "milestones": [
     {
       "id": "M001",
@@ -179,6 +179,81 @@
       ],
       "requirement_coverage": "Covers: R073, R074, R075, R076, R077, R078, R079, R080. Leaves for later: R051 (page-source-map audit, pre-existing).",
       "boundary_map_markdown": "### S01 → S05\nProduces:\n- `src/content/docs/quick-reference.mdx` — curated command quick reference page\n- `src/content/docs/solo-guide/is-gsd-right-for-me.mdx` — decision guide page\n- New sidebar entries that S05 will position correctly\n\nConsumes: nothing (first slice, standalone pages)\n\n### S02 → S05\nProduces:\n- `src/components/ReleaseEntry.astro` — updated with #NNN auto-linking transform\n- Changelog highlights data or page — pipeline-generated summaries per release\n- New changelog navigation entries that S05 will position\n\nConsumes: nothing (independent of S01)\n\n### S03 → S05\nProduces:\n- Updated content in existing pages (auto-mode.md, solo-guide/*.mdx, etc.) with integrated official docs content\n- Possible new reference page for .gsd/ directory structure\n- New sidebar entries if new pages created\n\nConsumes: nothing (independent of S01, S02)\n\n### S04 → S05\nProduces:\n- New subsections in context-engineering.mdx or standalone recipe page for brief-writing guide\n- New subsections in controlling-costs.mdx or cost-management.md for concrete cost examples\n\nConsumes: nothing (independent of S01–S03)\n\n### S05\nProduces:\n- Restructured sidebar in astro.config.mjs\n- Cross-links between related pages\n- Verified URL stability\n\nConsumes from S01: quick reference page, decision guide page\nConsumes from S02: changelog highlights page/navigation\nConsumes from S03: consolidated content pages\nConsumes from S04: brief-writing and cost example content"
+    },
+    {
+      "id": "M008",
+      "title": "",
+      "status": "queued",
+      "depends_on": [],
+      "created_at": "2026-04-02T13:01:34.762Z",
+      "completed_at": null,
+      "vision": "Restructure the gsd2-guide from a system-oriented documentation site into a progressive-disclosure, persona-aware learning hub. Three personas (solo business builder, developer new to AI coding, experienced AI developer) self-select into curated reading paths through shared content. Five-section sidebar, consolidated content, persona-aware homepage, cross-linking throughout.",
+      "success_criteria": [
+        "Homepage sidebar matches inner page sidebar exactly",
+        "All 5 top-level sidebar sections appear in correct order: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More",
+        "Commands sub-groups and Prompt Reference are collapsed by default",
+        "Is GSD Right for Me is first link in Start Here, Choose Your Path is second",
+        "Cost content consolidated into 3 canonical locations (Solo Guide §6, Cost Examples, Control Your Costs recipe)",
+        "Skills/Extensions/Agents merged into single page under Learn More",
+        "Homepage has 3 self-selecting persona cards routing to appropriate starting points",
+        "Choose Your Path page has 3 complete numbered reading lists with all links resolving",
+        "Coming from Replit/Lovable/Cursor bridge pages exist and link to correct paths",
+        "FAQ and Glossary pages exist under Start Here and Learn More respectively",
+        "Solo Guide pages have prev/next navigation",
+        "All non-Solo-Guide pages have Next Steps blocks",
+        "Audience-bridging callouts on 7+ pages",
+        "npm run check-links reports 0 broken links",
+        "Old top-level sections (How-to Guides, Reference, Deep Dives, Prompts) no longer appear in sidebar"
+      ],
+      "key_risks": [
+        {
+          "risk": "Homepage nav bug — root cause unknown",
+          "whyItMatters": "If the homepage uses a different sidebar mechanism, fixing it may require understanding Starlight internals"
+        },
+        {
+          "risk": "Moving 30+ pages in sidebar risks breaking cross-references",
+          "whyItMatters": "Every page restructure is a potential broken link — link checker is the safety net but must run after every change"
+        },
+        {
+          "risk": "Merging 4 extensibility pages may lose reference detail",
+          "whyItMatters": "Reference tables have generated content from the pipeline — merging must preserve all data"
+        },
+        {
+          "risk": "Starlight lacks native breadcrumbs",
+          "whyItMatters": "Phase 4c breadcrumbs may need to be dropped or require a custom component"
+        }
+      ],
+      "proof_strategy": [
+        {
+          "riskOrUnknown": "Homepage nav bug",
+          "retireIn": "S01",
+          "whatWillBeProven": "Homepage renders same sidebar as inner pages — verified by comparing HTML output"
+        },
+        {
+          "riskOrUnknown": "Sidebar restructure link breakage",
+          "retireIn": "S02",
+          "whatWillBeProven": "npm run check-links passes with 0 broken links after full sidebar rewrite"
+        },
+        {
+          "riskOrUnknown": "Content merge data loss",
+          "retireIn": "S03",
+          "whatWillBeProven": "Merged pages contain all reference tables and actionable content from source pages"
+        }
+      ],
+      "verification_contract": "npm run build exits 0. npm run check-links reports 0 broken. Sidebar structure matches spec in astro.config.mjs. All new pages exist in dist/.",
+      "verification_integration": "Cross-links between sections resolve. Persona cards link to correct targets. Learning path links all resolve.",
+      "verification_operational": "Deployed to GitHub Pages. Homepage accessible at shusha-group.github.io/gsd2-guide/.",
+      "verification_uat": "Solo builder: homepage → card → learning path → first page in ≤3 clicks. Experienced dev: homepage → Commands in ≤2 clicks.",
+      "definition_of_done": [
+        "All 6 slices complete with summaries",
+        "All success criteria verified",
+        "npm run build produces clean output",
+        "npm run check-links reports 0 broken links",
+        "All validation checklist items from restructure spec pass",
+        "Deployed to GitHub Pages"
+      ],
+      "requirement_coverage": "Covers: R084, R085, R086, R087, R088, R089, R090, R091, R092, R093, R094, R095, R096, R097. Deferred: R098, R099, R100 (Phase 6 visual content).",
+      "boundary_map_markdown": "### S01 → S02\n\nProduces:\n- Fixed homepage that renders the same sidebar as inner pages\n- Understanding of any homepage-specific Starlight mechanisms\n\nConsumes:\n- nothing (first slice)\n\n### S02 → S03, S04, S05, S06\n\nProduces:\n- Complete sidebar config in astro.config.mjs with 5 sections, collapsed groups, all pages positioned\n- All existing pages accessible via new sidebar structure\n- 0 broken links confirmed\n\nConsumes from S01:\n- Homepage nav fix (sidebar must be unified before restructuring it)\n\n### S03 → S04, S05\n\nProduces:\n- Control Your Costs recipe page\n- Merged Skills, Extensions & Agents page\n- Deduplicated auto-mode content\n- Cross-link callouts in Solo Guide §2\n\nConsumes from S02:\n- Sidebar structure (pages positioned in correct sections)\n\n### S04 → (none, leaf)\n\nProduces:\n- Rewritten homepage with persona cards, How GSD Works, Common Tasks, Go Deeper sections\n\nConsumes from S02:\n- Sidebar structure (homepage links must point to pages in their new positions)\n\n### S05 → (none, leaf)\n\nProduces:\n- Prev/next on Solo Guide pages\n- Next Steps blocks on all non-Solo-Guide pages\n- Audience-bridging callouts on 7+ pages\n\nConsumes from S02, S03:\n- Final page positions (cross-links must target pages in correct locations)\n- Consolidated pages (Next Steps must link to canonical locations)\n\n### S06 → (none, leaf)\n\nProduces:\n- Choose Your Path page with 3 learning paths\n- Rewritten Is GSD Right for Me decision tree\n- Coming from Replit/Lovable/Cursor bridge pages\n- FAQ page\n- Glossary page\n\nConsumes from S02:\n- Sidebar structure (new pages must be positioned in Start Here and Learn More)"
     }
   ],
   "slices": [
@@ -284,6 +359,137 @@
       "proof_level": "Build + link-check verification sufficient. No runtime required.",
       "integration_closure": "Upstream: all S01–S04 pages already exist on disk. This slice only edits sidebar config in astro.config.mjs. After this, all M007 content is navigable.",
       "observability_impact": "None — static site sidebar config only.",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M008",
+      "id": "S01",
+      "title": "Homepage Nav Fix",
+      "status": "pending",
+      "risk": "low",
+      "depends": [],
+      "demo": "After this: homepage sidebar matches inner page sidebar exactly.",
+      "created_at": "2026-04-02T13:06:47.695Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Confirm the homepage sidebar matches inner page sidebars exactly, validating R084.",
+      "success_criteria": "- `npm run build` exits 0\n- Sidebar HTML in `dist/index.html` is identical to `dist/getting-started/index.html` (excluding `aria-current=\"page\"`)\n- `npm run check-links` exits 0",
+      "proof_level": "This slice proves: operational. Real runtime required: no (build output comparison). Human/UAT required: no.",
+      "integration_closure": "None — verification only, no code changes.",
+      "observability_impact": "None — no runtime changes.",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M008",
+      "id": "S02",
+      "title": "Sidebar Restructure",
+      "status": "pending",
+      "risk": "high",
+      "depends": [
+        "S01"
+      ],
+      "demo": "After this: all 5 top-level sections in correct order, old sections gone, collapsed groups work, 0 broken links.",
+      "created_at": "2026-04-02T13:06:47.695Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Replace the entire sidebar config with the target 5-section structure. Reposition all existing pages. Remove old top-level sections.",
+      "success_criteria": "5 top-level sections: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More. Commands sub-groups collapsed by default. Prompts under Learn More collapsed. Old sections (How-to Guides, Reference, Deep Dives) removed. npm run check-links: 0 broken.",
+      "proof_level": "Build + link checker + sidebar structure verification in astro.config.mjs",
+      "integration_closure": "Every subsequent slice depends on pages being in their correct positions.",
+      "observability_impact": "none",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M008",
+      "id": "S03",
+      "title": "Content Consolidation",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S02"
+      ],
+      "demo": "After this: Control Your Costs recipe exists, Skills/Extensions/Agents merged, auto-mode deduplicated, cross-links in place.",
+      "created_at": "2026-04-02T13:06:47.695Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Create Control Your Costs recipe. Merge skills/extensions/agents into one page. Deduplicate auto-mode content. Add cross-link callouts for Developing with GSD and Discussing a Milestone.",
+      "success_criteria": "Control Your Costs recipe page builds. Skills, Extensions & Agents merged page builds with all reference tables. Auto-mode content is one or two clearly distinct pages. Cross-link callouts added to Solo Guide §2. 0 broken links.",
+      "proof_level": "Build + link checker + content spot-checks",
+      "integration_closure": "Consolidated pages are the canonical link targets for Phase 4 cross-linking and Phase 5 new content.",
+      "observability_impact": "none",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M008",
+      "id": "S04",
+      "title": "Homepage Rewrite",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S02"
+      ],
+      "demo": "After this: homepage has persona cards, How GSD Works section, Common Tasks, Go Deeper — all linking correctly.",
+      "created_at": "2026-04-02T13:06:47.695Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Rewrite homepage with persona-aware hero, 3 self-selecting cards, How GSD Works visual section, Common Tasks recipe cards, Go Deeper reference links.",
+      "success_criteria": "3 persona cards render with correct links. How GSD Works section has Mermaid diagram. Common Tasks shows 5-6 recipe cards. Go Deeper links to Commands, Architecture, Prompts, Changelog. All links resolve.",
+      "proof_level": "Build + visual verification + link checker",
+      "integration_closure": "Homepage is the primary routing mechanism — cards link to pages positioned in S02.",
+      "observability_impact": "none",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M008",
+      "id": "S05",
+      "title": "Cross-linking & Wayfinding",
+      "status": "pending",
+      "risk": "low",
+      "depends": [
+        "S02",
+        "S03"
+      ],
+      "demo": "After this: Solo Guide has prev/next, all pages have Next Steps, audience-bridging callouts on 7+ pages.",
+      "created_at": "2026-04-02T13:06:47.696Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Enable Starlight pagination for Solo Guide. Add Next Steps blocks to all non-Solo-Guide pages. Add audience-bridging callouts to 7+ pages per spec.",
+      "success_criteria": "Solo Guide pages show prev/next navigation. All non-Solo-Guide pages end with Next Steps block. 7+ pages have audience-bridging :::tip callouts. 0 broken links.",
+      "proof_level": "Build + content grep + link checker",
+      "integration_closure": "Cross-links target consolidated and repositioned pages from S02/S03.",
+      "observability_impact": "none",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M008",
+      "id": "S06",
+      "title": "New Content Pages",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S02"
+      ],
+      "demo": "After this: Choose Your Path with 3 paths, rewritten Is GSD Right for Me, 3 bridge pages, FAQ, Glossary — all in sidebar and linking correctly.",
+      "created_at": "2026-04-02T13:06:47.696Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Create Choose Your Path, rewrite Is GSD Right for Me as decision tree, create Coming from Replit/Lovable/Cursor bridge pages, create FAQ, create Glossary.",
+      "success_criteria": "Choose Your Path has 3 complete numbered reading lists with all links resolving. Is GSD Right for Me routes to 3 paths. 3 bridge pages exist (unlisted in sidebar, linked from Is GSD Right for Me). FAQ under Start Here with 11 questions answered. Glossary under Learn More with ~25 terms defined. 0 broken links.",
+      "proof_level": "Build + link checker + content verification",
+      "integration_closure": "New pages are positioned in sidebar structure from S02. Learning path links target pages in their final positions.",
+      "observability_impact": "none",
       "sequence": 0,
       "replan_triggered_at": null
     }
@@ -639,6 +845,45 @@
       ],
       "expected_output": [
         "`astro.config.mjs`"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S01",
+      "id": "T01",
+      "title": "Verified homepage sidebar matches inner page sidebars exactly — R084 confirmed fixed via template: doc.",
+      "status": "complete",
+      "one_liner": "Verified homepage sidebar matches inner page sidebars exactly — R084 confirmed fixed via template: doc.",
+      "narrative": "The fix for R084 was already in place (template: doc in index.mdx frontmatter). Built the site, extracted the Main nav from both dist/index.html and dist/getting-started/index.html, stripped aria-current attributes, and confirmed byte-for-byte equality. Also confirmed 0 broken links across 20,661 internal links.",
+      "verification_result": "All four checks passed: grep for template:doc (exit 0), npm run build (exit 0, 148 pages), sidebar diff after stripping aria-current (identical), npm run check-links (exit 0, 0 broken).",
+      "duration": "",
+      "completed_at": "2026-04-02T13:12:39.985Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/index.mdx"
+      ],
+      "key_decisions": [],
+      "full_summary_md": "---\nid: T01\nparent: S01\nmilestone: M008\nkey_files:\n  - src/content/docs/index.mdx\nkey_decisions:\n  - (none)\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:12:39.987Z\nblocker_discovered: false\n---\n\n# T01: Verified homepage sidebar matches inner page sidebars exactly — R084 confirmed fixed via template: doc.\n\n**Verified homepage sidebar matches inner page sidebars exactly — R084 confirmed fixed via template: doc.**\n\n## What Happened\n\nThe fix for R084 was already in place (template: doc in index.mdx frontmatter). Built the site, extracted the Main nav from both dist/index.html and dist/getting-started/index.html, stripped aria-current attributes, and confirmed byte-for-byte equality. Also confirmed 0 broken links across 20,661 internal links.\n\n## Verification\n\nAll four checks passed: grep for template:doc (exit 0), npm run build (exit 0, 148 pages), sidebar diff after stripping aria-current (identical), npm run check-links (exit 0, 0 broken).\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `grep 'template: doc' src/content/docs/index.mdx` | 0 | ✅ pass | 50ms |\n| 2 | `npm run build` | 0 | ✅ pass | 6700ms |\n| 3 | `python3 sidebar diff (strip aria-current)` | 0 | ✅ pass | 100ms |\n| 4 | `npm run check-links` | 0 | ✅ pass | 3100ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/index.mdx`\n",
+      "description": "The homepage sidebar bug (R084) was already fixed by quick task 6, which switched `src/content/docs/index.mdx` from `template: splash` to `template: doc`. This task verifies the fix is complete by building the site and comparing sidebar HTML between the homepage and an inner page.\n\nSteps:\n1. Confirm `src/content/docs/index.mdx` has `template: doc` in frontmatter (not `splash`).\n2. Run `npm run build` — must exit 0.\n3. Extract sidebar HTML from `dist/index.html` and `dist/getting-started/index.html`. Compare them, ignoring `aria-current=\"page\"` attributes. They must be identical.\n4. Run `npm run check-links` — must exit 0.\n5. If all checks pass, R084 is validated.",
+      "estimate": "5 min",
+      "files": [
+        "src/content/docs/index.mdx",
+        "dist/index.html",
+        "dist/getting-started/index.html"
+      ],
+      "verify": "1. `grep 'template: doc' src/content/docs/index.mdx` exits 0\n2. `npm run build` exits 0\n3. Sidebar diff between dist/index.html and dist/getting-started/index.html shows no differences (after stripping aria-current)\n4. `npm run check-links` exits 0",
+      "inputs": [
+        "`src/content/docs/index.mdx`",
+        "`astro.config.mjs`"
+      ],
+      "expected_output": [
+        "`dist/index.html`",
+        "`dist/getting-started/index.html`"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -1521,6 +1766,66 @@
       "revisable": "Yes",
       "made_by": "collaborative",
       "superseded_by": null
+    },
+    {
+      "seq": 2994,
+      "id": "D074",
+      "when_context": "M008",
+      "scope": "arch",
+      "decision": "Site navigation structure",
+      "choice": "Progressive disclosure with 5 sections: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More",
+      "rationale": "Site tells a story from \"Is this for me?\" to internals. Each section earns the right to introduce complexity.",
+      "revisable": "Yes",
+      "made_by": "human",
+      "superseded_by": null
+    },
+    {
+      "seq": 2995,
+      "id": "D075",
+      "when_context": "M008",
+      "scope": "arch",
+      "decision": "Persona differentiation approach",
+      "choice": "Learning paths (numbered reading checklists) over persona toggles or content duplication",
+      "rationale": "Three personas share 80%+ of content. Curated reading orders sequence shared pages differently per persona without duplication.",
+      "revisable": "Yes",
+      "made_by": "human",
+      "superseded_by": null
+    },
+    {
+      "seq": 2996,
+      "id": "D076",
+      "when_context": "M008",
+      "scope": "arch",
+      "decision": "Target audience segmentation",
+      "choice": "Three personas: Solo Business Builder, Developer New to AI Coding, Experienced AI Developer",
+      "rationale": "Covers the spectrum from non-developer migrating from Replit/Lovable through to daily Claude Code user. Each has distinct entry context and depth needs.",
+      "revisable": "Yes",
+      "made_by": "human",
+      "superseded_by": null
+    },
+    {
+      "seq": 2997,
+      "id": "D077",
+      "when_context": "M008",
+      "scope": "convention",
+      "decision": "Content consolidation strategy",
+      "choice": "Single source of truth per topic — cost info in 3 locations, skills/extensions/agents in 1 page",
+      "rationale": "Duplicated content creates maintenance burden and user confusion. Designate canonical pages, reduce others to brief summaries with links.",
+      "revisable": "Yes",
+      "made_by": "human",
+      "superseded_by": null
+    },
+    {
+      "seq": 2998,
+      "id": "D078",
+      "when_context": "M008",
+      "scope": "arch",
+      "decision": "Breadcrumb navigation",
+      "choice": "Skip breadcrumbs — Starlight v0.38 lacks native support",
+      "rationale": "No native support in current Starlight version. Custom component not worth the effort given sidebar and prev/next navigation already provide wayfinding.",
+      "revisable": "Yes — if Starlight adds native breadcrumb support",
+      "made_by": "collaborative",
+      "superseded_by": null
     }
   ],
   "verification_evidence": [
@@ -1776,6 +2081,50 @@
       "verdict": "✅ pass",
       "duration_ms": 100,
       "created_at": "2026-04-02T04:42:31.082Z"
+    },
+    {
+      "id": 24,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M008",
+      "command": "grep 'template: doc' src/content/docs/index.mdx",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T13:12:39.986Z"
+    },
+    {
+      "id": 25,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6700,
+      "created_at": "2026-04-02T13:12:39.986Z"
+    },
+    {
+      "id": 26,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M008",
+      "command": "python3 sidebar diff (strip aria-current)",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 100,
+      "created_at": "2026-04-02T13:12:39.986Z"
+    },
+    {
+      "id": 27,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M008",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 3100,
+      "created_at": "2026-04-02T13:12:39.986Z"
     }
   ]
 }

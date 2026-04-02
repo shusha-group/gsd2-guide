@@ -103,6 +103,160 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Must verify no URL breakage via link checker.
 
+### R084 — Homepage sidebar matches inner pages
+- Class: quality-attribute
+- Status: active
+- Description: The homepage renders the same sidebar as all other pages. No hardcoded nav overrides remain on the homepage.
+- Why it matters: Currently the homepage shows a stale/different sidebar to every other page, confusing navigation.
+- Source: user
+- Primary owning slice: M008/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Phase 0 of restructure spec. Must verify by comparing sidebar HTML on / vs /getting-started/.
+
+### R085 — Five-section sidebar structure
+- Class: core-capability
+- Status: active
+- Description: Sidebar has exactly 5 top-level sections in order: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More. Old sections (How-to Guides, Reference, Deep Dives, Prompts top-level) removed.
+- Why it matters: Progressive disclosure — the site tells a story from "Is this for me?" through to internals.
+- Source: user
+- Primary owning slice: M008/S02
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Commands sub-groups and Prompt Reference collapsed by default. Start Here and Solo Guide expanded.
+
+### R086 — Cost content consolidated into 3 canonical locations
+- Class: quality-attribute
+- Status: active
+- Description: Cost info lives in exactly 3 places: Solo Guide §6 (learning path), Cost Examples (data sheet), Control Your Costs recipe (actionable how-to). Other cost pages link to these.
+- Why it matters: Cost information currently spread across 5+ locations creates confusion and maintenance burden.
+- Source: user
+- Primary owning slice: M008/S03
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Create new Control Your Costs recipe consolidating cost-management, token-optimization, and dynamic-model-routing.
+
+### R087 — Skills/Extensions/Agents merged into single page
+- Class: quality-attribute
+- Status: active
+- Description: A single "Skills, Extensions & Agents" page under Learn More consolidates the how-to guide and three reference pages.
+- Why it matters: Four sparse pages covering related extensibility topics should be one comprehensive page.
+- Source: user
+- Primary owning slice: M008/S03
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Merge skills.md, reference/skills.mdx, reference/extensions.mdx, reference/agents.mdx.
+
+### R088 — Homepage with persona-aware cards
+- Class: primary-user-loop
+- Status: active
+- Description: Homepage has three self-selecting persona cards (solo builder, developer, experienced AI dev) routing to appropriate starting points, plus How GSD Works section, Common Tasks recipes, and Go Deeper links.
+- Why it matters: Within 10 seconds each persona should see a card that speaks to them and click into the right starting point.
+- Source: user
+- Primary owning slice: M008/S04
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Hero rewrite leads with outcome, not system description.
+
+### R089 — Solo Guide prev/next navigation
+- Class: quality-attribute
+- Status: active
+- Description: Every Solo Guide page has explicit previous/next navigation at the bottom via Starlight's built-in pagination.
+- Why it matters: Readers following the guide sequentially need clear forward/back navigation.
+- Source: user
+- Primary owning slice: M008/S05
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Starlight handles this automatically via sidebar order.
+
+### R090 — Next Steps blocks on all non-Solo-Guide pages
+- Class: quality-attribute
+- Status: active
+- Description: Every page outside the Solo Guide ends with a contextual Next Steps block with 2-3 relevant forward links.
+- Why it matters: Replaces current dead-end pages pattern. Keeps readers moving through content.
+- Source: user
+- Primary owning slice: M008/S05
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Cross-link targets specified in Phase 4b of restructure spec.
+
+### R091 — Audience-bridging callouts on 7+ pages
+- Class: quality-attribute
+- Status: active
+- Description: Pages serving multiple personas have callouts that let experienced users skip ahead. Applied to at least 7 specified pages.
+- Why it matters: Lets developers skip scaffolding content without separate content tracks.
+- Source: user
+- Primary owning slice: M008/S05
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Uses Starlight :::tip callout syntax.
+
+### R092 — Choose Your Path page with 3 learning paths
+- Class: primary-user-loop
+- Status: active
+- Description: A page with three numbered reading-order checklists (Solo Business Builder, Developer New to AI, Experienced AI Developer) that sequence shared content for each persona.
+- Why it matters: Core routing mechanism — learning paths over persona toggles.
+- Source: user
+- Primary owning slice: M008/S06
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Every link in every path must resolve to an existing page.
+
+### R093 — Is GSD Right for Me rewritten as decision tree
+- Class: primary-user-loop
+- Status: active
+- Description: Existing page rewritten to function as a lightweight decision tree routing users to the appropriate learning path based on background.
+- Why it matters: First touch for many users — must answer "is this for me?" and "where do I start?" in 2 minutes.
+- Source: user
+- Primary owning slice: M008/S06
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Three persona sections with "Where are you coming from?" framing.
+
+### R094 — Coming from Replit/Lovable/Cursor bridge pages
+- Class: differentiator
+- Status: active
+- Description: Three bridge pages (Coming from Replit, Coming from Lovable, Coming from Cursor) with comparison tables and path recommendations. Unlisted in sidebar but linked from Is GSD Right for Me.
+- Why it matters: SEO landing pages for users searching "replit alternative" etc. Catches users at the decision point.
+- Source: user
+- Primary owning slice: M008/S06
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Cursor page routes to Developer path, others to Solo Builder path.
+
+### R095 — FAQ page
+- Class: primary-user-loop
+- Status: active
+- Description: FAQ page under Start Here answering 11 common objections and anxieties with 2-4 sentence answers and links to deeper reading.
+- Why it matters: Addresses blockers before they become abandonment reasons.
+- Source: user
+- Primary owning slice: M008/S06
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Tone should be direct and reassuring — anxiety questions, not curiosity questions.
+
+### R096 — Glossary page
+- Class: quality-attribute
+- Status: active
+- Description: Single canonical definitions page for GSD-specific terms (Milestone, Slice, Task, Context window, etc.) with cross-links to relevant pages.
+- Why it matters: Reduces confusion for new users encountering GSD terminology.
+- Source: user
+- Primary owning slice: M008/S06
+- Supporting slices: none
+- Validation: unmapped
+- Notes: ~25 terms defined. Under Learn More in sidebar.
+
+### R097 — Zero broken internal links after restructure
+- Class: quality-attribute
+- Status: active
+- Description: npm run check-links reports 0 broken internal links after all restructure work is complete.
+- Why it matters: Moving 30+ pages risks breaking cross-references. Link checker is the safety net.
+- Source: user
+- Primary owning slice: M008/S02
+- Supporting slices: M008/S03, M008/S04, M008/S05, M008/S06
+- Validation: unmapped
+- Notes: Verified at every slice completion.
+
 ## Validated
 
 ### R001 — A build script extracts documentation-worthy content from the globally installed `gsd-pi` npm package — prompts, templates, skills, agent definitions, and extension metadata.
@@ -745,6 +899,39 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Deferred — manual trigger via `npm run update` is the M003 approach. CI auto-trigger can be added later.
 
+### R098 — Terminal recording on homepage
+- Class: differentiator
+- Status: deferred
+- Description: 60-second asciinema recording of a GSD auto-mode session embedded on the homepage.
+- Why it matters: Shows the product in action — more compelling than text descriptions.
+- Source: user
+- Primary owning slice: none
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Deferred to Phase 6 follow-up. Requires asset creation.
+
+### R099 — Screenshot gallery
+- Class: differentiator
+- Status: deferred
+- Description: Screenshot captures of key GSD moments (welcome screen, discussion flow, auto-mode progress, web interface) added to Is GSD Right for Me and Solo Guide §2.
+- Why it matters: Visual proof of the product experience.
+- Source: user
+- Primary owning slice: none
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Deferred to Phase 6 follow-up. Requires asset creation.
+
+### R100 — Architecture diagram (SVG/Mermaid)
+- Class: differentiator
+- Status: deferred
+- Description: Clean diagram showing Milestone → Slice → Task hierarchy and the discuss → plan → execute → verify loop. Added to homepage How GSD Works section and Solo Guide §1.
+- Why it matters: Visual explainer of core concepts.
+- Source: user
+- Primary owning slice: none
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Deferred to Phase 6 follow-up. Homepage will have a Mermaid placeholder.
+
 ## Out of Scope
 
 ### R025 — Multi-language documentation support.
@@ -923,9 +1110,10 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 9 (R051, R073, R074, R075, R076, R077, R078, R079, R080)
-- Mapped to slices: 9
-- Validated: 65 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012, R013, R014, R015, R016, R017, R018, R019, R020, R021, R026, R027, R028, R029, R030, R031, R032, R034, R035, R036, R037, R038, R039, R040, R041, R042, R043, R044, R045, R046, R048, R049, R050, R052, R053, R054, R055, R056, R057, R058, R059, R060, R061, R062, R063, R064, R065, R066, R067, R068, R069, R070, R071, R072)
+- Active requirements: 23 (R051, R073, R074, R075, R076, R077, R078, R079, R080, R084, R085, R086, R087, R088, R089, R090, R091, R092, R093, R094, R095, R096, R097)
+- Mapped to slices: 23
+- Validated: 65
+- Deferred: 8 (R022, R023, R024, R025, R047, R098, R099, R100)
 - Unmapped active requirements: 0
 
 ### R061 — Solo Builder's Guide landing page and sidebar navigation

@@ -10,15 +10,15 @@ A solo builder can learn, adopt, and operate GSD 2 without leaving this guide fo
 
 ## Current State
 
-Seven milestones complete. The site has a full Solo Builder's Guide (8 sections), command reference pages for 50+ commands, prompt reference, extension reference, recipes, and a changelog rendered from upstream releases. M007 added: quick-reference page (15 commands by workflow phase), decision guide (is-gsd-right-for-me), changelog improvements (768 clickable #NNN links + highlights page with 18 release summaries), three deep-dive pages (auto mode, .gsd/ directory, v1→v2), brief writing guide (bad-vs-good pairs), cost examples (3 scenarios), and navigation polish (Getting Started first, logical flow). The `npm run update` pipeline extracts content from the gsd-pi package and official GitHub docs, diffs for staleness, regenerates pages via Claude, builds with Astro, and validates all internal links. Deployed to GitHub Pages at `shusha-group.github.io/gsd2-guide/`.
+Seven milestones complete. The site has 148 pages: a full Solo Builder's Guide (8 sections), 50+ command deep-dive pages, prompt reference, extension reference, recipes, changelog with inline highlights and era navigation, deep-dive pages (auto mode, .gsd/ directory, v1→v2, story of GSD), quick reference, decision guide, brief writing guide, and cost examples. M008 in progress: full site restructure around three personas (solo business builder, developer new to AI coding, experienced AI developer) with progressive disclosure, persona-aware homepage, consolidated content, and curated learning paths.
 
 ## Architecture / Key Patterns
 
 - **Framework:** Astro Starlight with MDX content pages
 - **Content pipeline:** `scripts/update.mjs` orchestrates extract → diff → impact analysis → regenerate → build → check-links → audit → stamp
 - **Generated content:** Pages listed in `src/content/docs/.generated-manifest.json` are managed by `scripts/prebuild.mjs` — edit sources in `content/generated/docs/`, not `src/content/docs/`
-- **Changelog:** Rendered from `content/generated/releases.json` via `src/components/ReleaseEntry.astro` using `marked`
-- **Sidebar:** Configured in `astro.config.mjs` under `starlight({ sidebar: [...] })`
+- **Changelog:** Rendered from `content/generated/releases.json` via `src/components/ReleaseEntry.astro` using `marked`, with inline highlights from `changelog-highlights.json`
+- **Sidebar:** Configured in `astro.config.mjs` under `starlight({ sidebar: [...] })` — 5 top-level sections: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More
 - **Spelling:** Australian English throughout
 - **Deploy:** GitHub Actions on push to main → GitHub Pages
 
@@ -35,3 +35,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M005: Prompt Reference Section
 - [x] M006: Solo Builder's Applied Guide to GSD 2
 - [x] M007: Guide Consolidation & Usability — Changelog highlights, quick reference, content consolidation, decision guide, brief-writing guide, cost examples, navigation polish
+- [ ] M008: Site Restructure & Persona Navigation — Three-persona progressive disclosure, sidebar restructure, content consolidation, homepage rewrite, learning paths, bridge pages
