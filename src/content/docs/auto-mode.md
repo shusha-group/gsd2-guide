@@ -301,7 +301,3 @@ reactive_execution: true    # disabled by default
 The graph derivation is pure and deterministic — it resolves a ready-set of tasks, detects conflicts, and guards against deadlocks. Verification results carry forward across parallel batches, so tasks that pass verification don't need to be re-verified when subsequent tasks in the same slice complete.
 
 The implementation lives in `reactive-graph.ts` (graph derivation, ready-set resolution, conflict/deadlock detection) with integration into `auto-dispatch.ts` and `auto-prompts.ts`.
-
-## Under the Hood
-
-For a detailed breakdown of the state machine, dispatch loop, and observability surfaces, see [How Auto Mode Works](/how-auto-mode-works/).

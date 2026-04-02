@@ -19,13 +19,26 @@ hero:
       variant: minimal
 ---
 
-import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-## Learn GSD
+## Choose Your Starting Point
 
 <CardGrid>
-  <LinkCard title="Developing with GSD" description="End-to-end walkthrough — follow a real project through discuss, plan, execute, verify, and ship. See the .gsd/ artifacts at every phase." href="/gsd2-guide/user-guide/developing-with-gsd/" />
-  <LinkCard title="Getting Started" description="Install GSD, configure your provider, and run your first session in under 5 minutes." href="/gsd2-guide/getting-started/" />
+  <Card title="Solo Business Builder">
+    You're not a developer but you're building real products with AI. GSD gives you a structured workflow so your AI coding sessions produce working software — not half-finished prototypes.
+
+    [Start here → Solo Guide](/gsd2-guide/solo-guide/)
+  </Card>
+  <Card title="Developer New to AI Coding">
+    You know how to code but you're just getting started with AI-assisted development. GSD's milestone-driven approach keeps your AI agent on track and your codebase clean.
+
+    [Start here → Getting Started](/gsd2-guide/getting-started/)
+  </Card>
+  <Card title="Experienced AI Developer">
+    You're already shipping with AI tools and want GSD's full power — worktree isolation, auto mode, slice replanning, and deep observability.
+
+    [Explore → Commands & Architecture](/gsd2-guide/commands/)
+  </Card>
 </CardGrid>
 
 ## How GSD Works
@@ -49,34 +62,20 @@ graph LR
   style G fill:#1a3a1a,stroke:#39ff14,color:#39ff14
 ```
 
-## Commands
-
-27 deep-dive pages covering every GSD command — what it does, how it works internally, what files it reads and writes, with Mermaid diagrams and terminal examples.
+## Common Tasks
 
 <CardGrid>
-  <LinkCard title="/gsd auto" description="Autonomous execution — dispatch loop, stuck detection, crash recovery, and the state machine that drives it all." href="/gsd2-guide/commands/auto/" />
-  <LinkCard title="/gsd quick" description="Skip the milestone ceremony. Run a focused task with GSD guarantees — atomic commits, state tracking, verification." href="/gsd2-guide/commands/quick/" />
-  <LinkCard title="/gsd doctor" description="Three diagnostic modes — report issues, auto-fix what's safe, or let the LLM heal complex problems." href="/gsd2-guide/commands/doctor/" />
-  <LinkCard title="All Commands →" description="Full command reference with deep-dive links to every GSD command." href="/gsd2-guide/commands/" />
-</CardGrid>
-
-## Recipes
-
-Step-by-step workflows for common scenarios — the exact commands, the artifacts GSD creates, and what to expect.
-
-<CardGrid>
-  <LinkCard title="Fix a Bug" description="Full lifecycle — discuss the bug, auto-mode finds and fixes it, verify the fix." href="/gsd2-guide/recipes/fix-a-bug/" />
+  <LinkCard title="Fix a Bug" description="Full lifecycle — discuss the bug, auto mode finds and fixes it, verify the fix." href="/gsd2-guide/recipes/fix-a-bug/" />
   <LinkCard title="Small Change" description="Use /gsd quick for changes that don't need milestone planning." href="/gsd2-guide/recipes/small-change/" />
   <LinkCard title="Error Recovery" description="When things go wrong — /gsd doctor, /gsd forensics, and manual repair." href="/gsd2-guide/recipes/error-recovery/" />
-  <LinkCard title="Working in Teams" description="Parallel development with unique milestone IDs and push branches." href="/gsd2-guide/recipes/working-in-teams/" />
+  <LinkCard title="Developing with GSD" description="End-to-end walkthrough — follow a real project through discuss, plan, execute, verify, and ship." href="/gsd2-guide/user-guide/developing-with-gsd/" />
 </CardGrid>
 
-## Reference & Guides
+## Go Deeper
 
 <CardGrid>
-  <LinkCard title="Quick Reference Cards" description="Searchable cheat-sheet cards for all 42 commands, 8 skills, 17 extensions, and 5 agents." href="/gsd2-guide/reference/" />
-  <LinkCard title="Auto Mode" description="How autonomous execution works — milestones, slices, tasks, and the dispatch pipeline." href="/gsd2-guide/auto-mode/" />
   <LinkCard title="Architecture" description="Worktree isolation, state management, and how GSD's components fit together." href="/gsd2-guide/architecture/" />
-  <LinkCard title="Troubleshooting" description="Common issues, diagnostics, and fixes when things go sideways." href="/gsd2-guide/troubleshooting/" />
-  <LinkCard title="Changelog" description="Release history — what's new, fixed, and changed in each version." href="/gsd2-guide/changelog/" />
+  <LinkCard title="Auto Mode" description="How autonomous execution works — milestones, slices, tasks, and the dispatch pipeline." href="/gsd2-guide/auto-mode/" />
+  <LinkCard title="Quick Reference Cards" description="Searchable cheat-sheet cards for all commands, skills, extensions, and agents." href="/gsd2-guide/reference/" />
+  <LinkCard title="All Commands →" description="27 deep-dive pages covering every GSD command with Mermaid diagrams and terminal examples." href="/gsd2-guide/commands/" />
 </CardGrid>

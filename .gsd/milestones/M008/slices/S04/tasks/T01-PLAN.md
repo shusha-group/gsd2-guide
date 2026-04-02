@@ -1,10 +1,12 @@
-# S04: Homepage Rewrite
+---
+estimated_steps: 31
+estimated_files: 1
+skills_used: []
+---
 
-**Goal:** Homepage has persona cards, How GSD Works section, Common Tasks, Go Deeper — all linking correctly.
-**Demo:** After this: After this: homepage has persona cards, How GSD Works section, Common Tasks, Go Deeper — all linking correctly.
+# T01: Rewrite homepage with persona cards, Common Tasks, and Go Deeper sections
 
-## Tasks
-- [x] **T01: Replaced homepage sections with persona cards (Choose Your Starting Point), retained How GSD Works mermaid diagram, and added Common Tasks + Go Deeper LinkCard sections** — Rewrite `src/content/docs/index.mdx` to replace the current section layout with: (1) persona cards section using `Card` + `CardGrid` for three personas, (2) retained How GSD Works mermaid diagram, (3) Common Tasks section with recipe LinkCards, (4) Go Deeper section with architecture/reference LinkCards.
+Rewrite `src/content/docs/index.mdx` to replace the current section layout with: (1) persona cards section using `Card` + `CardGrid` for three personas, (2) retained How GSD Works mermaid diagram, (3) Common Tasks section with recipe LinkCards, (4) Go Deeper section with architecture/reference LinkCards.
 
 The file currently has 82 lines. The new structure replaces Learn GSD, Commands, Recipes, and Reference & Guides sections while keeping the hero and mermaid diagram.
 
@@ -39,6 +41,15 @@ The file currently has 82 lines. The new structure replaces Learn GSD, Commands,
 - Do NOT add pages to `.generated-manifest.json`
 - Do NOT modify `astro.config.mjs` or any other file
 - `Card` component allows rich body content (description + link) unlike `LinkCard` which is a single link target
-  - Estimate: 30m
-  - Files: src/content/docs/index.mdx
-  - Verify: npm run build && npm run check-links
+
+## Inputs
+
+- ``src/content/docs/index.mdx` — current homepage to rewrite`
+
+## Expected Output
+
+- ``src/content/docs/index.mdx` — rewritten homepage with persona cards, Common Tasks, Go Deeper sections`
+
+## Verification
+
+npm run build && npm run check-links

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T13:30:07.784Z",
+  "exported_at": "2026-04-02T13:34:46.561Z",
   "milestones": [
     {
       "id": "M001",
@@ -408,16 +408,16 @@
       "milestone_id": "M008",
       "id": "S03",
       "title": "Content Consolidation",
-      "status": "pending",
+      "status": "complete",
       "risk": "medium",
       "depends": [
         "S02"
       ],
       "demo": "After this: Control Your Costs recipe exists, Skills/Extensions/Agents merged, auto-mode deduplicated, cross-links in place.",
       "created_at": "2026-04-02T13:06:47.695Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T13:31:34.726Z",
+      "full_summary_md": "---\nid: S03\nparent: M008\nmilestone: M008\nprovides:\n  - src/content/docs/recipes/control-your-costs.md — consolidated cost management recipe page\n  - src/content/docs/skills-extensions-agents.md — unified conceptual guide for skills/extensions/agents\n  - Cross-links between auto-mode.md ↔ how-auto-mode-works.mdx\n  - Sidebar: 1 cost entry, 1 skills-extensions-agents entry in Learn More\n  - 0 broken links at 150 pages\nrequires:\n  - slice: S02\n    provides: Five-section sidebar structure with correct section labels and order\naffects:\n  - S05 — can now add cross-links and wayfinding knowing all content pages are stable\n  - S06 — can reference skills-extensions-agents.md as conceptual anchor for Choose Your Path\nkey_files:\n  - src/content/docs/recipes/control-your-costs.md\n  - src/content/docs/skills-extensions-agents.md\n  - src/content/docs/auto-mode.md\n  - src/content/docs/how-auto-mode-works.mdx\n  - src/content/docs/cost-management.md\n  - src/content/docs/token-optimization.md\n  - src/content/docs/dynamic-model-routing.md\n  - src/content/docs/skills.md\n  - astro.config.mjs\nkey_decisions:\n  - Kept old cost pages with redirect notices rather than deleting them, to preserve any inbound links\n  - skills-extensions-agents.md is a conceptual guide only — reference/skills.mdx, reference/extensions.mdx, reference/agents.mdx are pipeline-generated and stay untouched\n  - auto-mode.md focuses on practical usage; how-auto-mode-works.mdx owns pipeline internals — each links to the other\n  - T03 edit tool failed silently; used bash append as fallback to add the missing cross-link\npatterns_established:\n  - Recipe consolidation pattern: merge multiple topic pages into one /recipes/ page, update sidebar to single entry, add redirect notices to old pages\n  - Conceptual guide + reference page split: guide page explains concepts and links to generated reference cards; never modify pipeline-generated reference files directly\n  - Cross-link verification with grep before running build — catches silent edit failures early\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - milestones/M008/slices/S03/tasks/T01-SUMMARY.md\n  - milestones/M008/slices/S03/tasks/T02-SUMMARY.md\n  - milestones/M008/slices/S03/tasks/T03-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:31:34.728Z\nblocker_discovered: false\n---\n\n# S03: Content Consolidation\n\n**Merged 3 cost pages into a single recipe, created unified Skills/Extensions/Agents guide, deduplicated auto-mode content, and wired all cross-links — 150-page build exits 0, 20643 links checked, 0 broken.**\n\n## What Happened\n\nS03 executed across three tasks. T01 merged cost-management.md, token-optimization.md, and dynamic-model-routing.md into a single /recipes/control-your-costs/ page with four organised sections (Setting Budgets & Tracking Costs, Token Optimisation Strategies, Dynamic Model Routing, Monitoring & Alerts), replaced the three sidebar entries with one, and added redirect notices to the old pages. T02 created skills-extensions-agents.md as a conceptual guide that explains skills, extensions, and agents with links to the generated reference pages — while leaving the pipeline-generated reference/skills.mdx, reference/extensions.mdx, and reference/agents.mdx untouched. It also deduplicated auto-mode content by focusing auto-mode.md on practical usage and how-auto-mode-works.mdx on pipeline internals, with mutual cross-links between them. T03 discovered that the auto-mode → how-auto-mode-works cross-link was missing (the edit tool had failed silently), added an \"Under the Hood\" section via bash append, then ran the full build (150 pages, exit 0) and link check (20643 links, 0 broken). All five required cross-links were confirmed by grep.\n\n## Verification\n\nFull build: npm run build → exit 0, 150 pages. Link check: npm run check-links → exit 0, 20643 internal links, 0 broken. Cross-links verified: (1) solo-guide/controlling-costs.mdx → control-your-costs, (2) cost-examples.mdx → control-your-costs, (3) auto-mode.md → how-auto-mode-works, (4) how-auto-mode-works.mdx → auto-mode, (5) skills-extensions-agents.md → reference/skills. Sidebar: exactly 1 cost recipe entry, 1 skills-extensions-agents entry in Learn More section.\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nSolo Guide and Cost Examples files are .mdx not .md (the plan referred to .md). The cross-link grep checks in the plan used wrong extensions; executor agents used the correct .mdx paths. T03 discovered that the auto-mode cross-link was missing and fixed it before running the final build — a minor repair step not anticipated in the plan.\n\n## Known Limitations\n\nThe three old cost pages (cost-management.md, token-optimization.md, dynamic-model-routing.md) still exist with redirect notices rather than being fully removed. This is intentional to avoid broken inbound links but means the sidebar reduction to 1 entry relies on the sidebar config, not file deletion.\n\n## Follow-ups\n\nS05 (Cross-linking & Wayfinding) can now add prev/next navigation to Solo Guide and audience-bridging callouts on high-traffic pages. S06 can reference skills-extensions-agents.md as the conceptual anchor for the Skills path in Choose Your Path.\n\n## Files Created/Modified\n\n- `src/content/docs/recipes/control-your-costs.md` — New consolidated cost recipe merging cost-management, token-optimization, and dynamic-model-routing content\n- `src/content/docs/skills-extensions-agents.md` — New unified conceptual guide for skills, extensions, and agents\n- `src/content/docs/auto-mode.md` — Deduplicated to practical usage focus; added Under the Hood section linking to how-auto-mode-works\n- `src/content/docs/how-auto-mode-works.mdx` — Added cross-link at top pointing back to auto-mode.md for practical tips\n- `src/content/docs/cost-management.md` — Added redirect notice pointing to control-your-costs recipe\n- `src/content/docs/token-optimization.md` — Added redirect notice pointing to control-your-costs recipe\n- `src/content/docs/dynamic-model-routing.md` — Added redirect notice pointing to control-your-costs recipe\n- `src/content/docs/skills.md` — Added redirect notice pointing to skills-extensions-agents.md\n- `astro.config.mjs` — Replaced 3 cost sidebar entries with 1; replaced Skills entry with Skills, Extensions & Agents\n",
+      "full_uat_md": "# S03: Content Consolidation — UAT\n\n**Milestone:** M008\n**Written:** 2026-04-02T13:31:34.728Z\n\n## UAT: S03 Content Consolidation\n\n### Preconditions\n- Site built locally via `npm run build` (exit 0)\n- Dev server running via `npm run dev` or inspecting `dist/`\n- Browser open to the local dev server\n\n---\n\n### Test 1: Control Your Costs recipe exists and is accessible\n\n**Steps:**\n1. Navigate to `/recipes/control-your-costs/`\n2. Confirm the page loads with title \"Control Your Costs\"\n3. Verify the page has all four sections: \"Setting Budgets & Tracking Costs\", \"Token Optimisation Strategies\", \"Dynamic Model Routing\", \"Monitoring & Alerts\"\n4. Confirm content uses Australian English (e.g. \"Optimisation\" not \"Optimization\")\n\n**Expected:** Page loads, all 4 sections present, Australian English throughout.\n\n---\n\n### Test 2: Sidebar shows exactly one cost entry\n\n**Steps:**\n1. Open any page and inspect the sidebar\n2. Look in the Recipes section for cost-related entries\n3. Confirm there is exactly 1 entry labelled \"Control Your Costs\"\n4. Confirm there is no \"Cost Management\", \"Token Optimization\", or \"Dynamic Model Routing\" entry in the sidebar\n\n**Expected:** Exactly 1 cost entry: \"Control Your Costs\". No old entries visible.\n\n---\n\n### Test 3: Old cost pages show redirect notices\n\n**Steps:**\n1. Navigate to `/cost-management/`\n2. Confirm a redirect notice pointing to `/recipes/control-your-costs/` is visible\n3. Repeat for `/token-optimization/` and `/dynamic-model-routing/`\n\n**Expected:** All three old pages load and display a redirect notice with a link to the new recipe.\n\n---\n\n### Test 4: Solo Guide and Cost Examples cross-link to the recipe\n\n**Steps:**\n1. Navigate to `/solo-guide/controlling-costs/`\n2. Find a link to `/recipes/control-your-costs/`\n3. Navigate to `/cost-examples/`\n4. Find a link to `/recipes/control-your-costs/`\n\n**Expected:** Both pages contain a working link to the Control Your Costs recipe.\n\n---\n\n### Test 5: Skills, Extensions & Agents guide exists and is accessible\n\n**Steps:**\n1. Navigate to `/skills-extensions-agents/`\n2. Confirm the page loads\n3. Verify sections for Skills, Extensions, and Agents are present\n4. Confirm there are links to `/reference/skills/`, `/reference/extensions/`, and `/reference/agents/`\n\n**Expected:** Page loads with all three sections and links to reference pages.\n\n---\n\n### Test 6: Sidebar shows Skills, Extensions & Agents in Learn More\n\n**Steps:**\n1. Open any page and inspect the Learn More section of the sidebar\n2. Confirm there is an entry labelled \"Skills, Extensions & Agents\"\n3. Confirm there is no standalone \"Skills\" entry in Learn More\n\n**Expected:** \"Skills, Extensions & Agents\" present; standalone \"Skills\" absent.\n\n---\n\n### Test 7: Auto-mode ↔ How Auto Mode Works cross-links\n\n**Steps:**\n1. Navigate to `/auto-mode/`\n2. Find a link to `/how-auto-mode-works/` (expect in an \"Under the Hood\" section)\n3. Navigate to `/how-auto-mode-works/`\n4. Find a link back to `/auto-mode/` (expect near the top)\n\n**Expected:** Both pages link to each other; links are working (not 404).\n\n---\n\n### Test 8: Zero broken links\n\n**Steps:**\n1. Run `npm run check-links` from the project root\n\n**Expected:** Exit 0, 0 broken links across all pages.\n\n---\n\n### Edge Cases\n\n- **Old skills.md page**: Navigate to `/skills/` — should show a redirect notice pointing to `/skills-extensions-agents/`.\n- **Reference pages untouched**: Navigate to `/reference/skills/`, `/reference/extensions/`, `/reference/agents/` — these should load with their generated card content, not the conceptual guide content.\n- **Build idempotency**: Run `npm run build` twice consecutively — both should exit 0 with 150 pages.\n\n",
       "goal": "Consolidate cost content into a single \"Control Your Costs\" recipe, merge the Skills/Extensions/Agents guide page, deduplicate auto-mode content, and wire cross-links — leaving the site with fewer redundant pages, cleaner sidebar entries, and 0 broken links.",
       "success_criteria": "- `src/content/docs/recipes/control-your-costs.md` exists with consolidated content from cost-management, token-optimization, and dynamic-model-routing\n- `src/content/docs/skills-extensions-agents.md` exists merging the skills.md guide content with links to reference pages\n- Sidebar in astro.config.mjs has 1 cost recipe entry replacing 3, skills/extensions/agents guide entry in Learn More\n- Auto-mode recipe and How Auto Mode Works have differentiated intros and cross-links\n- `npm run build` exits 0, `npm run check-links` exits 0",
       "proof_level": "Build + link check passes with 0 broken links after all content changes.",
@@ -440,11 +440,11 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Rewrite homepage with persona-aware hero, 3 self-selecting cards, How GSD Works visual section, Common Tasks recipe cards, Go Deeper reference links.",
-      "success_criteria": "3 persona cards render with correct links. How GSD Works section has Mermaid diagram. Common Tasks shows 5-6 recipe cards. Go Deeper links to Commands, Architecture, Prompts, Changelog. All links resolve.",
-      "proof_level": "Build + visual verification + link checker",
-      "integration_closure": "Homepage is the primary routing mechanism — cards link to pages positioned in S02.",
-      "observability_impact": "none",
+      "goal": "Homepage has persona cards, How GSD Works section, Common Tasks, Go Deeper — all linking correctly.",
+      "success_criteria": "- Three persona cards (Solo Business Builder, Developer New to AI Coding, Experienced AI Developer) with descriptions and links to entry points\n- How GSD Works mermaid diagram retained\n- Common Tasks section with 3-4 recipe LinkCards\n- Go Deeper section with 3-4 reference/architecture LinkCards\n- `npm run build` exits 0\n- `npm run check-links` exits 0 (no broken links)\n- `template: doc` remains in frontmatter",
+      "proof_level": "Build + link check verify all links resolve. No runtime required.",
+      "integration_closure": "Upstream: S02 sidebar structure in astro.config.mjs. No new wiring — content-only change to existing MDX file.",
+      "observability_impact": "None — static content page.",
       "sequence": 0,
       "replan_triggered_at": null
     },
@@ -1084,6 +1084,43 @@
       ],
       "expected_output": [
         "`astro.config.mjs` — verified correct (may be fixed if issues found)"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S04",
+      "id": "T01",
+      "title": "Replaced homepage sections with persona cards (Choose Your Starting Point), retained How GSD Works mermaid diagram, and added Common Tasks + Go Deeper LinkCard sections",
+      "status": "complete",
+      "one_liner": "Replaced homepage sections with persona cards (Choose Your Starting Point), retained How GSD Works mermaid diagram, and added Common Tasks + Go Deeper LinkCard sections",
+      "narrative": "Read the existing 82-line index.mdx, then rewrote it: added Card to the import, replaced Learn GSD with Choose Your Starting Point (3 persona Cards), kept How GSD Works mermaid unchanged, replaced Commands+Recipes with Common Tasks (4 LinkCards), replaced Reference & Guides with Go Deeper (4 LinkCards). Hero actions and template: doc frontmatter untouched. All hrefs use /gsd2-guide/ prefix.",
+      "verification_result": "npm run build (exit 0, 150 pages) and npm run check-links (exit 0, 20,639 links, 0 broken)",
+      "duration": "",
+      "completed_at": "2026-04-02T13:34:46.540Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/index.mdx"
+      ],
+      "key_decisions": [
+        "Used Card+CardGrid for persona cards (rich body with description + CTA link), LinkCard for Common Tasks and Go Deeper (single-link navigation items)"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S04\nmilestone: M008\nkey_files:\n  - src/content/docs/index.mdx\nkey_decisions:\n  - Used Card+CardGrid for persona cards (rich body with description + CTA link), LinkCard for Common Tasks and Go Deeper (single-link navigation items)\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:34:46.540Z\nblocker_discovered: false\n---\n\n# T01: Replaced homepage sections with persona cards (Choose Your Starting Point), retained How GSD Works mermaid diagram, and added Common Tasks + Go Deeper LinkCard sections\n\n**Replaced homepage sections with persona cards (Choose Your Starting Point), retained How GSD Works mermaid diagram, and added Common Tasks + Go Deeper LinkCard sections**\n\n## What Happened\n\nRead the existing 82-line index.mdx, then rewrote it: added Card to the import, replaced Learn GSD with Choose Your Starting Point (3 persona Cards), kept How GSD Works mermaid unchanged, replaced Commands+Recipes with Common Tasks (4 LinkCards), replaced Reference & Guides with Go Deeper (4 LinkCards). Hero actions and template: doc frontmatter untouched. All hrefs use /gsd2-guide/ prefix.\n\n## Verification\n\nnpm run build (exit 0, 150 pages) and npm run check-links (exit 0, 20,639 links, 0 broken)\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 6700ms |\n| 2 | `npm run check-links` | 0 | ✅ pass | 3400ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/index.mdx`\n",
+      "description": "Rewrite `src/content/docs/index.mdx` to replace the current section layout with: (1) persona cards section using `Card` + `CardGrid` for three personas, (2) retained How GSD Works mermaid diagram, (3) Common Tasks section with recipe LinkCards, (4) Go Deeper section with architecture/reference LinkCards.\n\nThe file currently has 82 lines. The new structure replaces Learn GSD, Commands, Recipes, and Reference & Guides sections while keeping the hero and mermaid diagram.\n\n## Steps\n\n1. Read `src/content/docs/index.mdx` to confirm current state\n2. Add `Card` to the existing import: `import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';`\n3. Replace the `## Learn GSD` section with a `## Choose Your Starting Point` section containing 3 `Card` components in a `CardGrid`:\n   - **Solo Business Builder** — description about non-developers building with AI, links to `/gsd2-guide/solo-guide/`\n   - **Developer New to AI Coding** — description about getting started with AI-assisted development, links to `/gsd2-guide/getting-started/`\n   - **Experienced AI Developer** — description about advanced features and architecture, links to `/gsd2-guide/commands/`\n   Each Card body should have a 1-2 sentence description and a markdown link as CTA.\n4. Keep the `## How GSD Works` section and its mermaid diagram exactly as-is\n5. Replace `## Commands` and `## Recipes` with a single `## Common Tasks` section containing 3-4 recipe LinkCards:\n   - Fix a Bug → `/gsd2-guide/recipes/fix-a-bug/`\n   - Small Change → `/gsd2-guide/recipes/small-change/`\n   - Error Recovery → `/gsd2-guide/recipes/error-recovery/`\n   - Developing with GSD → `/gsd2-guide/user-guide/developing-with-gsd/`\n6. Replace `## Reference & Guides` with `## Go Deeper` containing 3-4 LinkCards:\n   - Architecture → `/gsd2-guide/architecture/`\n   - Auto Mode → `/gsd2-guide/auto-mode/`\n   - Quick Reference Cards → `/gsd2-guide/reference/`\n   - All Commands → `/gsd2-guide/commands/`\n7. Keep hero actions as-is (Getting Started, Developing with GSD, GitHub) — S06 will create Choose Your Path page later\n8. Ensure `template: doc` remains in frontmatter\n9. Run `npm run build` — must exit 0\n10. Run `npm run check-links` — must exit 0, no broken links\n\n## Constraints\n- All `href` values must use `/gsd2-guide/` prefix (base path)\n- Australian English throughout\n- Do NOT add pages to `.generated-manifest.json`\n- Do NOT modify `astro.config.mjs` or any other file\n- `Card` component allows rich body content (description + link) unlike `LinkCard` which is a single link target",
+      "estimate": "30m",
+      "files": [
+        "src/content/docs/index.mdx"
+      ],
+      "verify": "npm run build && npm run check-links",
+      "inputs": [
+        "`src/content/docs/index.mdx` — current homepage to rewrite"
+      ],
+      "expected_output": [
+        "`src/content/docs/index.mdx` — rewritten homepage with persona cards, Common Tasks, Go Deeper sections"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -2479,6 +2516,28 @@
       "verdict": "✅ pass",
       "duration_ms": 10,
       "created_at": "2026-04-02T13:30:07.763Z"
+    },
+    {
+      "id": 42,
+      "task_id": "T01",
+      "slice_id": "S04",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6700,
+      "created_at": "2026-04-02T13:34:46.540Z"
+    },
+    {
+      "id": 43,
+      "task_id": "T01",
+      "slice_id": "S04",
+      "milestone_id": "M008",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 3400,
+      "created_at": "2026-04-02T13:34:46.540Z"
     }
   ]
 }
