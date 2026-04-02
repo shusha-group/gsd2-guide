@@ -22,7 +22,7 @@ Constraints:
   - Estimate: 15m
   - Files: src/components/Footer.astro
   - Verify: npm run build && grep -c 'pagination-links' dist/solo-guide/first-project/index.html && grep -c 'pagination-links' dist/auto-mode/index.html && npm run check-links
-- [ ] **T02: Add Next Steps sections and audience-bridging callouts to 7+ pages** — Add '## Next Steps' sections with 2-3 relevant links and ':::tip' audience-bridging callouts to key content pages. These are pure content additions.
+- [x] **T02: Added :::tip audience-bridging callouts to 7 pages and a Next Steps section to quick-reference.md; tip count rose from 6 to 13; build and link checks clean** — Add '## Next Steps' sections with 2-3 relevant links and ':::tip' audience-bridging callouts to key content pages. These are pure content additions.
 
 IMPORTANT: Three pages are pipeline-generated (auto-mode.md, configuration.md, getting-started.md). Edit the source files in `content/generated/docs/`, NOT `src/content/docs/`. Hand-authored pages (skills-extensions-agents.md, recipes/control-your-costs.md, is-gsd-right-for-me.md, quick-reference.md, solo-guide/*.mdx) are edited directly in `src/content/docs/`.
 

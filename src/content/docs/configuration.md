@@ -789,3 +789,7 @@ post_unit_hooks:
     artifact: REVIEW.md
 ---
 ```
+
+:::tip[Common config tasks]
+The [Recipes](../recipes/) section has ready-made configuration examples for controlling costs, fixing bugs faster, and customising model routing — no trial-and-error required.
+:::

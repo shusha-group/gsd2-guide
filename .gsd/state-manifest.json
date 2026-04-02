@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T19:34:19.716Z",
+  "exported_at": "2026-04-02T19:36:05.346Z",
   "milestones": [
     {
       "id": "M001",
@@ -1167,19 +1167,29 @@
       "milestone_id": "M008",
       "slice_id": "S05",
       "id": "T02",
-      "title": "Add Next Steps sections and audience-bridging callouts to 7+ pages",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Added :::tip audience-bridging callouts to 7 pages and a Next Steps section to quick-reference.md; tip count rose from 6 to 13; build and link checks clean",
+      "status": "complete",
+      "one_liner": "Added :::tip audience-bridging callouts to 7 pages and a Next Steps section to quick-reference.md; tip count rose from 6 to 13; build and link checks clean",
+      "narrative": "Appended :::tip callouts to all 7 specified pages, editing generated sources in content/generated/docs/ for auto-mode, getting-started, and configuration, and hand-authored files directly for the remaining four. Added a ## Next Steps section with 3 relevant links to quick-reference.md above its new callout. All text uses Australian English and links use valid Starlight-relative paths.",
+      "verification_result": "grep -rl ':::tip' returned 13 (≥7). npm run build exited 0 (150 pages built). npm run check-links reported 20909 links checked with 0 broken.",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-04-02T19:36:05.321Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
-      "key_decisions": [],
-      "full_summary_md": "",
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "content/generated/docs/auto-mode.md",
+        "content/generated/docs/getting-started.md",
+        "content/generated/docs/configuration.md",
+        "src/content/docs/skills-extensions-agents.md",
+        "src/content/docs/recipes/control-your-costs.md",
+        "src/content/docs/is-gsd-right-for-me.md",
+        "src/content/docs/quick-reference.md"
+      ],
+      "key_decisions": [
+        "Appended callouts to end of each file rather than inserting mid-page to avoid disrupting existing section flow"
+      ],
+      "full_summary_md": "---\nid: T02\nparent: S05\nmilestone: M008\nkey_files:\n  - content/generated/docs/auto-mode.md\n  - content/generated/docs/getting-started.md\n  - content/generated/docs/configuration.md\n  - src/content/docs/skills-extensions-agents.md\n  - src/content/docs/recipes/control-your-costs.md\n  - src/content/docs/is-gsd-right-for-me.md\n  - src/content/docs/quick-reference.md\nkey_decisions:\n  - Appended callouts to end of each file rather than inserting mid-page to avoid disrupting existing section flow\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T19:36:05.321Z\nblocker_discovered: false\n---\n\n# T02: Added :::tip audience-bridging callouts to 7 pages and a Next Steps section to quick-reference.md; tip count rose from 6 to 13; build and link checks clean\n\n**Added :::tip audience-bridging callouts to 7 pages and a Next Steps section to quick-reference.md; tip count rose from 6 to 13; build and link checks clean**\n\n## What Happened\n\nAppended :::tip callouts to all 7 specified pages, editing generated sources in content/generated/docs/ for auto-mode, getting-started, and configuration, and hand-authored files directly for the remaining four. Added a ## Next Steps section with 3 relevant links to quick-reference.md above its new callout. All text uses Australian English and links use valid Starlight-relative paths.\n\n## Verification\n\ngrep -rl ':::tip' returned 13 (≥7). npm run build exited 0 (150 pages built). npm run check-links reported 20909 links checked with 0 broken.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `grep -rl ':::tip' src/content/docs/ content/generated/docs/ | wc -l` | 0 | ✅ pass | 200ms |\n| 2 | `npm run build` | 0 | ✅ pass | 7200ms |\n| 3 | `npm run check-links` | 0 | ✅ pass | 2100ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `content/generated/docs/auto-mode.md`\n- `content/generated/docs/getting-started.md`\n- `content/generated/docs/configuration.md`\n- `src/content/docs/skills-extensions-agents.md`\n- `src/content/docs/recipes/control-your-costs.md`\n- `src/content/docs/is-gsd-right-for-me.md`\n- `src/content/docs/quick-reference.md`\n",
       "description": "Add '## Next Steps' sections with 2-3 relevant links and ':::tip' audience-bridging callouts to key content pages. These are pure content additions.\n\nIMPORTANT: Three pages are pipeline-generated (auto-mode.md, configuration.md, getting-started.md). Edit the source files in `content/generated/docs/`, NOT `src/content/docs/`. Hand-authored pages (skills-extensions-agents.md, recipes/control-your-costs.md, is-gsd-right-for-me.md, quick-reference.md, solo-guide/*.mdx) are edited directly in `src/content/docs/`.\n\nSteps:\n1. Add audience-bridging `:::tip` callouts to these pages (edit the correct source location):\n   - `content/generated/docs/auto-mode.md` — link solo builders to Solo Guide, devs to how-auto-mode-works\n   - `content/generated/docs/getting-started.md` — link solo builders to Solo Guide overview\n   - `content/generated/docs/configuration.md` — link to recipes for common config tasks\n   - `src/content/docs/skills-extensions-agents.md` — link to reference pages for details\n   - `src/content/docs/recipes/control-your-costs.md` — link solo builders to Solo Guide cost page\n   - `src/content/docs/is-gsd-right-for-me.md` — link to Solo Guide and Getting Started\n   - `src/content/docs/quick-reference.md` — link to Solo Guide for guided learning\n2. Add `## Next Steps` with LinkCard imports to pages that end abruptly (where they don't already have one). Use `import { LinkCard } from '@astrojs/starlight/components';` in .mdx files. In .md files use plain markdown links in a list.\n3. Run `npm run build` — must exit 0.\n4. Run `npm run check-links` — must report 0 broken links.\n5. Verify: `grep -rl ':::tip' src/content/docs/ content/generated/docs/ | wc -l` returns ≥7.\n\nConstraints:\n- Use Australian English throughout.\n- Never edit files listed in `src/content/docs/.generated-manifest.json` directly — edit `content/generated/docs/` versions instead.\n- Use Starlight link format: `](../sibling-page/)` with `../` prefix.\n- Callout syntax: `:::tip[Title]` / content / `:::`",
       "estimate": "30m",
       "files": [
@@ -2671,6 +2681,39 @@
       "verdict": "✅ pass (0 broken / 20909 checked)",
       "duration_ms": 2300,
       "created_at": "2026-04-02T19:34:19.689Z"
+    },
+    {
+      "id": 48,
+      "task_id": "T02",
+      "slice_id": "S05",
+      "milestone_id": "M008",
+      "command": "grep -rl ':::tip' src/content/docs/ content/generated/docs/ | wc -l",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 200,
+      "created_at": "2026-04-02T19:36:05.321Z"
+    },
+    {
+      "id": 49,
+      "task_id": "T02",
+      "slice_id": "S05",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 7200,
+      "created_at": "2026-04-02T19:36:05.321Z"
+    },
+    {
+      "id": 50,
+      "task_id": "T02",
+      "slice_id": "S05",
+      "milestone_id": "M008",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 2100,
+      "created_at": "2026-04-02T19:36:05.321Z"
     }
   ]
 }

@@ -309,3 +309,7 @@ models:
 - Enable `dynamic_routing` for automatic model downgrading on simple tasks
 - Use `/gsd visualize` → Metrics tab to see where your budget is going
 - Run `/gsd export` after a milestone for a full cost breakdown by phase and slice
+
+:::tip[Solo builder?]
+The [Solo Guide — Managing Costs](../../solo-guide/managing-costs/) page shows how solo developers apply these recipes in practice, with real cost breakdowns from a typical project.
+:::

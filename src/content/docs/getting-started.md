@@ -198,3 +198,7 @@ gsd-cli
 ```
 
 Both `gsd` and `gsd-cli` point to the same binary.
+
+:::tip[Solo builder?]
+If you're a solo developer setting up GSD for personal projects, the [Solo Guide](../solo-guide/) is the fastest path to your first completed milestone — it covers installation, project setup, and the first auto-mode run in one place.
+:::

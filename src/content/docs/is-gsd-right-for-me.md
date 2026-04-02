@@ -65,3 +65,7 @@ Try `/gsd quick` on a small task first. It gives you GSD's guarantees (atomic co
 → [Quick Reference](../quick-reference/) — the 15 commands you'll use most  
 → [Installation](../getting-started/) — get set up in about five minutes  
 → [Why GSD 2](../solo-guide/why-gsd/) — the longer argument for why structure beats prompting
+
+:::tip[Ready to try it?]
+The [Solo Guide](../solo-guide/) gets you from zero to a completed milestone in under an hour. If you want to check the command surface first, [Getting Started](../getting-started/) covers installation and your first session.
+:::

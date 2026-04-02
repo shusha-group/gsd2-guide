@@ -145,3 +145,7 @@ Agents are defined as `.md` files in:
 - `.gsd/agents/` — project-specific agents
 
 For the full catalogue of built-in agents, see [Agents Reference](/reference/agents/).
+
+:::tip[Looking for the full catalogue?]
+The [Skills Reference](/reference/skills/), [Extensions Reference](/reference/extensions/), and [Agents Reference](/reference/agents/) pages list every built-in skill, extension, and agent with usage examples and configuration options.
+:::

@@ -147,3 +147,13 @@ Runtime health checks with auto-fix. Run this if something feels wrong with your
 ---
 
 *New to GSD? Start with [Is GSD Right for Me?](../is-gsd-right-for-me/) to assess fit, then [Installation](../getting-started/) to get set up.*
+
+## Next Steps
+
+- [Solo Guide](../solo-guide/) — guided walkthrough for solo builders, from install to first completed milestone
+- [Auto Mode](../auto-mode/) — deep dive into how autonomous execution works
+- [Is GSD Right for Me?](../is-gsd-right-for-me/) — honest assessment of when GSD adds value
+
+:::tip[New to GSD?]
+The [Solo Guide](../solo-guide/) is the best place to start if you've just installed GSD — it walks you through the full workflow with practical examples rather than reference documentation.
+:::
