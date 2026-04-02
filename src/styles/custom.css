@@ -234,6 +234,9 @@
 :root[data-theme='light'] .sl-link-button.minimal:hover {
   color: #0a3d0a !important;
 }
+:root[data-theme='light'] .sl-link-button.primary {
+  color: #ffffff !important;
+}
 
 /* ─── Light Mode: Starlight Cards (LinkCard, Card) ─────── */
 :root[data-theme='light'] .sl-link-card {
