@@ -8,9 +8,10 @@ interface Props {
   htmlUrl: string;
   body: string;
   isLatest: boolean;
+  highlight?: string;
 }
 
-const { tagName, name, publishedAt, htmlUrl, body, isLatest } = Astro.props;
+const { tagName, name, publishedAt, htmlUrl, body, isLatest, highlight } = Astro.props;
 
 // Command slug map — maps command names to their deep-dive page slugs
 const commandSlugs: Record<string, string> = {
@@ -99,5 +100,32 @@ const formattedDate = new Date(publishedAt).toLocaleDateString('en-US', {
     </a>
     <span class="release-date">{formattedDate}</span>
   </summary>
-  <div class="release-body" set:html={bodyHtml} />
+  <div class="release-body">
+    {highlight && (
+      <div class="release-highlight">
+        <span class="release-highlight-label">Highlights</span> {highlight}
+      </div>
+    )}
+    <Fragment set:html={bodyHtml} />
+  </div>
 </details>
+
+<style>
+  .release-highlight {
+    border-left: 3px solid var(--sl-color-accent);
+    background: var(--sl-color-bg-sidebar);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 0 0.25rem 0.25rem 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .release-highlight-label {
+    font-weight: 600;
+    color: var(--sl-color-accent);
+    margin-right: 0.25rem;
+  }
+  .release-highlight-label::after {
+    content: " —";
+  }
+</style>

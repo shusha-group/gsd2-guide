@@ -53,7 +53,6 @@ export default defineConfig({
             { label: 'GSD v1 vs v2', link: '/v1-to-v2/' },
           ],
         },
-        { label: 'Changelog Highlights', link: '/changelog-highlights/' },
         { label: 'Changelog', link: '/changelog/' },
         {
           label: 'Commands',

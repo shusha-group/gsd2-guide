@@ -4,7 +4,10 @@ description: Release history for GSD 2 — every version, what shipped, and link
 ---
 
 import releases from '../../../content/generated/releases.json';
+import highlightsData from '../../../content/generated/changelog-highlights.json';
 import ReleaseEntry from '../../../src/components/ReleaseEntry.astro';
+
+export const highlightsMap = Object.fromEntries(highlightsData.map(h => [h.tag_name, h.summary]));
 
 All releases of GSD 2, from newest to oldest. Each entry shows what was added, changed, and fixed. Click any version number to view the release on GitHub.
 
@@ -16,5 +19,6 @@ All releases of GSD 2, from newest to oldest. Each entry shows what was added, c
     htmlUrl={release.html_url}
     body={release.body}
     isLatest={index === 0}
+    highlight={highlightsMap[release.tag_name]}
   />
 ))}
