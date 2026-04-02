@@ -238,6 +238,7 @@
 /* ─── Light Mode: Starlight Cards (LinkCard, Card) ─────── */
 :root[data-theme='light'] .sl-link-card {
   border-color: #d0ddd0;
+  background: #ffffff;
 }
 :root[data-theme='light'] .sl-link-card span.title,
 :root[data-theme='light'] .sl-link-card .title {
@@ -251,6 +252,36 @@
 }
 :root[data-theme='light'] .card {
   border-color: #d0ddd0;
+  background: #ffffff;
+  color: #1b2d1b;
+}
+:root[data-theme='light'] .card .card-title {
+  color: #0a3d0a !important;
+}
+:root[data-theme='light'] .card a {
+  color: #0e580e;
+}
+
+/* ─── Light Mode: Content headings (h2, h3, etc.) ──────── */
+:root[data-theme='light'] .sl-markdown-content h2,
+:root[data-theme='light'] .sl-markdown-content h3,
+:root[data-theme='light'] .sl-markdown-content h4 {
+  color: #0a3d0a !important;
+}
+
+/* ─── Light Mode: Pagination (prev/next) ───────────────── */
+:root[data-theme='light'] .pagination-links a {
+  color: #0e580e !important;
+  border-color: #d0ddd0;
+}
+:root[data-theme='light'] .pagination-links a:hover {
+  border-color: #116611;
+}
+:root[data-theme='light'] .pagination-links .link-title {
+  color: #0a3d0a !important;
+}
+:root[data-theme='light'] .pagination-links .link-page {
+  color: #384838 !important;
 }
 
 /* ─── Light Mode: Starlight search bar ─────────────────── */
