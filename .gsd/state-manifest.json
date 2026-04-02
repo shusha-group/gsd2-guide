@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T04:28:43.472Z",
+  "exported_at": "2026-04-02T04:30:28.194Z",
   "milestones": [
     {
       "id": "M001",
@@ -479,19 +479,25 @@
       "milestone_id": "M007",
       "slice_id": "S03",
       "id": "T02",
-      "title": "Add cross-reference sections to existing solo-guide pages and verify build",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Added Preferences, Token Optimisation Deep Dive, and Git Strategy cross-reference subsections to three solo-guide pages, wiring them to the new deep-dive pages created in T01.",
+      "status": "complete",
+      "one_liner": "Added Preferences, Token Optimisation Deep Dive, and Git Strategy cross-reference subsections to three solo-guide pages, wiring them to the new deep-dive pages created in T01.",
+      "narrative": "Read the tail of each target file to confirm insertion points and voice. Added three subsections: Preferences to context-engineering.mdx (linking to /configuration/ and /how-auto-mode-works/), Token Optimisation Deep Dive to controlling-costs.mdx (linking to /token-optimization/), and Git Strategy to building-rhythm.mdx (linking to /git-strategy/, /gsd-directory/, and /v1-to-v2/). All content written in the existing page voice — second person, practitioner-focused, Australian English.",
+      "verification_result": "npm run build exited 0 (146 pages). npm run check-links exited 0 (20092 internal links, 0 broken).",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-04-02T04:30:28.177Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
-      "key_decisions": [],
-      "full_summary_md": "",
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/solo-guide/context-engineering.mdx",
+        "src/content/docs/solo-guide/controlling-costs.mdx",
+        "src/content/docs/solo-guide/building-rhythm.mdx"
+      ],
+      "key_decisions": [
+        "Cross-references written as narrative paragraphs rather than bullet lists to match the existing prose-heavy voice of the solo guide"
+      ],
+      "full_summary_md": "---\nid: T02\nparent: S03\nmilestone: M007\nkey_files:\n  - src/content/docs/solo-guide/context-engineering.mdx\n  - src/content/docs/solo-guide/controlling-costs.mdx\n  - src/content/docs/solo-guide/building-rhythm.mdx\nkey_decisions:\n  - Cross-references written as narrative paragraphs rather than bullet lists to match the existing prose-heavy voice of the solo guide\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:30:28.177Z\nblocker_discovered: false\n---\n\n# T02: Added Preferences, Token Optimisation Deep Dive, and Git Strategy cross-reference subsections to three solo-guide pages, wiring them to the new deep-dive pages created in T01.\n\n**Added Preferences, Token Optimisation Deep Dive, and Git Strategy cross-reference subsections to three solo-guide pages, wiring them to the new deep-dive pages created in T01.**\n\n## What Happened\n\nRead the tail of each target file to confirm insertion points and voice. Added three subsections: Preferences to context-engineering.mdx (linking to /configuration/ and /how-auto-mode-works/), Token Optimisation Deep Dive to controlling-costs.mdx (linking to /token-optimization/), and Git Strategy to building-rhythm.mdx (linking to /git-strategy/, /gsd-directory/, and /v1-to-v2/). All content written in the existing page voice — second person, practitioner-focused, Australian English.\n\n## Verification\n\nnpm run build exited 0 (146 pages). npm run check-links exited 0 (20092 internal links, 0 broken).\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 7600ms |\n| 2 | `npm run check-links` | 0 | ✅ pass | 3300ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/solo-guide/context-engineering.mdx`\n- `src/content/docs/solo-guide/controlling-costs.mdx`\n- `src/content/docs/solo-guide/building-rhythm.mdx`\n",
       "description": "Add short cross-reference subsections to 3 existing solo-guide MDX pages, then run full build + link verification.\n\n## Cross-Reference Additions\n\n### 1. `src/content/docs/solo-guide/context-engineering.mdx`\nAppend a 'Preferences' subsection before the final `*This is Section 5*` line. Content: 2-3 paragraphs explaining that GSD preferences let you tune behaviour per-project (token profiles, model routing, auto-mode depth). Link to `../../configuration/` for the full reference and to the new `../../how-auto-mode-works/` page.\n\n### 2. `src/content/docs/solo-guide/controlling-costs.mdx`\nAppend a 'Token Optimisation Deep Dive' subsection before the final `*This is Section 6*` line. Content: 1-2 paragraphs noting that GSD applies token optimisation strategies (context compression, incremental delivery, selective file inclusion) and linking to `../../token-optimization/` for the full reference.\n\n### 3. `src/content/docs/solo-guide/building-rhythm.mdx`\nAppend a 'Git Strategy' subsection before the final `*This is Section 8*` line. Content: 1-2 paragraphs noting GSD's git strategy (worktrees for isolation, atomic commits, branch-per-milestone) and linking to `../../git-strategy/` for the full reference. Also add a cross-link to `../../gsd-directory/` and `../../v1-to-v2/` where relevant.\n\n## Voice\nMatch the existing page voice exactly — second person, practitioner-focused, Australian English.\n\n## Verification\nRun `npm run build` (must exit 0) and `npm run check-links` (must exit 0, 0 broken links). These verify all new pages render, all cross-links resolve, and no existing URLs are broken.",
       "estimate": "15 min",
       "files": [
@@ -1528,6 +1534,28 @@
       "verdict": "✅ pass",
       "duration_ms": 2700,
       "created_at": "2026-04-02T04:28:43.443Z"
+    },
+    {
+      "id": 13,
+      "task_id": "T02",
+      "slice_id": "S03",
+      "milestone_id": "M007",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 7600,
+      "created_at": "2026-04-02T04:30:28.177Z"
+    },
+    {
+      "id": 14,
+      "task_id": "T02",
+      "slice_id": "S03",
+      "milestone_id": "M007",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 3300,
+      "created_at": "2026-04-02T04:30:28.177Z"
     }
   ]
 }

@@ -99,4 +99,16 @@ The graduation path isn't rushed. The right time to extend beyond GSD is when th
 
 ---
 
+## Git Strategy
+
+The `.gsd/` directory is the persistent layer of your project's memory — and your git history is the audit trail that makes that memory trustworthy. GSD's git strategy is designed to keep the two aligned: each auto mode run produces a commit that maps cleanly to a task, each milestone produces a branch that maps cleanly to a unit of work, and worktrees let isolated tasks run without contaminating the main working state.
+
+The practical pattern is branch-per-milestone with atomic commits per task. When auto mode completes a task, it writes a summary and generates a commit from it — the commit message comes from your task one-liner, the file list comes from the summary's key files. This means your git log reads as a project narrative, not a pile of "fix things" commits. You can trace any line of code back to the milestone discussion that motivated it.
+
+Worktrees are the isolation mechanism for parallel work: if you're running two slices concurrently or want to run an experimental milestone without disrupting the main branch, a worktree gives each process its own working directory without duplicating the repository. For a detailed walkthrough of the full strategy — branching conventions, commit message patterns, worktree setup, and the merge flow at milestone completion — see the [Git Strategy](../../git-strategy/) page.
+
+Understanding the `.gsd/` directory structure that underpins this rhythm is equally useful. The milestones, slices, tasks, summaries, and decision records all live there as plain files, which means they're versioned alongside your code. See the [.gsd/ Directory Reference](../../gsd-directory/) for the full structure. If you're coming from GSD v1, the [v1 to v2 Comparison](../../v1-to-v2/) explains how the new structure maps to what you already know.
+
+---
+
 *This is Section 8 of the GSD 2 Solo Guide.*

@@ -111,4 +111,12 @@ The goal isn't to minimise cost — it's to spend predictably on the work that m
 
 ---
 
+## Token Optimisation Deep Dive
+
+The cost patterns above describe what you'll observe — the token optimisation strategies underneath explain why they look the way they do. GSD applies a layered set of optimisations automatically: context compression removes redundant history between tasks, incremental delivery streams only the changed portion of a file rather than the full content, and selective file inclusion means only files actually referenced by a task plan are attached to that task's prompt.
+
+Understanding these strategies matters because they interact with how you maintain your project context. A `DECISIONS.md` that records every minor implementation detail will be fully inlined into every relevant prompt; a focused one that captures only meaningful architectural choices costs far fewer tokens over the life of a project. The same applies to `agent-instructions.md`: precision there is token efficiency, not just quality. The [Token Optimisation](../../token-optimization/) page covers the full set of strategies, the levers you control, and the profile-level configuration that governs them.
+
+---
+
 *This is Section 6 of the GSD 2 Solo Guide.*

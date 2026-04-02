@@ -125,4 +125,16 @@ When the discussion finishes and you have a plan you're confident in, that confi
 
 ---
 
+## Preferences
+
+Context engineering and preferences are two sides of the same coin. The context you write in the discussion phase tells GSD what the problem is; preferences tell GSD how to approach solving it. Together they determine what ends up in every prompt that runs during auto mode.
+
+GSD preferences let you tune behaviour per-project — not just globally. You can set a token profile that fits the milestone's complexity, configure model routing so expensive models are reserved for the phases that benefit most from them, and control auto mode depth to match how much you want to delegate versus steer. A project with an established codebase and well-defined patterns can run on a tighter profile than a project where every session involves fresh architectural territory.
+
+The most useful lever during early milestones is the token profile: `budget`, `balanced`, or `quality`. Switching to `budget` on a well-understood, mechanical milestone can cut cost by 40–60% with no quality penalty. Switching to `quality` on a milestone with significant architectural risk is worth the premium. You don't need to pick one profile for the whole project — you choose per-milestone based on the work.
+
+For the full preference reference and per-project configuration patterns, see the [Configuration](../../configuration/) page. For a detailed breakdown of how auto mode uses these preferences at each phase, see [How Auto Mode Works](../../how-auto-mode-works/).
+
+---
+
 *This is Section 5 of the GSD 2 Solo Guide.*

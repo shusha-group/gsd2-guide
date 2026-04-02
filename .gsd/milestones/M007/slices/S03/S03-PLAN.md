@@ -44,7 +44,7 @@ Add a new sidebar group in `astro.config.mjs` (after the Solo Builder's Guide gr
   - Estimate: 30 min
   - Files: src/content/docs/how-auto-mode-works.mdx, src/content/docs/gsd-directory.mdx, src/content/docs/v1-to-v2.mdx, astro.config.mjs
   - Verify: All 3 files exist with valid frontmatter. `grep -c 'how-auto-mode-works\|gsd-directory\|v1-to-v2' astro.config.mjs` returns 3. Quick scan of each file confirms narrative voice and cross-links.
-- [ ] **T02: Add cross-reference sections to existing solo-guide pages and verify build** — Add short cross-reference subsections to 3 existing solo-guide MDX pages, then run full build + link verification.
+- [x] **T02: Added Preferences, Token Optimisation Deep Dive, and Git Strategy cross-reference subsections to three solo-guide pages, wiring them to the new deep-dive pages created in T01.** — Add short cross-reference subsections to 3 existing solo-guide MDX pages, then run full build + link verification.
 
 ## Cross-Reference Additions
 
