@@ -21,7 +21,7 @@ Constraints:
   - Estimate: 45m
   - Files: src/content/docs/choose-your-path.mdx, src/content/docs/is-gsd-right-for-me.md
   - Verify: test -f src/content/docs/choose-your-path.mdx && test -f src/content/docs/is-gsd-right-for-me.md && npm run build 2>&1 | tail -5
-- [ ] **T02: Create 3 bridge pages and FAQ and Glossary** — Create 5 new content pages: 3 bridge pages (coming-from-replit, coming-from-lovable, coming-from-cursor), FAQ, and Glossary.
+- [x] **T02: Created 3 bridge pages (Replit, Lovable, Cursor), FAQ (11 Q&As), and Glossary (25 terms) — all build successfully** — Create 5 new content pages: 3 bridge pages (coming-from-replit, coming-from-lovable, coming-from-cursor), FAQ, and Glossary.
 
 Steps:
 1. Create `src/content/docs/coming-from-replit.mdx` — bridge page for Replit users. Include: what Replit gives you vs what GSD gives you (comparison table), key differences (hosted vs local, visual vs CLI), recommendation to follow Solo Builder learning path on Choose Your Path. Link to `../choose-your-path/`. Friendly, reassuring tone.

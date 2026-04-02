@@ -1,0 +1,53 @@
+---
+title: "Coming from Cursor"
+description: "You're already using an AI-powered IDE and want to understand what GSD adds on top."
+---
+
+If you're using Cursor (or Windsurf, Copilot, or another AI-integrated IDE), you're already doing AI-assisted development. GSD adds the structural layer that IDE integrations don't provide: multi-session context, structured planning, verification gates, and reproducible execution.
+
+---
+
+## What each tool gives you
+
+| | Cursor / AI IDE | GSD + Claude Code |
+|---|---|---|
+| **Integration** | Embedded in your editor | CLI, runs alongside your editor |
+| **AI scope** | File- and selection-level | Session- and project-level |
+| **Context** | Current file, open tabs | Full project state, decisions, history |
+| **Planning** | None — you direct inline | Milestone → Slice → Task hierarchy |
+| **Verification** | Manual review | Built-in gates at every stage |
+| **Multi-session continuity** | You manage context | GSD manages context |
+| **Commit history** | You handle git | GSD produces structured commits |
+
+---
+
+## The key differences
+
+**Inline suggestions vs structured planning.** Cursor excels at inline code completion and quick edits to files you have open. GSD works at a higher level: you define what needs to be built, review a plan, and the AI executes full tasks — writing files, running tests, verifying output — with no need to manage the context yourself.
+
+**IDE integration vs CLI.** Cursor lives inside your editor. GSD runs in a terminal alongside your editor. For most workflows, you'd use both: your IDE for active editing and navigation, GSD for session-level execution and planning.
+
+**Reactive vs proactive.** With an AI IDE, you initiate each prompt and the AI responds. With GSD in auto mode, you approve a plan and the AI executes it end-to-end — writing code, verifying it, and logging decisions — without requiring your input at every step.
+
+---
+
+## What GSD adds to your workflow
+
+The biggest gap in IDE-based AI development is multi-session continuity. Every new session starts from scratch — you re-explain the architecture, re-describe what you're building, and re-establish context. GSD eliminates that by persisting context, decisions, and progress in the `.gsd/` directory.
+
+The second gap is verification. IDE AI tools generate code; they don't verify it against requirements. GSD's gate system checks each task against defined success criteria before marking it complete.
+
+---
+
+## Your recommended path
+
+You're an experienced developer getting started with AI-assisted workflows. That maps to Path 2 or Path 3 in Choose Your Path, depending on how much AI development experience you already have.
+
+→ [Choose Your Path → Path 2: Developer New to AI Coding](../choose-your-path/#path-2--developer-new-to-ai-coding)  
+→ [Choose Your Path → Path 3: Experienced AI Developer](../choose-your-path/#path-3--experienced-ai-developer)
+
+If you've been shipping real projects with Cursor and want to understand how GSD's execution model differs, start with [Architecture](../architecture/) — it's the fastest orientation to what GSD is doing under the hood.
+
+:::tip[Already using Claude Code?]
+If you're using Claude Code directly (not via an IDE), Path 3 is a better fit — it covers auto mode, extensions, and the full execution engine.
+:::

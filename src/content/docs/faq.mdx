@@ -1,0 +1,54 @@
+---
+title: "FAQ"
+description: "Common questions about GSD — from setup and cost to workflow and team use."
+---
+
+## Is GSD free?
+
+GSD itself is free and open source. You'll need a Claude API account (or Claude Pro subscription for Claude Code) — that's where the cost comes from. See [Cost Management](../cost-management/) for a realistic picture of what projects typically cost to run.
+
+## Do I need to know how to code?
+
+Not in the traditional sense, but you'll need to be comfortable reviewing code, running terminal commands, and making decisions about what to build. GSD keeps you in the director's seat — you define requirements, review plans, and approve before code is written. The AI does the implementation. If you're coming from a no-code background, [Is GSD Right for Me?](../is-gsd-right-for-me/) is worth reading first.
+
+## Will it work with my existing project?
+
+Yes — GSD works with brownfield projects (existing codebases) as well as new ones. You run `/gsd init` in your project directory and GSD reads what's already there. There's no required file structure or framework. See [Getting Started](../getting-started/) for the setup steps.
+
+## How is this different from just using Claude directly?
+
+Claude Code without GSD is like a capable engineer with no memory — every session starts fresh and you manage all the context yourself. GSD adds persistent state, structured planning, and verification gates. Sessions two through ten are dramatically more coherent because the AI knows what's already built, what was decided, and what the current task is. For single-session work, the difference is small. For anything spanning multiple sessions, it's significant.
+
+## What if I don't like the plan it creates?
+
+You review the plan before any code is written, and you can revise it. GSD is designed for you to stay close to architectural decisions — if a milestone, slice, or task doesn't look right, you say so and the planner rewrites it. You're not locked into the first plan it generates. See [The GSD Directory](../gsd-directory/) for how plans are stored and [Guided Mode](../guided-mode/) for the approval workflow.
+
+## Can I use it for quick, one-off tasks?
+
+Yes — that's what `/gsd quick` is for. Quick mode gives you GSD's guarantees (atomic commit, state tracking, verification) without the full planning overhead. It's the right choice for tasks you can describe in a sentence and complete in one session. See [Quick Reference](../quick-reference/) for the command.
+
+## Does it work with AI models other than Claude?
+
+GSD is designed for Claude Code and is optimised for Claude models. Dynamic model routing lets you direct different task types to different models, but Claude is the primary supported model. See [Dynamic Model Routing](../dynamic-model-routing/) for what's currently supported.
+
+## How much does it cost to run a real project?
+
+That depends heavily on project size, task complexity, and how much auto mode is used. A realistic small project (10–20 hours of work) typically costs a few dollars in API credits. See [Cost Management](../cost-management/) and [Controlling Costs](../solo-guide/controlling-costs/) for strategies to keep spend predictable.
+
+## What happens if something goes wrong mid-session?
+
+GSD uses checkpoints and atomic task completion — if something fails, the state rolls back to the last clean checkpoint. You don't end up with a half-applied change and no way to recover. See [When Things Go Wrong](../solo-guide/when-things-go-wrong/) for the recovery workflow.
+
+## Can teams use GSD?
+
+Yes. The `.gsd/` directory is version-controlled, so teams can share context, decisions, and roadmaps through git. Parallel orchestration lets multiple slices run concurrently. The main thing to establish is a branching strategy — see [Git Strategy](../git-strategy/) for how teams typically structure this.
+
+## Is my code safe? Does GSD send my code anywhere?
+
+GSD itself doesn't send your code anywhere — it's a local process layer. Your code does go to Anthropic's API as part of Claude Code's normal operation, subject to Anthropic's data handling policies. GSD adds no additional data transmission beyond what Claude Code already does.
+
+---
+
+:::tip[Still have questions?]
+The best place to ask is the [GSD community](https://github.com/getgsd/gsd) — post an issue or discussion and the team will respond.
+:::
