@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T02",
+  "unitId": "M007/S04/T02",
+  "timestamp": 1775104679857,
+  "passed": false,
+  "discoverySource": "task-plan",
+  "checks": [
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 6591,
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run check-links",
+      "exitCode": 0,
+      "durationMs": 130,
+      "verdict": "pass"
+    },
+    {
+      "command": "grep -l 'index.html' dist/writing-a-good-brief/index.html dist/cost-examples/index.html",
+      "exitCode": 1,
+      "durationMs": 6,
+      "verdict": "fail"
+    }
+  ],
+  "retryAttempt": 1,
+  "maxRetries": 2
+}

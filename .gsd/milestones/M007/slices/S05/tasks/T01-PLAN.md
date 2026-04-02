@@ -1,10 +1,12 @@
-# S05: Navigation Polish
+---
+estimated_steps: 18
+estimated_files: 1
+skills_used: []
+---
 
-**Goal:** Sidebar restructured for logical new-user flow; all M007 content surfaced; misplaced prompts fixed; no existing URLs broken.
-**Demo:** After this: After this: sidebar is restructured for logical flow; all new content surfaced in navigation; cross-links added; no existing URLs broken.
+# T01: Restructure sidebar in astro.config.mjs — add missing pages, fix misplaced prompts, reorder groups
 
-## Tasks
-- [x] **T01: Sidebar restructured: Getting Started first, 3 orphaned prompts moved to Auto-mode Pipeline, writing-a-good-brief and cost-examples added; 148 pages build clean with 0 broken links** — Edit the sidebar array in `astro.config.mjs` to:
+Edit the sidebar array in `astro.config.mjs` to:
 1. Move the three misplaced prompt entries (`gate-evaluate`, `reactive-execute`, `rethink`) from the end of the Commands group into the Prompts > Auto-mode Pipeline subgroup (they are auto-mode prompts).
 2. Add `writing-a-good-brief` and `cost-examples` to the Getting Started group after Quick Reference.
 3. Reorder top-level groups so Getting Started comes before Deep Dives (new users should see Getting Started first).
@@ -25,6 +27,15 @@ The target sidebar order (top to bottom):
 - How-to Guides
 
 IMPORTANT: The sidebar config is deeply nested JS. Use exact text matching for edits. Verify bracket balance after each edit.
-  - Estimate: 30m
-  - Files: astro.config.mjs
-  - Verify: npm run build && npm run check-links && grep -q 'writing-a-good-brief' astro.config.mjs && grep -q 'cost-examples' astro.config.mjs && node -e "const fs=require('fs'); const c=fs.readFileSync('astro.config.mjs','utf8'); const cmdIdx=c.indexOf(\"label: 'Commands'\"); const prIdx=c.indexOf(\"label: 'Prompts'\"); if(c.indexOf('gate-evaluate')>cmdIdx && c.indexOf('gate-evaluate')<prIdx) {console.error('gate-evaluate still in Commands'); process.exit(1)} console.log('All checks pass')"
+
+## Inputs
+
+- ``astro.config.mjs``
+
+## Expected Output
+
+- ``astro.config.mjs``
+
+## Verification
+
+npm run build && npm run check-links && grep -q 'writing-a-good-brief' astro.config.mjs && grep -q 'cost-examples' astro.config.mjs && node -e "const fs=require('fs'); const c=fs.readFileSync('astro.config.mjs','utf8'); const cmdIdx=c.indexOf(\"label: 'Commands'\"); const prIdx=c.indexOf(\"label: 'Prompts'\"); if(c.indexOf('gate-evaluate')>cmdIdx && c.indexOf('gate-evaluate')<prIdx) {console.error('gate-evaluate still in Commands'); process.exit(1)} console.log('All checks pass')"

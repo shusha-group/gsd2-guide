@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T04:37:42.143Z",
+  "exported_at": "2026-04-02T04:42:31.113Z",
   "milestones": [
     {
       "id": "M001",
@@ -246,14 +246,14 @@
       "milestone_id": "M007",
       "id": "S04",
       "title": "Brief Writing + Cost Examples",
-      "status": "pending",
+      "status": "complete",
       "risk": "low",
       "depends": [],
       "demo": "After this: solo builders can see bad-vs-good requirement examples and approximate dollar costs for 3 milestone scenarios.",
       "created_at": "2026-04-01T22:10:51.256Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T04:39:15.815Z",
+      "full_summary_md": "---\nid: S04\nparent: M007\nmilestone: M007\nprovides:\n  - writing-a-good-brief page at /writing-a-good-brief/\n  - cost-examples page at /cost-examples/\nrequires:\n  []\naffects:\n  - S05\nkey_files:\n  - src/content/docs/writing-a-good-brief.mdx\n  - src/content/docs/cost-examples.mdx\nkey_decisions:\n  - Used Markdown table format for bad-vs-good pairs rather than Tabs component for better scannability\npatterns_established:\n  - Hand-authored MDX pages use title+description frontmatter only, Australian English, and ../sibling/ relative cross-links\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M007/slices/S04/tasks/T01-SUMMARY.md\n  - .gsd/milestones/M007/slices/S04/tasks/T02-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:39:15.817Z\nblocker_discovered: false\n---\n\n# S04: Brief Writing + Cost Examples\n\n**Created writing-a-good-brief.mdx (4 bad-vs-good pairs) and cost-examples.mdx (3 dollar-cost scenarios); both build clean and pass link check.**\n\n## What Happened\n\nTwo hand-authored MDX content pages added to src/content/docs/. writing-a-good-brief.mdx provides four bad-vs-good requirement pairs (feature addition, bug fix, performance, acceptance criteria), discussion phase guidance, common mistakes, and a checklist. cost-examples.mdx covers three milestone scenarios (small $1-5, medium $5-20, large $20-80) with token profiles and cost driver breakdown, linking to controlling-costs and cost-management. Both use Australian English, title+description frontmatter only, Starlight callouts (:::tip, :::caution), and relative cross-links. Build produces 148 pages, link checker verified 20368 internal links with 0 broken. The T02 verify command (`grep -l 'index.html'`) was a false failure — it searched for the string \"index.html\" inside the HTML files rather than testing file existence; both pages existed and built correctly throughout.\n\n## Verification\n\nnpm run build → 148 pages, exit 0. test -f dist/writing-a-good-brief/index.html → pass. test -f dist/cost-examples/index.html → pass. grep content markers: cost page has 8 dollar-sign matches, brief page has 13 bad/good/vague/specific matches. npm run check-links → 20368 links, 0 broken (per T02 summary).\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nT02 verify command `grep -l 'index.html' dist/writing-a-good-brief/index.html dist/cost-examples/index.html` always returns exit 1 because the string \"index.html\" does not appear inside those HTML files. This is a bug in the verify command, not a content failure. File existence was confirmed independently.\n\n## Known Limitations\n\nNone.\n\n## Follow-ups\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/writing-a-good-brief.mdx` — New page: 4 bad-vs-good requirement pairs, discussion phase guidance, common mistakes checklist\n- `src/content/docs/cost-examples.mdx` — New page: 3 milestone cost scenarios ($1-5, $5-20, $20-80), token profiles, cost drivers\n",
+      "full_uat_md": "# S04: Brief Writing + Cost Examples — UAT\n\n**Milestone:** M007\n**Written:** 2026-04-02T04:39:15.817Z\n\n## UAT: S04 — Brief Writing + Cost Examples\n\n### Preconditions\n- `npm run build` completes with exit 0\n- Both pages exist at `dist/writing-a-good-brief/index.html` and `dist/cost-examples/index.html`\n\n### Test Cases\n\n**TC1: writing-a-good-brief page builds and contains bad-vs-good pairs**\n1. Run `test -f dist/writing-a-good-brief/index.html`\n2. Expected: exit 0\n\n3. Run `grep -c 'Bad\\|Good\\|vague\\|specific' dist/writing-a-good-brief/index.html`\n4. Expected: count > 0 (confirmed: 13)\n\n**TC2: cost-examples page builds and contains dollar amounts**\n1. Run `test -f dist/cost-examples/index.html`\n2. Expected: exit 0\n\n3. Run `grep -c '\\$' dist/cost-examples/index.html`\n4. Expected: count > 0 (confirmed: 8)\n\n**TC3: No broken cross-links**\n1. Run `npm run check-links`\n2. Expected: 0 broken links (confirmed: 20368 links checked, 0 broken)\n\n**TC4: Australian English — no American spellings**\n1. Run `grep -i 'organize\\|recognize\\|behavior\\b\\|color\\b' src/content/docs/writing-a-good-brief.mdx src/content/docs/cost-examples.mdx`\n2. Expected: no matches\n\n**TC5: Frontmatter — title and description only**\n1. Run `head -5 src/content/docs/writing-a-good-brief.mdx`\n2. Expected: frontmatter contains `title:` and `description:` fields\n\n**TC6: Build count unchanged at 148 pages**\n1. Run `npm run build 2>&1 | grep 'page(s) built'`\n2. Expected: `148 page(s) built`\n\n",
       "goal": "Solo builders can see bad-vs-good requirement examples and approximate dollar costs for 3 milestone scenarios.",
       "success_criteria": "- `writing-a-good-brief.mdx` exists with bad-vs-good requirement examples, discussion tips, and cross-links to solo-guide/first-project\n- `cost-examples.mdx` exists with 3 milestone cost scenarios (small/medium/large) with dollar ranges\n- Both pages use Australian English, Starlight frontmatter, and established cross-link patterns\n- `npm run build` exits 0\n- `dist/writing-a-good-brief/index.html` exists\n- `dist/cost-examples/index.html` exists\n- All cross-links resolve (no broken links in build output)",
       "proof_level": "Build verification — pages render and links resolve",
@@ -279,11 +279,11 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Restructure sidebar navigation, add cross-links between related pages, verify no URL breakage.",
-      "success_criteria": "Quick reference appears early in sidebar; changelog highlights appears near top of changelog section; decision guide appears before Solo Guide Section 1; sidebar groups reviewed for Learn → Use → Reference flow; cross-links added; npm run check-links passes with 0 broken.",
-      "proof_level": "contract — build passes, link checker passes, no broken URLs",
-      "integration_closure": "Consumes all new pages from S01–S04. Final verification that everything is wired together.",
-      "observability_impact": "None — static content",
+      "goal": "Sidebar restructured for logical new-user flow; all M007 content surfaced; misplaced prompts fixed; no existing URLs broken.",
+      "success_criteria": "- `writing-a-good-brief` and `cost-examples` appear in sidebar config\n- `gate-evaluate`, `reactive-execute`, `rethink` are inside the Prompts group, not Commands\n- Getting Started appears before Deep Dives in sidebar order\n- `npm run build` exits 0, page count ≥ 148\n- `npm run check-links` exits 0, 0 broken links",
+      "proof_level": "Build + link-check verification sufficient. No runtime required.",
+      "integration_closure": "Upstream: all S01–S04 pages already exist on disk. This slice only edits sidebar config in astro.config.mjs. After this, all M007 content is navigable.",
+      "observability_impact": "None — static site sidebar config only.",
       "sequence": 0,
       "replan_triggered_at": null
     }
@@ -602,6 +602,43 @@
       "expected_output": [
         "`dist/writing-a-good-brief/index.html` — verified with content checks",
         "`dist/cost-examples/index.html` — verified with content checks"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M007",
+      "slice_id": "S05",
+      "id": "T01",
+      "title": "Sidebar restructured: Getting Started first, 3 orphaned prompts moved to Auto-mode Pipeline, writing-a-good-brief and cost-examples added; 148 pages build clean with 0 broken links",
+      "status": "complete",
+      "one_liner": "Sidebar restructured: Getting Started first, 3 orphaned prompts moved to Auto-mode Pipeline, writing-a-good-brief and cost-examples added; 148 pages build clean with 0 broken links",
+      "narrative": "Made three surgical edits to astro.config.mjs: reordered top-level groups so Getting Started appears before Solo Builder's Guide and Deep Dives; added Writing a Good Brief and Cost Examples to Getting Started; removed gate-evaluate, reactive-execute, and rethink from their orphaned position inside the Commands group; added them alphabetically into Prompts > Auto-mode Pipeline.",
+      "verification_result": "npm run build (148 pages, 0 errors), npm run check-links (20,662 links, 0 broken), inline node check confirming gate-evaluate is correctly in Prompts not Commands.",
+      "duration": "",
+      "completed_at": "2026-04-02T04:42:31.082Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "astro.config.mjs"
+      ],
+      "key_decisions": [
+        "gate-evaluate, reactive-execute, rethink inserted alphabetically into Auto-mode Pipeline subgroup"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S05\nmilestone: M007\nkey_files:\n  - astro.config.mjs\nkey_decisions:\n  - gate-evaluate, reactive-execute, rethink inserted alphabetically into Auto-mode Pipeline subgroup\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:42:31.083Z\nblocker_discovered: false\n---\n\n# T01: Sidebar restructured: Getting Started first, 3 orphaned prompts moved to Auto-mode Pipeline, writing-a-good-brief and cost-examples added; 148 pages build clean with 0 broken links\n\n**Sidebar restructured: Getting Started first, 3 orphaned prompts moved to Auto-mode Pipeline, writing-a-good-brief and cost-examples added; 148 pages build clean with 0 broken links**\n\n## What Happened\n\nMade three surgical edits to astro.config.mjs: reordered top-level groups so Getting Started appears before Solo Builder's Guide and Deep Dives; added Writing a Good Brief and Cost Examples to Getting Started; removed gate-evaluate, reactive-execute, and rethink from their orphaned position inside the Commands group; added them alphabetically into Prompts > Auto-mode Pipeline.\n\n## Verification\n\nnpm run build (148 pages, 0 errors), npm run check-links (20,662 links, 0 broken), inline node check confirming gate-evaluate is correctly in Prompts not Commands.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 5600ms |\n| 2 | `npm run check-links` | 0 | ✅ pass | 3000ms |\n| 3 | `grep + node position check` | 0 | ✅ pass | 100ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `astro.config.mjs`\n",
+      "description": "Edit the sidebar array in `astro.config.mjs` to:\n1. Move the three misplaced prompt entries (`gate-evaluate`, `reactive-execute`, `rethink`) from the end of the Commands group into the Prompts > Auto-mode Pipeline subgroup (they are auto-mode prompts).\n2. Add `writing-a-good-brief` and `cost-examples` to the Getting Started group after Quick Reference.\n3. Reorder top-level groups so Getting Started comes before Deep Dives (new users should see Getting Started first).\n\nThe three prompt entries currently sit after the Commands > Reference subgroup's closing brace but still inside the Commands group — they are orphaned items. Move them into Prompts > Auto-mode Pipeline, alphabetically among existing entries.\n\nThe target sidebar order (top to bottom):\n- Home\n- Getting Started (with new entries: ...existing..., Writing a Good Brief, Cost Examples)\n- Solo Builder's Guide\n- Deep Dives\n- Changelog Highlights\n- Changelog\n- Commands (without the 3 orphaned prompt entries)\n- Prompts (with the 3 entries added to Auto-mode Pipeline)\n- Recipes\n- Reference\n- How-to Guides\n\nIMPORTANT: The sidebar config is deeply nested JS. Use exact text matching for edits. Verify bracket balance after each edit.",
+      "estimate": "30m",
+      "files": [
+        "astro.config.mjs"
+      ],
+      "verify": "npm run build && npm run check-links && grep -q 'writing-a-good-brief' astro.config.mjs && grep -q 'cost-examples' astro.config.mjs && node -e \"const fs=require('fs'); const c=fs.readFileSync('astro.config.mjs','utf8'); const cmdIdx=c.indexOf(\\\"label: 'Commands'\\\"); const prIdx=c.indexOf(\\\"label: 'Prompts'\\\"); if(c.indexOf('gate-evaluate')>cmdIdx && c.indexOf('gate-evaluate')<prIdx) {console.error('gate-evaluate still in Commands'); process.exit(1)} console.log('All checks pass')\"",
+      "inputs": [
+        "`astro.config.mjs`"
+      ],
+      "expected_output": [
+        "`astro.config.mjs`"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -1706,6 +1743,39 @@
       "verdict": "✅ pass",
       "duration_ms": 50,
       "created_at": "2026-04-02T04:37:42.119Z"
+    },
+    {
+      "id": 21,
+      "task_id": "T01",
+      "slice_id": "S05",
+      "milestone_id": "M007",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 5600,
+      "created_at": "2026-04-02T04:42:31.082Z"
+    },
+    {
+      "id": 22,
+      "task_id": "T01",
+      "slice_id": "S05",
+      "milestone_id": "M007",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 3000,
+      "created_at": "2026-04-02T04:42:31.082Z"
+    },
+    {
+      "id": 23,
+      "task_id": "T01",
+      "slice_id": "S05",
+      "milestone_id": "M007",
+      "command": "grep + node position check",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 100,
+      "created_at": "2026-04-02T04:42:31.082Z"
     }
   ]
 }

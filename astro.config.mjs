@@ -19,8 +19,18 @@ export default defineConfig({
       },
       sidebar: [
         { label: 'Home', link: '/' },
-        { label: 'Changelog Highlights', link: '/changelog-highlights/' },
-        { label: 'Changelog', link: '/changelog/' },
+        {
+          label: 'Getting Started',
+          items: [
+            { label: 'Is GSD Right for Me?', link: '/is-gsd-right-for-me/' },
+            { label: 'Quick Reference', link: '/quick-reference/' },
+            { label: 'Writing a Good Brief', link: '/writing-a-good-brief/' },
+            { label: 'Cost Examples', link: '/cost-examples/' },
+            { label: 'Installation', link: '/getting-started/' },
+            { label: 'Developing with GSD', link: '/user-guide/developing-with-gsd/' },
+            { label: 'Discussing a Milestone', link: '/user-guide/discussing-a-milestone/' },
+          ],
+        },
         {
           label: "Solo Builder's Guide",
           items: [
@@ -43,16 +53,8 @@ export default defineConfig({
             { label: 'GSD v1 vs v2', link: '/v1-to-v2/' },
           ],
         },
-        {
-          label: 'Getting Started',
-          items: [
-            { label: 'Is GSD Right for Me?', link: '/is-gsd-right-for-me/' },
-            { label: 'Quick Reference', link: '/quick-reference/' },
-            { label: 'Installation', link: '/getting-started/' },
-            { label: 'Developing with GSD', link: '/user-guide/developing-with-gsd/' },
-            { label: 'Discussing a Milestone', link: '/user-guide/discussing-a-milestone/' },
-          ],
-        },
+        { label: 'Changelog Highlights', link: '/changelog-highlights/' },
+        { label: 'Changelog', link: '/changelog/' },
         {
           label: 'Commands',
           items: [
@@ -149,9 +151,6 @@ export default defineConfig({
                 { label: 'Headless Mode', link: '/commands/headless/' },
               ],
             },
-                { label: 'gate-evaluate', link: '/prompts/gate-evaluate/' },
-                { label: 'reactive-execute', link: '/prompts/reactive-execute/' },
-                { label: 'rethink', link: '/prompts/rethink/' },
           ],
         },
         {
@@ -163,12 +162,15 @@ export default defineConfig({
                 { label: 'complete-milestone', link: '/prompts/complete-milestone/' },
                 { label: 'complete-slice', link: '/prompts/complete-slice/' },
                 { label: 'execute-task', link: '/prompts/execute-task/' },
+                { label: 'gate-evaluate', link: '/prompts/gate-evaluate/' },
                 { label: 'plan-milestone', link: '/prompts/plan-milestone/' },
                 { label: 'plan-slice', link: '/prompts/plan-slice/' },
+                { label: 'reactive-execute', link: '/prompts/reactive-execute/' },
                 { label: 'reassess-roadmap', link: '/prompts/reassess-roadmap/' },
                 { label: 'replan-slice', link: '/prompts/replan-slice/' },
                 { label: 'research-milestone', link: '/prompts/research-milestone/' },
                 { label: 'research-slice', link: '/prompts/research-slice/' },
+                { label: 'rethink', link: '/prompts/rethink/' },
                 { label: 'validate-milestone', link: '/prompts/validate-milestone/' },
               ],
             },
