@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T13:28:13.629Z",
+  "exported_at": "2026-04-02T13:30:07.784Z",
   "milestones": [
     {
       "id": "M001",
@@ -1048,19 +1048,23 @@
       "milestone_id": "M008",
       "slice_id": "S03",
       "id": "T03",
-      "title": "Build verification and cross-link audit",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Ran full build (150 pages, exit 0) and link check (20643 links, 0 broken); added missing how-auto-mode-works cross-link to auto-mode.md",
+      "status": "complete",
+      "one_liner": "Ran full build (150 pages, exit 0) and link check (20643 links, 0 broken); added missing how-auto-mode-works cross-link to auto-mode.md",
+      "narrative": "Checked all five required cross-links before running the build. Four passed immediately from prior tasks; auto-mode.md → how-auto-mode-works was missing. Added an \"Under the Hood\" section at the end of auto-mode.md pointing to /how-auto-mode-works/. Then ran npm run build (exit 0, 150 pages) and npm run check-links (exit 0, 20643 internal links, 0 broken). Confirmed sidebar has exactly 1 cost recipe entry and 1 skills-extensions-agents entry.",
+      "verification_result": "All 5 cross-links verified with grep; npm run build exit 0; npm run check-links exit 0 with 0 broken links; sidebar audit confirmed.",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-04-02T13:30:07.763Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
-      "key_decisions": [],
-      "full_summary_md": "",
+      "deviations": "The edit tool silently failed to append to auto-mode.md; used bash echo append instead.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/auto-mode.md"
+      ],
+      "key_decisions": [
+        "Added Under the Hood section to auto-mode.md via bash append after edit tool failed silently"
+      ],
+      "full_summary_md": "---\nid: T03\nparent: S03\nmilestone: M008\nkey_files:\n  - src/content/docs/auto-mode.md\nkey_decisions:\n  - Added Under the Hood section to auto-mode.md via bash append after edit tool failed silently\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:30:07.764Z\nblocker_discovered: false\n---\n\n# T03: Ran full build (150 pages, exit 0) and link check (20643 links, 0 broken); added missing how-auto-mode-works cross-link to auto-mode.md\n\n**Ran full build (150 pages, exit 0) and link check (20643 links, 0 broken); added missing how-auto-mode-works cross-link to auto-mode.md**\n\n## What Happened\n\nChecked all five required cross-links before running the build. Four passed immediately from prior tasks; auto-mode.md → how-auto-mode-works was missing. Added an \"Under the Hood\" section at the end of auto-mode.md pointing to /how-auto-mode-works/. Then ran npm run build (exit 0, 150 pages) and npm run check-links (exit 0, 20643 internal links, 0 broken). Confirmed sidebar has exactly 1 cost recipe entry and 1 skills-extensions-agents entry.\n\n## Verification\n\nAll 5 cross-links verified with grep; npm run build exit 0; npm run check-links exit 0 with 0 broken links; sidebar audit confirmed.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 22900ms |\n| 2 | `npm run check-links` | 0 | ✅ pass | 9500ms |\n| 3 | `grep -q 'control-your-costs' src/content/docs/solo-guide/controlling-costs.mdx` | 0 | ✅ pass | 10ms |\n| 4 | `grep -q 'control-your-costs' src/content/docs/cost-examples.mdx` | 0 | ✅ pass | 10ms |\n| 5 | `grep -q 'how-auto-mode-works' src/content/docs/auto-mode.md` | 0 | ✅ pass | 10ms |\n| 6 | `grep -q 'auto-mode' src/content/docs/how-auto-mode-works.mdx` | 0 | ✅ pass | 10ms |\n| 7 | `grep -q 'reference/skills' src/content/docs/skills-extensions-agents.md` | 0 | ✅ pass | 10ms |\n\n\n## Deviations\n\nThe edit tool silently failed to append to auto-mode.md; used bash echo append instead.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/auto-mode.md`\n",
       "description": "Run full build and link check to verify all content changes from T01 and T02 are consistent. Audit that cross-links exist between the key page pairs.\n\nSteps:\n1. Run `npm run build` — must exit 0 with no errors.\n2. Run `npm run check-links` — must exit 0 with 0 broken links.\n3. Verify cross-links exist:\n   - `grep -q 'control-your-costs' src/content/docs/solo-guide/controlling-costs.md` (Solo Guide links to recipe)\n   - `grep -q 'control-your-costs' src/content/docs/cost-examples.md` (Cost Examples links to recipe)\n   - `grep -q 'how-auto-mode-works' src/content/docs/auto-mode.md` (Auto-mode recipe links to deep dive)\n   - `grep -q 'auto-mode' src/content/docs/how-auto-mode-works.mdx` (Deep dive links back to recipe)\n   - `grep -q 'reference/skills' src/content/docs/skills-extensions-agents.md` (Guide links to reference)\n4. If any link check fails, fix the broken links and re-run build + check-links.\n5. Confirm sidebar has exactly 1 cost recipe entry and the skills-extensions-agents entry in Learn More.",
       "estimate": "20m",
       "files": [
@@ -2398,6 +2402,83 @@
       "verdict": "✅ pass",
       "duration_ms": 10,
       "created_at": "2026-04-02T13:28:13.611Z"
+    },
+    {
+      "id": 35,
+      "task_id": "T03",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 22900,
+      "created_at": "2026-04-02T13:30:07.763Z"
+    },
+    {
+      "id": 36,
+      "task_id": "T03",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 9500,
+      "created_at": "2026-04-02T13:30:07.763Z"
+    },
+    {
+      "id": 37,
+      "task_id": "T03",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "grep -q 'control-your-costs' src/content/docs/solo-guide/controlling-costs.mdx",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-02T13:30:07.763Z"
+    },
+    {
+      "id": 38,
+      "task_id": "T03",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "grep -q 'control-your-costs' src/content/docs/cost-examples.mdx",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-02T13:30:07.763Z"
+    },
+    {
+      "id": 39,
+      "task_id": "T03",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "grep -q 'how-auto-mode-works' src/content/docs/auto-mode.md",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-02T13:30:07.763Z"
+    },
+    {
+      "id": 40,
+      "task_id": "T03",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "grep -q 'auto-mode' src/content/docs/how-auto-mode-works.mdx",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-02T13:30:07.763Z"
+    },
+    {
+      "id": 41,
+      "task_id": "T03",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "grep -q 'reference/skills' src/content/docs/skills-extensions-agents.md",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 10,
+      "created_at": "2026-04-02T13:30:07.763Z"
     }
   ]
 }

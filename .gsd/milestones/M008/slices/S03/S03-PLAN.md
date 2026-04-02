@@ -32,7 +32,7 @@ Steps:
   - Estimate: 45m
   - Files: src/content/docs/skills-extensions-agents.md, src/content/docs/skills.md, astro.config.mjs, src/content/docs/auto-mode.md, src/content/docs/how-auto-mode-works.mdx
   - Verify: npm run build exits 0 and `test -f src/content/docs/skills-extensions-agents.md`
-- [ ] **T03: Build verification and cross-link audit** — Run full build and link check to verify all content changes from T01 and T02 are consistent. Audit that cross-links exist between the key page pairs.
+- [x] **T03: Ran full build (150 pages, exit 0) and link check (20643 links, 0 broken); added missing how-auto-mode-works cross-link to auto-mode.md** — Run full build and link check to verify all content changes from T01 and T02 are consistent. Audit that cross-links exist between the key page pairs.
 
 Steps:
 1. Run `npm run build` — must exit 0 with no errors.
