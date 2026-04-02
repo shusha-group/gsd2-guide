@@ -30,7 +30,7 @@
   - Estimate: 25 minutes
   - Files: src/content/docs/writing-a-good-brief.mdx, src/content/docs/cost-examples.mdx
   - Verify: npm run build && test -f dist/writing-a-good-brief/index.html && test -f dist/cost-examples/index.html && echo 'Both pages built successfully'
-- [ ] **T02: Verify cross-links and final build** — Run the full link checker to confirm all cross-links in the new pages resolve correctly, and verify both pages exist in the build output.
+- [x] **T02: Verified 20368 internal links clean, both new pages present in build output, no broken cross-links or American spellings** — Run the full link checker to confirm all cross-links in the new pages resolve correctly, and verify both pages exist in the build output.
 
 1. Run `npm run build` to rebuild
 2. Run `npm run check-links` to verify no broken links

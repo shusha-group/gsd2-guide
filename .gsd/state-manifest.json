@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T04:36:05.009Z",
+  "exported_at": "2026-04-02T04:37:42.143Z",
   "milestones": [
     {
       "id": "M001",
@@ -572,19 +572,22 @@
       "milestone_id": "M007",
       "slice_id": "S04",
       "id": "T02",
-      "title": "Verify cross-links and final build",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Verified 20368 internal links clean, both new pages present in build output, no broken cross-links or American spellings",
+      "status": "complete",
+      "one_liner": "Verified 20368 internal links clean, both new pages present in build output, no broken cross-links or American spellings",
+      "narrative": "Ran full Astro build (148 pages, 5.85s), link checker (20368 links, 0 broken), content spot-checks on both dist files, and Australian English spelling check. All passed without any fixes needed.",
+      "verification_result": "npm run build (exit 0), npm run check-links (0 broken), grep content markers in both dist files, grep for American spellings (none found)",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-04-02T04:37:42.119Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "dist/writing-a-good-brief/index.html",
+        "dist/cost-examples/index.html"
+      ],
       "key_decisions": [],
-      "full_summary_md": "",
+      "full_summary_md": "---\nid: T02\nparent: S04\nmilestone: M007\nkey_files:\n  - dist/writing-a-good-brief/index.html\n  - dist/cost-examples/index.html\nkey_decisions:\n  - (none)\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:37:42.120Z\nblocker_discovered: false\n---\n\n# T02: Verified 20368 internal links clean, both new pages present in build output, no broken cross-links or American spellings\n\n**Verified 20368 internal links clean, both new pages present in build output, no broken cross-links or American spellings**\n\n## What Happened\n\nRan full Astro build (148 pages, 5.85s), link checker (20368 links, 0 broken), content spot-checks on both dist files, and Australian English spelling check. All passed without any fixes needed.\n\n## Verification\n\nnpm run build (exit 0), npm run check-links (0 broken), grep content markers in both dist files, grep for American spellings (none found)\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 6600ms |\n| 2 | `npm run check-links` | 0 | ✅ pass | 5900ms |\n| 3 | `grep -c content markers in dist/writing-a-good-brief/index.html` | 0 | ✅ pass | 50ms |\n| 4 | `grep -c cost markers in dist/cost-examples/index.html` | 0 | ✅ pass | 50ms |\n| 5 | `grep -iE American spellings in both MDX files` | 1 | ✅ pass | 50ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `dist/writing-a-good-brief/index.html`\n- `dist/cost-examples/index.html`\n",
       "description": "Run the full link checker to confirm all cross-links in the new pages resolve correctly, and verify both pages exist in the build output.\n\n1. Run `npm run build` to rebuild\n2. Run `npm run check-links` to verify no broken links\n3. Verify `dist/writing-a-good-brief/index.html` contains expected content (bad-vs-good examples)\n4. Verify `dist/cost-examples/index.html` contains expected content (dollar amounts)\n5. Spot-check Australian English spelling in both files",
       "estimate": "10 minutes",
       "files": [
@@ -1648,6 +1651,61 @@
       "verdict": "✅ pass",
       "duration_ms": 9400,
       "created_at": "2026-04-02T04:36:04.984Z"
+    },
+    {
+      "id": 16,
+      "task_id": "T02",
+      "slice_id": "S04",
+      "milestone_id": "M007",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6600,
+      "created_at": "2026-04-02T04:37:42.119Z"
+    },
+    {
+      "id": 17,
+      "task_id": "T02",
+      "slice_id": "S04",
+      "milestone_id": "M007",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 5900,
+      "created_at": "2026-04-02T04:37:42.119Z"
+    },
+    {
+      "id": 18,
+      "task_id": "T02",
+      "slice_id": "S04",
+      "milestone_id": "M007",
+      "command": "grep -c content markers in dist/writing-a-good-brief/index.html",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T04:37:42.119Z"
+    },
+    {
+      "id": 19,
+      "task_id": "T02",
+      "slice_id": "S04",
+      "milestone_id": "M007",
+      "command": "grep -c cost markers in dist/cost-examples/index.html",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T04:37:42.119Z"
+    },
+    {
+      "id": 20,
+      "task_id": "T02",
+      "slice_id": "S04",
+      "milestone_id": "M007",
+      "command": "grep -iE American spellings in both MDX files",
+      "exit_code": 1,
+      "verdict": "✅ pass",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T04:37:42.119Z"
     }
   ]
 }
