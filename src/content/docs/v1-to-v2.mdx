@@ -1,0 +1,74 @@
+---
+title: "GSD v1 vs v2: What Changed and Why"
+description: "The philosophical and structural differences between GSD v1 and v2 — not migration steps, but why v2 exists and what problems it solves."
+---
+
+GSD v2 isn't an incremental update. It's a different philosophy about how AI-assisted development should work. Understanding the shift helps you use v2 well, because the patterns that worked in v1 actively fight against v2's model.
+
+:::note
+This page covers the *why* — the reasoning behind the changes and the problems they solve. For the actual migration steps (moving your `.gsd/` files, updating config, handling breaking changes), see [Migration from v1](../migration/).
+:::
+
+---
+
+## What v1 looked like
+
+GSD v1 was built around a conversation model. You'd open a session, describe what you wanted to build, and the AI would work through it with you. State accumulated in the conversation. Decisions were made inline. The AI knew what you'd discussed because it was all in the same thread.
+
+This worked well for contained tasks. For anything longer — a multi-day feature, a refactor that touched many files, a project with accumulated constraints — v1 had a predictable failure pattern: context rot. By session five or six, the conversation history was so large that the AI was effectively working with a degraded picture of the project. It would contradict earlier decisions, forget patterns you'd established, and require constant re-explanation of context you'd already provided.
+
+v1 also had no structured mechanism for verification. Whether the thing you built actually worked was between you and your test suite. The AI generated code; verification was your job.
+
+---
+
+## The v2 philosophy
+
+v2 is built on three ideas that v1 didn't have:
+
+**1. Fresh context is a feature, not a bug.**
+
+Instead of accumulating conversation history, v2 starts each task with a fresh context window loaded with exactly what that task needs. The project's memory lives in `.gsd/` — requirements, decisions, task summaries — and gets loaded selectively per task. This is why v2 doesn't degrade across sessions: each task gets a clean desk, not a cluttered one.
+
+**2. Structure enables delegation.**
+
+v1 required you to be in the loop on every decision. v2 structures the work — milestones, slices, tasks — so the AI can make local decisions within a defined scope and record them for the next task to read. You stay in the loop at the level that matters (milestone planning, major architectural decisions) without having to supervise every implementation detail.
+
+**3. Verification is built in.**
+
+v2 has a verification contract at every level. Tasks have verification commands. Slices have completion checks. Milestones have a three-tier verification ladder (contract → integration → operational) and a structured validation pass. The AI isn't just generating code — it's confirming that the code works before marking anything complete.
+
+---
+
+## Key differences at a glance
+
+| | v1 | v2 |
+|---|---|---|
+| Memory model | Conversation history | `.gsd/` directory, fresh context per task |
+| Session continuity | Manual re-explanation | Automatic from task summaries |
+| Verification | Ad hoc | Built into every task and slice |
+| Decision tracking | In-conversation | DECISIONS.md, persisted across milestones |
+| Scope management | Conversational drift | Milestone → slice → task hierarchy |
+| Interruption recovery | Restart from scratch | Resume from last completed task |
+| Cost profile | One long conversation | Short targeted tasks, lighter models for routine work |
+
+---
+
+## Why the shift was necessary
+
+The core problem v1 couldn't solve was coherence at scale. A project with ten components, three database migrations, and a set of established patterns can't fit in a single conversation — and even if it did today, it couldn't tomorrow when you've added five more components.
+
+v2's fresh-context model means that coherence doesn't depend on fitting everything in one conversation. It depends on writing good summaries and decisions to disk, which the system enforces structurally. The AI can't "forget" a decision from M001 in M004 because that decision is loaded explicitly into M004's task context.
+
+The verification contracts address a different problem: v1's implicit assumption that code generation equals feature completion. In practice, generated code has bugs, edge cases, and integration failures that only appear when you actually run the system. v2 makes verification a first-class citizen — every slice has a verification command that must exit 0, and milestone validation explicitly audits whether what was claimed to be built was actually verified.
+
+---
+
+## What this means for how you work
+
+If you're coming from v1, the biggest mental shift is **trusting the structure**. v1 trained you to manage context manually — to keep repeating constraints, to re-explain architecture in each session. v2 asks you to load those constraints into `.gsd/` once and let the system carry them forward.
+
+The other shift is **scoping milestones deliberately**. v1 was tolerant of vague goals because the conversation could adapt. v2 works best with clearly defined milestones that have explicit success criteria — not because the AI can't handle ambiguity, but because structured planning produces better results than reactive adaptation.
+
+---
+
+**Ready to migrate?** See [Migration from v1](../migration/) for the step-by-step process of moving an existing v1 project to v2.

@@ -1,0 +1,104 @@
+---
+title: "How Auto Mode Works"
+description: "A 12-point breakdown of the auto-mode pipeline: what each phase does, how the verification ladder fits together, and when to run it versus manual next."
+---
+
+import { Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+Auto mode is GSD's fully autonomous execution loop. You give it a milestone and it plans, executes, verifies, and records until the milestone is done — or until it discovers a genuine blocker that requires your input. Understanding what it actually does at each step makes it far easier to trust, override when necessary, and debug when something goes wrong.
+
+---
+
+## The 12-phase pipeline
+
+Every auto-mode run follows the same lifecycle. The phases aren't rigid — GSD skips phases that don't apply (e.g. replanning when there's nothing to replan) — but the shape is always the same.
+
+<Steps>
+
+1. **Milestone planning**
+
+   GSD reads your requirements, any prior DECISIONS.md and KNOWLEDGE.md, and the milestone you've described. It produces a ROADMAP.md with numbered slices, each with a goal, risk level, and definition of done. Nothing is written to disk until the plan is validated in memory. You can inspect or edit ROADMAP.md before running again.
+
+2. **Slice research**
+
+   Before executing a slice, GSD runs a scout subagent with a narrow context: slice goal, relevant source files, and prior slice summaries. The scout returns a RESEARCH artifact that captures what it found — existing patterns, pitfalls, dependencies. This is the phase where "what does the code actually look like" gets resolved, not assumed.
+
+3. **Slice planning**
+
+   Using the research artifact, GSD decomposes the slice into ordered tasks with explicit inputs, expected outputs, and verification commands for each. The plan is written to `S##-PLAN.md`. Slices are planned one at a time, not all upfront, so later slices can incorporate learning from earlier ones.
+
+4. **Task execution**
+
+   Each task runs in a fresh context window loaded with: the task plan, relevant source files identified during research, prior task summaries from this slice, and the relevant decisions and knowledge files. The executor implements the feature, writes or updates tests, and records observability signals as directed by the plan.
+
+5. **Task completion**
+
+   After execution, GSD writes a structured `T##-SUMMARY.md` covering what was built, verification evidence (commands run + exit codes), deviations from plan, and any known issues. The task is marked complete in the DB and PLAN.md is updated automatically.
+
+6. **Slice completion**
+
+   Once all tasks in a slice are complete, GSD runs the slice-level verification: typically `npm run build`, `npm run test`, or domain-specific checks defined in the slice plan. If verification passes, it writes a `SUMMARY.md` and `UAT.md` for the slice, then checks the roadmap checkbox.
+
+7. **Roadmap reassessment**
+
+   After each slice completes, GSD reassesses whether the remaining roadmap still makes sense. If a slice revealed something unexpected — a dependency that doesn't exist, an architectural constraint, a simpler path — the remaining slices can be adjusted before the next one begins. Completed slices are never modified.
+
+8. **Milestone validation**
+
+   When all slices are done, GSD runs a structured validation pass: checking success criteria, auditing slice delivery against claims, reviewing cross-slice integration, and confirming requirement coverage. It produces a verdict: `pass`, `needs-attention`, or `needs-remediation`.
+
+9. **Milestone completion**
+
+   If validation passes, GSD writes a `MILESTONE-SUMMARY.md` covering the full arc — what was built, requirements advanced, lessons learned, follow-ups. The milestone is marked complete in the DB and the roadmap checkbox is ticked.
+
+10. **Quality gates**
+
+    Quality gates (Q3–Q8) run at strategic points: after slice planning (Q3 correctness, Q4 security), during task execution (Q5 failure modes, Q6 load profile, Q7 negative tests), and at slice/milestone completion (Q8 coverage). Gates produce verdicts that are stored and surfaced in summaries.
+
+11. **Replanning**
+
+    If a task hits a genuine blocker — not a debugging challenge but a plan-invalidating finding — it sets `blocker_discovered: true` and GSD triggers a slice replan. The replan preserves completed tasks and produces a new plan for the remaining work. This is the safety valve that prevents auto mode from thrashing against an invalid plan.
+
+12. **Orchestration loop**
+
+    Between phases, GSD reads the current state from the DB (not from memory), decides the next unit of work, and dispatches it. This means a run can be interrupted and resumed cleanly — the next run picks up exactly where the last one left off. The `.gsd/` directory is the persistent source of truth.
+
+</Steps>
+
+---
+
+## The verification ladder
+
+GSD distinguishes three verification classes, and a well-structured milestone plan covers all three.
+
+<CardGrid>
+  <Card title="Contract verification" icon="approve-check">
+    Unit tests, type checks, and linting. These verify that individual units behave as specified in isolation. Fast to run, run on every task. If contract verification fails, the code is wrong before we even consider integration.
+  </Card>
+  <Card title="Integration verification" icon="puzzle">
+    Cross-boundary checks: API contracts, database migrations, cross-service calls, and anything that depends on two components talking to each other. Slower than unit tests, but catches a different class of failures. GSD runs these at slice completion.
+  </Card>
+  <Card title="Operational verification" icon="rocket">
+    Build, deploy, and end-to-end checks. Does the thing actually build? Does it deploy without error? Does the user-facing flow work? These run at milestone validation and catch the failures that only appear when the whole system comes together.
+  </Card>
+</CardGrid>
+
+The ladder matters because passing at one level doesn't imply passing at the next. Contract tests can pass while integration tests fail (a service changed its contract). Integration tests can pass while operational tests fail (the build pipeline has an environment-specific issue). GSD structures milestones to be verifiable at all three levels — and the milestone plan's `verificationContract`, `verificationIntegration`, and `verificationOperational` fields capture what each level looks like for that specific milestone.
+
+---
+
+## When to use auto mode vs `/gsd next`
+
+**Use auto mode** when you have a well-scoped milestone with clear success criteria, you trust the plan (you've reviewed the roadmap), and you want to step away while it runs.
+
+**Use `/gsd next`** when you're actively involved in the build, want to review each task before executing the next, or are working on a milestone where the plan is likely to evolve as you go.
+
+Auto mode and guided mode aren't opposites — many teams use guided mode for early slices (when the plan is most likely to need adjustment) and switch to auto mode once the shape of the solution is clear.
+
+:::tip
+If an auto-mode run gets stuck or produces something unexpected, check `.gsd/milestones/M###/slices/S##/tasks/T##-SUMMARY.md` for the most recent task's verification evidence and known issues. The summary is usually the fastest way to understand what happened.
+:::
+
+---
+
+**For the full generated reference** — event types, tool signatures, and the complete auto-mode prompt — see [Auto Mode](../auto-mode/).

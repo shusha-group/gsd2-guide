@@ -1,0 +1,92 @@
+---
+title: "The .gsd/ Directory"
+description: "What lives in .gsd/, what each file does, which files are human-authored versus machine-generated, and how the directory accumulates as project memory."
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+The `.gsd/` directory is GSD's persistent memory. It's where requirements live, where plans are written, where task summaries are recorded, and where the system reads state from when it resumes a run. Understanding what's in here — and which parts you can safely edit versus which are machine-managed — makes the whole system much less opaque.
+
+---
+
+## Directory structure
+
+<FileTree>
+
+- .gsd/
+  - gsd.db (SQLite — the authoritative state store)
+  - DECISIONS.md (human + agent decisions, auto-regenerated from DB)
+  - KNOWLEDGE.md (project-specific rules, gotchas, patterns)
+  - REQUIREMENTS.md (requirements register, auto-regenerated from DB)
+  - ROADMAP.md (current milestone roadmap, auto-regenerated from DB)
+  - milestones/
+    - M001/
+      - MILESTONE-SUMMARY.md (written at milestone completion)
+      - VALIDATION.md (written at milestone validation)
+      - ROADMAP.md (milestone-scoped roadmap snapshot)
+      - slices/
+        - S01/
+          - S01-PLAN.md (slice plan, written by planner)
+          - SUMMARY.md (written at slice completion)
+          - UAT.md (UAT checklist, written at slice completion)
+          - tasks/
+            - T01-PLAN.md (task plan, written by planner)
+            - T01-SUMMARY.md (written at task completion)
+            - T02-PLAN.md
+            - T02-SUMMARY.md
+
+</FileTree>
+
+---
+
+## What each file does
+
+**`gsd.db`** is the single source of truth for all GSD state: milestones, slices, tasks, decisions, requirements, gate results, and the event journal. Markdown files are rendered from this database — if you edit a Markdown file directly without updating the DB, the next render will overwrite your change. The safe way to update structured data is through GSD commands, not by editing Markdown.
+
+**`DECISIONS.md`** records architectural and pattern decisions made during the project. Each entry has an ID (D001, D002...), a scope, the choice made, and the rationale. GSD reads this file when starting new tasks so decisions from early milestones inform later ones. You can add decisions manually with `/gsd discuss` or the agent records them automatically during execution.
+
+**`KNOWLEDGE.md`** is a free-form file of project-specific rules, gotchas, and patterns. It's written by the agent when it discovers something non-obvious during execution — a library quirk, a deployment constraint, a pattern that kept causing problems. Unlike DECISIONS.md, it has no structured schema. You can edit it freely.
+
+**`REQUIREMENTS.md`** is the requirements register. Requirements have IDs (R001...), descriptions, status, and validation criteria. The agent updates requirement status as milestones advance. You can add new requirements or update existing ones; the file is regenerated from the DB so changes need to go through the GSD tools to persist.
+
+**`ROADMAP.md`** shows the current milestone's planned slices. It's generated from the DB at the end of each planning phase. You can read it to understand what's coming, but don't edit it directly — use `/gsd steer` to provide steering input that the planner will incorporate.
+
+**Slice and task plan files** (`S##-PLAN.md`, `T##-PLAN.md`) are the execution contracts for each unit of work. They're written once by the planner and then read by the executor. If you want to change a plan before execution starts, you can edit these files — but once a task is complete, its plan is part of the historical record and shouldn't be modified.
+
+**Summary files** (`T##-SUMMARY.md`, `SUMMARY.md`, `MILESTONE-SUMMARY.md`) are the permanent record of what was built and verified. They're written by the agent at completion and never overwritten. They're what the next task reads to understand what prior work produced.
+
+---
+
+## Human-authored vs machine-generated
+
+| File | Who writes it | Safe to edit? |
+|---|---|---|
+| `KNOWLEDGE.md` | Agent (you can add too) | ✅ Yes — append freely |
+| `DECISIONS.md` | Agent + DB render | ⚠️ Add via GSD tools to persist |
+| `REQUIREMENTS.md` | Agent + DB render | ⚠️ Add via GSD tools to persist |
+| `ROADMAP.md` | DB render | ❌ Edit via `/gsd steer` instead |
+| `S##-PLAN.md` | Planner agent | ✅ Before execution starts |
+| `T##-PLAN.md` | Planner agent | ✅ Before that task executes |
+| `T##-SUMMARY.md` | Executor agent | ❌ Historical record |
+| `SUMMARY.md` (slice) | Executor agent | ❌ Historical record |
+| `MILESTONE-SUMMARY.md` | Executor agent | ❌ Historical record |
+| `gsd.db` | GSD runtime | ❌ Never edit directly |
+
+---
+
+## Project memory across milestones
+
+The `.gsd/` directory accumulates over the life of a project. By milestone three or four, you'll have:
+
+- A DECISIONS.md that captures every significant architectural choice, so a new agent session doesn't have to rediscover them
+- A KNOWLEDGE.md with project-specific rules that prevent the same mistakes from recurring
+- A chain of task summaries that show exactly what was built, what was verified, and what edge cases were encountered
+- Requirement status that shows which requirements have been validated and which are still outstanding
+
+This accumulation is the mechanism that makes sustained AI-assisted development coherent across sessions. A task in M004 can read the decisions from M001 and the knowledge captured in M002. Context doesn't degrade — it compounds.
+
+The practical implication: don't delete `.gsd/`. It's not a cache. It's your project's institutional memory.
+
+---
+
+**For the system-level view** — how GSD's components interact, what the DB schema looks like, and how the event journal works — see [Architecture](../architecture/).

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-01T23:44:56.415Z",
+  "exported_at": "2026-04-02T04:28:43.472Z",
   "milestones": [
     {
       "id": "M001",
@@ -206,14 +206,14 @@
       "milestone_id": "M007",
       "id": "S02",
       "title": "Changelog Improvements",
-      "status": "pending",
+      "status": "complete",
       "risk": "medium",
       "depends": [],
       "demo": "After this: every release has a solo-builder-perspective summary on a highlights page; every #NNN is a clickable GitHub link in the full changelog.",
       "created_at": "2026-04-01T22:10:51.256Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T01:12:29.141Z",
+      "full_summary_md": "---\nid: S02\nparent: M007\nmilestone: M007\nprovides:\n  - Changelog page with 768 clickable GitHub issue/PR links\n  - Changelog Highlights page at /changelog-highlights/ with 18 per-release summaries\n  - generate-highlights.mjs script wired into update pipeline\nrequires:\n  []\naffects:\n  - S05\nkey_files:\n  - src/components/ReleaseEntry.astro\n  - scripts/generate-highlights.mjs\n  - content/generated/changelog-highlights.json\n  - src/content/docs/changelog-highlights.mdx\n  - astro.config.mjs\n  - scripts/update.mjs\nkey_decisions:\n  - Used negative lookbehind in regex to avoid double-linking anchors — pattern kept in code, not prose, to avoid JSON escape issues\n  - Heuristic highlights summary (first item from added/changed/fixed) requires no LLM and produces consistent factual output\n  - Skipped releases where all arrays empty and body under 80 chars to filter stub releases\npatterns_established:\n  - Regex patterns in task summaries must be wrapped in backticks or code blocks — never embedded as raw prose in GSD artifact fields, to avoid JSON serialization failures on backslash sequences\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M007/slices/S02/tasks/T01-SUMMARY.md\n  - .gsd/milestones/M007/slices/S02/tasks/T02-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T01:12:29.142Z\nblocker_discovered: false\n---\n\n# S02: Changelog Improvements\n\n**Added 768 clickable GitHub issue/PR links to the changelog and created a new Changelog Highlights page with 18 per-release summaries.**\n\n## What Happened\n\nT01 added a second regex pass to ReleaseEntry.astro that converts bare #NNN references in changelog HTML into clickable links pointing to github.com/gsd-build/gsd-2/issues/NNN. A negative lookbehind prevents double-linking text already inside anchor tags or URLs. The build produced 768 matching links across the changelog page.\n\nT02 created scripts/generate-highlights.mjs, which reads content/generated/releases.json and writes content/generated/changelog-highlights.json with heuristic summaries (first item from added/changed/fixed arrays joined with a dot separator). 18 of 88 releases had structured content. The MDX page at src/content/docs/changelog-highlights.mdx renders accent-bordered cards per release. A sidebar entry was added above Changelog in astro.config.mjs. The generator was wired into scripts/update.mjs (not root update.mjs — correction made during execution) after the extract step. Build confirmed 143 pages, 0 errors; dist/changelog-highlights/index.html present and correct.\n\n## Verification\n\nT01: npm run build then grep-counted github.com/gsd-build/gsd-2/issues/ occurrences in dist/changelog/index.html — 768 matches. T02: node scripts/generate-highlights.mjs (18 highlights written, exit 0), npm run build (143 pages, exit 0), test -f dist/changelog-highlights/index.html (exit 0), grep for Changelog Highlights in that file (exit 0).\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nupdate.mjs lives at scripts/update.mjs, not the root-level path stated in the T02 plan. Corrected during execution with no impact on outcome.\n\n## Known Limitations\n\nHighlights are heuristic — first item from each of added/changed/fixed. Releases with no structured arrays (70 of 88) have no highlight entry. The highlights page is static; it will not update until npm run update re-runs the generator.\n\n## Follow-ups\n\nNone.\n\n## Files Created/Modified\n\n- `src/components/ReleaseEntry.astro` — Added regex pass to linkify #NNN references to GitHub issues/PRs\n- `scripts/generate-highlights.mjs` — New script: reads releases.json, writes changelog-highlights.json with heuristic summaries\n- `content/generated/changelog-highlights.json` — Generated: 18 per-release highlight entries\n- `src/content/docs/changelog-highlights.mdx` — New page: renders per-release highlights as accent-bordered cards\n- `astro.config.mjs` — Added Changelog Highlights sidebar entry above Changelog\n- `scripts/update.mjs` — Wired generate-highlights step after extract in update pipeline\n",
+      "full_uat_md": "# S02: Changelog Improvements — UAT\n\n**Milestone:** M007\n**Written:** 2026-04-02T01:12:29.143Z\n\n## Preconditions\n\n- `npm run build` has completed successfully (143 pages, 0 errors)\n- `dist/` is present and up to date\n- `content/generated/changelog-highlights.json` exists with at least 18 entries\n\n## Test Cases\n\n### TC1 — GitHub links in full changelog\n\n1. Open `dist/changelog/index.html` in a browser or inspect with grep\n2. Find any release entry that referenced a PR or issue (e.g., \"fixes #412\")\n3. **Expected:** The #NNN text is wrapped in an anchor tag linking to `https://github.com/gsd-build/gsd-2/issues/NNN` with `target=\"_blank\"` and `rel=\"noopener noreferrer\"`\n4. **Evidence check:** `grep -o 'github.com/gsd-build/gsd-2/issues/' dist/changelog/index.html | wc -l` returns 768\n\n### TC2 — No double-linking\n\n1. Inspect the changelog HTML for existing anchor tags that contain #NNN text\n2. **Expected:** No anchor tag has its href text re-wrapped in another anchor (i.e., no `href=\"...#NNN...\"` is double-linked)\n3. The negative lookbehind in the regex prevents this\n\n### TC3 — Highlights page exists and loads\n\n1. Open `dist/changelog-highlights/index.html`\n2. **Expected:** Page title contains \"Changelog Highlights\"; at least 18 release cards are present; each card shows a version string, a date, and a summary sentence\n\n### TC4 — Highlights sidebar entry\n\n1. Open any page in `dist/` that renders the full sidebar\n2. **Expected:** Sidebar contains a \"Changelog Highlights\" link above the \"Changelog\" link\n\n### TC5 — Generator is idempotent\n\n1. Run `node scripts/generate-highlights.mjs` twice\n2. **Expected:** `content/generated/changelog-highlights.json` is identical on both runs; no error output; exit code 0 both times\n\n### TC6 — Generator runs in update pipeline\n\n1. Inspect `scripts/update.mjs` for the generate-highlights step\n2. **Expected:** A step calling generate-highlights.mjs appears after the extract step; running `npm run update` (dry-run or live) does not error on this step\n\n### Edge cases\n\n- Releases with no structured arrays (added/changed/fixed all empty): should not appear in changelog-highlights.json\n- A #NNN that appears inside an existing href URL (e.g., `href=\"...issues/123\"`): should NOT be linkified (lookbehind blocks it)\n\n",
       "goal": "Every `#NNN` in the changelog is a clickable GitHub link; a new highlights page shows scannable per-release summaries for solo builders.",
       "success_criteria": "- `npm run build` exits 0\n- Rendered changelog HTML contains `github.com/gsd-build/gsd-2/issues/` links for `#NNN` references\n- `/changelog-highlights/` page exists and renders release summaries\n- Sidebar shows \"Changelog Highlights\" entry",
       "proof_level": "Build + visual verification. No runtime required.",
@@ -234,11 +234,11 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Integrate 7 key content areas from the official GSD 2 docs into the guide as narrative content, with attribution.",
-      "success_criteria": "Auto mode 12-point breakdown integrated; .gsd/ directory structure reference exists; verification ladder documented; v1→v2 comparison in Why GSD 2; git strategy and token optimisation gaps filled; preferences summary with link to official docs; all content in Australian English.",
-      "proof_level": "contract — content exists in pages, build passes, links resolve",
-      "integration_closure": "Content integrates into existing pages. No pipeline changes needed.",
-      "observability_impact": "None — static content",
+      "goal": "Auto mode breakdown, .gsd/ directory structure, verification ladder, and v1→v2 comparison are integrated into the guide as standalone pages in the guide's own voice, with cross-references from existing solo-guide pages.",
+      "success_criteria": "- Three new MDX pages exist: `how-auto-mode-works.mdx`, `gsd-directory.mdx`, `v1-to-v2.mdx`\n- Each page uses second-person Australian English, practitioner voice matching solo-guide tone\n- Cross-reference sections added to `context-engineering.mdx`, `controlling-costs.mdx`, and `building-rhythm.mdx`\n- All new pages appear in sidebar via `astro.config.mjs`\n- `npm run build` exits 0\n- `npm run check-links` exits 0",
+      "proof_level": "contract",
+      "integration_closure": "Upstream: existing solo-guide MDX pages, generated reference pages (auto-mode.md, configuration.md, migration.md, git-strategy.md, token-optimization.md). New wiring: sidebar entries in astro.config.mjs. Nothing else remains.",
+      "observability_impact": "None — pure static content.",
       "sequence": 0,
       "replan_triggered_at": null
     },
@@ -420,6 +420,98 @@
         "`src/content/docs/changelog-highlights.mdx` — highlights page",
         "`astro.config.mjs` — updated sidebar with Changelog Highlights entry",
         "`update.mjs` — updated pipeline with highlights generation step"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M007",
+      "slice_id": "S03",
+      "id": "T01",
+      "title": "Created three hand-authored deep-dive pages (auto mode, .gsd/ directory, v1→v2 comparison) and wired them into a new Deep Dives sidebar group.",
+      "status": "complete",
+      "one_liner": "Created three hand-authored deep-dive pages (auto mode, .gsd/ directory, v1→v2 comparison) and wired them into a new Deep Dives sidebar group.",
+      "narrative": "Created how-auto-mode-works.mdx (12-phase pipeline with Steps + CardGrid, verification ladder, auto vs guided guidance), gsd-directory.mdx (annotated FileTree, human-vs-generated table, project memory explanation), and v1-to-v2.mdx (philosophy comparison, three core v2 ideas, key differences table). Added Deep Dives sidebar group in astro.config.mjs between Solo Builder's Guide and Getting Started. All three pages build cleanly and all 20092 internal links pass.",
+      "verification_result": "npm run build exits 0 (146 pages built). npm run check-links exits 0 with 0 broken links across 20092 internal links checked.",
+      "duration": "",
+      "completed_at": "2026-04-02T04:28:43.442Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/how-auto-mode-works.mdx",
+        "src/content/docs/gsd-directory.mdx",
+        "src/content/docs/v1-to-v2.mdx",
+        "astro.config.mjs"
+      ],
+      "key_decisions": [
+        "Deep Dives sidebar group placed between Solo Builder's Guide and Getting Started for logical reading order",
+        "Used Steps component for 12-phase pipeline and CardGrid for verification ladder to match Starlight conventions"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S03\nmilestone: M007\nkey_files:\n  - src/content/docs/how-auto-mode-works.mdx\n  - src/content/docs/gsd-directory.mdx\n  - src/content/docs/v1-to-v2.mdx\n  - astro.config.mjs\nkey_decisions:\n  - Deep Dives sidebar group placed between Solo Builder's Guide and Getting Started for logical reading order\n  - Used Steps component for 12-phase pipeline and CardGrid for verification ladder to match Starlight conventions\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:28:43.444Z\nblocker_discovered: false\n---\n\n# T01: Created three hand-authored deep-dive pages (auto mode, .gsd/ directory, v1→v2 comparison) and wired them into a new Deep Dives sidebar group.\n\n**Created three hand-authored deep-dive pages (auto mode, .gsd/ directory, v1→v2 comparison) and wired them into a new Deep Dives sidebar group.**\n\n## What Happened\n\nCreated how-auto-mode-works.mdx (12-phase pipeline with Steps + CardGrid, verification ladder, auto vs guided guidance), gsd-directory.mdx (annotated FileTree, human-vs-generated table, project memory explanation), and v1-to-v2.mdx (philosophy comparison, three core v2 ideas, key differences table). Added Deep Dives sidebar group in astro.config.mjs between Solo Builder's Guide and Getting Started. All three pages build cleanly and all 20092 internal links pass.\n\n## Verification\n\nnpm run build exits 0 (146 pages built). npm run check-links exits 0 with 0 broken links across 20092 internal links checked.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `grep -c 'how-auto-mode-works\\|gsd-directory\\|v1-to-v2' astro.config.mjs` | 0 | ✅ pass | 50ms |\n| 2 | `npm run build` | 0 | ✅ pass | 7600ms |\n| 3 | `npm run check-links` | 0 | ✅ pass | 2700ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/how-auto-mode-works.mdx`\n- `src/content/docs/gsd-directory.mdx`\n- `src/content/docs/v1-to-v2.mdx`\n- `astro.config.mjs`\n",
+      "description": "Create three new hand-authored MDX pages covering auto mode (12-point breakdown + verification ladder), .gsd/ directory structure, and v1→v2 comparison. Add all three to the sidebar in astro.config.mjs.\n\n## Critical Constraints\n- Files in `.generated-manifest.json` are overwritten on build — do NOT edit them. The generated pages include `auto-mode.md`, `migration.md`, `configuration.md`, `architecture.md`, `git-strategy.md`, `token-optimization.md`.\n- New pages go in `src/content/docs/` (not inside `solo-guide/`).\n- Use `../page-slug/` relative link format (Starlight convention).\n- MDX curly braces: wrap any `{{variable}}` literals in backticks to avoid JSX parse errors.\n- Available Starlight components: `Card`, `CardGrid`, `LinkCard`, `Badge`, `Tabs`, `TabItem`, `Steps`, `FileTree`, `Icon`, `LinkButton` from `@astrojs/starlight/components`. Callouts use `:::note`, `:::tip` directives.\n\n## Voice & Style\n- Second person, Australian English, practitioner-focused (match the solo-guide pages)\n- Narrative integration per D073: write concepts in the guide's own voice, link to official docs for edge cases\n- Cross-link to generated reference pages where appropriate (e.g. link to `../auto-mode/` for the full generated auto-mode reference)\n\n## Page 1: `how-auto-mode-works.mdx` (~200 lines)\nFrontmatter: title + description. Content covers:\n1. The 12-point auto-mode breakdown (research → plan → execute → verify cycle, with the sub-phases: milestone planning, slice research, slice planning, task execution, task completion, slice completion, roadmap reassessment, milestone validation, milestone completion, quality gates, replanning, and the orchestration loop)\n2. The verification ladder: contract verification (unit/type checks), integration verification (cross-boundary), operational verification (build + deploy), and how GSD uses all three\n3. Link to the generated `../auto-mode/` page for the full reference\n\n## Page 2: `gsd-directory.mdx` (~120 lines)\nFrontmatter: title + description. Content covers:\n1. Annotated directory tree of `.gsd/` using the `FileTree` Starlight component\n2. What each file/directory does in plain language\n3. Which files are human-authored vs machine-generated\n4. How `.gsd/` accumulates as project memory across milestones\n5. Link to `../architecture/` for system-level view\n\n## Page 3: `v1-to-v2.mdx` (~100 lines)\nFrontmatter: title + description. Content covers:\n1. Narrative comparison of v1 vs v2 philosophy (not migration steps — those are in generated `migration.md`)\n2. Key differences: fresh-context model, structured milestone lifecycle, quality gates, verification contracts\n3. Why v2 exists — what problems v1 had that v2 solves\n4. Link to `../migration/` for actual migration steps\n\n## Sidebar\nAdd a new sidebar group in `astro.config.mjs` (after the Solo Builder's Guide group, before Getting Started) called 'Deep Dives' containing the 3 new pages. Follow existing sidebar item format: `{ label: 'Label', link: '/slug/' }`.",
+      "estimate": "30 min",
+      "files": [
+        "src/content/docs/how-auto-mode-works.mdx",
+        "src/content/docs/gsd-directory.mdx",
+        "src/content/docs/v1-to-v2.mdx",
+        "astro.config.mjs"
+      ],
+      "verify": "All 3 files exist with valid frontmatter. `grep -c 'how-auto-mode-works\\|gsd-directory\\|v1-to-v2' astro.config.mjs` returns 3. Quick scan of each file confirms narrative voice and cross-links.",
+      "inputs": [
+        "src/content/docs/solo-guide/first-project.mdx",
+        "src/content/docs/solo-guide/why-gsd.mdx",
+        "src/content/docs/solo-guide/building-rhythm.mdx",
+        "astro.config.mjs"
+      ],
+      "expected_output": [
+        "src/content/docs/how-auto-mode-works.mdx",
+        "src/content/docs/gsd-directory.mdx",
+        "src/content/docs/v1-to-v2.mdx",
+        "astro.config.mjs"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M007",
+      "slice_id": "S03",
+      "id": "T02",
+      "title": "Add cross-reference sections to existing solo-guide pages and verify build",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Add short cross-reference subsections to 3 existing solo-guide MDX pages, then run full build + link verification.\n\n## Cross-Reference Additions\n\n### 1. `src/content/docs/solo-guide/context-engineering.mdx`\nAppend a 'Preferences' subsection before the final `*This is Section 5*` line. Content: 2-3 paragraphs explaining that GSD preferences let you tune behaviour per-project (token profiles, model routing, auto-mode depth). Link to `../../configuration/` for the full reference and to the new `../../how-auto-mode-works/` page.\n\n### 2. `src/content/docs/solo-guide/controlling-costs.mdx`\nAppend a 'Token Optimisation Deep Dive' subsection before the final `*This is Section 6*` line. Content: 1-2 paragraphs noting that GSD applies token optimisation strategies (context compression, incremental delivery, selective file inclusion) and linking to `../../token-optimization/` for the full reference.\n\n### 3. `src/content/docs/solo-guide/building-rhythm.mdx`\nAppend a 'Git Strategy' subsection before the final `*This is Section 8*` line. Content: 1-2 paragraphs noting GSD's git strategy (worktrees for isolation, atomic commits, branch-per-milestone) and linking to `../../git-strategy/` for the full reference. Also add a cross-link to `../../gsd-directory/` and `../../v1-to-v2/` where relevant.\n\n## Voice\nMatch the existing page voice exactly — second person, practitioner-focused, Australian English.\n\n## Verification\nRun `npm run build` (must exit 0) and `npm run check-links` (must exit 0, 0 broken links). These verify all new pages render, all cross-links resolve, and no existing URLs are broken.",
+      "estimate": "15 min",
+      "files": [
+        "src/content/docs/solo-guide/context-engineering.mdx",
+        "src/content/docs/solo-guide/controlling-costs.mdx",
+        "src/content/docs/solo-guide/building-rhythm.mdx"
+      ],
+      "verify": "`npm run build` exits 0. `npm run check-links` exits 0 with 0 broken links.",
+      "inputs": [
+        "src/content/docs/solo-guide/context-engineering.mdx",
+        "src/content/docs/solo-guide/controlling-costs.mdx",
+        "src/content/docs/solo-guide/building-rhythm.mdx",
+        "src/content/docs/how-auto-mode-works.mdx",
+        "src/content/docs/gsd-directory.mdx",
+        "src/content/docs/v1-to-v2.mdx"
+      ],
+      "expected_output": [
+        "src/content/docs/solo-guide/context-engineering.mdx",
+        "src/content/docs/solo-guide/controlling-costs.mdx",
+        "src/content/docs/solo-guide/building-rhythm.mdx"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -1403,6 +1495,39 @@
       "verdict": "✅ pass",
       "duration_ms": 10,
       "created_at": "2026-04-01T23:44:56.396Z"
+    },
+    {
+      "id": 10,
+      "task_id": "T01",
+      "slice_id": "S03",
+      "milestone_id": "M007",
+      "command": "grep -c 'how-auto-mode-works\\|gsd-directory\\|v1-to-v2' astro.config.mjs",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T04:28:43.443Z"
+    },
+    {
+      "id": 11,
+      "task_id": "T01",
+      "slice_id": "S03",
+      "milestone_id": "M007",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 7600,
+      "created_at": "2026-04-02T04:28:43.443Z"
+    },
+    {
+      "id": 12,
+      "task_id": "T01",
+      "slice_id": "S03",
+      "milestone_id": "M007",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 2700,
+      "created_at": "2026-04-02T04:28:43.443Z"
     }
   ]
 }

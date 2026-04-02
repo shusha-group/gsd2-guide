@@ -36,6 +36,14 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Deep Dives',
+          items: [
+            { label: 'How Auto Mode Works', link: '/how-auto-mode-works/' },
+            { label: 'The .gsd/ Directory', link: '/gsd-directory/' },
+            { label: 'GSD v1 vs v2', link: '/v1-to-v2/' },
+          ],
+        },
+        {
           label: 'Getting Started',
           items: [
             { label: 'Is GSD Right for Me?', link: '/is-gsd-right-for-me/' },

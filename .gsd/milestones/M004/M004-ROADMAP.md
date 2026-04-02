@@ -1,4 +1,4 @@
-# M004: Claude Code–Powered Documentation Regeneration
+# M004: Claude Code-Powered Documentation Regeneration
 
 **Vision:** Every documentation page in gsd-guide is traceable to source in gsd-pi. When source changes, `npm run update` (triggered by "update gsd-guide") spawns Claude Code to regenerate stale pages with full tool access — the same capability that wrote the original docs — then builds, link-checks, commits, pushes, and deploys to GitHub Pages. Zero intervention.
 
