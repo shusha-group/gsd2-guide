@@ -10,7 +10,7 @@ A solo builder can learn, adopt, and operate GSD 2 without leaving this guide fo
 
 ## Current State
 
-Seven milestones complete. The site has 148 pages: a full Solo Builder's Guide (8 sections), 50+ command deep-dive pages, prompt reference, extension reference, recipes, changelog with inline highlights and era navigation, deep-dive pages (auto mode, .gsd/ directory, v1→v2, story of GSD), quick reference, decision guide, brief writing guide, and cost examples. M008 in progress: full site restructure around three personas (solo business builder, developer new to AI coding, experienced AI developer) with progressive disclosure, persona-aware homepage, consolidated content, and curated learning paths.
+Eight milestones complete. The site has 156 pages: a persona-aware homepage with 3 reading paths (Choose Your Starting Point), 5-section sidebar (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More), a full Solo Builder's Guide (8 sections), 50+ command deep-dive pages, prompt reference, extension reference, recipes (including consolidated cost recipe), changelog, deep-dive pages, FAQ (11 Q&As), Glossary (25 terms), bridge pages for Replit/Lovable/Cursor users, unified Skills/Extensions/Agents guide, and site-wide prev/next pagination with audience-bridging callouts on 16 pages.
 
 ## Architecture / Key Patterns
 
@@ -35,4 +35,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M005: Prompt Reference Section
 - [x] M006: Solo Builder's Applied Guide to GSD 2
 - [x] M007: Guide Consolidation & Usability — Changelog highlights, quick reference, content consolidation, decision guide, brief-writing guide, cost examples, navigation polish
-- [ ] M008: Site Restructure & Persona Navigation — Three-persona progressive disclosure, sidebar restructure, content consolidation, homepage rewrite, learning paths, bridge pages
+- [x] M008: Site Restructure & Persona Navigation — Three-persona progressive disclosure, sidebar restructure, content consolidation, homepage rewrite, learning paths, bridge pages

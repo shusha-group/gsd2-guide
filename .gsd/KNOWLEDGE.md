@@ -148,3 +148,31 @@ When writing task or slice summaries that include regex patterns (e.g., negative
 **Context:** S02 T02 plan assumed root-level `update.mjs`; actual file is `scripts/update.mjs`.
 
 When planning tasks that wire new scripts into the update pipeline, confirm the actual path of update.mjs before writing the plan. In this project it lives at `scripts/update.mjs` alongside all other pipeline scripts.
+
+## Starlight built HTML uses aria-label="Main" not aria-label="Sidebar"
+
+**Context:** S02 verification script used `aria-label="Sidebar"` to locate the sidebar in built HTML.
+
+The built HTML from Astro Starlight uses `aria-label="Main"` on the nav element, not `aria-label="Sidebar"`. Any verification script that greps for `aria-label="Sidebar"` will find nothing and silently fail. Use `aria-label="Main"` or inspect the DOM directly for elements with `class="large"` (top-level sidebar section spans).
+
+## Edit tool can fail silently on large files
+
+**Context:** S03 T03 discovered a missing cross-link that should have been added by a previous task's edit tool call.
+
+When using the edit tool on large content files, always verify the edit landed with `grep` before proceeding to the build. A silent failure produces no error but leaves the file unchanged. If grep confirms the change is missing, fall back to bash append or targeted write.
+
+## Virtual module import path for Starlight Pagination
+
+**Context:** S05 T01 — restoring prev/next pagination in a custom Footer.astro override.
+
+The correct import for Starlight's built-in Pagination component inside a custom component override is:
+```
+import Pagination from 'virtual:starlight/components/Pagination';
+```
+Relative imports (`../../Pagination`) will not resolve. Pass `{...Astro.props}` to provide pagination context. Without this, any site that overrides Footer.astro loses prev/next navigation entirely.
+
+## Generated content must be edited at source, not compiled output
+
+**Context:** S05 T02 — adding audience-bridging callouts to generated pages.
+
+Pages listed in `.generated-manifest.json` are compiled from `content/generated/docs/` into `src/content/docs/` during prebuild. Editing `src/content/docs/auto-mode.md` directly would be overwritten on next build. Always edit the source at `content/generated/docs/<filename>` for generated pages. The generated-manifest constraint is easy to miss when planning tasks — always check the manifest first.
