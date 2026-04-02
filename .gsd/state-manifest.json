@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T13:34:46.561Z",
+  "exported_at": "2026-04-02T19:34:19.716Z",
   "milestones": [
     {
       "id": "M001",
@@ -430,16 +430,16 @@
       "milestone_id": "M008",
       "id": "S04",
       "title": "Homepage Rewrite",
-      "status": "pending",
+      "status": "complete",
       "risk": "medium",
       "depends": [
         "S02"
       ],
       "demo": "After this: homepage has persona cards, How GSD Works section, Common Tasks, Go Deeper — all linking correctly.",
       "created_at": "2026-04-02T13:06:47.695Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T13:35:36.603Z",
+      "full_summary_md": "---\nid: S04\nparent: M008\nmilestone: M008\nprovides:\n  - Homepage with 3 persona cards linking to solo-guide, getting-started, and commands\n  - Common Tasks section with 4 recipe LinkCards\n  - Go Deeper section with 4 architecture/reference LinkCards\n  - How GSD Works mermaid diagram retained\nrequires:\n  []\naffects:\n  - S05\n  - S06\nkey_files:\n  - src/content/docs/index.mdx\nkey_decisions:\n  - Used Card+CardGrid for persona cards (rich body content with description + CTA link) vs LinkCard for Common Tasks and Go Deeper sections (single-link navigation items)\npatterns_established:\n  - Persona card pattern: Card+CardGrid with description prose + markdown CTA link in the body — allows richer content than LinkCard while still being a navigation element\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M008/slices/S04/tasks/T01-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:35:36.604Z\nblocker_discovered: false\n---\n\n# S04: Homepage Rewrite\n\n**Rewrote the homepage with persona cards (Choose Your Starting Point), retained How GSD Works mermaid diagram, and added Common Tasks + Go Deeper LinkCard sections — all links verified.**\n\n## What Happened\n\nSingle-task slice. T01 rewrote `src/content/docs/index.mdx` from scratch: added `Card` to the existing import alongside `CardGrid` and `LinkCard`, replaced the old \"Learn GSD\" section with \"Choose Your Starting Point\" (3 persona `Card` components in a `CardGrid` — Solo Business Builder, Developer New to AI Coding, Experienced AI Developer), kept the \"How GSD Works\" mermaid diagram untouched, replaced \"Commands\" + \"Recipes\" with \"Common Tasks\" (4 LinkCards: Fix a Bug, Small Change, Error Recovery, Developing with GSD), and replaced \"Reference & Guides\" with \"Go Deeper\" (4 LinkCards: Architecture, Auto Mode, Quick Reference Cards, All Commands). Hero actions and `template: doc` frontmatter were left unchanged. All hrefs use the `/gsd2-guide/` base-path prefix. Build produced 150 pages (exit 0) and link checker verified 20,639 internal links with 0 broken.\n\n## Verification\n\nnpm run build → exit 0, 150 pages built. npm run check-links → exit 0, 20,639 links, 0 broken.\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nNone.\n\n## Known Limitations\n\nNone.\n\n## Follow-ups\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/index.mdx` — Rewrote homepage: added persona cards (Choose Your Starting Point), retained How GSD Works mermaid, replaced old sections with Common Tasks and Go Deeper LinkCards\n",
+      "full_uat_md": "# S04: Homepage Rewrite — UAT\n\n**Milestone:** M008\n**Written:** 2026-04-02T13:35:36.604Z\n\n## UAT: S04 Homepage Rewrite\n\n### Preconditions\n- Built site available (`npm run build` exits 0)\n- Link checker passes (`npm run check-links` exits 0, 0 broken)\n\n### Test Cases\n\n**TC01 — Persona cards render (Choose Your Starting Point)**\n1. Open `/gsd2-guide/` in a browser\n2. Expected: Section heading \"Choose Your Starting Point\" visible\n3. Expected: Three cards present — \"Solo Business Builder\", \"Developer New to AI Coding\", \"Experienced AI Developer\"\n4. Expected: Each card has a short description and a CTA link in the body\n\n**TC02 — Persona card links resolve**\n1. Click \"Solo Business Builder\" card link → expect `/gsd2-guide/solo-guide/` loads without 404\n2. Click \"Developer New to AI Coding\" card link → expect `/gsd2-guide/getting-started/` loads without 404\n3. Click \"Experienced AI Developer\" card link → expect `/gsd2-guide/commands/` loads without 404\n\n**TC03 — How GSD Works mermaid diagram retained**\n1. Open `/gsd2-guide/`\n2. Expected: \"How GSD Works\" section heading present\n3. Expected: Mermaid diagram renders as SVG (not raw code block)\n\n**TC04 — Common Tasks section**\n1. Open `/gsd2-guide/`\n2. Expected: \"Common Tasks\" section with 4 LinkCards: Fix a Bug, Small Change, Error Recovery, Developing with GSD\n3. Click each → confirm destinations: `/gsd2-guide/recipes/fix-a-bug/`, `/gsd2-guide/recipes/small-change/`, `/gsd2-guide/recipes/error-recovery/`, `/gsd2-guide/user-guide/developing-with-gsd/`\n\n**TC05 — Go Deeper section**\n1. Open `/gsd2-guide/`\n2. Expected: \"Go Deeper\" section with 4 LinkCards: Architecture, Auto Mode, Quick Reference Cards, All Commands\n3. Click each → confirm destinations: `/gsd2-guide/architecture/`, `/gsd2-guide/auto-mode/`, `/gsd2-guide/reference/`, `/gsd2-guide/commands/`\n\n**TC06 — Hero actions unchanged**\n1. Open `/gsd2-guide/`\n2. Expected: Hero section present with \"Getting Started\", \"Developing with GSD\", and \"GitHub\" action buttons\n3. All hero links resolve correctly\n\n**TC07 — No old sections present**\n1. Open `/gsd2-guide/`\n2. Expected: No \"Learn GSD\", \"Commands\", \"Recipes\", or \"Reference & Guides\" section headings\n3. Old content replaced by new structure\n\n**TC08 — Build + link check**\n1. Run `npm run build` → expect exit 0, 150 pages\n2. Run `npm run check-links` → expect exit 0, 0 broken links\n\n",
       "goal": "Homepage has persona cards, How GSD Works section, Common Tasks, Go Deeper — all linking correctly.",
       "success_criteria": "- Three persona cards (Solo Business Builder, Developer New to AI Coding, Experienced AI Developer) with descriptions and links to entry points\n- How GSD Works mermaid diagram retained\n- Common Tasks section with 3-4 recipe LinkCards\n- Go Deeper section with 3-4 reference/architecture LinkCards\n- `npm run build` exits 0\n- `npm run check-links` exits 0 (no broken links)\n- `template: doc` remains in frontmatter",
       "proof_level": "Build + link check verify all links resolve. No runtime required.",
@@ -463,10 +463,10 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Enable Starlight pagination for Solo Guide. Add Next Steps blocks to all non-Solo-Guide pages. Add audience-bridging callouts to 7+ pages per spec.",
-      "success_criteria": "Solo Guide pages show prev/next navigation. All non-Solo-Guide pages end with Next Steps block. 7+ pages have audience-bridging :::tip callouts. 0 broken links.",
-      "proof_level": "Build + content grep + link checker",
-      "integration_closure": "Cross-links target consolidated and repositioned pages from S02/S03.",
+      "goal": "Solo Guide has prev/next navigation, all key pages have Next Steps sections, and audience-bridging callouts appear on 7+ pages.",
+      "success_criteria": "- `npm run build` exits 0\n- `npm run check-links` reports 0 broken links\n- `grep -c 'pagination-links' dist/solo-guide/first-project/index.html` returns ≥1\n- `grep -c 'pagination-links' dist/auto-mode/index.html` returns ≥1\n- `grep -rl ':::tip' src/content/docs/ content/generated/docs/ | wc -l` returns ≥7\n- Next Steps sections exist on pages that previously ended abruptly",
+      "proof_level": "integration — build + link-check proves pagination renders and all links resolve",
+      "integration_closure": "- Upstream: S02 sidebar structure (astro.config.mjs), S03 consolidated content pages\n- New wiring: Pagination component import in Footer.astro\n- Remaining: S06 (New Content Pages) is the final milestone slice",
       "observability_impact": "none",
       "sequence": 0,
       "replan_triggered_at": null
@@ -1121,6 +1121,95 @@
       ],
       "expected_output": [
         "`src/content/docs/index.mdx` — rewritten homepage with persona cards, Common Tasks, Go Deeper sections"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S05",
+      "id": "T01",
+      "title": "Added Starlight Pagination to Footer.astro, restoring prev/next navigation site-wide",
+      "status": "complete",
+      "one_liner": "Added Starlight Pagination to Footer.astro, restoring prev/next navigation site-wide",
+      "narrative": "The custom Footer.astro was replacing Starlight's default Footer without including the Pagination component. Added the virtual:starlight/components/Pagination import and rendered it with Astro.props above the custom footer markup. All existing footer markup preserved.",
+      "verification_result": "Build exit 0; pagination-links present in both solo-guide/first-project and auto-mode pages; 0 broken links across 20909 checked.",
+      "duration": "",
+      "completed_at": "2026-04-02T19:34:19.689Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/components/Footer.astro"
+      ],
+      "key_decisions": [
+        "Import Pagination from virtual:starlight/components/Pagination and render above custom footer markup"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S05\nmilestone: M008\nkey_files:\n  - src/components/Footer.astro\nkey_decisions:\n  - Import Pagination from virtual:starlight/components/Pagination and render above custom footer markup\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T19:34:19.690Z\nblocker_discovered: false\n---\n\n# T01: Added Starlight Pagination to Footer.astro, restoring prev/next navigation site-wide\n\n**Added Starlight Pagination to Footer.astro, restoring prev/next navigation site-wide**\n\n## What Happened\n\nThe custom Footer.astro was replacing Starlight's default Footer without including the Pagination component. Added the virtual:starlight/components/Pagination import and rendered it with Astro.props above the custom footer markup. All existing footer markup preserved.\n\n## Verification\n\nBuild exit 0; pagination-links present in both solo-guide/first-project and auto-mode pages; 0 broken links across 20909 checked.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 7300ms |\n| 2 | `grep -c 'pagination-links' dist/solo-guide/first-project/index.html` | 0 | ✅ pass (count=1) | 50ms |\n| 3 | `grep -c 'pagination-links' dist/auto-mode/index.html` | 0 | ✅ pass (count=1) | 50ms |\n| 4 | `npm run check-links` | 0 | ✅ pass (0 broken / 20909 checked) | 2300ms |\n\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/components/Footer.astro`\n",
+      "description": "The custom Footer.astro override completely replaces Starlight's default Footer without including the Pagination component. This breaks prev/next navigation site-wide. Fix by importing Pagination from the Starlight virtual module and rendering it above the custom footer markup.\n\nSteps:\n1. Read `src/components/Footer.astro` to confirm current state (no Pagination import).\n2. Add `import Pagination from 'virtual:starlight/components/Pagination';` to the frontmatter.\n3. Render `<Pagination {...Astro.props} />` immediately before the `<footer class=\"site-footer\">` element.\n4. Run `npm run build` — must exit 0.\n5. Run `grep -c 'pagination-links' dist/solo-guide/first-project/index.html` — must return ≥1.\n6. Run `grep -c 'pagination-links' dist/auto-mode/index.html` — must return ≥1 (confirms site-wide).\n7. Run `npm run check-links` — must report 0 broken links.\n\nConstraints:\n- Import MUST use `'virtual:starlight/components/Pagination'` (the Starlight virtual module pattern), NOT a relative path.\n- Preserve ALL existing custom footer markup — only add the Pagination component above it.\n- Pass `{...Astro.props}` to Pagination so it receives page context.",
+      "estimate": "15m",
+      "files": [
+        "src/components/Footer.astro"
+      ],
+      "verify": "npm run build && grep -c 'pagination-links' dist/solo-guide/first-project/index.html && grep -c 'pagination-links' dist/auto-mode/index.html && npm run check-links",
+      "inputs": [
+        "`src/components/Footer.astro` — current custom footer without Pagination"
+      ],
+      "expected_output": [
+        "`src/components/Footer.astro` — updated with Pagination import and render"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S05",
+      "id": "T02",
+      "title": "Add Next Steps sections and audience-bridging callouts to 7+ pages",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Add '## Next Steps' sections with 2-3 relevant links and ':::tip' audience-bridging callouts to key content pages. These are pure content additions.\n\nIMPORTANT: Three pages are pipeline-generated (auto-mode.md, configuration.md, getting-started.md). Edit the source files in `content/generated/docs/`, NOT `src/content/docs/`. Hand-authored pages (skills-extensions-agents.md, recipes/control-your-costs.md, is-gsd-right-for-me.md, quick-reference.md, solo-guide/*.mdx) are edited directly in `src/content/docs/`.\n\nSteps:\n1. Add audience-bridging `:::tip` callouts to these pages (edit the correct source location):\n   - `content/generated/docs/auto-mode.md` — link solo builders to Solo Guide, devs to how-auto-mode-works\n   - `content/generated/docs/getting-started.md` — link solo builders to Solo Guide overview\n   - `content/generated/docs/configuration.md` — link to recipes for common config tasks\n   - `src/content/docs/skills-extensions-agents.md` — link to reference pages for details\n   - `src/content/docs/recipes/control-your-costs.md` — link solo builders to Solo Guide cost page\n   - `src/content/docs/is-gsd-right-for-me.md` — link to Solo Guide and Getting Started\n   - `src/content/docs/quick-reference.md` — link to Solo Guide for guided learning\n2. Add `## Next Steps` with LinkCard imports to pages that end abruptly (where they don't already have one). Use `import { LinkCard } from '@astrojs/starlight/components';` in .mdx files. In .md files use plain markdown links in a list.\n3. Run `npm run build` — must exit 0.\n4. Run `npm run check-links` — must report 0 broken links.\n5. Verify: `grep -rl ':::tip' src/content/docs/ content/generated/docs/ | wc -l` returns ≥7.\n\nConstraints:\n- Use Australian English throughout.\n- Never edit files listed in `src/content/docs/.generated-manifest.json` directly — edit `content/generated/docs/` versions instead.\n- Use Starlight link format: `](../sibling-page/)` with `../` prefix.\n- Callout syntax: `:::tip[Title]` / content / `:::`",
+      "estimate": "30m",
+      "files": [
+        "content/generated/docs/auto-mode.md",
+        "content/generated/docs/getting-started.md",
+        "content/generated/docs/configuration.md",
+        "src/content/docs/skills-extensions-agents.md",
+        "src/content/docs/recipes/control-your-costs.md",
+        "src/content/docs/is-gsd-right-for-me.md",
+        "src/content/docs/quick-reference.md"
+      ],
+      "verify": "npm run build && npm run check-links && test $(grep -rl ':::tip' src/content/docs/ content/generated/docs/ | wc -l) -ge 7",
+      "inputs": [
+        "`src/components/Footer.astro` — T01 output with Pagination restored",
+        "`content/generated/docs/auto-mode.md` — generated source for auto-mode page",
+        "`content/generated/docs/getting-started.md` — generated source for getting-started page",
+        "`content/generated/docs/configuration.md` — generated source for configuration page",
+        "`src/content/docs/skills-extensions-agents.md` — hand-authored skills guide",
+        "`src/content/docs/recipes/control-your-costs.md` — hand-authored cost recipe",
+        "`src/content/docs/is-gsd-right-for-me.md` — hand-authored evaluation page",
+        "`src/content/docs/quick-reference.md` — hand-authored quick reference"
+      ],
+      "expected_output": [
+        "`content/generated/docs/auto-mode.md` — with callout added",
+        "`content/generated/docs/getting-started.md` — with callout added",
+        "`content/generated/docs/configuration.md` — with callout added",
+        "`src/content/docs/skills-extensions-agents.md` — with callout added",
+        "`src/content/docs/recipes/control-your-costs.md` — with callout added",
+        "`src/content/docs/is-gsd-right-for-me.md` — with callout added",
+        "`src/content/docs/quick-reference.md` — with callout and Next Steps added"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -2538,6 +2627,50 @@
       "verdict": "✅ pass",
       "duration_ms": 3400,
       "created_at": "2026-04-02T13:34:46.540Z"
+    },
+    {
+      "id": 44,
+      "task_id": "T01",
+      "slice_id": "S05",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 7300,
+      "created_at": "2026-04-02T19:34:19.689Z"
+    },
+    {
+      "id": 45,
+      "task_id": "T01",
+      "slice_id": "S05",
+      "milestone_id": "M008",
+      "command": "grep -c 'pagination-links' dist/solo-guide/first-project/index.html",
+      "exit_code": 0,
+      "verdict": "✅ pass (count=1)",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T19:34:19.689Z"
+    },
+    {
+      "id": 46,
+      "task_id": "T01",
+      "slice_id": "S05",
+      "milestone_id": "M008",
+      "command": "grep -c 'pagination-links' dist/auto-mode/index.html",
+      "exit_code": 0,
+      "verdict": "✅ pass (count=1)",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T19:34:19.689Z"
+    },
+    {
+      "id": 47,
+      "task_id": "T01",
+      "slice_id": "S05",
+      "milestone_id": "M008",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass (0 broken / 20909 checked)",
+      "duration_ms": 2300,
+      "created_at": "2026-04-02T19:34:19.689Z"
     }
   ]
 }
