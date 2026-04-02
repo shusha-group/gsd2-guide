@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T19:43:39.923Z",
+  "exported_at": "2026-04-02T19:45:11.645Z",
   "milestones": [
     {
       "id": "M001",
@@ -1325,19 +1325,25 @@
       "milestone_id": "M008",
       "slice_id": "S06",
       "id": "T03",
-      "title": "Wire sidebar entries and run final link check",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Added Choose Your Path, FAQ, and Glossary to sidebar; linked bridge pages from choose-your-path; build and 22208 link checks pass clean",
+      "status": "complete",
+      "one_liner": "Added Choose Your Path, FAQ, and Glossary to sidebar; linked bridge pages from choose-your-path; build and 22208 link checks pass clean",
+      "narrative": "Inserted Choose Your Path and FAQ entries into the Start Here sidebar group after Is GSD Right for Me?, and added Glossary after Troubleshooting in the Learn More group. Bridge pages remain unlisted per R094. Also added deferred bridge page cross-links to choose-your-path.mdx (Path 1 → Replit/Lovable, Path 3 → Cursor) so every unlisted page has at least one inbound link. Build exits 0 with 156 pages; link checker reports 0 broken across 22208 links.",
+      "verification_result": "npm run build (exit 0, 156 pages) and npm run check-links (0 broken / 22208 checked)",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-04-02T19:45:11.592Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
-      "key_decisions": [],
-      "full_summary_md": "",
+      "deviations": "Added bridge page cross-links to choose-your-path.mdx — deferred from T01/T02, consistent with slice goal of correct cross-linking.",
+      "known_issues": "None.",
+      "key_files": [
+        "astro.config.mjs",
+        "src/content/docs/choose-your-path.mdx"
+      ],
+      "key_decisions": [
+        "Bridge pages remain unlisted in sidebar (R094); linked only from choose-your-path.mdx prose",
+        "Added bridge page links to Path 1 and Path 3 sections as deferred cross-linking from T01/T02"
+      ],
+      "full_summary_md": "---\nid: T03\nparent: S06\nmilestone: M008\nkey_files:\n  - astro.config.mjs\n  - src/content/docs/choose-your-path.mdx\nkey_decisions:\n  - Bridge pages remain unlisted in sidebar (R094); linked only from choose-your-path.mdx prose\n  - Added bridge page links to Path 1 and Path 3 sections as deferred cross-linking from T01/T02\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T19:45:11.593Z\nblocker_discovered: false\n---\n\n# T03: Added Choose Your Path, FAQ, and Glossary to sidebar; linked bridge pages from choose-your-path; build and 22208 link checks pass clean\n\n**Added Choose Your Path, FAQ, and Glossary to sidebar; linked bridge pages from choose-your-path; build and 22208 link checks pass clean**\n\n## What Happened\n\nInserted Choose Your Path and FAQ entries into the Start Here sidebar group after Is GSD Right for Me?, and added Glossary after Troubleshooting in the Learn More group. Bridge pages remain unlisted per R094. Also added deferred bridge page cross-links to choose-your-path.mdx (Path 1 → Replit/Lovable, Path 3 → Cursor) so every unlisted page has at least one inbound link. Build exits 0 with 156 pages; link checker reports 0 broken across 22208 links.\n\n## Verification\n\nnpm run build (exit 0, 156 pages) and npm run check-links (0 broken / 22208 checked)\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 6700ms |\n| 2 | `npm run check-links` | 0 | ✅ pass | 2500ms |\n\n\n## Deviations\n\nAdded bridge page cross-links to choose-your-path.mdx — deferred from T01/T02, consistent with slice goal of correct cross-linking.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `astro.config.mjs`\n- `src/content/docs/choose-your-path.mdx`\n",
       "description": "Add sidebar entries to astro.config.mjs for the new pages and run full build + link verification.\n\nSteps:\n1. Open `astro.config.mjs` and locate the Start Here section (line ~22).\n2. Add Choose Your Path entry after 'Is GSD Right for Me?': `{ label: 'Choose Your Path', link: '/choose-your-path/' }`\n3. Add FAQ entry after Choose Your Path: `{ label: 'FAQ', link: '/faq/' }`\n4. Locate the Learn More section (line ~163). Add Glossary entry near the end (before Prompts group or after Troubleshooting): `{ label: 'Glossary', link: '/glossary/' }`\n5. Do NOT add sidebar entries for coming-from-replit, coming-from-lovable, coming-from-cursor — these are unlisted bridge pages.\n6. Verify Is GSD Right for Me links to bridge pages resolve (the pages created in T02).\n7. Run `npm run build` — must exit 0.\n8. Run `npm run check-links` — must report 0 broken links.\n\nConstraints:\n- Preserve exact existing sidebar structure from S02\n- Bridge pages must NOT appear in sidebar (R094)",
       "estimate": "20m",
       "files": [
@@ -2894,6 +2900,28 @@
       "verdict": "✅ pass",
       "duration_ms": 5670,
       "created_at": "2026-04-02T19:43:39.902Z"
+    },
+    {
+      "id": 55,
+      "task_id": "T03",
+      "slice_id": "S06",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6700,
+      "created_at": "2026-04-02T19:45:11.592Z"
+    },
+    {
+      "id": 56,
+      "task_id": "T03",
+      "slice_id": "S06",
+      "milestone_id": "M008",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 2500,
+      "created_at": "2026-04-02T19:45:11.592Z"
     }
   ]
 }

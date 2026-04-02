@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T02",
+  "unitId": "M008/S06/T02",
+  "timestamp": 1775159022283,
+  "passed": true,
+  "discoverySource": "task-plan",
+  "checks": [
+    {
+      "command": "test -f src/content/docs/coming-from-replit.mdx",
+      "exitCode": 0,
+      "durationMs": 3,
+      "verdict": "pass"
+    },
+    {
+      "command": "test -f src/content/docs/coming-from-lovable.mdx",
+      "exitCode": 0,
+      "durationMs": 2,
+      "verdict": "pass"
+    },
+    {
+      "command": "test -f src/content/docs/coming-from-cursor.mdx",
+      "exitCode": 0,
+      "durationMs": 2,
+      "verdict": "pass"
+    },
+    {
+      "command": "test -f src/content/docs/faq.mdx",
+      "exitCode": 0,
+      "durationMs": 3,
+      "verdict": "pass"
+    },
+    {
+      "command": "test -f src/content/docs/glossary.md",
+      "exitCode": 0,
+      "durationMs": 2,
+      "verdict": "pass"
+    }
+  ]
+}

@@ -39,7 +39,7 @@ Constraints:
   - Estimate: 60m
   - Files: src/content/docs/coming-from-replit.mdx, src/content/docs/coming-from-lovable.mdx, src/content/docs/coming-from-cursor.mdx, src/content/docs/faq.mdx, src/content/docs/glossary.md
   - Verify: test -f src/content/docs/coming-from-replit.mdx && test -f src/content/docs/coming-from-lovable.mdx && test -f src/content/docs/coming-from-cursor.mdx && test -f src/content/docs/faq.mdx && test -f src/content/docs/glossary.md && npm run build 2>&1 | tail -5
-- [ ] **T03: Wire sidebar entries and run final link check** — Add sidebar entries to astro.config.mjs for the new pages and run full build + link verification.
+- [x] **T03: Added Choose Your Path, FAQ, and Glossary to sidebar; linked bridge pages from choose-your-path; build and 22208 link checks pass clean** — Add sidebar entries to astro.config.mjs for the new pages and run full build + link verification.
 
 Steps:
 1. Open `astro.config.mjs` and locate the Start Here section (line ~22).

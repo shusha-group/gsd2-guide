@@ -23,6 +23,8 @@ export default defineConfig({
           items: [
             { label: 'Home', link: '/' },
             { label: 'Is GSD Right for Me?', link: '/is-gsd-right-for-me/' },
+            { label: 'Choose Your Path', link: '/choose-your-path/' },
+            { label: 'FAQ', link: '/faq/' },
             { label: 'Quick Reference', link: '/quick-reference/' },
             { label: 'Writing a Good Brief', link: '/writing-a-good-brief/' },
             { label: 'Cost Examples', link: '/cost-examples/' },
@@ -175,6 +177,7 @@ export default defineConfig({
             { label: 'Remote Questions', link: '/remote-questions/' },
             { label: 'Migration from v1', link: '/migration/' },
             { label: 'Troubleshooting', link: '/troubleshooting/' },
+            { label: 'Glossary', link: '/glossary/' },
             { label: 'Overview', link: '/reference/' },
             { label: 'Commands', link: '/reference/commands/' },
             { label: 'Skills', link: '/reference/skills/' },
