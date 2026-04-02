@@ -10,7 +10,7 @@ A solo builder can learn, adopt, and operate GSD 2 without leaving this guide fo
 
 ## Current State
 
-Six milestones complete. The site has a full Solo Builder's Guide (8 sections), command reference pages for 50+ commands, prompt reference, extension reference, recipes, and a changelog rendered from upstream releases. The `npm run update` pipeline extracts content from the gsd-pi package and official GitHub docs, diffs for staleness, regenerates pages via Claude, builds with Astro, and validates all internal links. Deployed to GitHub Pages at `shusha-group.github.io/gsd2-guide/`.
+Seven milestones complete. The site has a full Solo Builder's Guide (8 sections), command reference pages for 50+ commands, prompt reference, extension reference, recipes, and a changelog rendered from upstream releases. M007 added: quick-reference page (15 commands by workflow phase), decision guide (is-gsd-right-for-me), changelog improvements (768 clickable #NNN links + highlights page with 18 release summaries), three deep-dive pages (auto mode, .gsd/ directory, v1→v2), brief writing guide (bad-vs-good pairs), cost examples (3 scenarios), and navigation polish (Getting Started first, logical flow). The `npm run update` pipeline extracts content from the gsd-pi package and official GitHub docs, diffs for staleness, regenerates pages via Claude, builds with Astro, and validates all internal links. Deployed to GitHub Pages at `shusha-group.github.io/gsd2-guide/`.
 
 ## Architecture / Key Patterns
 
@@ -34,4 +34,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M004: Claude Code–Powered Documentation Regeneration
 - [x] M005: Prompt Reference Section
 - [x] M006: Solo Builder's Applied Guide to GSD 2
-- [ ] M007: Guide Consolidation & Usability — Changelog highlights, quick reference, content consolidation, decision guide, brief-writing guide, cost examples, navigation polish
+- [x] M007: Guide Consolidation & Usability — Changelog highlights, quick reference, content consolidation, decision guide, brief-writing guide, cost examples, navigation polish

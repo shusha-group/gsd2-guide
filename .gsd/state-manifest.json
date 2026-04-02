@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T04:42:31.113Z",
+  "exported_at": "2026-04-02T04:45:37.130Z",
   "milestones": [
     {
       "id": "M001",
@@ -119,10 +119,10 @@
     {
       "id": "M007",
       "title": "Guide Consolidation & Usability",
-      "status": "active",
+      "status": "complete",
       "depends_on": [],
       "created_at": "2026-04-01T22:10:51.255Z",
-      "completed_at": null,
+      "completed_at": "2026-04-02T04:45:37.111Z",
       "vision": "Consolidate the gsd2-guide into a self-sufficient documentation hub for solo builders. Add a scannable changelog summary layer, GitHub issue auto-linking, a curated quick-reference command page, cross-referenced official docs content, decision/brief-writing/cost guides, and navigation polish.",
       "success_criteria": [
         "A new user can go from 'What is GSD?' → 'Should I use it?' → 'Here are the commands I need' without leaving the guide",
@@ -266,7 +266,7 @@
       "milestone_id": "M007",
       "id": "S05",
       "title": "Navigation Polish",
-      "status": "pending",
+      "status": "complete",
       "risk": "low",
       "depends": [
         "S01",
@@ -276,9 +276,9 @@
       ],
       "demo": "After this: sidebar is restructured for logical flow; all new content surfaced in navigation; cross-links added; no existing URLs broken.",
       "created_at": "2026-04-01T22:10:51.256Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T04:43:29.437Z",
+      "full_summary_md": "---\nid: S05\nparent: M007\nmilestone: M007\nprovides:\n  - Sidebar with logical new-user flow\n  - All M007 content (writing-a-good-brief, cost-examples) surfaced in navigation\n  - Auto-mode prompts correctly grouped under Prompts not Commands\n  - 0 broken links confirmed post-restructure\nrequires:\n  []\naffects:\n  []\nkey_files:\n  - astro.config.mjs\nkey_decisions:\n  - gate-evaluate, reactive-execute, rethink inserted alphabetically into Prompts > Auto-mode Pipeline subgroup (removed from orphaned position in Commands group)\npatterns_established:\n  - (none)\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M007/slices/S05/tasks/T01-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T04:43:29.437Z\nblocker_discovered: false\n---\n\n# S05: Navigation Polish\n\n**Sidebar restructured for logical new-user flow: Getting Started first, 3 orphaned prompts moved to Auto-mode Pipeline, writing-a-good-brief and cost-examples surfaced; 148 pages, 0 broken links.**\n\n## What Happened\n\nS05 had a single task (T01): surgical edits to `astro.config.mjs` to restructure the Starlight sidebar. Three problems were fixed in one pass: (1) top-level groups were reordered so Getting Started appears before Solo Builder's Guide and Deep Dives — new users now see orientation content first; (2) Writing a Good Brief and Cost Examples (added in S04) were wired into Getting Started so they're discoverable without scrolling deep; (3) three auto-mode prompts (`gate-evaluate`, `reactive-execute`, `rethink`) that were orphaned at the bottom of the Commands group were removed from there and inserted alphabetically into Prompts > Auto-mode Pipeline where they semantically belong. The build produced 148 pages with 0 errors; 20,662 internal links checked with 0 broken.\n\n## Verification\n\nnpm run build: 148 pages, 0 errors. npm run check-links: 20,662 links, 0 broken. Inline node position check confirmed gate-evaluate is in Prompts (not Commands). grep confirmed writing-a-good-brief and cost-examples present in astro.config.mjs.\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nNone.\n\n## Known Limitations\n\nNone.\n\n## Follow-ups\n\nNone.\n\n## Files Created/Modified\n\n- `astro.config.mjs` — Reordered top-level sidebar groups (Getting Started first), added writing-a-good-brief and cost-examples to Getting Started, moved gate-evaluate/reactive-execute/rethink from Commands to Prompts > Auto-mode Pipeline\n",
+      "full_uat_md": "# S05: Navigation Polish — UAT\n\n**Milestone:** M007\n**Written:** 2026-04-02T04:43:29.438Z\n\n# S05: Navigation Polish — UAT\n\n**Milestone:** M007\n**Written:** 2026-04-02\n\n## UAT Type\n\n- UAT mode: artifact-driven\n- Why this mode is sufficient: All deliverables are static sidebar configuration changes verified by build output and link checker. No runtime behavior involved.\n\n## Preconditions\n\n- Project built successfully (`npm run build`) with 148 pages and 0 errors.\n- Link checker passes (`npm run check-links`) with 0 broken links.\n\n## Smoke Test\n\nOpen the built site and confirm the sidebar shows Getting Started before Deep Dives.\n\n## Test Cases\n\n### 1. Getting Started appears before Solo Builder's Guide and Deep Dives\n\n1. Run `grep -n \"Getting Started\\|Solo Builder\\|Deep Dives\" astro.config.mjs | head -20`\n2. **Expected:** \"Getting Started\" label appears at a lower line number than \"Solo Builder's Guide\" and \"Deep Dives\".\n\n### 2. Writing a Good Brief and Cost Examples appear in Getting Started\n\n1. Run `grep -q 'writing-a-good-brief' astro.config.mjs && echo \"found\" || echo \"missing\"`\n2. Run `grep -q 'cost-examples' astro.config.mjs && echo \"found\" || echo \"missing\"`\n3. **Expected:** Both return \"found\".\n\n### 3. Orphaned prompts removed from Commands group\n\n1. Run the position check:\n   ```\n   node -e \"const fs=require('fs'); const c=fs.readFileSync('astro.config.mjs','utf8'); const cmdIdx=c.indexOf(\\\"label: 'Commands'\\\"); const prIdx=c.indexOf(\\\"label: 'Prompts'\\\"); if(c.indexOf('gate-evaluate')>cmdIdx && c.indexOf('gate-evaluate')<prIdx) {console.error('gate-evaluate still in Commands'); process.exit(1)} console.log('All checks pass')\"\n   ```\n2. **Expected:** Prints \"All checks pass\" with exit code 0.\n\n### 4. gate-evaluate, reactive-execute, rethink present in Prompts > Auto-mode Pipeline\n\n1. Run `grep -A 100 \"Auto-mode Pipeline\" astro.config.mjs | grep -E \"gate-evaluate|reactive-execute|rethink\"`\n2. **Expected:** All three slugs appear in output.\n\n### 5. Full build and link check\n\n1. Run `npm run build`\n2. **Expected:** 148 page(s) built, 0 errors.\n3. Run `npm run check-links`\n4. **Expected:** 0 broken links.\n\n## Edge Cases\n\n### No existing URLs broken\n\n1. Run `npm run check-links` after restructure.\n2. **Expected:** 0 broken links — sidebar reordering never changes page URLs in Starlight (only display order changes).\n\n## Failure Signals\n\n- Build errors or page count drop below 148 would indicate a sidebar config syntax error.\n- Broken links would indicate a slug was added to the sidebar that doesn't have a corresponding content page.\n- gate-evaluate appearing between Commands and Prompts in the config would indicate the move didn't take effect.\n\n## Not Proven By This UAT\n\n- Visual rendering in a browser (sidebar display order, indentation, expand/collapse state).\n- Mobile sidebar behavior.\n\n## Notes for Tester\n\nSidebar restructuring in Starlight only affects display order and grouping — it never changes URL paths. The link checker passing is strong evidence that no content was accidentally removed or renamed.\n",
       "goal": "Sidebar restructured for logical new-user flow; all M007 content surfaced; misplaced prompts fixed; no existing URLs broken.",
       "success_criteria": "- `writing-a-good-brief` and `cost-examples` appear in sidebar config\n- `gate-evaluate`, `reactive-execute`, `rethink` are inside the Prompts group, not Commands\n- Getting Started appears before Deep Dives in sidebar order\n- `npm run build` exits 0, page count ≥ 148\n- `npm run check-links` exits 0, 0 broken links",
       "proof_level": "Build + link-check verification sufficient. No runtime required.",

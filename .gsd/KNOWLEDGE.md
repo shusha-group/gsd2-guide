@@ -122,3 +122,29 @@ The `regenerate` step invokes `claude -p` for each stale page in sequence. Each 
 **Implications for agent execution:** Do NOT run `npm run update` inside a task with a 300s or 900s timeout when there are stale pages. Instead: (1) run `npm run build` and `npm run check-links` independently to verify the core deliverable, and (2) run `npm run update` as a standalone terminal command with no timeout for the full pipeline. The stale pages are in `commands/`, `recipes/`, and `reference/extensions.mdx` — all upstream gsd-pi content, never solo-guide authored content.
 
 **Detection:** `npm run update` diff report step logs `Stale pages: N` — if N > 0 and the agent is time-constrained, skip to independent build/link verification.
+
+## Hand-authored guide pages must NOT go in generated-manifest
+
+**Context:** M007 content pages (quick-reference.md, is-gsd-right-for-me.md, etc.).
+
+Pages in `src/content/docs/` that are hand-authored must NOT be added to `.generated-manifest.json` or `page-source-map.json`. Those files track pipeline-managed pages only. Adding hand-authored pages there causes `scripts/prebuild.mjs` to treat them as regeneration targets and potentially overwrite them.
+
+**Rule:** Hand-authored → `src/content/docs/` only. Pipeline-generated → `content/generated/docs/` + manifest entries.
+
+## Regex patterns in GSD artifact fields must use code blocks
+
+**Context:** S02 T01 — regex with backslash sequences in GSD task/slice summary fields.
+
+When writing task or slice summaries that include regex patterns (e.g., negative lookbehinds with `\(`), embedding the raw pattern as prose causes JSON serialization failures due to unescaped backslash sequences. Always wrap regex patterns in backticks or code fences inside GSD artifact text fields.
+
+## `test -f` not `grep -l` for file existence checks
+
+**Context:** S04 T02 verify command used `grep -l 'index.html' dist/page/index.html` which always returns exit 1.
+
+`grep -l pattern file` searches for `pattern` inside `file` — it does NOT test whether the file exists. Use `test -f path` (exit 0 if exists) or `ls path` for file existence. The `grep -l` antipattern produces false failures that look like content errors but are verify-script bugs.
+
+## scripts/update.mjs location (not root-level)
+
+**Context:** S02 T02 plan assumed root-level `update.mjs`; actual file is `scripts/update.mjs`.
+
+When planning tasks that wire new scripts into the update pipeline, confirm the actual path of update.mjs before writing the plan. In this project it lives at `scripts/update.mjs` alongside all other pipeline scripts.

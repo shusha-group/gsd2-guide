@@ -10,4 +10,4 @@ Consolidate the gsd2-guide into a self-sufficient documentation hub for solo bui
 | S02 | Changelog Improvements | medium | — | ✅ | After this: every release has a solo-builder-perspective summary on a highlights page; every #NNN is a clickable GitHub link in the full changelog. |
 | S03 | Content Consolidation | medium | — | ✅ | After this: auto mode breakdown, .gsd/ directory structure, verification ladder, and v1→v2 comparison are integrated into existing guide pages in the guide's own voice. |
 | S04 | Brief Writing + Cost Examples | low | — | ✅ | After this: solo builders can see bad-vs-good requirement examples and approximate dollar costs for 3 milestone scenarios. |
-| S05 | Navigation Polish | low | S01, S02, S03, S04 | ⬜ | After this: sidebar is restructured for logical flow; all new content surfaced in navigation; cross-links added; no existing URLs broken. |
+| S05 | Navigation Polish | low | S01, S02, S03, S04 | ✅ | After this: sidebar is restructured for logical flow; all new content surfaced in navigation; cross-links added; no existing URLs broken. |
