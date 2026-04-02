@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T13:17:40.057Z",
+  "exported_at": "2026-04-02T13:25:28.991Z",
   "milestones": [
     {
       "id": "M001",
@@ -386,16 +386,16 @@
       "milestone_id": "M008",
       "id": "S02",
       "title": "Sidebar Restructure",
-      "status": "pending",
+      "status": "complete",
       "risk": "high",
       "depends": [
         "S01"
       ],
       "demo": "After this: all 5 top-level sections in correct order, old sections gone, collapsed groups work, 0 broken links.",
       "created_at": "2026-04-02T13:06:47.695Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T13:19:00.615Z",
+      "full_summary_md": "---\nid: S02\nparent: M008\nmilestone: M008\nprovides:\n  - 5-section sidebar structure in astro.config.mjs: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More\n  - 0 broken links baseline (20,661 links checked)\n  - collapsed:true on Prompts group and all 4 sub-groups\nrequires:\n  []\naffects:\n  - S03\n  - S04\n  - S05\n  - S06\nkey_files:\n  - astro.config.mjs\nkey_decisions:\n  - Prompts group and all 4 sub-groups get collapsed:true\n  - Deep Dives, How-to Guides, Reference items promoted to flat items inside Learn More (not sub-groups)\n  - All link: values preserved exactly — only grouping structure changed\npatterns_established:\n  - Sidebar consolidation pattern: absorb sibling sections as flat items into a parent section rather than nested sub-groups, except for Prompts which retains sub-groups with collapsed:true\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M008/slices/S02/tasks/T01-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:19:00.617Z\nblocker_discovered: false\n---\n\n# S02: Sidebar Restructure\n\n**Rewrote astro.config.mjs sidebar from 10 top-level entries to exactly 5 sections (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More) with 0 broken links across 20,661 internal links.**\n\n## What Happened\n\nT01 replaced the entire sidebar array in astro.config.mjs. The previous structure had 10 top-level entries (Home, Getting Started, Solo Builder's Guide, Recipes, Commands, Deep Dives, How-to Guides, Reference, Prompts, Changelog). The new structure consolidates to exactly 5 sections per D074:\n\n1. **Start Here** — absorbed the Home link plus all 7 Getting Started items (Is GSD Right for Me, Quick Reference, Writing a Good Brief, Cost Examples, Installation, Developing with GSD, Discussing a Milestone)\n2. **Solo Builder's Guide** — unchanged (9 items)\n3. **Recipes** — unchanged (13 items)  \n4. **Commands** — unchanged (Commands Reference + 8 sub-groups)\n5. **Learn More** — absorbed Deep Dives (4 flat items), How-to Guides (9 flat items), Reference (6 flat items), Prompts group with `collapsed: true` on the group and all 4 sub-groups, and Changelog as a direct link\n\nAll `link:` values were preserved exactly — only the grouping structure changed. No pages were created, moved, or deleted.\n\nThe task plan's verification script had a minor flaw: it used `aria-label=\"Sidebar\"` but the built HTML uses `aria-label=\"Main\"`. The executor adapted the check and confirmed identical sidebar content across homepage and inner pages.\n\nBuild verification: 148 pages built, 0 errors. Link check: 20,661 internal links, 0 broken. DOM inspection of built HTML confirmed 5 top-level `class=\"large\"` span elements in correct order: Start Here → Solo Builder's Guide → Recipes → Commands → Learn More.\n\n## Verification\n\nnpm run build: 148 pages, exit 0. npm run check-links: 20,661 links, 0 broken, exit 0. DOM inspection of dist/index.html confirmed 5 top-level sidebar section spans with class=\"large\" in correct order.\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\nNone.\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nTask plan's verification script used aria-label=\"Sidebar\" but built HTML uses aria-label=\"Main\". Executor adapted the check accordingly.\n\n## Known Limitations\n\nNone.\n\n## Follow-ups\n\nNone. Downstream slices S03, S04, S05, S06 can now proceed — they all depend on S02's 5-section sidebar structure being in place.\n\n## Files Created/Modified\n\n- `astro.config.mjs` — Sidebar array rewritten from 10 top-level entries to 5 sections\n",
+      "full_uat_md": "# S02: Sidebar Restructure — UAT\n\n**Milestone:** M008\n**Written:** 2026-04-02T13:19:00.617Z\n\n## Preconditions\n- `npm run build` has been run and `dist/` is current\n- `npm run check-links` is available\n\n## Test Cases\n\n### TC-01: Build succeeds with 148 pages\n**Steps:**\n1. Run `npm run build` from project root\n**Expected:** Exit 0, \"148 page(s) built\" in output, no errors\n\n### TC-02: Zero broken links\n**Steps:**\n1. Run `npm run check-links` from project root\n**Expected:** Exit 0, \"20661 internal links checked — 0 broken\" (or similar ≥20000 with 0 broken)\n\n### TC-03: Exactly 5 top-level sidebar sections\n**Steps:**\n1. Run: `node -e \"const fs=require('fs'); const h=fs.readFileSync('dist/index.html','utf8'); const spans=h.match(/<span[^>]*class=\\\"large[^\\\"]*\\\"[^>]*>[^<]+<\\/span>/g); console.log(spans);\"`\n**Expected:** Array of exactly 5 elements: \"Start Here\", \"Solo Builder's Guide\", \"Recipes\", \"Commands\", \"Learn More\"\n\n### TC-04: Sections appear in correct order\n**Steps:**\n1. From TC-03 output, verify order: Start Here → Solo Builder's Guide → Recipes → Commands → Learn More\n**Expected:** Order matches exactly\n\n### TC-05: Old top-level sections are gone\n**Steps:**\n1. Open `dist/index.html` and search for these terms as large/top-level labels: \"Getting Started\", \"Deep Dives\", \"How-to Guides\", \"Reference\", \"Prompts\", \"Changelog\"\n**Expected:** None appear as `class=\"large\"` top-level sidebar sections (they may appear as flat items inside Learn More or as page content)\n\n### TC-06: Prompts group is collapsed by default\n**Steps:**\n1. Run: `node -e \"const fs=require('fs'); const h=fs.readFileSync('dist/learn-more/index.html','utf8'); const details=h.match(/<details[^>]*>/g); console.log(details ? details.filter(d => !d.includes('open')) : 'none');\"`\n**Expected:** Prompts-related details elements do NOT have `open` attribute (they are collapsed)\n\n### TC-07: Homepage and inner page sidebars are identical\n**Steps:**\n1. Run: `node -e \"const fs=require('fs'); const h=fs.readFileSync('dist/index.html','utf8'); const g=fs.readFileSync('dist/getting-started/index.html','utf8'); const re=/aria-label=\\\"Main\\\"[\\s\\S]*?<\\/nav>/; const hNav=h.match(re); const gNav=g.match(re); console.log('match:', hNav && gNav && hNav[0].replace(/aria-current=\\\"page\\\"/g,'')===gNav[0].replace(/aria-current=\\\"page\\\"/g,''));\"`\n**Expected:** \"match: true\" — sidebars are identical\n\n### TC-08: All Getting Started items appear under Start Here\n**Steps:**\n1. View `dist/index.html` in browser or inspect HTML\n2. Locate \"Start Here\" section in sidebar\n3. Expand it and verify presence of: Is GSD Right for Me, Quick Reference, Writing a Good Brief, Cost Examples, Installation, Developing with GSD, Discussing a Milestone\n**Expected:** All 7 items (plus Home link) present under Start Here\n\n### TC-09: Deep Dives / How-to Guides / Reference items appear under Learn More\n**Steps:**\n1. Inspect sidebar HTML under Learn More section\n2. Check that items from former Deep Dives, How-to Guides, and Reference groups appear as flat items\n**Expected:** Items like \"Auto Mode\", \"Skills\", \"Extensions\" etc. accessible under Learn More without sub-group nesting\n\n### TC-10: Solo Builder's Guide unchanged (9 items)\n**Steps:**\n1. Inspect sidebar under \"Solo Builder's Guide\"\n**Expected:** Same 9 items as before restructure — no items added or removed\n",
       "goal": "Sidebar has exactly 5 top-level sections (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More) with old sections removed and collapsed groups working.",
       "success_criteria": "- Sidebar has exactly 5 top-level sections in the order: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More\n- Old top-level sections (Getting Started, Deep Dives, Changelog, Prompts, Reference, How-to Guides) no longer exist as top-level entries\n- `npm run build` exits 0 with 148 pages (no pages added or removed)\n- `npm run check-links` exits 0 (0 broken links)\n- Sidebar HTML identical between dist/index.html and any inner page after stripping aria-current\n- Prompts sub-groups use `collapsed: true`",
       "proof_level": "operational — build + link check + sidebar HTML diff prove correctness",
@@ -418,11 +418,11 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Create Control Your Costs recipe. Merge skills/extensions/agents into one page. Deduplicate auto-mode content. Add cross-link callouts for Developing with GSD and Discussing a Milestone.",
-      "success_criteria": "Control Your Costs recipe page builds. Skills, Extensions & Agents merged page builds with all reference tables. Auto-mode content is one or two clearly distinct pages. Cross-link callouts added to Solo Guide §2. 0 broken links.",
-      "proof_level": "Build + link checker + content spot-checks",
-      "integration_closure": "Consolidated pages are the canonical link targets for Phase 4 cross-linking and Phase 5 new content.",
-      "observability_impact": "none",
+      "goal": "Consolidate cost content into a single \"Control Your Costs\" recipe, merge the Skills/Extensions/Agents guide page, deduplicate auto-mode content, and wire cross-links — leaving the site with fewer redundant pages, cleaner sidebar entries, and 0 broken links.",
+      "success_criteria": "- `src/content/docs/recipes/control-your-costs.md` exists with consolidated content from cost-management, token-optimization, and dynamic-model-routing\n- `src/content/docs/skills-extensions-agents.md` exists merging the skills.md guide content with links to reference pages\n- Sidebar in astro.config.mjs has 1 cost recipe entry replacing 3, skills/extensions/agents guide entry in Learn More\n- Auto-mode recipe and How Auto Mode Works have differentiated intros and cross-links\n- `npm run build` exits 0, `npm run check-links` exits 0",
+      "proof_level": "Build + link check passes with 0 broken links after all content changes.",
+      "integration_closure": "Consumes S02's 5-section sidebar structure. Modifies sidebar entries within Recipes and Learn More sections. Downstream S05 (cross-linking) builds on the pages created here.",
+      "observability_impact": "None — content-only changes.",
       "sequence": 0,
       "replan_triggered_at": null
     },
@@ -922,6 +922,155 @@
       ],
       "expected_output": [
         "`astro.config.mjs` — rewritten sidebar with exactly 5 top-level sections"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S03",
+      "id": "T01",
+      "title": "Merged cost-management, token-optimization, and dynamic-model-routing into a single /recipes/control-your-costs/ page; sidebar reduced to one entry; old pages show redirect notices; cross-links added; build exits 0",
+      "status": "complete",
+      "one_liner": "Merged cost-management, token-optimization, and dynamic-model-routing into a single /recipes/control-your-costs/ page; sidebar reduced to one entry; old pages show redirect notices; cross-links added; build exits 0",
+      "narrative": "Read all three source pages and the solo guide controlling-costs section. Created src/content/docs/recipes/control-your-costs.md with four sections (Setting Budgets & Tracking Costs, Token Optimisation Strategies, Dynamic Model Routing, Monitoring & Alerts) using Australian English. Replaced the three sidebar entries in astro.config.mjs with a single 'Control Your Costs' entry. Added Starlight caution admonition redirect notices to the three old pages. Added cross-links in solo-guide/controlling-costs.mdx and cost-examples.mdx. Both target files used .mdx extension (not .md as the plan stated); adapted paths accordingly.",
+      "verification_result": "npm run build exits 0 (149 pages, /recipes/control-your-costs/index.html present). test -f src/content/docs/recipes/control-your-costs.md passes.",
+      "duration": "",
+      "completed_at": "2026-04-02T13:25:28.962Z",
+      "blocker_discovered": false,
+      "deviations": "File extensions for controlling-costs and cost-examples were .mdx not .md as the task plan stated. Adapted paths with no impact on outcome.",
+      "known_issues": "None.",
+      "key_files": [
+        "src/content/docs/recipes/control-your-costs.md",
+        "astro.config.mjs",
+        "src/content/docs/cost-management.md",
+        "src/content/docs/token-optimization.md",
+        "src/content/docs/dynamic-model-routing.md",
+        "src/content/docs/solo-guide/controlling-costs.mdx",
+        "src/content/docs/cost-examples.mdx"
+      ],
+      "key_decisions": [
+        "Used Starlight :::caution[Page moved] admonition on old pages so they remain accessible at original URLs while clearly directing users to the consolidated recipe",
+        "New recipe uses .md extension (plain markdown, no JSX components needed)"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S03\nmilestone: M008\nkey_files:\n  - src/content/docs/recipes/control-your-costs.md\n  - astro.config.mjs\n  - src/content/docs/cost-management.md\n  - src/content/docs/token-optimization.md\n  - src/content/docs/dynamic-model-routing.md\n  - src/content/docs/solo-guide/controlling-costs.mdx\n  - src/content/docs/cost-examples.mdx\nkey_decisions:\n  - Used Starlight :::caution[Page moved] admonition on old pages so they remain accessible at original URLs while clearly directing users to the consolidated recipe\n  - New recipe uses .md extension (plain markdown, no JSX components needed)\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:25:28.963Z\nblocker_discovered: false\n---\n\n# T01: Merged cost-management, token-optimization, and dynamic-model-routing into a single /recipes/control-your-costs/ page; sidebar reduced to one entry; old pages show redirect notices; cross-links added; build exits 0\n\n**Merged cost-management, token-optimization, and dynamic-model-routing into a single /recipes/control-your-costs/ page; sidebar reduced to one entry; old pages show redirect notices; cross-links added; build exits 0**\n\n## What Happened\n\nRead all three source pages and the solo guide controlling-costs section. Created src/content/docs/recipes/control-your-costs.md with four sections (Setting Budgets & Tracking Costs, Token Optimisation Strategies, Dynamic Model Routing, Monitoring & Alerts) using Australian English. Replaced the three sidebar entries in astro.config.mjs with a single 'Control Your Costs' entry. Added Starlight caution admonition redirect notices to the three old pages. Added cross-links in solo-guide/controlling-costs.mdx and cost-examples.mdx. Both target files used .mdx extension (not .md as the plan stated); adapted paths accordingly.\n\n## Verification\n\nnpm run build exits 0 (149 pages, /recipes/control-your-costs/index.html present). test -f src/content/docs/recipes/control-your-costs.md passes.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 6500ms |\n| 2 | `test -f src/content/docs/recipes/control-your-costs.md` | 0 | ✅ pass | 50ms |\n\n\n## Deviations\n\nFile extensions for controlling-costs and cost-examples were .mdx not .md as the task plan stated. Adapted paths with no impact on outcome.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `src/content/docs/recipes/control-your-costs.md`\n- `astro.config.mjs`\n- `src/content/docs/cost-management.md`\n- `src/content/docs/token-optimization.md`\n- `src/content/docs/dynamic-model-routing.md`\n- `src/content/docs/solo-guide/controlling-costs.mdx`\n- `src/content/docs/cost-examples.mdx`\n",
+      "description": "Merge content from cost-management.md (95 lines), token-optimization.md (328 lines), and dynamic-model-routing.md (129 lines) into a single new recipe page. Update astro.config.mjs sidebar to replace the 3 separate entries with one. Add redirect notices to old pages pointing to the new recipe.\n\nSteps:\n1. Read all 3 source pages fully: `src/content/docs/cost-management.md`, `src/content/docs/token-optimization.md`, `src/content/docs/dynamic-model-routing.md`\n2. Create `src/content/docs/recipes/control-your-costs.md` with consolidated content organised into sections: Setting Budgets & Tracking Costs, Token Optimisation Strategies, Dynamic Model Routing, Monitoring & Alerts. Pull the best actionable content from each source page. Use Australian English throughout.\n3. In `astro.config.mjs`, replace the 3 sidebar entries (lines 59-61: Cost Management, Token Optimization, Dynamic Model Routing) with one entry: `{ label: 'Control Your Costs', link: '/recipes/control-your-costs/' }`\n4. Update the 3 old pages to add a frontmatter redirect or a prominent notice at the top pointing to the new recipe page and to Solo Guide §6 for context.\n5. Add a cross-link in `src/content/docs/solo-guide/controlling-costs.md` pointing to the new recipe for detailed how-to.\n6. Add a cross-link in `src/content/docs/cost-examples.md` pointing to the new recipe.\n7. Verify: `npm run build` exits 0.",
+      "estimate": "45m",
+      "files": [
+        "src/content/docs/recipes/control-your-costs.md",
+        "src/content/docs/cost-management.md",
+        "src/content/docs/token-optimization.md",
+        "src/content/docs/dynamic-model-routing.md",
+        "astro.config.mjs",
+        "src/content/docs/solo-guide/controlling-costs.md",
+        "src/content/docs/cost-examples.md"
+      ],
+      "verify": "npm run build exits 0 and `test -f src/content/docs/recipes/control-your-costs.md`",
+      "inputs": [
+        "`src/content/docs/cost-management.md` — source content for budget/tracking sections",
+        "`src/content/docs/token-optimization.md` — source content for token strategies",
+        "`src/content/docs/dynamic-model-routing.md` — source content for routing rules",
+        "`astro.config.mjs` — sidebar config (S02 established the 5-section structure)",
+        "`src/content/docs/solo-guide/controlling-costs.md` — cross-link target",
+        "`src/content/docs/cost-examples.md` — cross-link target"
+      ],
+      "expected_output": [
+        "`src/content/docs/recipes/control-your-costs.md` — new consolidated recipe page",
+        "`astro.config.mjs` — sidebar updated with single cost recipe entry",
+        "`src/content/docs/cost-management.md` — updated with redirect notice",
+        "`src/content/docs/token-optimization.md` — updated with redirect notice",
+        "`src/content/docs/dynamic-model-routing.md` — updated with redirect notice",
+        "`src/content/docs/solo-guide/controlling-costs.md` — added cross-link to recipe",
+        "`src/content/docs/cost-examples.md` — added cross-link to recipe"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S03",
+      "id": "T02",
+      "title": "Merge Skills/Extensions/Agents guide and deduplicate auto-mode pages",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Create a single 'Skills, Extensions & Agents' guide page merging content from skills.md. Deduplicate auto-mode by differentiating the recipe (practical) from the deep-dive (internals). Update sidebar and add cross-links.\n\nIMPORTANT: The reference pages (`reference/skills.mdx`, `reference/extensions.mdx`, `reference/agents.mdx`) are pipeline-generated from JSON and must stay untouched. The new guide page should explain skills/extensions/agents conceptually and link TO the reference pages for card listings.\n\nSteps:\n1. Read `src/content/docs/skills.md` (190 lines) — this is the main guide content about skill directories, authoring, detection, triggers.\n2. Create `src/content/docs/skills-extensions-agents.md` with sections: What Are Skills (from skills.md content), What Are Extensions (brief explanation + link to reference/extensions), What Are Agents (brief explanation + link to reference/agents), Creating Your Own Skills (from skills.md authoring guide). Use Australian English.\n3. In `astro.config.mjs` Learn More section, replace the `{ label: 'Skills', link: '/skills/' }` entry (line 175) with `{ label: 'Skills, Extensions & Agents', link: '/skills-extensions-agents/' }`. Keep the reference page entries (lines 182-184) as they are.\n4. Update `src/content/docs/skills.md` to add a redirect notice pointing to the new page.\n5. Deduplicate auto-mode: Edit `src/content/docs/auto-mode.md` to focus on practical usage (when to use it, what to expect, how to intervene, tips). Remove the detailed pipeline walkthrough that duplicates how-auto-mode-works.mdx. Add a cross-link: 'For a detailed breakdown of the 12-phase pipeline, see [How Auto Mode Works](/gsd2-guide/how-auto-mode-works/)'.\n6. Edit `src/content/docs/how-auto-mode-works.mdx` to add a cross-link at top: 'For practical tips on running auto mode, see [Auto Mode](/gsd2-guide/auto-mode/)'.\n7. Verify: `npm run build` exits 0.",
+      "estimate": "45m",
+      "files": [
+        "src/content/docs/skills-extensions-agents.md",
+        "src/content/docs/skills.md",
+        "astro.config.mjs",
+        "src/content/docs/auto-mode.md",
+        "src/content/docs/how-auto-mode-works.mdx"
+      ],
+      "verify": "npm run build exits 0 and `test -f src/content/docs/skills-extensions-agents.md`",
+      "inputs": [
+        "`src/content/docs/skills.md` — source content for skills guide",
+        "`src/content/docs/reference/skills.mdx` — reference page to link to (do NOT modify)",
+        "`src/content/docs/reference/extensions.mdx` — reference page to link to (do NOT modify)",
+        "`src/content/docs/reference/agents.mdx` — reference page to link to (do NOT modify)",
+        "`astro.config.mjs` — sidebar config from T01",
+        "`src/content/docs/auto-mode.md` — auto-mode recipe to deduplicate",
+        "`src/content/docs/how-auto-mode-works.mdx` — auto-mode deep dive to cross-link"
+      ],
+      "expected_output": [
+        "`src/content/docs/skills-extensions-agents.md` — new merged guide page",
+        "`astro.config.mjs` — sidebar updated with merged skills entry",
+        "`src/content/docs/skills.md` — updated with redirect notice",
+        "`src/content/docs/auto-mode.md` — deduplicated with cross-link to deep dive",
+        "`src/content/docs/how-auto-mode-works.mdx` — cross-link added to recipe"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S03",
+      "id": "T03",
+      "title": "Build verification and cross-link audit",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Run full build and link check to verify all content changes from T01 and T02 are consistent. Audit that cross-links exist between the key page pairs.\n\nSteps:\n1. Run `npm run build` — must exit 0 with no errors.\n2. Run `npm run check-links` — must exit 0 with 0 broken links.\n3. Verify cross-links exist:\n   - `grep -q 'control-your-costs' src/content/docs/solo-guide/controlling-costs.md` (Solo Guide links to recipe)\n   - `grep -q 'control-your-costs' src/content/docs/cost-examples.md` (Cost Examples links to recipe)\n   - `grep -q 'how-auto-mode-works' src/content/docs/auto-mode.md` (Auto-mode recipe links to deep dive)\n   - `grep -q 'auto-mode' src/content/docs/how-auto-mode-works.mdx` (Deep dive links back to recipe)\n   - `grep -q 'reference/skills' src/content/docs/skills-extensions-agents.md` (Guide links to reference)\n4. If any link check fails, fix the broken links and re-run build + check-links.\n5. Confirm sidebar has exactly 1 cost recipe entry and the skills-extensions-agents entry in Learn More.",
+      "estimate": "20m",
+      "files": [
+        "astro.config.mjs",
+        "src/content/docs/recipes/control-your-costs.md",
+        "src/content/docs/skills-extensions-agents.md"
+      ],
+      "verify": "`npm run build` exits 0 && `npm run check-links` exits 0",
+      "inputs": [
+        "`src/content/docs/recipes/control-your-costs.md` — created in T01",
+        "`src/content/docs/skills-extensions-agents.md` — created in T02",
+        "`astro.config.mjs` — modified in T01 and T02",
+        "`src/content/docs/solo-guide/controlling-costs.md` — cross-linked in T01",
+        "`src/content/docs/cost-examples.md` — cross-linked in T01",
+        "`src/content/docs/auto-mode.md` — deduplicated in T02",
+        "`src/content/docs/how-auto-mode-works.mdx` — cross-linked in T02"
+      ],
+      "expected_output": [
+        "`astro.config.mjs` — verified correct (may be fixed if issues found)"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -2196,6 +2345,28 @@
       "verdict": "✅ pass",
       "duration_ms": 200,
       "created_at": "2026-04-02T13:17:40.041Z"
+    },
+    {
+      "id": 31,
+      "task_id": "T01",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6500,
+      "created_at": "2026-04-02T13:25:28.963Z"
+    },
+    {
+      "id": 32,
+      "task_id": "T01",
+      "slice_id": "S03",
+      "milestone_id": "M008",
+      "command": "test -f src/content/docs/recipes/control-your-costs.md",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 50,
+      "created_at": "2026-04-02T13:25:28.963Z"
     }
   ]
 }

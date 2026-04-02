@@ -7,7 +7,7 @@ Restructure the gsd2-guide from a system-oriented documentation site into a prog
 | ID | Slice | Risk | Depends | Done | After this |
 |----|-------|------|---------|------|------------|
 | S01 | Homepage Nav Fix | low | — | ✅ | After this: homepage sidebar matches inner page sidebar exactly. |
-| S02 | Sidebar Restructure | high | S01 | ⬜ | After this: all 5 top-level sections in correct order, old sections gone, collapsed groups work, 0 broken links. |
+| S02 | Sidebar Restructure | high | S01 | ✅ | After this: all 5 top-level sections in correct order, old sections gone, collapsed groups work, 0 broken links. |
 | S03 | Content Consolidation | medium | S02 | ⬜ | After this: Control Your Costs recipe exists, Skills/Extensions/Agents merged, auto-mode deduplicated, cross-links in place. |
 | S04 | Homepage Rewrite | medium | S02 | ⬜ | After this: homepage has persona cards, How GSD Works section, Common Tasks, Go Deeper — all linking correctly. |
 | S05 | Cross-linking & Wayfinding | low | S02, S03 | ⬜ | After this: Solo Guide has prev/next, all pages have Next Steps, audience-bridging callouts on 7+ pages. |
