@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-04-02T13:12:40.021Z",
+  "exported_at": "2026-04-02T13:17:40.057Z",
   "milestones": [
     {
       "id": "M001",
@@ -366,14 +366,14 @@
       "milestone_id": "M008",
       "id": "S01",
       "title": "Homepage Nav Fix",
-      "status": "pending",
+      "status": "complete",
       "risk": "low",
       "depends": [],
       "demo": "After this: homepage sidebar matches inner page sidebar exactly.",
       "created_at": "2026-04-02T13:06:47.695Z",
-      "completed_at": null,
-      "full_summary_md": "",
-      "full_uat_md": "",
+      "completed_at": "2026-04-02T13:13:17.533Z",
+      "full_summary_md": "---\nid: S01\nparent: M008\nmilestone: M008\nprovides:\n  - Homepage sidebar is identical to inner page sidebars — S02 sidebar restructure will apply uniformly across the entire site including the homepage\nrequires:\n  []\naffects:\n  - S02\nkey_files:\n  - src/content/docs/index.mdx\nkey_decisions:\n  - Homepage uses template:doc (not splash), ensuring sidebar parity with all inner pages\npatterns_established:\n  - Sidebar parity between homepage and inner pages is achieved solely by template:doc frontmatter — no custom component overrides needed\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  - .gsd/milestones/M008/slices/S01/tasks/T01-SUMMARY.md\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:13:17.534Z\nblocker_discovered: false\n---\n\n# S01: Homepage Nav Fix\n\n**Confirmed homepage sidebar matches inner page sidebars exactly by verifying template:doc in index.mdx frontmatter; R084 validated.**\n\n## What Happened\n\nS01 was a verification slice, not a build slice. The fix itself (switching src/content/docs/index.mdx from template:splash to template:doc) had already been applied in a prior quick task. T01 confirmed the fix was complete by: (1) grepping for template:doc in the frontmatter, (2) running npm run build (exit 0, 148 pages), (3) diffing the sidebar HTML between dist/index.html and dist/getting-started/index.html after stripping aria-current attributes — identical result, and (4) running npm run check-links (exit 0, 0 broken links). No code changes were needed; the slice is purely confirmatory.\n\n## Verification\n\nAll four checks passed: grep for 'template: doc' in index.mdx (exit 0), npm run build (exit 0, 148 pages), sidebar diff between homepage and inner page (identical after stripping aria-current), npm run check-links (exit 0, 0 broken).\n\n## Requirements Advanced\n\nNone.\n\n## Requirements Validated\n\n- R084 — npm run build exits 0 (148 pages), sidebar HTML diff between dist/index.html and dist/getting-started/index.html is identical after stripping aria-current, npm run check-links exits 0 (0 broken links)\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Deviations\n\nNone. The fix was pre-existing; S01 confirmed it rather than implementing it.\n\n## Known Limitations\n\nNone.\n\n## Follow-ups\n\nNone. S02 (Sidebar Restructure) can proceed — the homepage now uses template:doc and will reflect all sidebar changes made in S02 automatically.\n\n## Files Created/Modified\n\n- `src/content/docs/index.mdx` — Already had template:doc set; no changes made in this slice\n",
+      "full_uat_md": "# S01: Homepage Nav Fix — UAT\n\n**Milestone:** M008\n**Written:** 2026-04-02T13:13:17.534Z\n\n## UAT: S01 Homepage Nav Fix\n\n### Preconditions\n- Project cloned and dependencies installed (`npm install`)\n- No local uncommitted changes to `src/content/docs/index.mdx`\n\n### Test Cases\n\n**TC-01: Frontmatter uses template:doc**\n1. Run: `grep 'template: doc' src/content/docs/index.mdx`\n2. Expected: exits 0, prints `template: doc`\n3. Failure signal: exits 1 or prints `template: splash` — homepage would render without sidebar\n\n**TC-02: Site builds successfully**\n1. Run: `npm run build`\n2. Expected: exits 0, output shows 148 pages built\n3. Failure signal: non-zero exit or build errors\n\n**TC-03: Sidebar HTML parity between homepage and inner page**\n1. Run: `npm run build` (if not already built)\n2. Extract sidebar from `dist/index.html` and `dist/getting-started/index.html`\n3. Strip `aria-current=\"page\"` attributes from both\n4. Diff the two sidebar sections\n5. Expected: zero differences\n6. Failure signal: any sidebar structural difference means homepage is not using the standard sidebar\n\n**TC-04: No broken links**\n1. Run: `npm run check-links`\n2. Expected: exits 0, 0 broken links reported\n3. Failure signal: any broken link count > 0\n\n### Edge Cases\n- If `template: splash` appears anywhere in index.mdx frontmatter (even commented), verify the active value is `doc`\n- Sidebar diff must be scoped to the `<nav>` or sidebar `<aside>` element, not the full page HTML\n\n",
       "goal": "Confirm the homepage sidebar matches inner page sidebars exactly, validating R084.",
       "success_criteria": "- `npm run build` exits 0\n- Sidebar HTML in `dist/index.html` is identical to `dist/getting-started/index.html` (excluding `aria-current=\"page\"`)\n- `npm run check-links` exits 0",
       "proof_level": "This slice proves: operational. Real runtime required: no (build output comparison). Human/UAT required: no.",
@@ -396,11 +396,11 @@
       "completed_at": null,
       "full_summary_md": "",
       "full_uat_md": "",
-      "goal": "Replace the entire sidebar config with the target 5-section structure. Reposition all existing pages. Remove old top-level sections.",
-      "success_criteria": "5 top-level sections: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More. Commands sub-groups collapsed by default. Prompts under Learn More collapsed. Old sections (How-to Guides, Reference, Deep Dives) removed. npm run check-links: 0 broken.",
-      "proof_level": "Build + link checker + sidebar structure verification in astro.config.mjs",
-      "integration_closure": "Every subsequent slice depends on pages being in their correct positions.",
-      "observability_impact": "none",
+      "goal": "Sidebar has exactly 5 top-level sections (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More) with old sections removed and collapsed groups working.",
+      "success_criteria": "- Sidebar has exactly 5 top-level sections in the order: Start Here, Solo Builder's Guide, Recipes, Commands, Learn More\n- Old top-level sections (Getting Started, Deep Dives, Changelog, Prompts, Reference, How-to Guides) no longer exist as top-level entries\n- `npm run build` exits 0 with 148 pages (no pages added or removed)\n- `npm run check-links` exits 0 (0 broken links)\n- Sidebar HTML identical between dist/index.html and any inner page after stripping aria-current\n- Prompts sub-groups use `collapsed: true`",
+      "proof_level": "operational — build + link check + sidebar HTML diff prove correctness",
+      "integration_closure": "Upstream: S01 confirmed homepage uses template:doc, so sidebar changes apply uniformly. No new wiring. Downstream slices S03–S06 depend on this sidebar structure being in place.",
+      "observability_impact": "None — static site config change with no runtime signals.",
       "sequence": 0,
       "replan_triggered_at": null
     },
@@ -884,6 +884,44 @@
       "expected_output": [
         "`dist/index.html`",
         "`dist/getting-started/index.html`"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M008",
+      "slice_id": "S02",
+      "id": "T01",
+      "title": "Rewrote astro.config.mjs sidebar from 10 top-level entries to exactly 5 sections (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More) with 0 broken links",
+      "status": "complete",
+      "one_liner": "Rewrote astro.config.mjs sidebar from 10 top-level entries to exactly 5 sections (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More) with 0 broken links",
+      "narrative": "Replaced the entire sidebar array in astro.config.mjs. Start Here absorbed the Home link + 7 Getting Started items. Solo Builder's Guide and Recipes are unchanged. Commands is unchanged. Learn More absorbed Deep Dives (4 flat items), How-to Guides (9 flat items), Reference (6 flat items), Prompts group with collapsed:true on group and all 4 sub-groups, and Changelog as a direct link. All link: values preserved exactly.",
+      "verification_result": "npm run build passed (148 pages, no errors). npm run check-links passed (20661 links, 0 broken). DOM inspection of built HTML confirmed 5 top-level summary elements in correct order. Task plan's verification script had a minor flaw (aria-label=\"Sidebar\" vs actual \"Main\") — adapted check confirmed identical sidebar content.",
+      "duration": "",
+      "completed_at": "2026-04-02T13:17:40.041Z",
+      "blocker_discovered": false,
+      "deviations": "Verification script in plan used aria-label=\\\"Sidebar\\\" but built HTML uses aria-label=\\\"Main\\\". Adapted check to use correct attribute.",
+      "known_issues": "None.",
+      "key_files": [
+        "astro.config.mjs"
+      ],
+      "key_decisions": [
+        "Prompts group and all 4 sub-groups get collapsed:true",
+        "Deep Dives, How-to Guides, Reference items promoted to flat items inside Learn More"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S02\nmilestone: M008\nkey_files:\n  - astro.config.mjs\nkey_decisions:\n  - Prompts group and all 4 sub-groups get collapsed:true\n  - Deep Dives, How-to Guides, Reference items promoted to flat items inside Learn More\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-04-02T13:17:40.041Z\nblocker_discovered: false\n---\n\n# T01: Rewrote astro.config.mjs sidebar from 10 top-level entries to exactly 5 sections (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More) with 0 broken links\n\n**Rewrote astro.config.mjs sidebar from 10 top-level entries to exactly 5 sections (Start Here, Solo Builder's Guide, Recipes, Commands, Learn More) with 0 broken links**\n\n## What Happened\n\nReplaced the entire sidebar array in astro.config.mjs. Start Here absorbed the Home link + 7 Getting Started items. Solo Builder's Guide and Recipes are unchanged. Commands is unchanged. Learn More absorbed Deep Dives (4 flat items), How-to Guides (9 flat items), Reference (6 flat items), Prompts group with collapsed:true on group and all 4 sub-groups, and Changelog as a direct link. All link: values preserved exactly.\n\n## Verification\n\nnpm run build passed (148 pages, no errors). npm run check-links passed (20661 links, 0 broken). DOM inspection of built HTML confirmed 5 top-level summary elements in correct order. Task plan's verification script had a minor flaw (aria-label=\"Sidebar\" vs actual \"Main\") — adapted check confirmed identical sidebar content.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `npm run build` | 0 | ✅ pass | 6700ms |\n| 2 | `npm run check-links` | 0 | ✅ pass | 3100ms |\n| 3 | `node -e DOM sidebar sections check` | 0 | ✅ pass | 200ms |\n\n\n## Deviations\n\nVerification script in plan used aria-label=\\\"Sidebar\\\" but built HTML uses aria-label=\\\"Main\\\". Adapted check to use correct attribute.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `astro.config.mjs`\n",
+      "description": "Rewrite the `sidebar` array in `astro.config.mjs` to consolidate 10 top-level entries into exactly 5 sections per D074:\n\n1. **Start Here** — absorbs Home link + all Getting Started items (Is GSD Right for Me, Quick Reference, Writing a Good Brief, Cost Examples, Installation, Developing with GSD, Discussing a Milestone)\n2. **Solo Builder's Guide** — unchanged (9 items)\n3. **Recipes** — unchanged (13 items)\n4. **Commands** — unchanged (Commands Reference + 8 sub-groups)\n5. **Learn More** — absorbs Deep Dives (4 items), How-to Guides (9 items), Reference (6 items), Prompts (4 sub-groups with `collapsed: true`), and Changelog link\n\nKey constraints:\n- All `link:` values must remain exactly the same — only the grouping changes\n- Prompts group and its 4 sub-groups must have `collapsed: true`\n- Deep Dives items go into Learn More as direct items (not a sub-group)\n- How-to Guides items go into Learn More as direct items\n- Reference items go into Learn More as direct items or a collapsed sub-group\n- Changelog goes into Learn More as a direct link item\n- No pages are created, moved, or deleted — only sidebar navigation config changes",
+      "estimate": "30m",
+      "files": [
+        "astro.config.mjs"
+      ],
+      "verify": "npm run build && npm run check-links && node -e \"const fs=require('fs'); const h=fs.readFileSync('dist/index.html','utf8'); const g=fs.readFileSync('dist/getting-started/index.html','utf8'); const re=/<nav[^>]*aria-label=\\\"Sidebar\\\"[\\\\s\\\\S]*?<\\\\/nav>/; const hNav=h.match(re)[0].replace(/aria-current=\\\"page\\\"/g,''); const gNav=g.match(re)[0].replace(/aria-current=\\\"page\\\"/g,''); if(hNav!==gNav){console.error('Sidebar mismatch');process.exit(1)}else{console.log('Sidebar identical')}\"",
+      "inputs": [
+        "`astro.config.mjs` — current sidebar config with 10 top-level entries"
+      ],
+      "expected_output": [
+        "`astro.config.mjs` — rewritten sidebar with exactly 5 top-level sections"
       ],
       "observability_impact": "",
       "full_plan_md": "",
@@ -2125,6 +2163,39 @@
       "verdict": "✅ pass",
       "duration_ms": 3100,
       "created_at": "2026-04-02T13:12:39.986Z"
+    },
+    {
+      "id": 28,
+      "task_id": "T01",
+      "slice_id": "S02",
+      "milestone_id": "M008",
+      "command": "npm run build",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 6700,
+      "created_at": "2026-04-02T13:17:40.041Z"
+    },
+    {
+      "id": 29,
+      "task_id": "T01",
+      "slice_id": "S02",
+      "milestone_id": "M008",
+      "command": "npm run check-links",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 3100,
+      "created_at": "2026-04-02T13:17:40.041Z"
+    },
+    {
+      "id": 30,
+      "task_id": "T01",
+      "slice_id": "S02",
+      "milestone_id": "M008",
+      "command": "node -e DOM sidebar sections check",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 200,
+      "created_at": "2026-04-02T13:17:40.041Z"
     }
   ]
 }
