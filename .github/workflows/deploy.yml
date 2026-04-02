@@ -38,6 +38,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate changelog highlights
+        run: node scripts/generate-highlights.mjs
+
       - name: Build site
         run: npm run build
 
