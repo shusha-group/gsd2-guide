@@ -289,10 +289,13 @@
 
 /* ─── Light Mode: Table of Contents ────────────────────── */
 :root[data-theme='light'] starlight-toc a,
-:root[data-theme='light'] mobile-starlight-toc a {
+:root[data-theme='light'] starlight-toc a span,
+:root[data-theme='light'] mobile-starlight-toc a,
+:root[data-theme='light'] mobile-starlight-toc a span {
   color: #384838 !important;
 }
 :root[data-theme='light'] starlight-toc a[aria-current='true'],
+:root[data-theme='light'] starlight-toc a[aria-current='true'] span,
 :root[data-theme='light'] mobile-starlight-toc summary {
   color: #0a3d0a !important;
 }
