@@ -1,0 +1,87 @@
+---
+title: "The Story of GSD"
+description: "How GSD evolved from a planning experiment to a full autonomous coding agent — the key turning points, design bets, and what each era unlocked."
+---
+
+Every tool has a story in its commit log. GSD's is unusually compressed — 88 releases in a single month — but the arc is clear. What started as structured planning scaffolding became an autonomous agent that ships real code unsupervised.
+
+This page traces the evolution. Each era links back to the [Changelog](../changelog/) entries where the work landed.
+
+## The Seed: v0.2–v0.3
+
+GSD started as a planning layer. Milestones, slices, tasks — the hierarchy that structures work into demoable increments. The earliest releases added worktree management and a migration tool to move from `.planning/` to `.gsd/`.
+
+No AI execution yet. Just structure. But the structure was opinionated: vertical slices ordered by risk, checkboxes that track completion, summaries that compress context for future sessions.
+
+This scaffolding turned out to be the foundation everything else was built on.
+
+## Foundation: v2.3–v2.7
+
+The rapid build-out phase. In the space of a few days, GSD gained:
+
+- **Voice and remote interaction** — dictate to GSD, answer questions via Slack or Discord while auto-mode runs headless
+- **Search providers** — Brave Search, then Tavily, then native Anthropic web search
+- **Onboarding** — a branded install experience and clack-based setup wizard
+- **Secret management** — `secure_env_collect` with auto-detection, plus proactive forecasting of required API keys during planning
+- **Monorepo architecture** — the Pi SDK vendored into workspace packages, giving GSD full control of the stack
+- **Model fallback** — if a model fails mid-execution, try alternates before giving up
+
+The pattern here was removing friction. Every manual step a solo builder had to do — find an API key, pick a model, set up git — got automated or guided.
+
+## Platform: v2.8–v2.15
+
+The tool surface expanded dramatically:
+
+- **Browser tools** — form analysis, semantic actions, visual verification. GSD could now test its own frontend work.
+- **LSP integration** — go-to-definition, references, rename, diagnostics. Code navigation without grep.
+- **Mac tools** — native macOS app control via accessibility APIs. Click buttons, read UI state, take screenshots.
+- **Rust native engine** — ripgrep-backed search, xxHash, output truncation, diff engine. Performance-critical paths moved to compiled code.
+- **Cross-platform hardening** — Windows path handling, NixOS symlink fixes, Node 25 compatibility
+
+This era also brought worktree isolation for auto-mode, self-healing git repair, and the discussion manifest — mechanical verification that planning conversations actually happened before execution started.
+
+The theme was capability. GSD went from "can write and edit files" to "can navigate code, test UIs, control native apps, and recover from its own mistakes."
+
+## Maturity: v2.16–v2.28
+
+With the platform stable, focus shifted to making auto-mode smarter and more observable:
+
+- **Token optimisation** — budget/balanced/quality profiles, complexity-based task routing, search budgets
+- **`/gsd steer`** — change direction mid-execution without stopping auto-mode
+- **Knowledge base** — `.gsd/KNOWLEDGE.md` persists lessons across sessions
+- **Parallel workers** — multiple agents executing across phases simultaneously
+- **Headless mode** — full workflow orchestration without a terminal UI
+- **Quality gates** — structured evaluation questions at planning and completion boundaries
+- **VS Code extension** — chat participant, activity feed, session management
+- **Workflow visualizer** — full-screen TUI showing the state machine in real time
+
+The `headless query` command captures the shift well — you can ask GSD "what phase are you in, what has it cost, what's next?" and get parseable JSON back. The tool became observable enough to supervise, not just run.
+
+## Engine: v2.29–v2.58
+
+The current era is about reliability and extensibility:
+
+- **Linear execution loop** — replaced the reactive callback graph with a simpler, more predictable dispatch model
+- **Single-writer state engine** — state machine guards, actor identity, revert-on-conflict
+- **Declarative workflows** — YAML-defined workflows through the auto-mode engine
+- **Event journal** — structured audit trail queryable by flow, unit, rule, or time range
+- **Extension registry** — user-managed enable/disable for extensions
+- **Docker sandbox** — official template for isolated auto-mode execution
+- **Web interface** — browser-based UI with dark mode, mobile responsive
+- **Discord integration** — shard management, event listeners, remote orchestration
+
+The reliability work shows up in the fixes too: stranded lock cleanup, dispatch reentrancy guards, crash recovery hardening, worktree sync safety checks. When a tool runs unsupervised for hours, every edge case matters.
+
+---
+
+## What the Arc Shows
+
+Three things stand out:
+
+1. **Structure came first.** The milestone/slice/task hierarchy existed before any AI execution. The planning scaffolding wasn't bolted on — it's the skeleton everything hangs from.
+
+2. **Each era solved one class of problem.** Friction → capability → intelligence → reliability. The sequence wasn't planned this way, but in retrospect it couldn't have gone differently — you can't optimise what you can't observe, and you can't observe what doesn't exist yet.
+
+3. **Solo-builder focus shaped every decision.** No team features, no enterprise patterns, no collaboration complexity. Every command, every UI, every default asks: "does this help one person ship faster?"
+
+The [Changelog](../changelog/) has every detail. This page is the map.

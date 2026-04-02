@@ -51,6 +51,7 @@ export default defineConfig({
             { label: 'How Auto Mode Works', link: '/how-auto-mode-works/' },
             { label: 'The .gsd/ Directory', link: '/gsd-directory/' },
             { label: 'GSD v1 vs v2', link: '/v1-to-v2/' },
+            { label: 'The Story of GSD', link: '/story-of-gsd/' },
           ],
         },
         { label: 'Changelog', link: '/changelog/' },
