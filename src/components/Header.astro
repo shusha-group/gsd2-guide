@@ -6,25 +6,26 @@ import releases from '../../content/generated/releases.json';
 const version = releases[0]?.tag_name ?? 'v0.0.0';
 ---
 
-<div class="header-wrapper">
-  <Default {...Astro.props}><slot /></Default>
-  <a class="version-badge" href="/changelog/">
-    <span>{version}</span>
-  </a>
-</div>
+<Default {...Astro.props}><slot /></Default>
 
-<style>
-  .header-wrapper {
-    position: relative;
-    display: contents;
-  }
+<script define:vars={{ version }}>
+  // Inject version badge next to the site title after DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const siteTitle = document.querySelector('.site-title');
+    if (!siteTitle) return;
+    const badge = document.createElement('a');
+    badge.href = '/changelog/';
+    badge.className = 'version-badge';
+    badge.textContent = version;
+    siteTitle.parentElement.insertBefore(badge, siteTitle.nextSibling);
+  });
+</script>
 
+<style is:global>
   .version-badge {
-    position: fixed;
-    top: 0.6rem;
-    z-index: 10;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    margin-left: 0.5rem;
     padding: 0.15rem 0.55rem;
     font-family: var(--sl-font-system-mono, 'JetBrains Mono Variable', monospace);
     font-size: 0.7rem;
@@ -37,6 +38,8 @@ const version = releases[0]?.tag_name ?? 'v0.0.0';
     opacity: 0.85;
     text-decoration: none;
     transition: opacity 0.15s ease;
+    white-space: nowrap;
+    vertical-align: middle;
   }
 
   .version-badge:hover {
@@ -44,17 +47,8 @@ const version = releases[0]?.tag_name ?? 'v0.0.0';
     text-decoration: none;
   }
 
-  /* Desktop: position to the left of theme selector */
-  @media (min-width: 50rem) {
-    .version-badge {
-      right: 7.5rem;
-    }
-  }
-
-  /* Mobile: position next to site title, smaller */
   @media (max-width: 49.99rem) {
     .version-badge {
-      left: 5rem;
       font-size: 0.6rem;
       padding: 0.1rem 0.4rem;
     }

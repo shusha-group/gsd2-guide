@@ -7,7 +7,7 @@ export default defineConfig({
   base: '/',
   integrations: [
     starlight({
-      title: 'GSD 2',
+      title: 'Getting Shit Done',
       plugins: [starlightClientMermaid()],
       customCss: [
         './src/styles/custom.css',
