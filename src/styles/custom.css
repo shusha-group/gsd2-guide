@@ -252,36 +252,58 @@
 }
 :root[data-theme='light'] .card {
   border-color: #d0ddd0;
-  background: #ffffff;
-  color: #1b2d1b;
+  background: #ffffff !important;
+  color: #1b2d1b !important;
 }
-:root[data-theme='light'] .card .card-title {
+:root[data-theme='light'] .card .title {
   color: #0a3d0a !important;
 }
-:root[data-theme='light'] .card a {
-  color: #0e580e;
+:root[data-theme='light'] .card .title span {
+  color: #0a3d0a !important;
+}
+:root[data-theme='light'] .card .body {
+  color: #1b2d1b !important;
+}
+:root[data-theme='light'] .card .body p {
+  color: #1b2d1b !important;
+}
+:root[data-theme='light'] .card .body a {
+  color: #0e580e !important;
 }
 
-/* ─── Light Mode: Content headings (h2, h3, etc.) ──────── */
+/* ─── Light Mode: Content headings (h2, h3, h4) ───────── */
 :root[data-theme='light'] .sl-markdown-content h2,
 :root[data-theme='light'] .sl-markdown-content h3,
-:root[data-theme='light'] .sl-markdown-content h4 {
+:root[data-theme='light'] .sl-markdown-content h4,
+:root[data-theme='light'] .sl-heading-wrapper h2,
+:root[data-theme='light'] .sl-heading-wrapper h3,
+:root[data-theme='light'] .sl-heading-wrapper h4 {
+  color: #0a3d0a !important;
+}
+:root[data-theme='light'] .sl-anchor-link {
+  color: #0a3d0a !important;
+}
+
+/* ─── Light Mode: Table of Contents ────────────────────── */
+:root[data-theme='light'] starlight-toc a,
+:root[data-theme='light'] mobile-starlight-toc a {
+  color: #384838 !important;
+}
+:root[data-theme='light'] starlight-toc a[aria-current='true'],
+:root[data-theme='light'] mobile-starlight-toc summary {
   color: #0a3d0a !important;
 }
 
 /* ─── Light Mode: Pagination (prev/next) ───────────────── */
 :root[data-theme='light'] .pagination-links a {
   color: #0e580e !important;
-  border-color: #d0ddd0;
+  border-color: #d0ddd0 !important;
 }
 :root[data-theme='light'] .pagination-links a:hover {
-  border-color: #116611;
+  border-color: #116611 !important;
 }
 :root[data-theme='light'] .pagination-links .link-title {
   color: #0a3d0a !important;
-}
-:root[data-theme='light'] .pagination-links .link-page {
-  color: #384838 !important;
 }
 
 /* ─── Light Mode: Starlight search bar ─────────────────── */
