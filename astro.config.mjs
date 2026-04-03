@@ -17,6 +17,16 @@ export default defineConfig({
         Header: './src/components/Header.astro',
         Footer: './src/components/Footer.astro',
       },
+      head: [
+        {
+          tag: 'script',
+          attrs: {
+            'data-goatcounter': 'https://getshitdone.goatcounter.com/count',
+            async: true,
+            src: '//gc.zgo.at/count.js',
+          },
+        },
+      ],
       sidebar: [
         {
           label: 'Start Here',
