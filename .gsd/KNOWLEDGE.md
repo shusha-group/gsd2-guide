@@ -176,3 +176,15 @@ Relative imports (`../../Pagination`) will not resolve. Pass `{...Astro.props}` 
 **Context:** S05 T02 — adding audience-bridging callouts to generated pages.
 
 Pages listed in `.generated-manifest.json` are compiled from `content/generated/docs/` into `src/content/docs/` during prebuild. Editing `src/content/docs/auto-mode.md` directly would be overwritten on next build. Always edit the source at `content/generated/docs/<filename>` for generated pages. The generated-manifest constraint is easy to miss when planning tasks — always check the manifest first.
+
+## GoatCounter skill — ask before interpreting data
+
+**Context:** User feedback on goatcounter skill updates.
+
+Do not estimate, convert, or reinterpret GoatCounter API numbers (e.g. converting page visits to estimated sessions). Report raw values with accurate labels ("Visits"). If there's an interpretive decision to make about how to present data, ask the user first — don't decide autonomously and present it as fact.
+
+## GoatCounter API — dimension endpoints are top-level, not under /hits/
+
+**Context:** Debugging empty dimension breakdowns in site stats.
+
+Dimension breakdowns (browsers, systems, locations, languages, sizes, toprefs, campaigns) use `/api/v0/stats/DIMENSION`, NOT `/api/v0/stats/hits/DIMENSION`. The `/stats/hits/` path expects a numeric path_id — passing a string like "browsers" returns `{"errors":{"path_id":["must be a whole number"]}}`. Dimension responses use `{ "stats": [...] }` not `{ "hits": [...] }`.

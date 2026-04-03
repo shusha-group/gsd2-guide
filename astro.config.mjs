@@ -7,7 +7,7 @@ export default defineConfig({
   base: '/',
   integrations: [
     starlight({
-      title: 'Getting Shit Done',
+      title: 'Get Shit Done',
       plugins: [starlightClientMermaid()],
       customCss: [
         './src/styles/custom.css',
