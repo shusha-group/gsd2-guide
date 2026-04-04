@@ -37,13 +37,9 @@ flowchart TD
     Resolve --> GenID[Generate CAP-XXXXXXXX ID]
     GenID --> Append[Append entry to CAPTURES.md]
     Append --> Notify[Notify with ID and truncated text]
-    Notify --> Threshold{Captures past threshold?}
-    Threshold -->|Yes| AutoTriage[Auto-triage fires at next seam]
-    Threshold -->|No| Done([Done])
-    AutoTriage --> Done
+    Notify --> Done([Done])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Threshold fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Parse fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style EnsureDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -51,7 +47,6 @@ flowchart TD
     style GenID fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Append fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style AutoTriage fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
 The full pipeline is:
@@ -65,9 +60,12 @@ The full pipeline is:
 
 ### Automatic Triage
 
-When captures accumulate past a threshold, triage fires automatically at the next natural seam between tasks — after a unit completes and before the next unit is dispatched. The triage is enqueued as a sidecar unit on the internal `sidecarQueue`. Triage does not fire while auto-mode is in step mode, or when the completing unit was itself a `triage-captures` or `quick-task` unit.
+When a unit completes in auto-mode and there are any pending captures, triage fires automatically at the next seam — before the next unit is dispatched. The triage is enqueued as a sidecar unit on the internal `sidecarQueue`.
 
-The progress widget shows a pending capture count badge so you can see how many are waiting.
+Auto-triage only fires when all of these conditions are met:
+- Auto-mode is not in step mode
+- The completing unit is not itself a `triage-captures` or `quick-task` unit (nor a hook)
+- There is an active milestone AND an active slice — triage needs plan context to classify captures
 
 You can also trigger triage at any time with [`/gsd triage`](../triage/).
 
@@ -91,7 +89,7 @@ Each capture is stored as a markdown section. New files start with a `# Captures
 **Status:** pending
 ```
 
-After triage, the status is updated and classification fields are appended:
+After triage, the status is updated and classification fields are appended — including the milestone the capture was triaged in:
 
 ```markdown
 ### CAP-a1b2c3d4
@@ -102,6 +100,7 @@ After triage, the status is updated and classification fields are appended:
 **Resolution:** deferred to a future slice
 **Rationale:** Not in scope for current slice
 **Resolved:** 2025-01-15T14:00:00.000Z
+**Milestone:** M003
 ```
 
 For actionable captures (`quick-task`, `inject`, `replan`), an `**Executed:**` timestamp is added once their resolution has been carried out:
@@ -141,11 +140,17 @@ When triage runs, the LLM reads the **current slice plan** and **active roadmap*
 
 - **`replan`** — Writes a `SXX-REPLAN-TRIGGER.md` marker file in the slice directory. The trigger records the source capture ID, text, rationale, and a timestamp. The next dispatch cycle detects this file and enters the `replanning-slice` phase.
 
-- **`quick-task`** — A dedicated prompt (`buildQuickTaskPrompt`) is generated from the capture text and dispatched as a self-contained unit. The agent executes the task without modifying any plan files. The capture is marked as executed after the unit completes.
+- **`quick-task`** — A dedicated prompt (`buildQuickTaskPrompt`) is generated from the capture text and collected for dispatch. The capture is marked as executed immediately when queued. The agent then executes the task without modifying any plan files.
 
 - **`defer`** — If the target milestone doesn't exist yet, creates its directory and seeds a `MXXX-CONTEXT-DRAFT.md` with the deferred captures listed. This ensures `deriveState()` discovers the milestone and routes to the discussion phase.
 
 Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
+
+### Staleness Gate
+
+Captures are resolved in the context of a specific milestone — the `**Milestone:**` field records which one. When `executeTriageResolutions` runs, it only processes captures resolved in the **current** milestone.
+
+This prevents quick-task captures from a prior milestone re-executing after the underlying issues were already fixed by planned milestone work. Captures that have no `**Milestone:**` field (legacy captures resolved before this field was introduced) are always included for backward compatibility.
 
 ### Context Injection
 
@@ -177,7 +182,7 @@ Capture context flows into downstream prompts automatically:
 
 | File | Purpose |
 |------|---------|
-| `.gsd/CAPTURES.md` | New capture entry appended; status and classification fields updated after triage |
+| `.gsd/CAPTURES.md` | New capture entry appended; status, classification, and milestone fields updated after triage |
 | `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | New task appended when an `inject` capture is executed |
 
 ## Examples

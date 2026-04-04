@@ -57,7 +57,7 @@ The command calls `formatHookStatus()` from the hook engine facade (`post-unit-h
 
 ### Data Collection
 
-1. **Reads post-unit hooks** from `resolvePostUnitHooks()` — these are defined in `.gsd/preferences.md` under `post_unit_hooks`. For each hook, it collects the name, enabled state, target unit types (from the `after` field), and any accumulated cycle counts from the in-memory cycle tracker.
+1. **Reads post-unit hooks** from `resolvePostUnitHooks()` — these are defined in `.gsd/PREFERENCES.md` under `post_unit_hooks`. For each hook, it collects the name, enabled state, target unit types (from the `after` field), and any accumulated cycle counts from the in-memory cycle tracker.
 
 2. **Reads pre-dispatch hooks** from `resolvePreDispatchHooks()` — defined under `pre_dispatch_hooks` in preferences. These have a `before` field listing which unit types they intercept.
 
@@ -80,6 +80,8 @@ If a hook produces a `retry_on` artifact instead of the normal artifact, the hoo
 **Browser safety injection:** The hook engine automatically appends the following instruction to every post-unit hook prompt before dispatching it:
 
 > **Browser tool safety:** Do NOT use `browser_wait_for` with `condition: "network_idle"` — it hangs indefinitely when dev servers keep persistent connections (Vite HMR, WebSocket). Use `selector_visible`, `text_visible`, or `delay` instead.
+
+**Agent override:** Each hook can optionally specify an `agent` field pointing to a custom agent definition file, and a `model` field to override the model used for that hook session.
 
 Both post-unit and pre-dispatch hook prompts support variable substitution using the trigger unit's context:
 
@@ -135,7 +137,7 @@ For each hook, the display shows:
 
 | File | Purpose |
 |------|---------|
-| `.gsd/preferences.md` | Source of hook configuration (`post_unit_hooks`, `pre_dispatch_hooks`) |
+| `.gsd/PREFERENCES.md` | Source of hook configuration (`post_unit_hooks`, `pre_dispatch_hooks`) |
 | `.gsd/hook-state.json` | Cycle counts restored into memory during auto-mode startup; reflects accumulated run state |
 
 ### Creates / Writes
@@ -175,8 +177,7 @@ When no hooks are configured:
 ```
 > /gsd hooks
 
-No hooks configured. Add post_unit_hooks or pre_dispatch_hooks
-to .gsd/preferences.md
+No hooks configured. Add post_unit_hooks or pre_dispatch_hooks to .gsd/PREFERENCES.md
 ```
 
 ## Related Commands

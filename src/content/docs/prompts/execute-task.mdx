@@ -15,7 +15,7 @@ For tasks touching UI, browser flows, or DOM behavior, the executor exercises th
 
 The executor also handles skill loading, observability, and blocker detection. It follows a disciplined debugging protocol when verification fails — forming a hypothesis, changing one variable at a time, and stopping after three failed attempts to reassess rather than shotgun-fixing. It never uses bare `command &` to background processes (which hangs the Bash tool); it always redirects output first or uses the `bg_shell` tool.
 
-When meaningful architectural, library, or observability decisions are made during a task, the executor appends them to `.gsd/DECISIONS.md`. Non-obvious recurring gotchas or useful patterns go to `.gsd/KNOWLEDGE.md`. After completing its work, the executor writes a task summary — including a clear one-liner that becomes the commit message, since the system handles all git operations automatically. The executor never runs git commands.
+When meaningful architectural, library, or observability decisions are made during a task, the executor appends them to `.gsd/DECISIONS.md`. Non-obvious recurring gotchas or useful patterns go to `.gsd/KNOWLEDGE.md`. After completing its work, the executor writes a task summary (including a clear one-liner that becomes the commit message) and then calls `gsd_complete_task` with the milestone ID, slice ID, task ID, and a completion summary. This tool call is required — it marks the task complete, updates the database, and renders `PLAN.md` automatically. The executor never edits `PLAN.md` checkboxes directly and never runs git commands.
 
 ## Pipeline Position
 

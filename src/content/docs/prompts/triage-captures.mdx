@@ -1,6 +1,6 @@
 ---
 title: "triage-captures"
-description: "Capture triage prompt — classifies pending /capture notes against the current plan and roadmap, assigning each a disposition (quick-task, inject, defer, replan, or note) for user confirmation."
+description: "Capture triage prompt — classifies pending /capture notes against the current slice plan and roadmap, assigning each a disposition (quick-task, inject, defer, replan, or note) for user confirmation."
 ---
 
 ## What It Does
@@ -9,12 +9,12 @@ description: "Capture triage prompt — classifies pending /capture notes agains
 
 Each capture is evaluated against five classification criteria. A **quick-task** is small and self-contained — fixable in minutes without modifying the plan. An **inject** belongs in the current slice but wasn't planned, requiring a new task entry. A **defer** belongs in a future slice or milestone. A **replan** changes the shape of remaining incomplete tasks in the current slice, not just adds to them. A **note** is informational with no action required. The prompt applies decision guidelines to choose the least disruptive classification: `inject` over `replan` when only a new task is needed, `defer` over `inject` when the work doesn't belong in the current slice's scope, and `note` or `defer` are auto-confirmed without asking.
 
-After classifying, the prompt presents its proposals to the user via `ask_user_questions` for any quick-task, inject, or replan items. Once confirmed, it updates `CAPTURES.md` for each capture — setting `Status: resolved`, adding the confirmed classification, resolution description, rationale, and a timestamp. Critically, the prompt does NOT execute any resolutions: quick-tasks are not run, injected tasks are not added. Execution happens separately, keeping the triage step focused and auditable.
+After classifying, the prompt presents its proposals to the user via `ask_user_questions` for any quick-task, inject, or replan items. Once confirmed, it updates `CAPTURES.md` for each capture — setting `Status: resolved`, adding the confirmed classification, resolution description, rationale, and a timestamp. It then summarizes what was triaged: how many captures, what classifications were assigned, and what actions are pending (e.g., "2 quick-tasks ready for execution, 1 deferred to S03"). Critically, the prompt does NOT execute any resolutions: quick-tasks are not run, injected tasks are not added. Execution happens separately, keeping the triage step focused and auditable.
 
 ## Pipeline Position
 
 ```mermaid
-flowchart LR
+flowchart TD
     CaptureCommand["/gsd capture or triage"] --> TriageCaptures["triage-captures"]
     TriageCaptures --> Classification["classify each capture"]
     Classification --> UserConfirm["user confirms proposals"]
@@ -35,9 +35,9 @@ flowchart LR
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `pendingCaptures` | List of pending capture items to be triaged and prioritized | Yes |
-| `currentPlan` | Current project plan or roadmap content for context during capture triage | Yes |
-| `roadmapContext` | Roadmap context content providing project state for intelligent triage decisions | Yes |
+| `pendingCaptures` | List of pending capture items from `CAPTURES.md` to be classified | Yes |
+| `currentPlan` | Full content of the current slice plan, used to evaluate whether captures belong in the current slice | Yes |
+| `roadmapContext` | Current roadmap content providing project-wide scope for defer vs. inject decisions | Yes |
 
 ## Used By
 

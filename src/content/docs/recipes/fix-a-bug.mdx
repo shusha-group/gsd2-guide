@@ -26,34 +26,37 @@ Run `/gsd` and describe the bug when the smart entry wizard asks what you're wor
 ```
 > /gsd new-milestone
 
-What's the goal for this milestone?
+What's the vision?
 > Users are reporting that search in Cookmate is case-sensitive.
 > Searching for "Pasta" returns nothing, but "pasta" works.
 > This should be a case-insensitive search.
 ```
 
-GSD asks clarifying questions to lock down scope — such as whether the issue is in the API query, the database index, or the frontend — then writes a milestone context file.
+GSD reflects back what it understood, scouts the codebase, then asks clarifying questions — such as whether the issue is in the API query, the database index, or the frontend — before writing a milestone context file.
 
 :::tip
 If this is your **first ever milestone**, just run `/gsd` instead. The smart entry wizard fires automatically and routes you through the same discussion.
 :::
 
-### 2. Discussion produces a context file
+### 2. Discussion produces context and requirements
 
-After the conversation, GSD writes the milestone brief to disk:
+After the conversation, GSD writes a capability contract and the milestone brief to disk:
 
 ```
 .gsd/
+├── REQUIREMENTS.md              ← capability contract: R001 case-insensitive search
 └── milestones/
     └── M003/
-        └── M003-CONTEXT.md    ← bug scope, root cause hypothesis, fix approach
+        └── M003-CONTEXT.md      ← bug scope, root cause hypothesis, fix approach
 ```
 
-The context file captures what was discussed: the symptoms, the suspected root cause (PostgreSQL `LIKE` is case-sensitive by default), and the agreed approach (switch to `ILIKE` or add a `LOWER()` wrapper).
+The context file captures what was discussed: the symptoms, the suspected root cause (PostgreSQL `LIKE` is case-sensitive by default), and the agreed approach (switch to `ILIKE` or add a `LOWER()` wrapper). The requirements file assigns stable `R###` IDs to each capability — doctor checks validate these throughout the milestone.
+
+Before writing the roadmap, GSD prints it in chat and asks for approval. Only after confirmation does it write the roadmap file and tell you: "Milestone M003 ready."
 
 ### 3. Research and planning
 
-After the context file and `STATE.md` are written, auto-mode starts automatically. If it doesn't, run:
+After the context file is written, auto-mode starts automatically. If it doesn't, run:
 
 ```
 > /gsd auto
@@ -61,12 +64,13 @@ After the context file and `STATE.md` are written, auto-mode starts automaticall
 
 GSD dispatches units in sequence:
 
-1. **Milestone Research** — scouts the codebase for search-related code, checks Prisma docs for case-insensitive query options
+1. **Milestone Research** — scouts the codebase for search-related code, checks library docs for case-insensitive query options
 2. **Slice Research** — zooms in on the specific slice goal and integration points. For a focused single-slice bug fix, this step may be skipped if the milestone research already covered the relevant code.
 3. **Plan the slice** — breaks the slice into tasks (update query, add tests, verify)
 
 ```
 .gsd/
+├── REQUIREMENTS.md
 └── milestones/
     └── M003/
         ├── M003-CONTEXT.md
@@ -92,7 +96,7 @@ GSD executes each task in a fresh context window. For this bug fix:
 - **T01** updates the Prisma query from `contains: query` to `contains: query, mode: 'insensitive'`
 - **T02** adds test cases verifying that "Pasta", "PASTA", and "pasta" all return the same results
 
-Each task writes a summary when done, documenting what changed and what was verified. Each summary is automatically committed with a meaningful commit message.
+Each task calls `gsd_complete_task` when done, writing a summary that documents what changed and what was verified. The system reads the summary and creates a meaningful commit automatically — no manual git commands needed.
 
 ### 5. Verification and completion
 
@@ -108,6 +112,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 
 ```
 .gsd/
+├── REQUIREMENTS.md
 └── milestones/
     └── M003/
         ├── M003-CONTEXT.md
@@ -136,6 +141,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 
 | File | Purpose |
 |------|---------|
+| `.gsd/REQUIREMENTS.md` | Capability contract with stable `R###` IDs — written during the discuss phase |
 | `.gsd/milestones/M003/M003-CONTEXT.md` | Bug scope, root cause hypothesis, fix approach |
 | `.gsd/milestones/M003/M003-RESEARCH.md` | Codebase findings — what code does what |
 | `.gsd/milestones/M003/M003-ROADMAP.md` | Slice structure with completion checkboxes |
@@ -155,15 +161,16 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 | File | Purpose |
 |------|---------|
 | `.gsd/STATE.md` | Current project state to determine next unit |
+| `.gsd/REQUIREMENTS.md` | Capability contract read by research, planning, and validation phases |
 | `.gsd/KNOWLEDGE.md` | Accumulated gotchas and patterns |
 | `.gsd/DECISIONS.md` | Architectural decisions that constrain the fix |
-| `.gsd/OVERRIDES.md` | Any user-issued steering overrides |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
 | `.gsd/STATE.md` | Updated after each unit completes |
+| `.gsd/REQUIREMENTS.md` | Requirement status updated as capabilities are validated |
 | `.gsd/KNOWLEDGE.md` | Any new patterns discovered (e.g., Prisma `mode` flag) |
 | `.gsd/gsd.db` | SQLite database opened or auto-migrated at startup — tracks units, metrics, and routing history |
 | `.gsd/completed-units.json` | Disk-backed idempotency log — prevents double-dispatch on restart |
@@ -176,7 +183,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a3a1a', 'primaryTextColor': '#e8f4e8', 'primaryBorderColor': '#39ff14', 'lineColor': '#39ff14', 'secondaryColor': '#0d180d', 'tertiaryColor': '#0d180d', 'background': '#0a0e0a', 'mainBkg': '#1a3a1a', 'nodeBorder': '#39ff14', 'clusterBkg': '#0d180d', 'titleColor': '#39ff14', 'edgeLabelBackground': '#0a0e0a'}}}%%
 flowchart TD
     Start([Bug reported]) --> NewMilestone["/gsd new-milestone — describe the bug"]
-    NewMilestone --> Context[Context file written]
+    NewMilestone --> Context["Context + REQUIREMENTS.md written"]
     Context --> Auto["Auto-mode starts (or /gsd auto)"]
     Auto --> Research[Research codebase + slice]
     Research --> Plan[Plan milestone + slice tasks]
