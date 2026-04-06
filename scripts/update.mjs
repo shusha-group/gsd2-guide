@@ -318,7 +318,7 @@ async function runRegenerateStale() {
     console.log(`    ${page} (${depNames.join(', ')})...`);
 
     try {
-      const result = await regeneratePage(page, sourceFiles);
+      const result = await regeneratePage(page, sourceFiles, { timeout: 900_000 });
 
       if (result.skipped) {
         console.log(`      ⊘ skipped: ${result.reason}`);

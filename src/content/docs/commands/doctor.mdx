@@ -5,14 +5,14 @@ description: "Runtime health checks across project, milestone, slice, and task s
 
 ## What It Does
 
-`/gsd doctor` scans your `.gsd/` directory for structural integrity issues — missing summaries, unchecked roadmap entries, stale locks, orphaned worktrees, corrupt git state, environment misconfigurations, missing API keys, and more. It operates in four modes:
+`/gsd doctor` scans your `.gsd/` directory for structural integrity issues — missing summaries, unchecked roadmap entries, stale locks, orphaned worktrees, corrupt git state, environment misconfigurations, missing API keys, database constraint violations, and more. It operates in four modes:
 
 - **Doctor** (default) — Scans and reports issues. Read-only, changes nothing.
 - **Fix** — Scans and auto-repairs what it can. Creates placeholder summaries, marks tasks done, removes stale locks, cleans up git state.
-- **Heal** — Scans, auto-repairs fixable issues, then dispatches remaining errors and UAT warnings to the LLM for interactive investigation and resolution.
+- **Heal** — Scans, auto-repairs fixable issues, then dispatches remaining errors to the LLM for interactive investigation and resolution.
 - **Audit** — Full scan with all warnings included, up to 50 issues displayed, no fixes applied.
 
-Doctor checks a large set of distinct issue codes spanning six domains (project/runtime, git/worktrees, environment, provider, milestone structure, slice structure, task structure). Each issue has a severity (error, warning, info) and a fixability flag. Fix mode only touches issues marked as fixable — it won't rewrite plan content or make judgment calls.
+Doctor checks a large set of distinct issue codes spanning seven domains (project/runtime, git/worktrees, environment, provider, engine/database, milestone structure, slice structure, task structure). Each issue has a severity (error, warning, info) and a fixability flag. Fix mode only touches issues marked as fixable — it won't rewrite plan content or make judgment calls.
 
 During auto-mode, a proactive healing layer runs lightweight checks before each unit dispatch, tracks health trends over time (green → yellow → red), and can escalate to LLM-assisted healing after 5 consecutive units with unresolved errors.
 
@@ -50,10 +50,11 @@ flowchart TD
     Use --> Scan
     Auto --> Scan
 
-    Scan[Run all check domains] --> Git[Git health<br/>Orphaned worktrees, stale branches,<br/>corrupt merge state, worktree lifecycle]
+    Scan[Run all check domains] --> Git[Git health<br/>Orphaned worktrees, stale branches,<br/>corrupt merge state, stale commits]
     Scan --> Runtime[Runtime health<br/>Stale locks, crash state,<br/>metrics, STATE.md drift]
     Scan --> Global[Global health<br/>Orphaned project state dirs]
     Scan --> Env[Environment health<br/>Node version, deps, ports,<br/>disk space, tools]
+    Scan --> Engine[Engine health<br/>DB constraint violations,<br/>projection drift]
     Scan --> Provider[Provider checks<br/>API keys, remote channel]
     Scan --> Struct[Structural checks<br/>Plans, summaries, UATs,<br/>duplicate IDs, dependencies]
 
@@ -61,6 +62,7 @@ flowchart TD
     Runtime --> Collect
     Global --> Collect
     Env --> Collect
+    Engine --> Collect
     Provider --> Collect
     Struct --> Collect
 
@@ -71,7 +73,7 @@ flowchart TD
     Fix --> Report2([Report with fixes applied])
     Mode -->|Heal| Fix2[Auto-repair fixable issues]
     Fix2 --> Filter[Filter remaining issues]
-    Filter --> HasErrors{Actionable<br/>issues remain?}
+    Filter --> HasErrors{Errors remain?}
     HasErrors -->|No| Done([Nothing to hand off])
     HasErrors -->|Yes| Dispatch[Dispatch to LLM<br/>with structured issue list]
     Dispatch --> LLM([LLM investigates & resolves])
@@ -88,6 +90,7 @@ flowchart TD
     style Runtime fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Global fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Env fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Engine fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Provider fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Struct fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Collect fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -108,12 +111,13 @@ Doctor loads the full project state via `deriveState()` and scans the milestone 
 
 ### Check Domains
 
-The scanner runs six independent check functions:
+The scanner runs seven independent check functions:
 
-- **`checkGitHealth`** — Orphaned auto-worktrees, stale milestone branches, corrupt merge/rebase state, tracked runtime files, legacy slice branches, missing integration branches, orphaned worktree directories, and worktree lifecycle (merged, stale, dirty, unpushed). Git checks are skipped entirely if the project is not a git repo. Worktree and branch checks are also skipped when the project's `git.isolation` preference is set to `"none"`.
-- **`checkRuntimeHealth`** — Stale crash locks, stranded lock directories, stale parallel sessions, orphaned completed-unit keys, stale hook state, activity log bloat, STATE.md drift, gitignore drift, failed migration artifacts, broken `.gsd` symlinks, metrics ledger integrity and bloat, large planning file detection, snapshot ref bloat.
+- **`checkGitHealth`** — Orphaned auto-worktrees, stale milestone branches, corrupt merge/rebase state, tracked runtime files, legacy slice branches, missing integration branches, orphaned worktree directories, stale uncommitted changes (auto-snapshot fix), and worktree lifecycle (merged, stale, dirty, unpushed). Git checks are skipped entirely if the project is not a git repo. Worktree and branch checks are also skipped when the project's `git.isolation` preference is set to `"none"`.
+- **`checkRuntimeHealth`** — Stale crash locks, stranded lock directories, stale parallel sessions, orphaned completed-unit keys, stale hook state, macOS numbered `.gsd` collision variants, activity log bloat, STATE.md drift, gitignore drift, failed migration artifacts, broken `.gsd` symlinks, metrics ledger integrity and bloat, large planning file detection, snapshot ref bloat.
 - **`checkGlobalHealth`** — Cross-project check that scans `~/.gsd/projects/` for orphaned project state directories whose git root no longer exists on disk.
 - **`checkEnvironmentHealth`** — Node version vs. `engines` requirement, `node_modules` staleness, missing `.env` files, port conflicts on common dev ports, disk space, Docker availability, package manager, TypeScript/Python/Rust/Go tool presence, and git remote reachability. The `--build` and `--test` flags add opt-in slow checks that run your build/test scripts.
+- **`checkEngineHealth`** — When the GSD database is available, runs DB constraint checks: orphaned tasks (task references a non-existent slice), orphaned slices (slice references a non-existent milestone), tasks marked done in the DB without summaries, and duplicate entity IDs. Also detects projection drift — when the event log is newer than rendered markdown files — and re-renders stale projections automatically.
 - **`runProviderChecks`** — When an active milestone exists, checks required LLM provider API keys (based on configured model preferences), remote questions channel token (Slack/Discord/Telegram), and optional tool integrations (Brave, Tavily, Jina, Context7). Fast — reads `auth.json` and env vars only, no network I/O.
 - **Inline structural checks** — Preference validation, requirement auditing, and all milestone/slice/task structural integrity checks (circular dependencies, orphaned directories, duplicate task IDs, missing plans, completion drift, must-have verification, future timestamps) run directly in `runGSDDoctor`.
 
@@ -134,11 +138,13 @@ When fix mode is enabled, fixable issues are repaired in place during the scan. 
 - Cleaning up stale parallel session status files
 - Removing orphaned completed-unit keys from `completed-units.json`
 - Clearing stale hook state from `hook-state.json`
+- Removing macOS numbered `.gsd` collision variants (e.g. `.gsd 2`, `.gsd 3`)
 - Removing orphaned worktrees for completed milestones
 - Deleting stale milestone branches
 - Aborting corrupt git merge/rebase state
 - Removing tracked runtime files from git index
 - Removing orphaned worktree directories that aren't registered with git
+- Creating gsd snapshot commits for stale uncommitted changes
 - Pruning activity logs (7-day retention)
 - Pruning metrics ledger to newest 1500 entries when over 2000
 - Pruning snapshot refs to newest 5 per label when over 50
@@ -147,23 +153,23 @@ When fix mode is enabled, fixable issues are repaired in place during the scan. 
 - Recovering failed external state migrations (`.gsd.migrating`)
 - Sanitizing delimiter characters (em dash, en dash) from milestone titles in roadmaps
 - Updating recorded integration branch to fallback when original no longer exists
+- Re-rendering stale markdown projections when the event log is newer
 
-**Fix levels:** When doctor runs automatically from auto-mode post-unit hooks, it uses a restricted `fixLevel: "task"` that skips two protected code sets:
+**Fix levels:** When doctor runs automatically from auto-mode post-unit hooks, it uses a restricted `fixLevel: "task"` that skips two protected issue codes:
 
-- **`COMPLETION_TRANSITION_CODES`** (`all_tasks_done_missing_slice_summary`): Reserved for the `complete-slice` dispatch unit — requires LLM-generated content. Only fixed in full fix mode (`/gsd doctor fix`).
-- **`GLOBAL_STATE_CODES`** (`orphaned_project_state`, `orphaned_completed_units`): Removing completed-unit keys can revert project state, treating finished tasks as incomplete. These are only fixed by explicit manual doctor runs.
+- **`GLOBAL_STATE_CODES`** — `orphaned_project_state` and `orphaned_completed_units`. Removing completed-unit keys can revert project state, treating finished tasks as incomplete. Removing orphaned project state directories deletes external state. These are only fixed by explicit manual doctor runs (`/gsd doctor fix`).
 
-All other fixable codes — including roadmap checkbox updates (`all_tasks_done_roadmap_not_checked`) and UAT stubs (`all_tasks_done_missing_slice_uat`) — are fixed immediately even at `fixLevel: "task"` to keep bookkeeping consistent.
+All other fixable codes are fixed immediately even at `fixLevel: "task"` — including roadmap checkbox updates (`all_tasks_done_roadmap_not_checked`) and UAT stubs (`all_tasks_done_missing_slice_uat`) — to keep bookkeeping consistent after each task.
 
 ### Heal Mode Dispatch
 
-Heal mode first runs all fixes, then filters the remaining issues to find actionable ones — all errors, plus UAT-related warnings (`all_tasks_done_missing_slice_uat`, `slice_checked_missing_uat`). It dispatches these to the LLM as a structured list with issue codes, unit IDs, file paths, and fixability flags. The LLM receives the full doctor report as context and can use standard tools to investigate and resolve each issue. The LLM is instructed to prefer reconstructing real artifacts from existing context over leaving placeholders.
+Heal mode first runs all fixes, then filters the remaining issues to find actionable ones — all errors. It dispatches these to the LLM as a structured list with issue codes, unit IDs, file paths, and fixability flags. The LLM receives the full doctor report as context and can use standard tools to investigate and resolve each issue. The LLM is instructed to prefer reconstructing real artifacts from existing context over leaving placeholders.
 
 ### Proactive Healing During Auto-Mode
 
 During auto-mode, doctor runs a lightweight proactive healing layer in addition to any manual invocations:
 
-1. **Pre-dispatch health gate** — Before each unit dispatch, checks for stale crash locks, corrupt merge state, missing STATE.md, missing integration branches, and low disk space. Attempts auto-repair of each. Blocks dispatch if critical issues cannot be resolved.
+1. **Pre-dispatch health gate** — Before each unit dispatch, checks for stale crash locks, corrupt merge state, missing STATE.md, missing integration branches, stale uncommitted changes (auto-snapshot), and low disk space. Attempts auto-repair of each. Blocks dispatch if critical issues cannot be resolved.
 2. **Health score tracking** — After each unit, records a health snapshot (error count, warning count, fixes applied, top issues). Tracks trends across the last 50 snapshots to detect degradation. Emits level-change events when health transitions between green (no errors), yellow (1+ errors or degrading trend), and red (3+ consecutive error units).
 3. **Auto-heal escalation** — After 5 consecutive units with unresolved errors, if the trend is not improving, escalates to LLM-assisted heal. Escalation fires at most once per auto-mode session.
 
@@ -191,6 +197,7 @@ Doctor checks a large set of distinct issue codes grouped by domain.
 | `stale_parallel_session` | warning | Parallel session status file exists but the owning process is dead | Yes |
 | `orphaned_completed_units` | warning | `completed-units.json` references units whose expected artifacts no longer exist | Yes |
 | `stale_hook_state` | info | `hook-state.json` has residual cycle counts from a previous session | Yes |
+| `numbered_gsd_variant` | warning | macOS filesystem created a numbered `.gsd` collision variant (e.g. `.gsd 2`) — can cause GSD state to appear deleted | Yes |
 | `failed_migration` | error | `.gsd.migrating` found — a previous external state migration failed | Yes |
 | `broken_symlink` | error | `.gsd` symlink target does not exist — external state directory was deleted | No |
 | `metrics_ledger_corrupt` | warning | `metrics.json` has invalid structure or is not valid JSON | No |
@@ -205,6 +212,7 @@ Doctor checks a large set of distinct issue codes grouped by domain.
 | `corrupt_merge_state` | error | MERGE_HEAD, SQUASH_MSG, rebase-apply, or rebase-merge state found | Yes |
 | `tracked_runtime_files` | warning | Files in `.gsd/activity/` or `.gsd/runtime/` are tracked by git | Yes |
 | `legacy_slice_branches` | info | Per-slice `gsd/*/*` branches found (legacy pattern, no longer used) | Yes |
+| `stale_uncommitted_changes` | warning | Uncommitted changes with no commit above the configured threshold — auto-snapshots tracked files | Yes |
 | `orphaned_auto_worktree` | warning | Worktree exists for a completed milestone | Yes |
 | `stale_milestone_branch` | info | `milestone/*` branch exists for a completed milestone | Yes |
 | `integration_branch_missing` | warning/error | Active milestone's recorded integration branch no longer exists in git (warning if fallback available, error if none) | Yes (if fallback) |
@@ -240,6 +248,17 @@ Doctor checks a large set of distinct issue codes grouped by domain.
 |------|----------|-------------|---------|
 | `provider_key_missing` | warning | A required LLM provider API key is not configured (based on model preferences) | No |
 | `provider_key_backedoff` | warning | All credentials for a required provider are currently backed off (rate limited) | No |
+
+### Engine / Database
+
+These checks only run when the GSD SQLite database is available (`gsd.db`).
+
+| Code | Severity | Description | Fixable |
+|------|----------|-------------|---------|
+| `db_orphaned_task` | error | Task in the database references a slice that no longer exists | No |
+| `db_orphaned_slice` | error | Slice in the database references a milestone that no longer exists | No |
+| `db_done_task_no_summary` | warning | Task is marked done in the database but has no summary stored | No |
+| `db_duplicate_id` | error | Duplicate milestone, slice, or task ID detected in the database | No |
 
 ### Milestone Scope
 
@@ -297,6 +316,8 @@ Doctor checks a large set of distinct issue codes grouped by domain.
 | `.gsd/activity/` | Activity log size check |
 | `.gsd/metrics.json` | Metrics ledger integrity and bloat check |
 | `.gsd/doctor-history.jsonl` | Doctor run history (read for trend display) |
+| `.gsd/gsd.db` | DB constraint and projection drift checks (engine domain) |
+| `.gsd/event-log.jsonl` | Projection drift detection (compared against roadmap mtime) |
 | `.gitignore` | Pattern completeness check |
 | `package.json` | Node version, deps, tools, port checks |
 | `auth.json` | Provider API key presence |
@@ -308,7 +329,7 @@ Doctor checks a large set of distinct issue codes grouped by domain.
 | `.gsd/milestones/*/slices/*/S*-SUMMARY.md` | Placeholder summary stubs |
 | `.gsd/milestones/*/slices/*/S*-UAT.md` | Placeholder UAT stubs |
 | `.gsd/milestones/*/slices/*/S*-PLAN.md` | Task checkbox updates (check done, or uncheck to force re-run) |
-| `.gsd/milestones/*/M*-ROADMAP.md` | Slice checkbox updates; sanitized delimiter characters |
+| `.gsd/milestones/*/M*-ROADMAP.md` | Slice checkbox updates; sanitized delimiter characters; re-rendered projections |
 | `.gsd/milestones/*/slices/*/tasks/` | Created when `tasks/` directory is missing |
 | `.gsd/milestones/*/slices/*/` | Created when slice directory is missing |
 | `.gsd/STATE.md` | Regenerated from disk state |
@@ -409,7 +430,6 @@ Issues: 2 total · 1 error(s) · 1 warning(s) · 0 fixable
 
 ## Related Commands
 
-- [`/gsd health`](../health/) — Diagnose planning directory health and optionally repair issues
 - [`/gsd forensics`](../forensics/) — Deep post-mortem investigation of auto-mode failures
 - [`/gsd status`](../status/) — View current project state
 - [`/gsd cleanup`](../cleanup/) — Clean up stale branches and worktrees

@@ -251,7 +251,7 @@ A roadmap looks like this:
 
 High-risk slices go first. If auth is broken, nothing else works — so it's S01. Favorites are low-risk and depend on established patterns, so they're last.
 
-The roadmap also includes: key risks, proof strategy (which slice retires which risk), verification classes, milestone definition of done, requirement coverage, and a boundary map of what each slice produces and consumes.
+The roadmap also includes: key risks and unknowns, proof strategy (which slice retires which risk), verification classes (contract, integration, operational, UAT), milestone definition of done, requirement coverage, a boundary map of what each slice produces and consumes, and a horizontal checklist of cross-cutting concerns (auth boundaries, reconnection strategies, billing path impact) to check across all slices.
 
 ### Slice Planning
 
@@ -319,6 +319,10 @@ flowchart TD
     SR -->|No| RS[research-slice]
     SR -->|Yes| PS[plan-slice]
 
+    Check -->|evaluating-gates| GE{Gates enabled?}
+    GE -->|Yes| EG[gate-evaluate]
+    GE -->|No| Skip[skip]
+
     Check -->|replanning-slice| RP[replan-slice]
 
     Check -->|executing| Reactive{Reactive mode?}
@@ -354,6 +358,9 @@ flowchart TD
     style ET fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style VM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style GE fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style EG fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Skip fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style StopUAT fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
 ```
 
@@ -379,6 +386,10 @@ Every task gets a **clean context window**. No accumulated garbage from prior ta
 | Knowledge base | Recurring patterns and gotchas |
 
 This is how GSD maintains quality across long projects — each unit starts fresh with focused, relevant context instead of degrading as the context window fills up.
+
+### Quality gate evaluation
+
+When `gate_evaluation.enabled: true` is set in preferences, GSD enters `evaluating-gates` after a slice plan is written. The `gate-evaluate` agent runs configured quality gates (by default Q3 and Q4) against the slice plan before any execution begins. If no gates are pending or gate evaluation is disabled, this phase is skipped automatically and execution proceeds immediately.
 
 ### Blocker detection and replan
 
@@ -540,18 +551,24 @@ The state derivation algorithm:
 |-------|--------------|
 | `pre-planning` | Active milestone has context but no roadmap yet; or no milestones exist |
 | `needs-discussion` | Active milestone has a `CONTEXT-DRAFT.md` seed — run `/gsd` to discuss |
+| `discussing` | A discuss-milestone unit is actively running |
+| `researching` | A research-milestone or research-slice unit is actively running |
 | `planning` | Active slice needs a plan |
+| `evaluating-gates` | Slice plan written — quality gates being evaluated before execution |
 | `executing` | Active task is ready to run |
+| `verifying` | Post-task verification gate is running |
 | `summarizing` | All tasks done — complete slice, then UAT and reassess |
+| `advancing` | Slice completed — advancing to the next unit (UAT, reassess, or next slice) |
 | `replanning-slice` | A task blocker or triage trigger — replan remaining tasks |
 | `validating-milestone` | All slices done — validate before completing |
 | `completing-milestone` | Validation passed — write milestone summary |
+| `paused` | Auto-mode manually paused by `/gsd pause` |
 | `blocked` | No eligible slice (dep cycle) or all remaining milestones are dep-blocked |
 | `complete` | All milestones done |
 
 This means you can always understand where GSD is by looking at the files. And if something goes wrong, you can fix it by editing the markdown — check a box, rename a file, adjust a plan.
 
-State derivation uses a native Rust batch parser when available, reading all `.gsd/` markdown files in a single pass for speed. It falls back to sequential JS file reads if the native module is absent. Results are cached for 100ms per base path to avoid redundant re-reads during a single dispatch cycle.
+State derivation is DB-primary: when a `gsd.db` SQLite database is present (created during project init), milestone and slice data is read from tables directly, keeping derivation fast even for large projects. Filesystem parsing serves as a fallback for unmigrated projects or when the DB is empty — both paths produce field-identical `GSDState` output. On a disk-only project, a native Rust batch parser is used when available to read all `.gsd/` markdown files in a single pass. Results are cached for 100ms per base path to avoid redundant re-reads within a single dispatch cycle.
 
 ---
 
@@ -598,6 +615,8 @@ For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <de
 | **UAT verdict gate** | A non-PASS UAT result blocks auto-mode until you fix the failures |
 | **Capability contract** | `REQUIREMENTS.md` tracks every requirement with status, ownership, and traceability |
 | **Milestone validation** | Before completing a milestone, GSD verifies the assembled work delivers the goal |
+| **Quality gate evaluation** | After slice planning, configured gates run against the plan before execution starts |
+| **DB-primary state** | Milestone and slice data is stored in `gsd.db`; filesystem parsing is the fallback |
 | **Blocker replanning** | Tasks or triage that discover plan-invalidating issues trigger automatic slice replanning |
 | **Observable artifacts** | Every phase produces readable markdown files — you can always see what happened |
 | **Intervention points** | Stop, pause, steer, edit plans, or fix things manually at any time |
