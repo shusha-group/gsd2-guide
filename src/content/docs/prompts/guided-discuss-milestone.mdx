@@ -13,7 +13,7 @@ The agent then runs an interview in rounds of 1–3 questions each, covering six
 
 The agent does **not** ask a "ready to wrap up?" gate after every round — it continues immediately into the next round unless the depth checklist is genuinely satisfied. A single wrap-up prompt is used only when the agent believes all six areas are covered or the user signals they want to stop. Before writing, the agent prints a structured depth summary using the user's exact terminology and runs a confirmation gate — when structured questions are available, the question ID must contain `depth_verification` to enable the write-gate downstream.
 
-The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact wording, emphasis, and framing. It is not a paraphrase — downstream agents read it as their only window into this conversation. After writing, the prompt says exactly `"{milestoneId} context written."` and nothing else. When a milestone has a context file, it is the first thing planning prompts read and the authoritative answer to scope questions.
+The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact wording, emphasis, and framing. It is not a paraphrase — downstream agents read it as their only window into this conversation. The file is persisted by calling `gsd_summary_save` with `milestone_id`, `artifact_type: "CONTEXT"`, and the full context markdown as `content` — the tool writes to disk and persists to the database. After writing, the prompt says exactly `"{milestoneId} context written."` and nothing else. When a milestone has a context file, it is the first thing planning prompts read and the authoritative answer to scope questions.
 
 ## Pipeline Position
 

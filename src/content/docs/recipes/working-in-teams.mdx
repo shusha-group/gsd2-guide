@@ -65,6 +65,10 @@ Share planning artifacts while keeping runtime state local:
 .gsd/STATE.md
 .gsd/metrics.json
 .gsd/gsd.db
+.gsd/gsd.db-shm
+.gsd/gsd.db-wal
+.gsd/journal/
+.gsd/doctor-history.jsonl
 .gsd/activity/
 .gsd/runtime/
 .gsd/worktrees/
@@ -75,7 +79,7 @@ Share planning artifacts while keeping runtime state local:
 
 **What gets shared** (committed): `preferences.md`, `PROJECT.md`, `REQUIREMENTS.md`, `DECISIONS.md`, `KNOWLEDGE.md`, `QUEUE.md`, and all milestone plans, roadmaps, and summaries.
 
-**What stays local** (gitignored): lock files, SQLite cache, state cache, activity logs, runtime records, and worktrees.
+**What stays local** (gitignored): lock files, SQLite cache (including WAL sidecars), state cache, activity logs, doctor run history, daily event journal, runtime records, and worktrees.
 
 ```
 > git add .gsd/preferences.md .gitignore
@@ -196,11 +200,11 @@ f5e6d7c M002-k4m9px: Recipe search (squash)
 a1b2c3d M001-eh88as: User authentication (squash)
 ```
 
-After the merge, GSD removes the worktree directory and branch. Planning artifacts remain in `milestones/` as a historical record and travel with the squash commit to `main`.
+After the merge completes, GSD asks whether to remove the worktree and milestone branch or keep them for continued parallel work. Choosing to remove cleans up the worktree directory and branch. Planning artifacts always remain in `milestones/` as a historical record and travel with the squash commit to `main`.
 
 ### Optional: Auto-create pull requests
 
-If your team uses a code-review workflow before merging to main, set `auto_pr: true`. GSD will open a pull request after the milestone branch is pushed, targeting the configured `pr_target_branch` (defaults to `main`). This requires `auto_push: true` and the `gh` CLI installed and authenticated:
+If your team uses a code-review workflow before merging to main, set `auto_pr: true`. GSD will open a **draft** pull request after the milestone branch is pushed, targeting the configured `pr_target_branch` (defaults to `main`). This requires `auto_push: true` and the `gh` CLI installed and authenticated:
 
 ```yaml
 # .gsd/preferences.md
@@ -267,7 +271,7 @@ When a milestone completes, GSD runs a structured, LLM-guided merge from the wor
 2. **Assess conflicts** — For each modified file, GSD checks whether `main` has also changed since the worktree branched off (using `git merge-base` for the common ancestor). Diverged files are flagged as conflicts that need reconciliation; untouched files are marked as clean merges.
 3. **Present a merge plan** — GSD shows clean merges, side-by-side conflict comparisons with a proposed reconciliation, new files to add, and deletions to confirm. Nothing is applied until the merge plan is approved.
 4. **Execute the merge** — From the main tree path, GSD applies any pre-reconciled files, runs `git merge --squash`, reviews staged changes, and commits with a `merge(worktree/<name>):` message.
-5. **Clean up** — The worktree directory and milestone branch are removed. Planning artifacts remain in `.gsd/milestones/` as a historical record.
+5. **Clean up prompt** — After a successful merge, GSD asks whether to remove the worktree and milestone branch or keep them for continued parallel work. Removal runs `git worktree remove` and `git branch -D` to clean up the directory and branch. Planning artifacts remain in `.gsd/milestones/` as a historical record regardless.
 
 The LLM never silently discards changes. When a conflict is ambiguous, it shows both versions and asks.
 
@@ -295,7 +299,7 @@ main branch:
         └── slices/...
 ```
 
-Worktrees are cleaned up after merge. Planning artifacts remain in `milestones/` as a historical record. Because planning artifacts are tracked in git (not gitignored), they travel with each milestone branch and merge cleanly to `main` as part of the squash commit.
+Worktrees are cleaned up after merge (if the user confirms removal). Planning artifacts remain in `milestones/` as a historical record. Because planning artifacts are tracked in git (not gitignored), they travel with each milestone branch and merge cleanly to `main` as part of the squash commit.
 
 ## Flow Diagram
 
@@ -317,8 +321,12 @@ flowchart TD
     CheckA -->|fails| BlockA["❌ Blocked — fix and retry"]
     CheckB -->|passes / skipped| MergeB["LLM-guided squash merge → main"]
     CheckB -->|fails| BlockB["❌ Blocked — fix and retry"]
-    MergeA --> Done([Both milestones merged ✓])
-    MergeB --> Done
+    MergeA --> CleanA{"Remove\nworktree?"}
+    MergeB --> CleanB{"Remove\nworktree?"}
+    CleanA -->|yes| Done([Both milestones merged ✓])
+    CleanA -->|no| Done
+    CleanB -->|yes| Done
+    CleanB -->|no| Done
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Setup fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -336,6 +344,8 @@ flowchart TD
     style MergeB fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style BlockA fill:#1a0a0a,stroke:#ff4444,color:#ffaaaa
     style BlockB fill:#1a0a0a,stroke:#ff4444,color:#ffaaaa
+    style CleanA fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CleanB fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 

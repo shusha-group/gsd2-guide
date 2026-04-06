@@ -137,7 +137,7 @@ The following unit types inject KNOWLEDGE.md:
 | Validate milestone | Full file inline |
 | Reassess roadmap | Full file inline |
 
-Replan-slice, discuss-milestone, and run-UAT do not inject KNOWLEDGE.md.
+Replan-slice, discuss-milestone, run-UAT, gate-evaluate, and rewrite-docs do not inject KNOWLEDGE.md. Reactive-execute does not inject it at the orchestrator level, but each subagent execute-task prompt it builds does.
 
 If `.gsd/KNOWLEDGE.md` doesn't exist, unit prompt injection is silently skipped — no error, no empty block. The file only appears in unit prompts once at least one entry has been added.
 

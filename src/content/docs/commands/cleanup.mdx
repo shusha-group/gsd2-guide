@@ -73,17 +73,17 @@ flowchart TD
 
 Branch cleanup runs in two passes:
 
-1. **Merged GSD branches** — Lists all branches matching `gsd/*`, then uses `git branch --merged` to find which ones are already in the main branch. Deletes each merged branch. `gsd/quick/*` branches are always skipped — quick-task branches are short-lived and managed separately.
+1. **Merged GSD branches** — Lists all branches matching `gsd/*`, then uses `git branch --merged` to find which ones are already in the main branch. Deletes each merged branch with a standard (non-force) delete. `gsd/quick/*` branches are always skipped — quick-task branches are short-lived and managed separately.
 
-2. **Stale milestone branches** — Lists all `milestone/*` branches and cross-references the currently registered worktrees. Any `milestone/*` branch that is **not** attached to a live worktree is eligible for deletion if the milestone is complete. Completion is checked **DB-first**: if the GSD database is available and has a row for the milestone, it reads the status field directly. If the DB is unavailable or has no row for that milestone, it falls back to parsing the `ROADMAP.md` from disk. Branches for incomplete milestones are left untouched.
+2. **Stale milestone branches** — Lists all `milestone/*` branches and cross-references the currently registered worktrees. Any `milestone/*` branch that is **not** attached to a live worktree is eligible for deletion if the milestone is complete. Completion is checked **DB-first**: if the GSD database is available and has a row for the milestone, it reads the status field directly. If the DB is unavailable or has no row for that milestone, it falls back to parsing the `ROADMAP.md` from disk. Branches for incomplete milestones are left untouched. Stale milestone branches are force-deleted (since they may not be merged into main).
 
 ### Snapshot Cleanup
 
 GSD uses `refs/gsd/snapshots/` to store undo snapshots during task execution. These accumulate over time. Snapshot cleanup:
 
 1. Lists all refs under `refs/gsd/snapshots/`
-2. Groups them by label (the path prefix, excluding the final segment)
-3. For each label group, **keeps the 5 most recent** refs and deletes the rest
+2. Groups them by label (the path prefix, excluding the final timestamp segment)
+3. For each label group, **keeps the 5 most recent** refs (sorted lexicographically, which matches chronological order given the `YYYYMMDD-HHMMSS` timestamp format) and deletes the rest
 
 This means you always have at least 5 rollback points per label. Old snapshots beyond that window are pruned.
 
@@ -129,15 +129,15 @@ A worktree is safe to remove when its branch is fully contained in main and it h
 
 ### Project State Cleanup
 
-GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, keyed by a hash of the project's git remote URL. When a project is deleted or moved, its state directory becomes orphaned. The location can be overridden with the `GSD_STATE_DIR` environment variable.
+GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, keyed by a hash of the project's git remote URL. When a project is deleted or moved, its state directory becomes orphaned. The location can be overridden with `GSD_STATE_DIR` (or `GSD_HOME` for the parent directory).
 
 `/gsd cleanup projects` (dry-run) inspects each directory, reads its `repo-meta.json`, and checks whether the recorded git root path still exists on disk:
 
 - **Active** — git root exists → listed but left alone
 - **Orphaned** — git root is gone → listed as candidates for deletion
-- **Unknown** — no metadata yet → listed with a note to open the project in GSD once
+- **Unknown** — no `repo-meta.json` yet → listed with a note to open the project in GSD once
 
-`/gsd cleanup projects --fix` deletes the orphaned directories. This is permanent and cannot be undone.
+`/gsd cleanup projects --fix` deletes the **orphaned** directories. Unknown entries (no metadata) are never deleted automatically. This operation is permanent and cannot be undone.
 
 ## What Files It Touches
 

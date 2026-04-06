@@ -7,7 +7,7 @@ description: "Classify and act on pending captures — launches an LLM session t
 
 `/gsd triage` processes pending captures that were saved with [`/gsd capture`](../capture/). It loads all unresolved captures, builds context from the current plan state, and dispatches an LLM session that classifies each capture and walks you through confirming the results.
 
-The triage is an LLM-driven conversation — the model reads each capture alongside the active slice plan and milestone roadmap, then proposes whether each item is a quick task, should be injected into the current slice, deferred to a future milestone, requires a replan, or is just a note. Low-impact classifications (`note` and `defer`) are auto-confirmed. Actionable ones (`quick-task`, `inject`, `replan`) require your confirmation before CAPTURES.md is updated.
+The triage is an LLM-driven conversation — the model reads each capture alongside the active slice plan and milestone roadmap, then proposes whether each item should stop auto-mode, trigger a milestone backtrack, execute as a quick task, get injected into the current slice, be deferred to a future milestone, require a full replan, or just be noted. Low-impact classifications (`note` and `defer`) are auto-confirmed. Urgent directives (`stop` and `backtrack`) are also auto-confirmed immediately. Actionable ones (`quick-task`, `inject`, `replan`) require your confirmation before CAPTURES.md is updated.
 
 If there are no pending captures, the command exits immediately with a notification.
 
@@ -35,7 +35,7 @@ flowchart TD
     Prompt --> Workflow[Prepend GSD workflow protocol]
     Workflow --> Dispatch[Send gsd-triage message to LLM]
     Dispatch --> Classify[LLM classifies each capture]
-    Classify --> AutoConfirm[note/defer → auto-confirm]
+    Classify --> AutoConfirm["note/defer/stop/backtrack → auto-confirm"]
     Classify --> UserConfirm[quick-task/inject/replan → confirm with user]
     AutoConfirm --> Write[LLM updates CAPTURES.md]
     UserConfirm --> Write
@@ -85,10 +85,12 @@ This list, along with the plan context, is injected into the `triage-captures` p
 
 ### LLM Classification
 
-The LLM classifies each capture into one of five types:
+The LLM classifies each capture into one of seven types:
 
 | Classification | Meaning |
 |----------------|---------|
+| `stop` | User directive to halt auto-mode immediately — use when the capture says "stop", "halt", "abort", or "don't continue" |
+| `backtrack` | User directive to abandon the current milestone and return to a previous one — target milestone ID goes in the Resolution field |
 | `quick-task` | Small, self-contained — can be done in minutes without modifying the plan |
 | `inject` | Belongs in the current slice but wasn't planned — a new task is added |
 | `defer` | Belongs in a future slice or milestone — not urgent now |
@@ -96,6 +98,8 @@ The LLM classifies each capture into one of five types:
 | `note` | Informational only — no action needed |
 
 The LLM follows these priority guidelines when classifying:
+- **Always** classify as `stop` when the user explicitly says "stop", "halt", "abort", or "don't continue". Never shoe-horn a stop directive into "replan" or "note".
+- **Always** classify as `backtrack` when the user references returning to a previous milestone or abandoning current milestone work.
 - Prefer **quick-task** when work is clearly small and self-contained.
 - Prefer **inject** over **replan** when only a new task is needed (not a rewrite of existing ones).
 - Prefer **defer** over **inject** when the work doesn't belong in the current slice's scope.
@@ -107,9 +111,20 @@ The LLM follows these priority guidelines when classifying:
 After classifying, the LLM presents each result to you and asks for confirmation:
 
 - **note** and **defer** — auto-confirmed silently. These are low-impact and don't modify the plan.
+- **stop** and **backtrack** — auto-confirmed immediately. These are urgent user directives that must be honored without delay.
 - **quick-task**, **inject**, and **replan** — presented via `ask_user_questions` with the proposed classification, rationale, and affected files. You can confirm the proposal or choose a different classification.
 
 You can also skip a capture entirely, leaving it `pending` for a future triage run.
+
+### File Overlap Detection
+
+When the triage UI displays a confirmation for actionable captures, it may show a file overlap warning. If a capture's affected files overlap with files referenced by planned (incomplete) tasks in the current slice plan, you'll see:
+
+```
+⚠ Touches files planned for T03, T04 — consider inject or defer
+```
+
+This surfaces potential conflicts before you confirm a classification — e.g., if a `quick-task` would touch a file that T03 is already scheduled to change, you might prefer to `inject` it instead.
 
 ### CAPTURES.md Updates
 
@@ -124,6 +139,7 @@ For each confirmed capture, the LLM updates its section in `.gsd/CAPTURES.md`:
 **Resolution:** deferred to a future slice
 **Rationale:** Not in scope for current slice — depends on unbuilt infrastructure
 **Resolved:** 2025-01-15T14:00:00.000Z
+**Milestone:** M003
 ```
 
 After triage, actionable captures (`inject`, `replan`, `quick-task`) accumulate as unexecuted resolutions. When their resolutions are later executed, an `**Executed:**` timestamp is appended:
@@ -145,11 +161,15 @@ Triage classifies captures but does not execute them. Execution happens separate
   ```
   Marks the capture as executed on success.
 
-- **replan** — Writes a `SXX-REPLAN-TRIGGER.md` marker file in the slice directory. The next dispatch cycle detects this file and enters the `replanning-slice` phase. The trigger file records the source capture ID, text, rationale, and a timestamp.
+- **replan** — Writes a `SXX-REPLAN-TRIGGER.md` marker file in the slice directory. The next dispatch cycle detects this file and enters the `replanning-slice` phase. The trigger file records the source capture ID, text, rationale, and a timestamp. A best-effort DB update (`replan_triggered_at`) is also written if the GSD database is available.
 
-- **quick-task** — Collected and dispatched as a self-contained unit. A dedicated prompt (`buildQuickTaskPrompt`) is generated from the capture text and executed without modifying any plan files. The capture is marked as executed after the unit completes.
+- **quick-task** — Collected and returned to the caller for dispatch. A dedicated prompt (`buildQuickTaskPrompt`) is generated from the capture text and executed without modifying any plan files. The quick-task prompt first instructs the agent to verify the issue still exists before making changes — if the problem was already fixed by planned milestone work, it reports "Already resolved — no changes needed." and stops.
 
-- **defer** — When the resolution text references a milestone ID that doesn't yet exist on disk, `ensureDeferMilestoneDir` creates the milestone directory and seeds it with a `MXXX-CONTEXT-DRAFT.md` listing the deferred captures. This ensures `deriveState()` discovers the milestone and routes to the discussion phase.
+- **defer** — Resolved captures with a target milestone ID that doesn't exist on disk trigger `ensureDeferMilestoneDir`, which creates the milestone directory and seeds it with a `MXXX-CONTEXT-DRAFT.md` listing the deferred captures. This ensures `deriveState()` discovers the milestone and routes to the discussion phase.
+
+- **stop** — Counted and surfaced in the result, but handled by the pre-dispatch guard in `runGuards()`, not by `executeTriageResolutions` directly. Auto-mode pauses on the next dispatch cycle.
+
+- **backtrack** — Surfaced in the result for the pre-dispatch guard. `executeBacktrack` writes `.gsd/BACKTRACK-TRIGGER.md` with the target milestone, reason, and timestamp. If a valid target milestone exists on disk, a `MXXX-REGRESSION.md` is also written inside it so the state machine knows to re-enter the discussion phase. If the capture text references multiple milestones, the backtrack is not attempted — the target is left as `(user to specify)` in the trigger file.
 
 Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
 
@@ -167,6 +187,8 @@ The difference from manual triage is dispatch mechanism: auto-mode enqueues the 
 |------|---------|
 | `.gsd/milestones/MXXX/MXXX-CONTEXT-DRAFT.md` | Seeded when a `defer` target milestone doesn't exist yet — lists deferred captures so `deriveState()` enters the discussion phase |
 | `.gsd/milestones/MXXX/slices/SXX/SXX-REPLAN-TRIGGER.md` | Written when a `replan` capture is executed — triggers the replanning-slice phase on next dispatch |
+| `.gsd/BACKTRACK-TRIGGER.md` | Written when a `backtrack` capture is executed — signals the state machine to abandon the current milestone |
+| `.gsd/milestones/MXXX/MXXX-REGRESSION.md` | Written inside the backtrack target milestone — signals `deriveState()` to re-enter discussion for that milestone |
 
 ### Reads
 
@@ -181,7 +203,7 @@ The difference from manual triage is dispatch mechanism: auto-mode enqueues the 
 
 | File | Purpose |
 |------|---------|
-| `.gsd/CAPTURES.md` | Captures updated with classification, resolution, rationale, resolved timestamp, and eventually an executed timestamp |
+| `.gsd/CAPTURES.md` | Captures updated with classification, resolution, rationale, milestone, resolved timestamp, and eventually an executed timestamp |
 | `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | New task appended when an `inject` capture is executed |
 
 ## Examples
@@ -194,7 +216,7 @@ Triaging three pending captures:
 ● Triaging 3 pending captures...
 ```
 
-The LLM then runs the triage session. For `note` and `defer` captures, it confirms automatically. For `quick-task`, `inject`, and `replan` captures, it shows a confirmation prompt where you can approve the proposal, choose a different classification, or skip it. After all captures are processed, it summarizes the results:
+The LLM then runs the triage session. For `note`, `defer`, `stop`, and `backtrack` captures, it confirms automatically. For `quick-task`, `inject`, and `replan` captures, it shows a confirmation prompt where you can approve the proposal, choose a different classification, or skip it. After all captures are processed, it summarizes the results:
 
 ```
 Triage complete.

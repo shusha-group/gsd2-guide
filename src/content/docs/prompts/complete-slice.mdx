@@ -11,7 +11,9 @@ Beyond verification, the closer has several primary outputs. The **slice summary
 
 The **UAT script** is a concrete set of test cases derived from the slice plan and task summaries — numbered steps with preconditions and expected outcomes tailored to what this slice actually built. It is not a generic template.
 
-The closer also performs knowledge capture: it appends significant architectural decisions to `.gsd/DECISIONS.md` and non-obvious lessons learned to `.gsd/KNOWLEDGE.md`, but only when the content would genuinely save future agents from repeating investigation. If `.gsd/REQUIREMENTS.md` exists, requirement status is updated to reflect what execution actually proved. If `.gsd/PROJECT.md` exists, its current state section is refreshed. After writing all artifacts, the closer marks the slice `[x]` in the roadmap, which signals to the dispatcher that `reassess-roadmap` should be fired next.
+The closer also performs knowledge capture: it appends significant architectural decisions to `.gsd/DECISIONS.md` and non-obvious lessons learned to `.gsd/KNOWLEDGE.md`, but only when the content would genuinely save future agents from repeating investigation. If execution produced evidence that a requirement changed status, the closer calls `gsd_save_decision` with `scope="requirement"` — it does **not** write `.gsd/REQUIREMENTS.md` directly, as the engine renders that file from the database. Similarly, if `.gsd/PROJECT.md` exists, the closer refreshes it as a full-document write using the `write` tool, not `edit`.
+
+After writing all artifacts, the closer calls `gsd_complete_slice` with the milestone ID, slice ID, slice summary, and UAT content. This tool persists to both the database and disk and renders the roadmap projection automatically — the closer never manually marks roadmap checkboxes.
 
 Effort scales with complexity — a simple 1-2 task slice gets a brief summary and lightweight verification, while a complex multi-system slice gets thorough verification and a detailed summary.
 
@@ -33,7 +35,7 @@ flowchart TD
     style ValidateMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` but the slice itself is not yet marked `[x]` in the roadmap. The closer must write both the slice summary and the UAT file before marking the slice done — the dispatcher checks for both artifacts. The unit will not be marked complete if any of the three required outputs are missing: the slice summary, the UAT file, or the `[x]` mark on the slice in the roadmap.
+The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` but the slice itself is not yet marked done in the roadmap. The closer must call `gsd_complete_slice` before finishing — this call persists the slice summary and UAT to disk and marks the slice complete in the database, which then renders the updated `ROADMAP.md` projection automatically.
 
 ## Variables
 
@@ -47,7 +49,7 @@ The dispatcher fires this prompt when the slice plan shows all tasks as `[x]` bu
 | `skillActivation` | Injected skill-loading instruction block; activates any skills that match the current slice context | Yes |
 | `sliceSummaryPath` | File path where the slice completion summary should be written | Yes |
 | `sliceUatPath` | File path where the UAT script should be written | Yes |
-| `roadmapPath` | File path to the project roadmap document | Yes |
+| `slicePath` | Directory path to the current slice (used as a safe reference; must not be passed directly to the `read` tool) | Yes |
 
 ## Used By
 
