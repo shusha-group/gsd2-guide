@@ -188,3 +188,18 @@ Do not estimate, convert, or reinterpret GoatCounter API numbers (e.g. convertin
 **Context:** Debugging empty dimension breakdowns in site stats.
 
 Dimension breakdowns (browsers, systems, locations, languages, sizes, toprefs, campaigns) use `/api/v0/stats/DIMENSION`, NOT `/api/v0/stats/hits/DIMENSION`. The `/stats/hits/` path expects a numeric path_id — passing a string like "browsers" returns `{"errors":{"path_id":["must be a whole number"]}}`. Dimension responses use `{ "stats": [...] }` not `{ "hits": [...] }`.
+
+## npm run update — claude -p subprocess timeout must be ≥900s
+
+**Context:** `scripts/lib/regenerate-page.mjs` defaults `claude -p` subprocess timeout to 300s (5 min). On large/complex pages this causes SIGTERM (exit 143) failures.
+
+`scripts/update.mjs` overrides with `{ timeout: 900_000 }` (15 min) when calling `regeneratePage`. Do not lower this. Empirically, `commands/doctor.mdx` (6 deps) took 558s — timeout is not strictly correlated with dep count, depends on how much the LLM reads vs reasons. Pages historically slow: `commands/auto.mdx`, `commands/doctor.mdx`, `commands/forensics.mdx`, `user-guide/developing-with-gsd.mdx`.
+
+**To regenerate a single failed page out-of-band:**
+```js
+import('./scripts/lib/regenerate-page.mjs').then(async ({ regeneratePage }) => {
+  const map = JSON.parse(fs.readFileSync('content/generated/page-source-map.json', 'utf8'));
+  const p = 'commands/doctor.mdx';
+  await regeneratePage(p, map[p] || [], { timeout: 1_200_000 });
+});
+```
