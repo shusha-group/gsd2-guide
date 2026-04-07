@@ -9,8 +9,11 @@ import ReleaseEntry from '../../../src/components/ReleaseEntry.astro';
 
 export const highlightsMap = Object.fromEntries(highlightsData.map(h => [h.tag_name, h.summary]));
 
+export const latestTag = releases[0]?.tag_name?.replace(/^v/, '') ?? '2.65';
+export const latestMinor = latestTag.split('.').slice(0, 2).join('.');
+
 export const eras = [
-  { id: 'engine', title: 'Engine Era', range: 'v2.29–v2.58', start: 'v2.29.0', description: 'Reliability, extensibility, web UI, declarative workflows' },
+  { id: 'engine', title: 'Engine Era', range: `v2.29–v${latestMinor}`, start: 'v2.29.0', description: 'Reliability, extensibility, web UI, declarative workflows' },
   { id: 'maturity', title: 'Maturity Era', range: 'v2.16–v2.28', start: 'v2.16.0', description: 'Token optimisation, parallel workers, headless mode, quality gates' },
   { id: 'platform', title: 'Platform Era', range: 'v2.8–v2.15', start: 'v2.8.0', description: 'Browser tools, LSP, mac tools, Rust native engine, worktree isolation' },
   { id: 'foundation', title: 'Foundation Era', range: 'v2.3–v2.7', start: 'v2.3.4', description: 'Onboarding, search providers, secret management, monorepo' },
