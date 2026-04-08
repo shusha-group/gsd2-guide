@@ -67,8 +67,6 @@ Share planning artifacts while keeping runtime state local:
 .gsd/gsd.db
 .gsd/gsd.db-shm
 .gsd/gsd.db-wal
-.gsd/journal/
-.gsd/doctor-history.jsonl
 .gsd/activity/
 .gsd/runtime/
 .gsd/worktrees/
@@ -77,9 +75,9 @@ Share planning artifacts while keeping runtime state local:
 .gsd/milestones/**/*-CONTINUE.md
 ```
 
-**What gets shared** (committed): `preferences.md`, `PROJECT.md`, `REQUIREMENTS.md`, `DECISIONS.md`, `KNOWLEDGE.md`, `QUEUE.md`, and all milestone plans, roadmaps, and summaries.
+**What gets shared** (committed): `preferences.md`, `PROJECT.md`, `REQUIREMENTS.md`, `DECISIONS.md`, `QUEUE.md`, and all milestone plans, roadmaps, and summaries.
 
-**What stays local** (gitignored): lock files, SQLite cache (including WAL sidecars), state cache, activity logs, doctor run history, daily event journal, runtime records, and worktrees.
+**What stays local** (gitignored): lock files, SQLite cache (including WAL sidecars), state cache, activity logs, runtime records, and worktrees.
 
 ```
 > git add .gsd/preferences.md .gitignore
@@ -253,7 +251,7 @@ By default, GSD isolates each milestone in a git worktree (`isolation: "worktree
 |------|---------|------------|
 | `worktree` | Creates `.gsd/worktrees/<MID>/` with its own branch | Default — best isolation for most projects |
 | `branch` | Works in the project root, commits to a milestone branch directly | Repos with submodules that don't work inside worktrees |
-| `none` | No git isolation — commits land on the user's current branch | Monorepos with pre-existing branch strategies |
+| `none` | No git isolation — commits land on the user's current branch | Hot-reload workflows where file watchers only see the project root |
 
 ```yaml
 # .gsd/preferences.md
@@ -287,8 +285,8 @@ main branch:
 .gsd/
 ├── preferences.md             ← mode: team (shared)
 ├── PROJECT.md                 ← updated by both milestones
+├── REQUIREMENTS.md            ← requirement contract
 ├── DECISIONS.md               ← decisions from both milestones
-├── KNOWLEDGE.md               ← learnings from both milestones
 ├── QUEUE.md                   ← work queue
 └── milestones/
     ├── M001-eh88as/           ← Alice's completed milestone

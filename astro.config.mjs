@@ -169,6 +169,8 @@ export default defineConfig({
                 { label: 'Headless Mode', link: '/commands/headless/' },
               ],
             },
+                { label: 'discuss-prepared', link: '/prompts/discuss-prepared/' },
+                { label: 'parallel-research-slices', link: '/prompts/parallel-research-slices/' },
           ],
         },
         {

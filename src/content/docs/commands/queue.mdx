@@ -9,7 +9,7 @@ description: "Queue and reorder future milestones — manage execution order, ad
 
 The queue is safe to use while auto-mode is running. Queued milestones are picked up naturally when auto-mode advances past the current work — no restart needed. This makes `/gsd queue` the primary way to shape what comes next without interrupting what's happening now.
 
-When you have more than one non-complete, non-parked milestone (status `active` or `pending`), the hub presents two options: reorder the existing queue or add new work. If only one such milestone exists, it skips straight to the add-new-work flow.
+When you have more than one non-complete, non-parked milestone (status `active` or `pending`), the hub presents three options: reorder the existing queue, add new work, or dismiss for now. If only one such milestone exists, it skips straight to the add-new-work flow.
 
 ## Usage
 
@@ -17,7 +17,7 @@ When you have more than one non-complete, non-parked milestone (status `active` 
 /gsd queue
 ```
 
-No arguments — the command opens an interactive hub. From there you choose to reorder or add.
+No arguments — the command opens an interactive hub. From there you choose to reorder, add, or dismiss.
 
 ## How It Works
 
@@ -119,7 +119,7 @@ Once past any drafts, the discussion flow:
 4. **Verifies before writing** — For each new milestone, a mandatory depth verification step presents the proposed scope and any technical risks. You confirm or correct before the context file is written. This gate is mechanically enforced — the system blocks `CONTEXT.md` writes until depth verification passes and cannot be skipped.
 5. **Writes artifacts** — Uses `gsd_milestone_generate_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, and writes `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
 
-No roadmap is created — roadmaps are generated just-in-time when auto-mode reaches that milestone. The add flow does not auto-commit; artifacts are committed by auto-mode's normal post-unit commit cycle.
+The add flow does not auto-commit — `.gsd/` is managed externally by the CLI. Artifacts written during the add flow will be picked up by auto-mode naturally when it advances to those milestones.
 
 ### CONTEXT.md Dependency Frontmatter
 
@@ -154,7 +154,7 @@ Auto-mode reads this field to enforce execution order. Without it, milestones ma
 | `.gsd/milestones/*/<ID>-CONTEXT.md` | Full context for each milestone (dedup and scope checks) |
 | `.gsd/milestones/*/<ID>-CONTEXT-DRAFT.md` | Draft seed files surfaced during add flow; also used as fallback when CONTEXT.md is absent |
 | `.gsd/milestones/*/<ID>-ROADMAP.md` | Roadmap for active/pending/parked milestones (shows what's planned) |
-| `.gsd/milestones/*/<ID>-SUMMARY.md` | Summary for completed milestones |
+| `.gsd/milestones/*/<ID>-SUMMARY.md` | Read by state derivation to determine milestone completion status |
 
 ### Writes
 

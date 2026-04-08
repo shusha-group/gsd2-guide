@@ -87,9 +87,9 @@ Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If 
 |---------|------|------|
 | `git.auto_push` | `true` — pushes after each commit | `false` — commits stay local |
 | `git.push_branches` | `false` — no feature branches pushed | `true` — milestone branches pushed for review |
-| `git.pre_merge_check` | `false` — merge without CI gate | `true` — wait for CI before merging |
+| `git.pre_merge_check` | `"auto"` — CI gate only when CI is detected | `true` — always wait for CI before merging |
 | `git.merge_strategy` | `squash` | `squash` |
-| `git.isolation` | `worktree` | `worktree` |
+| `git.isolation` | `none` — work on current branch | `none` — work on current branch |
 | `unique_milestone_ids` | `false` — simple `M001`, `M002` | `true` — `M001-eh88as`, `M002-k4m9xz` (prevents ID collisions) |
 
 ### Unique Milestone IDs
@@ -102,14 +102,14 @@ The unique ID format affects directory names (`.gsd/milestones/M001-eh88as/`), b
 
 ### Priority Layers
 
-When GSD loads effective preferences it merges layers in this order (last wins for explicit values, earlier fills gaps):
+When GSD loads effective preferences it merges layers in this order (highest to lowest priority):
 
-1. **Mode defaults** — lowest priority, filled in last for any undefined fields
-2. **Token profile defaults** — filled in before mode defaults
-3. **Global preferences** (`~/.gsd/preferences.md`) — explicit values override everything below
-4. **Project preferences** (`.gsd/preferences.md`) — highest priority, wins over global
+1. **Project preferences** (`.gsd/preferences.md`) — highest priority, wins over all layers below
+2. **Global preferences** (`~/.gsd/preferences.md`) — explicit values override profile and mode defaults
+3. **Token profile defaults** — filled in for any fields not set by user preferences
+4. **Mode defaults** — lowest priority, filled in last for any remaining undefined fields
 
-Mode defaults are applied via `applyModeDefaults`, which calls `mergePreferences(modeDefaults, userPrefs)`. Because `mergePreferences` lets the right-hand side win for any defined value, user preferences always take precedence.
+Mode defaults are applied via `applyModeDefaults`, which calls `mergePreferences(modeDefaults, userPrefs)`. Because `mergePreferences` lets the right-hand side win for any defined value, user preferences always take precedence over mode defaults.
 
 ## What Files It Touches
 
@@ -168,7 +168,7 @@ Workflow mode (current: team):
   → solo
 
 Mode: solo — defaults: auto_push=true, push_branches=false,
-  pre_merge_check=false, merge_strategy=squash, isolation=worktree,
+  pre_merge_check=auto, merge_strategy=squash, isolation=worktree,
   unique_milestone_ids=false
 ```
 

@@ -13,7 +13,7 @@ The agent then runs an interview in rounds of 1–3 questions each, covering six
 
 The agent does **not** ask a "ready to wrap up?" gate after every round — it continues immediately into the next round unless the depth checklist is genuinely satisfied. A single wrap-up prompt is used only when the agent believes all six areas are covered or the user signals they want to stop. Before writing, the agent prints a structured depth summary using the user's exact terminology and runs a confirmation gate — when structured questions are available, the question ID must contain `depth_verification` to enable the write-gate downstream.
 
-The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact wording, emphasis, and framing. It is not a paraphrase — downstream agents read it as their only window into this conversation. The file is persisted by calling `gsd_summary_save` with `milestone_id`, `artifact_type: "CONTEXT"`, and the full context markdown as `content` — the tool writes to disk and persists to the database. After writing, the prompt says exactly `"{milestoneId} context written."` and nothing else. When a milestone has a context file, it is the first thing planning prompts read and the authoritative answer to scope questions.
+The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact wording, emphasis, and framing. It is not a paraphrase — downstream agents read it as their only window into this conversation. The file is written directly to the milestone directory; the prompt then executes the `commitInstruction` (the dispatcher injects the appropriate commit behavior for the current context). After writing, the prompt says exactly `"{{milestoneId}} context written."` and nothing else. When a milestone has a context file, it is the first thing planning prompts read and the authoritative answer to scope questions.
 
 ## Pipeline Position
 
@@ -34,7 +34,7 @@ flowchart TD
     style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-`guided-discuss-milestone` runs before `guided-plan-milestone` or `plan-milestone`. The context file it writes is read by both planning prompts and, via the slice-level planning prompts, by `research-slice` and `plan-slice` to ground their work in the user's stated intent. In the auto pipeline, it is dispatched whenever a milestone is in the `needs-discussion` phase or enters `pre-planning` without an existing context file.
+`guided-discuss-milestone` runs before `guided-plan-milestone` or `plan-milestone`. The context file it writes is read by both planning prompts and, via the slice-level planning prompts, by `research-slice` and `plan-slice` to ground their work in the user's stated intent. It is dispatched whenever a milestone is in the `needs-discussion` phase, or whenever the step-mode wizard or auto mode needs a context file before planning can begin.
 
 ## Variables
 
@@ -48,6 +48,6 @@ flowchart TD
 
 ## Used By
 
-- [`/gsd discuss`](../../commands/discuss/) — the primary entry point; dispatches this prompt for the active milestone
-- [`/gsd`](../../commands/gsd/) — dispatched as part of the smart-entry guided flow when starting or resuming a milestone discussion
-- [`/gsd auto`](../../commands/auto/) — dispatched automatically by the auto-dispatch rules when a milestone enters `needs-discussion` or `pre-planning` without a context file
+- [`/gsd discuss`](../../commands/discuss/) — the primary entry point; dispatches this prompt for queued milestones and milestones in the needs-discussion phase
+- [`/gsd`](../../commands/gsd/) — dispatched in step mode when a milestone has context but no roadmap yet (pre-planning state)
+- [`/gsd auto`](../../commands/auto/) — dispatched automatically when no milestone exists yet or the active milestone has a draft context file that needs a full discussion before planning begins

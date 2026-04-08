@@ -44,6 +44,7 @@ After the conversation, GSD writes a capability contract and the milestone brief
 
 ```
 .gsd/
+├── PROJECT.md                   ← project description and milestone sequence (created or updated)
 ├── REQUIREMENTS.md              ← capability contract: R001 case-insensitive search
 └── milestones/
     └── M003/
@@ -105,7 +106,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 - Writes a slice summary compressing all task work
 - Writes a UAT script with concrete test cases
 - Marks the slice done in the roadmap
-- Executes automated UAT checks against the completed slice — confirms mixed-case searches return results
+- Executes automated UAT checks against the completed slice — confirms mixed-case searches return results, writing the result to `S01-ASSESSMENT.md`
 - Reassesses the roadmap — confirms no further slices are needed (requires [`phases.reassess_after_slice`](../../commands/prefs/) preference)
 - Validates the milestone against the original success criteria
 - Seals the milestone with a completion summary
@@ -126,8 +127,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
                 ├── S01-PLAN.md
                 ├── S01-SUMMARY.md       ← compressed slice record
                 ├── S01-UAT.md           ← test script for manual verification
-                ├── S01-UAT-RESULT.md    ← automated UAT execution results
-                ├── S01-ASSESSMENT.md    ← roadmap reassessment notes (opt-in)
+                ├── S01-ASSESSMENT.md    ← UAT execution results (+ roadmap reassessment if opt-in)
                 └── tasks/
                     ├── T01-PLAN.md
                     ├── T01-SUMMARY.md
@@ -141,7 +141,9 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 
 | File | Purpose |
 |------|---------|
+| `.gsd/PROJECT.md` | Project description and milestone sequence — created or updated during the discuss phase |
 | `.gsd/REQUIREMENTS.md` | Capability contract with stable `R###` IDs — written during the discuss phase |
+| `.gsd/DECISIONS.md` | Architectural and pattern decisions — created by `gsd_decision_save` during discuss; appended to during task execution |
 | `.gsd/milestones/M003/M003-CONTEXT.md` | Bug scope, root cause hypothesis, fix approach |
 | `.gsd/milestones/M003/M003-RESEARCH.md` | Codebase findings — what code does what |
 | `.gsd/milestones/M003/M003-ROADMAP.md` | Slice structure with completion checkboxes |
@@ -151,8 +153,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 | `.gsd/milestones/M003/slices/S01/tasks/T##-SUMMARY.md` | Task completion records |
 | `.gsd/milestones/M003/slices/S01/S01-SUMMARY.md` | Compressed slice record |
 | `.gsd/milestones/M003/slices/S01/S01-UAT.md` | Acceptance test script |
-| `.gsd/milestones/M003/slices/S01/S01-UAT-RESULT.md` | Automated UAT execution results |
-| `.gsd/milestones/M003/slices/S01/S01-ASSESSMENT.md` | Roadmap reassessment after slice completes (opt-in via `phases.reassess_after_slice`) |
+| `.gsd/milestones/M003/slices/S01/S01-ASSESSMENT.md` | UAT execution results written by the run-uat unit; overwritten with roadmap reassessment when `phases.reassess_after_slice` is enabled |
 | `.gsd/milestones/M003/M003-VALIDATION.md` | Milestone QA check against original success criteria |
 | `.gsd/milestones/M003/M003-SUMMARY.md` | Milestone completion record |
 
@@ -171,6 +172,7 @@ After the last task, GSD runs slice-level and milestone-level completion in sequ
 |------|---------|
 | `.gsd/STATE.md` | Updated after each unit completes |
 | `.gsd/REQUIREMENTS.md` | Requirement status updated as capabilities are validated |
+| `.gsd/DECISIONS.md` | Appended to when a task executor makes a notable architectural or pattern decision |
 | `.gsd/KNOWLEDGE.md` | Any new patterns discovered (e.g., Prisma `mode` flag) |
 | `.gsd/gsd.db` | SQLite database opened or auto-migrated at startup — tracks units, metrics, and routing history |
 | `.gsd/completed-units.json` | Disk-backed idempotency log — prevents double-dispatch on restart |

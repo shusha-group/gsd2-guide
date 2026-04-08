@@ -126,6 +126,10 @@ GSD: A few things I need to nail down:
 The quality of everything auto-mode builds depends on this conversation. See [Discussing a Milestone](../discussing-a-milestone/) for a detailed guide on how to engage with each phase to produce the sharpest possible plan.
 :::
 
+### Depth verification gate
+
+Before GSD writes any files, it presents a structured depth summary and asks you to confirm. The system mechanically blocks `CONTEXT.md` writes until you approve — GSD cannot rationalize past this gate. This ensures the context file captures your actual intent before planning begins.
+
 ### What discussion produces
 
 When discussion finishes, GSD writes several artifacts in a single pass:
@@ -134,7 +138,7 @@ When discussion finishes, GSD writes several artifacts in a single pass:
 - **`REQUIREMENTS.md`** — the capability contract: every requirement with ID, status, ownership, and traceability
 - **`M001-CONTEXT.md`** — the milestone brief: scope, goals, constraints, and decisions from the conversation
 - **`M001-ROADMAP.md`** — ordered slices with risk levels, demos, proof strategy, and boundary map
-- **`DECISIONS.md`** — architectural decisions made during discussion, seeded for future reference
+- **`DECISIONS.md`** — architectural decisions made during discussion, auto-assigned IDs via `gsd_decision_save`
 - **`STATE.md`** — derived state cache, written last to signal discussion is complete
 
 ```
@@ -315,9 +319,10 @@ flowchart TD
     NeedRes -->|No| RM[research-milestone]
     NeedRes -->|Yes| PM[plan-milestone]
 
-    Check -->|planning| SR{Has slice research?}
-    SR -->|No| RS[research-slice]
-    SR -->|Yes| PS[plan-slice]
+    Check -->|planning| SR{Active slice\nneeds research?}
+    SR -->|"Yes (not S01)"| RS[research-slice]
+    SR -->|"No, but 2+ slices\nready for research"| PRE[parallel-research-slices]
+    SR -->|No| PS[plan-slice]
 
     Check -->|evaluating-gates| GE{Gates enabled?}
     GE -->|Yes| EG[gate-evaluate]
@@ -352,6 +357,7 @@ flowchart TD
     style RM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style PM fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style PRE fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style PS fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RP fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style RE fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -391,6 +397,12 @@ This is how GSD maintains quality across long projects — each unit starts fres
 
 When `gate_evaluation.enabled: true` is set in preferences, GSD enters `evaluating-gates` after a slice plan is written. The `gate-evaluate` agent runs configured quality gates (by default Q3 and Q4) against the slice plan before any execution begins. If no gates are pending or gate evaluation is disabled, this phase is skipped automatically and execution proceeds immediately.
 
+Task-level gates (Q5: Failure Modes, Q6: Load Profile, Q7: Negative Tests) are embedded directly into task plans when the gate-evaluate agent flags them. Executors implement the specified handling as part of their task steps.
+
+### Parallel slice research
+
+When a slice's research is already done but multiple upcoming slices simultaneously have their dependencies met and need research, GSD dispatches them in a single `parallel-research-slices` unit instead of researching each one sequentially. This is an automatic optimization — no configuration required. If only one slice is ready, GSD researches it sequentially as normal.
+
 ### Blocker detection and replan
 
 If an executor discovers a plan-invalidating issue, it sets `blocker_discovered: true` in its summary. On the next dispatch cycle, GSD transitions to `replanning-slice` and dispatches a `replan-slice` agent to rewrite the remaining tasks before execution continues. A `REPLAN.md` file is written to prevent infinite replan loops.
@@ -412,6 +424,8 @@ Mid-execution of S01, the `.gsd/` directory looks like this:
 ├── STATE.md
 ├── DECISIONS.md                 ← architectural decisions accumulate here
 ├── KNOWLEDGE.md                 ← patterns and gotchas discovered during work
+├── OVERRIDES.md                 ← active /gsd steer overrides (if any)
+├── QUEUE.md                     ← queued milestones log (if any)
 └── milestones/
     └── M001/
         ├── M001-CONTEXT.md
@@ -443,7 +457,7 @@ After all tasks are done, GSD runs through a post-completion sequence. The order
 1. **Complete slice** — runs all slice-level verification, fixes failures, writes `S01-SUMMARY.md`, marks the slice done in the roadmap. This is the `summarizing` phase.
 2. **Run UAT** — if `uat_dispatch` is enabled and a UAT script (`S01-UAT.md`) exists, executes the acceptance test script and writes `S01-UAT-RESULT.md`.
 3. **UAT verdict gate** — if UAT ran and the verdict is not `PASS`, auto-mode stops. You must fix the failures and re-run `/gsd auto` to continue.
-4. **Reassess roadmap** — checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices. Skipped if `skip_reassess: true` is set.
+4. **Reassess roadmap** — if `reassess_after_slice: true` is set in preferences, checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices. Also skipped when `skip_reassess: true` is set.
 
 The completion agent (step 1) also:
 - Writes `S01-UAT.md` — concrete test cases derived from what was actually built
@@ -452,13 +466,13 @@ The completion agent (step 1) also:
 
 ### Roadmap reassessment
 
-After each slice completes, GSD reassesses the remaining roadmap. Plans made before execution may not survive contact with reality:
+When `reassess_after_slice: true` is set in preferences, GSD reassesses the remaining roadmap after each slice completes. Plans made before execution may not survive contact with reality:
 
 - Maybe S02 is simpler than expected because S01 established patterns that transfer
 - Maybe a new risk emerged that should reorder the remaining slices
 - Maybe a slice can be dropped because its goal was already achieved
 
-The reassessment either confirms the plan or adjusts it. This is how GSD adapts without losing structure.
+The reassessment either confirms the plan or adjusts it. This is how GSD adapts without losing structure. Reassessment is opt-in — it does not run by default.
 
 ### Milestone validation
 
@@ -581,7 +595,7 @@ You're never locked out of the process.
 - **`/gsd stop`** — stops auto mode after the current unit finishes
 - **`/gsd pause`** — pauses so you can inspect, then resume
 - **`/gsd status`** — shows a dashboard of progress without interrupting work
-- **`/gsd steer`** — injects a steering override that the next unit will incorporate
+- **`/gsd steer`** — injects a steering override that the next unit will incorporate; written to `OVERRIDES.md`
 
 ### Between phases
 
@@ -618,6 +632,8 @@ For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <de
 | **Quality gate evaluation** | After slice planning, configured gates run against the plan before execution starts |
 | **DB-primary state** | Milestone and slice data is stored in `gsd.db`; filesystem parsing is the fallback |
 | **Blocker replanning** | Tasks or triage that discover plan-invalidating issues trigger automatic slice replanning |
+| **Roadmap reassessment** | Opt-in (`reassess_after_slice: true`) — re-evaluates remaining slices after each slice completes |
+| **Parallel slice research** | When 2+ slices are ready for research simultaneously, GSD researches them in a single parallel unit |
 | **Observable artifacts** | Every phase produces readable markdown files — you can always see what happened |
 | **Intervention points** | Stop, pause, steer, edit plans, or fix things manually at any time |
 

@@ -44,7 +44,7 @@ flowchart TD
     E --> F[Find merged gsd/* branches<br/>excluding gsd/quick/*]
     F --> G[Delete each merged branch]
     G --> H[Find milestone/* branches<br/>not attached to a worktree]
-    H --> I{DB available?}
+    H --> I{DB available AND<br/>has row for milestone?}
     I -- Yes --> J[Check milestone status in DB]
     I -- No --> K[Parse ROADMAP.md from disk]
     J --> L{Status complete/done?}
@@ -148,7 +148,7 @@ GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, 
 | git branch list (`gsd/*`, `milestone/*`) | Identifies GSD-managed branches for cleanup |
 | git refs (`refs/gsd/snapshots/`) | Finds snapshot refs to prune |
 | `.gsd/worktrees/` | Lists active worktrees for health checks |
-| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Filesystem fallback — checks milestone completion when DB is unavailable |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Filesystem fallback — checks milestone completion when DB is unavailable or has no row |
 | `~/.gsd/projects/<hash>/repo-meta.json` | Reads git root path to detect orphaned state directories |
 
 ### Deletes
