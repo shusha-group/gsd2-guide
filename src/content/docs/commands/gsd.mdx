@@ -9,7 +9,7 @@ description: "The main entry point — a contextual wizard that executes one uni
 
 The wizard adapts to wherever you are in the workflow. If you're mid-execution, it shows the next task and offers to execute it, go fully automatic, or view status. If a slice just finished, it offers to complete it. If you need planning, it offers that. At every pause point, milestone-level actions (park, discard, skip) are also available.
 
-If no `.gsd/` directory exists yet, `/gsd` runs a directory safety check, detects whether a v1 `.planning/` directory should be migrated, then launches the project init wizard. If no milestone exists or all milestones are complete, it launches the discuss flow so you can define what to build next. If a previous auto-mode session crashed, it surfaces a crash recovery prompt before the wizard runs.
+If no `.gsd/` directory exists yet, `/gsd` runs a directory safety check, detects whether a v1 `.planning/` directory should be migrated, then launches the project init wizard. If no milestone exists or all milestones are complete, it launches the discuss flow so you can define what to build next. If a previous session was interrupted, it surfaces a recovery prompt before the wizard runs.
 
 `/gsd` also serves as the namespace for all GSD subcommands:
 
@@ -18,16 +18,16 @@ If no `.gsd/` directory exists yet, `/gsd` runs a directory safety check, detect
 /gsd status      /gsd visualize     /gsd queue         /gsd quick
 /gsd capture     /gsd triage        /gsd dispatch      /gsd history
 /gsd undo        /gsd undo-task     /gsd reset-slice   /gsd skip
-/gsd export      /gsd cleanup       /gsd steer         /gsd knowledge
-/gsd new-milestone /gsd parallel    /gsd mode          /gsd prefs
-/gsd config      /gsd hooks         /gsd run-hook      /gsd skill-health
-/gsd doctor      /gsd forensics     /gsd migrate       /gsd remote
-/gsd inspect     /gsd update        /gsd park          /gsd unpark
-/gsd init        /gsd setup         /gsd keys          /gsd logs
-/gsd cmux        /gsd start         /gsd templates     /gsd extensions
-/gsd fast        /gsd changelog     /gsd rate          /gsd widget
-/gsd next        /gsd workflow      /gsd rethink       /gsd codebase
-/gsd notifications /gsd show-config /gsd mcp
+/gsd export      /gsd cleanup       /gsd model         /gsd mode
+/gsd steer       /gsd knowledge     /gsd new-milestone /gsd parallel
+/gsd prefs       /gsd config        /gsd hooks         /gsd run-hook
+/gsd skill-health /gsd doctor       /gsd forensics     /gsd migrate
+/gsd remote      /gsd inspect       /gsd update        /gsd park
+/gsd unpark      /gsd init          /gsd setup         /gsd keys
+/gsd logs        /gsd cmux          /gsd start         /gsd templates
+/gsd extensions  /gsd fast          /gsd changelog     /gsd rate
+/gsd widget      /gsd next          /gsd workflow      /gsd rethink
+/gsd codebase    /gsd notifications /gsd mcp
 ```
 
 Run `/gsd help` for a categorized reference with descriptions.
@@ -58,16 +58,17 @@ flowchart TD
     MigrationCheck -->|No| InitWizard[Project init wizard]
     MigrateOffer -->|Migrate| Migrate([/gsd migrate])
     MigrateOffer -->|Fresh| InitWizard
-    InitWizard --> CrashLock
-    HasGSD -->|Yes| CrashLock{Crash lock?}
-    CrashLock -->|Bootstrap crash| HasMilestone
-    CrashLock -->|Real crash| CrashPrompt[Crash recovery prompt]
-    CrashLock -->|No lock| HasMilestone
-    CrashPrompt -->|Resume auto| Auto(["/gsd auto"])
-    CrashPrompt -->|Continue manually| HasMilestone
-    HasMilestone{Project phase?} -->|pre-planning / complete / needs-discussion| SmartEntry[Smart entry wizard]
-    HasMilestone -->|executing / planning / summarizing| Execute[Execute one unit]
-    SmartEntry --> Execute
+    InitWizard --> SelfHeal
+    HasGSD -->|Yes| SelfHeal[Self-heal stale runtime records]
+    SelfHeal --> Interrupted{Interrupted\nsession?}
+    Interrupted -->|Running| ErrorExit([Error: session still running])
+    Interrupted -->|Stale| DeriveState[Clear silently]
+    Interrupted -->|Recoverable| RecoverPrompt[Recovery prompt]
+    DeriveState --> DeriveState2[Derive state]
+    RecoverPrompt -->|Resume| Auto(["/gsd auto or /gsd next"])
+    RecoverPrompt -->|Continue manually| DeriveState2
+    DeriveState2 --> SmartEntry[Smart entry wizard]
+    SmartEntry --> Execute[Execute one unit]
     Execute --> Commit[Auto-commit changes]
     Commit --> SmartEntry
     SmartEntry -->|Go auto| Auto
@@ -76,20 +77,23 @@ flowchart TD
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DirCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
     style MigrationCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style CrashLock fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style HasMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Exit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Interrupted fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style HasGSD fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Exit fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style ErrorExit fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style WarnConfirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style MigrateOffer fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style InitWizard fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style CrashPrompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SelfHeal fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DeriveState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RecoverPrompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DeriveState2 fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Auto fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Migrate fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style HasGSD fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
 ### Directory safety check
@@ -106,14 +110,15 @@ Staleness detection handles interrupted sessions: if the pending entry is older 
 
 When no `.gsd/` exists, `/gsd` checks whether the project has a v1 `.planning/` directory. If found, it offers to migrate to the `.gsd/` format via [`/gsd migrate`](../migrate/), or start fresh with a clean init.
 
-### Crash recovery
+### Interrupted session recovery
 
-If a previous auto-mode session was interrupted, a crash lock is left on disk. `/gsd` detects this and, for non-trivial crashes (where at least one unit had started), presents a choice:
+After bootstrapping, `/gsd` calls `assessInterruptedSession` to check for any previous session that didn't end cleanly. Three classifications are possible:
 
-- **Resume with /gsd auto** — restart auto-mode from where it left off.
-- **Continue manually** — clear the lock and open the wizard.
-
-Bootstrap crashes — interrupted before any unit ran — are cleared silently without a prompt, since no work was lost.
+- **Running** — A session lock exists and the owning process is still alive. `/gsd` shows an error and exits to avoid interfering with the live session.
+- **Stale** — A lock or paused-session file exists but the process is gone and the session is too old to recover. Cleared silently.
+- **Recoverable** — A recent interrupted session (crash or pause) with recoverable state. `/gsd` presents a choice:
+  - **Resume with /gsd next** (if the interrupted session was in step mode) or **Resume with /gsd auto** (if it was auto mode) — restart from where it left off.
+  - **Continue manually** — clear the lock and open the wizard.
 
 The wizard also self-heals stale runtime records: unit records stuck in `dispatched` or `timeout` state, or whose expected artifact already exists, are cleared before dispatch resumes.
 
@@ -125,12 +130,13 @@ If no `.gsd/` directory exists at all (or it's an incomplete "zombie" state with
 
 Before dispatching a new milestone discussion, GSD runs an optional **preparation phase** that produces structured briefs to inject into the discuss prompt. This is enabled by default and can be disabled via `discuss_preparation: false` in preferences.
 
-When preparation runs, it generates three briefs:
+When preparation runs, it generates two briefs:
 - **Codebase brief** — what already exists in the project, established patterns, and constraints
 - **Prior context brief** — summaries of completed milestones so the discussion can build on prior work
-- **Ecosystem brief** — technology context from docs and web research
 
-With all three briefs available, the discuss flow switches from the standard `discuss` template to the richer `discuss-prepared` template, which encodes a 4-layer discussion protocol. If preparation fails or is disabled, the standard template is used as a fallback.
+Both briefs are injected into the standard `discuss` prompt as a `Preparation Context` section. The discuss template still leads with "What's the vision?" — the preparation context is background grounding, not a replacement for the user's direction. Ecosystem research now happens during the discussion session itself, between question rounds.
+
+If preparation fails or is disabled, the discuss prompt is dispatched without the context section.
 
 ### Smart entry wizard
 
@@ -291,12 +297,12 @@ After a slice finishes, the wizard offers to complete it:
     Milestone actions
 ```
 
-Crash recovery on resume:
+Interrupted session on resume:
 
 ```
 > /gsd
 
-● Interrupted session detected
+● GSD — Interrupted Session Detected
   Last unit: T03 (Add auth middleware) — interrupted 4 minutes ago
 
   ❯ Resume with /gsd auto
@@ -318,9 +324,8 @@ Milestone with a draft context ready for discussion:
 
 ## Prompts Used
 
-- [`discuss`](../../prompts/discuss/) — Interactive milestone planning prompt (vision capture, Q&A, requirements, roadmap)
+- [`discuss`](../../prompts/discuss/) — Interactive milestone planning prompt (vision capture, Q&A, requirements, roadmap). Preparation context is injected via `{{preparationContext}}` when the preparation phase runs.
 - [`discuss-headless`](../../prompts/discuss-headless/) — Headless milestone creation from a seed specification document
-- [`discuss-prepared`](../../prompts/discuss-prepared/) — Prepared discussion template with codebase/prior context/ecosystem briefs pre-injected (used when preparation is enabled)
 - [`guided-complete-slice`](../../prompts/guided-complete-slice/) — Interactive slice completion (summary + UAT)
 - [`guided-discuss-milestone`](../../prompts/guided-discuss-milestone/) — Interview-style prompt for surfacing behavioral and architectural unknowns for a milestone
 - [`guided-discuss-slice`](../../prompts/guided-discuss-slice/) — Interview-style prompt for surfacing scope and UX unknowns for a slice

@@ -7,7 +7,7 @@ description: "Run GSD commands without a TUI — designed for CI pipelines, cron
 
 `gsd headless` runs any `/gsd` command without the interactive TUI. It spawns a child process in RPC mode, automatically responds to interactive prompts, detects when the command completes, and exits with a meaningful exit code.
 
-This is GSD's entry point for automation — CI pipelines that run auto-mode on push, cron jobs that execute scheduled maintenance, and scripts that need machine-readable output from GSD commands. Progress is written to stderr; use `--json` to stream structured JSONL events to stdout instead.
+This is GSD's entry point for automation — CI pipelines that run auto-mode on push, cron jobs that execute scheduled maintenance, and scripts that need machine-readable output from GSD commands. Progress is written to stderr; use `--json` (or `--output-format stream-json`) to stream structured JSONL events to stdout, or `--output-format json` to get a single structured result object at the end.
 
 ## Usage
 
@@ -44,17 +44,21 @@ gsd headless new-milestone --context-text "Build a REST API with auth"
 
 # Pipe context from stdin
 echo "Build a CLI tool" | gsd headless new-milestone --context -
+
+# Resume a previous session
+gsd headless --resume abc123 auto
 ```
 
 ## Flags
 
 | Flag | Syntax | Default | Description |
 |------|--------|---------|-------------|
-| `--timeout` | `--timeout N` | `300000` (5 min) | Overall timeout in milliseconds. The process exits with code `1` if this limit is reached. `new-milestone` auto-extends this to `600000` (10 min) when the timeout is still the default. |
+| `--timeout` | `--timeout N` | `300000` (5 min) | Overall timeout in milliseconds. The process exits with code `1` if this limit is reached. `new-milestone` auto-extends to `600000` (10 min) when using the default. `auto` mode **disables** the timeout entirely when using the default (sets it to 0). |
 | `--max-restarts` | `--max-restarts N` | `3` | Auto-restart on crash with exponential backoff. Set `0` to disable. |
-| `--json` | `--json` | Off | Stream all events as JSONL to stdout. Each line is a self-contained JSON object. |
+| `--json` | `--json` | Off | Stream all events as JSONL to stdout. Equivalent to `--output-format stream-json`. |
+| `--output-format` | `--output-format text\|json\|stream-json` | `text` | Output format. `text` writes progress to stderr only. `stream-json` streams events as JSONL to stdout (same as `--json`). `json` suppresses streaming and emits a single structured result object to stdout when complete. |
 | `--events` | `--events type1,type2` | — | Filter JSONL output to specific event types. Implies `--json`. |
-| `--verbose` | `--verbose` | Off | Show detailed execution output in stderr progress lines. |
+| `--verbose` | `--verbose` | Off | Show detailed execution output in stderr progress lines, including streaming assistant text and thinking. |
 | `--model` | `--model ID` | Session default | Override the model for the headless session. |
 | `--context` | `--context <file>` | — | Context file for `new-milestone`. Use `-` to read from stdin. |
 | `--context-text` | `--context-text <text>` | — | Inline context text for `new-milestone`. |
@@ -62,6 +66,8 @@ echo "Build a CLI tool" | gsd headless new-milestone --context -
 | `--answers` | `--answers <file>` | — | JSON file with pre-supplied answers for interactive prompts. See [Answer Injection](#answer-injection) below. |
 | `--supervised` | `--supervised` | Off | Enable supervised mode — forward interactive prompts to the orchestrator via stdin/stdout. Implies `--json`. Cannot be combined with `--context -`. |
 | `--response-timeout` | `--response-timeout N` | `30000` | In supervised mode, milliseconds to wait for an orchestrator response before falling back to auto-response. |
+| `--resume` | `--resume <session>` | — | Resume a previous session by ID or prefix. Exact ID match is preferred; prefix is resolved if unambiguous. |
+| `--bare` | `--bare` | Off | Pass `--bare` through to the child RPC process. |
 
 ## Subcommands
 
@@ -165,7 +171,8 @@ flowchart TD
     Backoff --> Spawn
     Restart -->|No| ExitErr([Exit code 1])
     Loop -->|Timeout| ExitTimeout([Exit code 1])
-    Loop -->|Blocked| ExitBlocked([Exit code 2])
+    Loop -->|Blocked| ExitBlocked([Exit code 10])
+    Loop -->|SIGINT/SIGTERM| ExitCancelled([Exit code 11])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Query fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -190,6 +197,7 @@ flowchart TD
     style ExitErr fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style ExitTimeout fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style ExitBlocked fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style ExitCancelled fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
 ```
 
 ### RPC Communication
@@ -207,15 +215,54 @@ When the child process sends an interactive prompt, the headless controller appl
 | `input` | Submits an empty string |
 | `editor` | Returns the prefill text, or empty if none |
 
-Quick commands (`status`, `doctor`, `export`, `steer`, etc.) resolve on the first `agent_end` event rather than waiting for a terminal notification. Use `--answers` to override these defaults with specific answers for predictable decision trees.
+Quick commands (`status`, `queue`, `history`, `hooks`, `export`, `stop`, `pause`, `capture`, `skip`, `undo`, `knowledge`, `config`, `prefs`, `cleanup`, `migrate`, `doctor`, `remote`, `help`, `steer`, `triage`, `visualize`) resolve on the first `agent_end` event rather than waiting for a terminal notification. Use `--answers` to override these defaults with specific answers for predictable decision trees.
 
 ### Completion Detection
 
-The controller monitors for completion signals — the child process reporting that the dispatched command finished, errored, or hit a blocker. Auto-mode completion is detected by terminal notification messages (`"Auto-mode stopped..."`, `"Step-mode stopped..."`). An idle timeout fires as a fallback: 15 seconds for most commands, 2 minutes for `new-milestone`.
+The controller monitors for completion signals — the child process reporting that the dispatched command finished, errored, or hit a blocker. Auto-mode and step-mode completion is detected by terminal notification messages (`"Auto-mode stopped..."`, `"Step-mode stopped..."`). Multi-turn commands (`auto`, `next`, `discuss`, `plan`) use this notification path. An idle timeout fires as a fallback: 15 seconds for most commands, 2 minutes for `new-milestone`.
+
+### Timeout Behaviour
+
+Timeout handling varies by command:
+
+- **Default (`--timeout 300000`)**: `new-milestone` extends this to 10 minutes automatically. `auto` mode **disables the timeout entirely** (sets it to 0) since auto-mode sessions are long-running and have their own internal per-unit supervision.
+- **Custom `--timeout`**: Always used as-is. Pass `--timeout 0` to explicitly disable the timeout for any command.
 
 ### Auto-Restart
 
-When `--max-restarts` is greater than `0` (default: 3), an error exit triggers an exponential backoff restart — 5 seconds after the first crash, up to a maximum of 30 seconds. SIGINT/SIGTERM interrupts skip the restart and exit immediately.
+When `--max-restarts` is greater than `0` (default: 3), an error exit triggers an exponential backoff restart — 5 seconds after the first crash, up to a maximum of 30 seconds. SIGINT/SIGTERM interrupts skip the restart and exit immediately with code `11`.
+
+### Output Formats
+
+Three output formats are available via `--output-format` (or the `--json` shorthand):
+
+| Format | Flag | Stdout | Stderr |
+|--------|------|--------|--------|
+| `text` | (default) | — | Progress lines |
+| `stream-json` | `--json` or `--output-format stream-json` | JSONL event stream | Progress lines suppressed |
+| `json` | `--output-format json` | Single JSON result object on exit | Progress lines suppressed |
+
+The `json` batch mode emits a `HeadlessJsonResult` object when the session ends:
+
+```json
+{
+  "status": "success",
+  "exitCode": 0,
+  "sessionId": "abc123",
+  "duration": 42300,
+  "cost": {
+    "total": 1.23,
+    "input_tokens": 45000,
+    "output_tokens": 8000,
+    "cache_read_tokens": 12000,
+    "cache_write_tokens": 3000
+  },
+  "toolCalls": 47,
+  "events": 187
+}
+```
+
+Status values: `success`, `error`, `timeout`, `blocked`, `cancelled`.
 
 ### Exit Summary
 
@@ -227,9 +274,10 @@ On every exit, headless writes a summary to stderr:
 [headless] Events: 187 total, 43 tool calls
 ```
 
-When restarts occurred, a restart count is appended. When `--answers` was used, an injection stats line is appended:
+Additional lines appear when applicable:
 
 ```
+[headless] Event filter: tool_execution_start, agent_end
 [headless] Restarts: 2
 [headless] Answers: 5 answered, 1 defaulted, 2 secrets
 ```
@@ -325,7 +373,8 @@ See [`/gsd parallel`](../parallel/) for the built-in parallel orchestration comm
 |------|---------|------|
 | `0` | Success | Command completed successfully |
 | `1` | Error or timeout | Command failed, crashed (and restarts exhausted), or `--timeout` was exceeded |
-| `2` | Blocked | Execution hit a blocker requiring human input |
+| `10` | Blocked | Execution hit a blocker requiring human input |
+| `11` | Cancelled | SIGINT or SIGTERM received |
 
 ## What Files It Touches
 
@@ -363,8 +412,14 @@ Run auto-mode in CI:
 
 ```bash
 # In a GitHub Actions workflow
-gsd headless --timeout 600000 auto
+gsd headless auto
 echo "Exit code: $?"
+```
+
+Run auto-mode with an explicit timeout (auto-mode disables the default timeout — set one explicitly if needed):
+
+```bash
+gsd headless --timeout 1800000 auto
 ```
 
 Auto-restart on crash (up to 5 times):
@@ -373,10 +428,11 @@ Auto-restart on crash (up to 5 times):
 gsd headless --max-restarts 5 auto
 ```
 
-Get machine-readable status:
+Get a single structured result after a quick command:
 
 ```bash
-gsd headless --json status 2>/dev/null | jq '.type'
+gsd headless --output-format json status
+# {"status":"success","exitCode":0,"duration":3200,"cost":{...},...}
 ```
 
 Stream only specific event types:
@@ -385,7 +441,7 @@ Stream only specific event types:
 gsd headless --events tool_execution_start,agent_end auto
 ```
 
-Available event types: `agent_start`, `agent_end`, `tool_execution_start`, `tool_execution_end`, `tool_execution_update`, `extension_ui_request`, `message_start`, `message_end`, `message_update`, `turn_start`, `turn_end`
+Available event types: `agent_start`, `agent_end`, `tool_execution_start`, `tool_execution_end`, `tool_execution_update`, `extension_ui_request`, `message_start`, `message_end`, `message_update`, `turn_start`, `turn_end`, `cost_update`, `execution_complete`
 
 Run a specific dispatch phase:
 
@@ -403,6 +459,12 @@ Pre-supply answers for a non-interactive setup wizard:
 
 ```bash
 gsd headless --answers answers.json new-milestone --context brief.md --auto
+```
+
+Resume a previous session:
+
+```bash
+gsd headless --resume abc123 auto
 ```
 
 Poll-and-react loop (no LLM cost between checks):
@@ -423,7 +485,7 @@ esac
 ## Related Commands
 
 - [`/gsd auto`](../auto/) — Interactive auto-mode (TUI version)
-- [`/gsd new-milestone`](../new-milestone/) — Interactive milestone creation
+- [`/gsd next`](../next/) — Run a single auto-mode unit
 - [`/gsd parallel`](../parallel/) — Built-in parallel milestone orchestration
 - [CLI Flags](../cli-flags/) — All command-line flags for GSD
 - [`/gsd doctor`](../doctor/) — Health checks (can be run headless)

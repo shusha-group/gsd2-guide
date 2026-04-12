@@ -1,163 +1,111 @@
 ---
 title: "/gsd capture"
-description: "Fire-and-forget thought capture — save ideas, concerns, or tasks without interrupting auto-mode."
+description: "Fire-and-forget thought capture — append a pending note to CAPTURES.md without interrupting ongoing work."
 ---
 
 ## What It Does
 
-`/gsd capture` saves a thought to `.gsd/CAPTURES.md` without interrupting whatever's running. It's a fire-and-forget command — type your thought, hit enter, and the agent keeps working. No confirmation dialog, no context switch.
+`/gsd capture` is the mechanism for recording a thought mid-session without acting on it. You run it with a plain-English description, and GSD appends an entry to `.gsd/CAPTURES.md` with a unique ID, a timestamp, and status `pending`. The current task keeps running. Nothing changes in the plan.
 
-Captures are tagged as `pending` until triaged. You can triage them manually with [`/gsd triage`](../triage/) or let auto-mode handle them at natural pause points between tasks. Each capture gets a unique ID (like `CAP-a1b2c3d4`) for tracking.
+The point of capture is deferral. When something lands in your head while work is in progress — a bug you noticed, a feature idea, an edge case you want to revisit — running `/gsd capture` gets it out of your head and into a file. Triage happens later, either automatically when auto-mode reaches a natural seam, or manually via [`/gsd triage`](../triage/).
 
-The command works in all modes — auto-mode running, paused, stopped, or even without a milestone. If `.gsd/` doesn't exist yet, it creates it. This makes capture the lowest-friction way to record a thought.
+The command works even without an active milestone. If `.gsd/` doesn't exist yet, GSD creates it. This makes capture safe to use at any point in a project's lifecycle.
 
 ## Usage
 
 ```
-/gsd capture <thought>
+/gsd capture <text>
 ```
 
-Quotes around the thought are optional — they're stripped if present.
+Everything after `capture` is the captured text. Surrounding quotes are stripped, so these are equivalent:
 
 ```
-/gsd capture consider adding rate limiting to the API
-/gsd capture "the login form needs better error messages"
-/gsd capture 'should we use Redis for session storage?'
+/gsd capture the error message on 404 is confusing for logged-out users
+/gsd capture "add rate limiting to the recipe search endpoint"
+/gsd capture we should revisit the auth token refresh logic before launch
+```
+
+Running the command without text shows usage:
+
+```
+/gsd capture
+→ Usage: /gsd capture "your thought here"
 ```
 
 ## How It Works
 
-### Capture Flow
-
 ```mermaid
 flowchart TD
-    Start(["/gsd capture '...'"]) --> Parse[Strip surrounding quotes]
-    Parse --> EnsureDir[Ensure .gsd/ exists]
-    EnsureDir --> Resolve[Resolve CAPTURES.md path<br/>worktree-aware]
-    Resolve --> GenID[Generate CAP-XXXXXXXX ID]
+    Start(["/gsd capture '...'"]) --> Strip[Strip surrounding quotes from text]
+    Strip --> Empty{Text empty?}
+    Empty -->|Yes| Warn([Warning: show usage])
+    Empty -->|No| EnsureDir[Ensure .gsd/ directory exists]
+    EnsureDir --> GenID[Generate CAP-xxxxxxxx ID]
     GenID --> Append[Append entry to CAPTURES.md]
-    Append --> Notify[Notify with ID and truncated text]
-    Notify --> Done([Done])
+    Append --> Notify[Notify: Captured: ID — text]
+    Notify --> Done([Complete])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Parse fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Empty fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Warn fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style Strip fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style EnsureDir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Resolve fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style GenID fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Append fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
-
-The full pipeline is:
-
-1. **Parse input** — Strips surrounding quotes (single or double) from the argument.
-2. **Ensure `.gsd/` exists** — Creates the directory if missing. Captures work even before any milestone is created.
-3. **Resolve path** — Determines the correct `CAPTURES.md` path, accounting for worktree isolation.
-4. **Generate ID** — Creates a unique ID like `CAP-a1b2c3d4` using the first 8 characters of a UUID.
-5. **Append entry** — Adds an H3 section with the capture text, timestamp, and `pending` status.
-6. **Notify** — Shows a confirmation with the capture ID and text (truncated to 60 characters if longer).
-
-### Automatic Triage
-
-When a unit completes in auto-mode and there are any pending captures, triage fires automatically at the next seam — before the next unit is dispatched. The triage is enqueued as a sidecar unit on the internal `sidecarQueue`.
-
-Auto-triage only fires when all of these conditions are met:
-- Auto-mode is not in step mode
-- The completing unit is not itself a `triage-captures` or `quick-task` unit (nor a hook)
-- There is an active milestone AND an active slice — triage needs plan context to classify captures
-
-You can also trigger triage at any time with [`/gsd triage`](../triage/).
-
-### Worktree Awareness
-
-When running inside a worktree, captures resolve to the **original project root's** `CAPTURES.md`, not the worktree-local copy. Two worktree layouts are detected:
-
-- **Direct layout**: `/.gsd/worktrees/MXXX/`
-- **Symlink-resolved layout**: `/.gsd/projects/<hash>/worktrees/`
-
-In both cases the project root is resolved by walking up to the directory that contains `.gsd/worktrees/`. This ensures all captures from all worktrees end up in a single file.
 
 ### Capture Entry Format
 
-Each capture is stored as a markdown section. New files start with a `# Captures` header:
+Each capture is an H3 section in `CAPTURES.md` with bold metadata fields:
 
 ```markdown
-### CAP-a1b2c3d4
-**Text:** consider adding rate limiting to the API
-**Captured:** 2025-01-15T10:30:00.000Z
+# Captures
+
+### CAP-a3f1bc2d
+**Text:** the error message on 404 is confusing for logged-out users
+**Captured:** 2026-01-15T10:32:00.000Z
 **Status:** pending
 ```
 
-After triage, the status is updated and classification fields are appended — including the milestone the capture was triaged in:
+The ID is `CAP-` followed by 8 hex characters from a random UUID. The file is append-only — new entries are added after a blank line at the end.
 
-```markdown
-### CAP-a1b2c3d4
-**Text:** consider adding rate limiting to the API
-**Captured:** 2025-01-15T10:30:00.000Z
-**Status:** resolved
-**Classification:** defer
-**Resolution:** deferred to a future slice
-**Rationale:** Not in scope for current slice
-**Resolved:** 2025-01-15T14:00:00.000Z
-**Milestone:** M003
-```
+### Worktree Awareness
 
-For actionable captures (`quick-task`, `inject`, `replan`), an `**Executed:**` timestamp is added once their resolution has been carried out:
+When GSD is running in worktree-isolated mode, the active agent runs inside `.gsd/worktrees/<MID>/`. Captures always resolve to the **original project root's** `.gsd/CAPTURES.md`, not the worktree-local copy. This ensures all captures accumulate in one place regardless of which worktree is active.
 
-```markdown
-**Executed:** 2025-01-15T15:00:00.000Z
-```
+### Automatic Triage in Auto-mode
 
-### Classifications
+When auto-mode is running, GSD checks for pending captures at the end of every primary unit (not hooks or triage units themselves). If any exist and there is an active milestone and slice, a `triage-captures` sidecar unit is enqueued immediately after the current unit closes out.
 
-Captures are classified during triage into one of five types:
+The triage prompt classifies each pending capture against the current slice plan and roadmap, then presents proposals for confirmation:
 
 | Classification | Meaning |
 |----------------|---------|
-| `quick-task` | Execute as a one-off at the next seam — no plan modification |
-| `inject` | Add a new task to the current slice plan |
-| `defer` | Move to a future slice or milestone — not urgent now |
-| `replan` | Remaining tasks need rewriting — triggers slice replan |
-| `note` | Informational only — no action needed |
+| `quick-task` | Small, self-contained fix — executable in minutes |
+| `inject` | Belongs in the current slice but wasn't planned |
+| `defer` | Belongs in a future slice or milestone |
+| `replan` | Changes the shape of remaining tasks in the current slice |
+| `note` | Informational — no action required |
+| `stop` | Directive to halt auto-mode |
+| `backtrack` | Directive to abandon the current milestone |
 
-`note` and `defer` captures are auto-confirmed during triage. `quick-task`, `inject`, and `replan` classifications require user confirmation before being applied — you can also change the proposed classification or skip the capture (leaving it `pending` for later).
+After triage, `CAPTURES.md` is updated with the classification, resolution, rationale, and a timestamp. Quick-task captures are dispatched as sidecar units immediately after triage completes.
 
-### How Triage Classifies
+### Fast-path Stop Detection
 
-When triage runs, the LLM reads the **current slice plan** and **active roadmap** as context before proposing classifications. This lets it make informed decisions — for example, preferring `inject` when the work fits naturally into the current slice, or `defer` when it belongs in a later phase.
+Before waiting for a triage sidecar, GSD scans pending captures for stop/halt language at the start of the text (e.g., `stop`, `halt`, `abort`, `pause`, `cease`). If a match is found, auto-mode pauses immediately — no triage round-trip needed. This path specifically matches directives, not descriptions: "stop the timer from re-rendering" does not trigger it.
 
-**Triage only classifies — it does not execute resolutions.** After the triage unit completes, `executeTriageResolutions` runs to carry out the actions:
+### Capture Lifecycle
 
-- **`inject`** — Reads the active slice plan, finds the highest existing task ID, and appends a new task entry before the `## Files Likely Touched` section:
-  ```markdown
-  - [ ] **T05: <capture text>** `est:30m`
-    - Why: Injected from capture CAP-a1b2c3d4 during triage
-    - Do: <capture text>
-    - Done when: Capture intent fulfilled
-  ```
-  Marks the capture as executed on success.
+A capture moves through these states in `CAPTURES.md`:
 
-- **`replan`** — Writes a `SXX-REPLAN-TRIGGER.md` marker file in the slice directory. The trigger records the source capture ID, text, rationale, and a timestamp. The next dispatch cycle detects this file and enters the `replanning-slice` phase.
+1. **`pending`** — Written by `/gsd capture`. Awaiting triage.
+2. **`resolved`** — Written by the triage agent. Classification and rationale are added.
+3. **`executed`** — Written after a quick-task or inject resolution is carried out. An `**Executed:**` timestamp is appended.
 
-- **`quick-task`** — A dedicated prompt (`buildQuickTaskPrompt`) is generated from the capture text and collected for dispatch. The capture is marked as executed immediately when queued. The agent then executes the task without modifying any plan files.
-
-- **`defer`** — If the target milestone doesn't exist yet, creates its directory and seeds a `MXXX-CONTEXT-DRAFT.md` with the deferred captures listed. This ensures `deriveState()` discovers the milestone and routes to the discussion phase.
-
-Each executed capture is stamped with `**Executed:**` in `CAPTURES.md` to prevent double-execution on retries or restarts.
-
-### Staleness Gate
-
-Captures are resolved in the context of a specific milestone — the `**Milestone:**` field records which one. When `executeTriageResolutions` runs, it only processes captures resolved in the **current** milestone.
-
-This prevents quick-task captures from a prior milestone re-executing after the underlying issues were already fixed by planned milestone work. Captures that have no `**Milestone:**` field (legacy captures resolved before this field was introduced) are always included for backward compatibility.
-
-### Context Injection
-
-Capture context flows into downstream prompts automatically:
-
-- **Replan-slice prompts** — know what capture triggered the replan, so the replan is informed by the original thought.
-- **Reassess-roadmap prompts** — deferred captures appear as input, letting the roadmap reflect work that was intentionally pushed out.
+If a non-triage agent writes `**Status:** resolved` to a capture (bypassing triage), GSD reverts it to `pending` at the next post-unit check. This ensures all captures go through the triage pipeline before being acted on.
 
 ## What Files It Touches
 
@@ -165,67 +113,73 @@ Capture context flows into downstream prompts automatically:
 
 | File | Purpose |
 |------|---------|
-| `.gsd/CAPTURES.md` | Created on first capture if it doesn't exist (with `# Captures` header) |
-| `.gsd/` | Created if the directory doesn't exist |
-| `.gsd/milestones/MXXX/slices/SXX/SXX-REPLAN-TRIGGER.md` | Written when a `replan` capture is executed — triggers replanning-slice phase |
-| `.gsd/milestones/MXXX/MXXX-CONTEXT-DRAFT.md` | Seeded when a `defer` target milestone doesn't exist yet |
+| `.gsd/CAPTURES.md` | Created with `# Captures` header if it doesn't exist |
+| `.gsd/` | Created if it doesn't exist (capture works without a milestone) |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/CAPTURES.md` | Existing content to append to |
-| `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | Read during `inject` execution to find the next task ID |
-| `.gsd/milestones/MXXX/MXXX-ROADMAP.md` | Read during triage for classification context |
+| `.gsd/CAPTURES.md` | Existing content read before appending to preserve prior entries |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
-| `.gsd/CAPTURES.md` | New capture entry appended; status, classification, and milestone fields updated after triage |
-| `.gsd/milestones/MXXX/slices/SXX/SXX-PLAN.md` | New task appended when an `inject` capture is executed |
+| `.gsd/CAPTURES.md` | New capture entry appended with ID, text, timestamp, and `Status: pending` |
 
 ## Examples
 
-Capturing a thought during auto-mode:
+Capturing a thought mid-session:
 
 ```
-> /gsd capture consider adding rate limiting to the API
+> /gsd capture the 404 error page doesn't handle logged-out users well
 
-● Captured: CAP-a1b2c3d4 — "consider adding rate limiting to the API"
+● Captured: CAP-a3f1bc2d — "the 404 error page doesn't handle logged-out users well"
 ```
 
-Capturing with quotes:
+Multiple captures accumulate in CAPTURES.md:
 
-```
-> /gsd capture "the login form needs better error messages"
+```markdown
+# Captures
 
-● Captured: CAP-f9e8d7c6 — "the login form needs better error messages"
-```
+### CAP-a3f1bc2d
+**Text:** the 404 error page doesn't handle logged-out users well
+**Captured:** 2026-01-15T10:32:00.000Z
+**Status:** pending
 
-Long captures are truncated in the notification (at 60 characters) but stored in full:
-
-```
-> /gsd capture the authentication service needs to support refresh token rotation for better security
-
-● Captured: CAP-c3d4e5f6 — "the authentication service needs to support refresh to..."
-```
-
-Checking pending captures:
-
-```
-> /gsd triage
-
-● Triaging 3 pending captures...
+### CAP-7e92d15f
+**Text:** add rate limiting to the recipe search endpoint
+**Captured:** 2026-01-15T11:14:00.000Z
+**Status:** pending
 ```
 
-## Prompts Used
+After auto-mode triages them, each entry is updated with its classification:
 
-- [`triage-captures`](../../prompts/triage-captures/) — Capture triage prompt
+```markdown
+### CAP-a3f1bc2d
+**Text:** the 404 error page doesn't handle logged-out users well
+**Captured:** 2026-01-15T10:32:00.000Z
+**Status:** resolved
+**Classification:** quick-task
+**Resolution:** Update 404 page component to show login prompt for logged-out users
+**Rationale:** Self-contained UI fix, no plan changes required
+**Resolved:** 2026-01-15T12:05:00.000Z
+**Milestone:** M003
+```
+
+Stopping auto-mode via capture:
+
+```
+> /gsd capture stop — we need to revisit the data model before continuing
+
+● Captured: CAP-b21cc9a0 — "stop — we need to revisit the data model before continuing"
+● Stop directive detected in pending capture CAP-b21cc9a0 — pausing auto-mode.
+```
 
 ## Related Commands
 
-- [`/gsd triage`](../triage/) — Classify and act on pending captures
-- [`/gsd steer`](../steer/) — Direct plan override (stronger than capture)
-- [`/gsd queue`](../queue/) — Add future milestones (for larger work)
-- [`/gsd quick`](../quick/) — Execute a small task immediately
+- [`/gsd triage`](../triage/) — Manually classify and route pending captures
+- [`/gsd auto`](../auto/) — Auto-mode that enqueues triage sidecars when captures accumulate
+- [`/gsd quick`](../quick/) — Execute a task immediately without capturing for later
+- [`/gsd steer`](../steer/) — Stronger course correction — rewrites active plan documents

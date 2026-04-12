@@ -38,7 +38,7 @@ export default defineConfig({
             { label: 'Quick Reference', link: '/quick-reference/' },
             { label: 'Writing a Good Brief', link: '/writing-a-good-brief/' },
             { label: 'Cost Examples', link: '/cost-examples/' },
-            { label: 'Installation', link: '/getting-started/' },
+            { label: 'Installation', link: '/user-docs/getting-started/' },
             { label: 'Developing with GSD', link: '/user-guide/developing-with-gsd/' },
             { label: 'Discussing a Milestone', link: '/user-guide/discussing-a-milestone/' },
           ],
@@ -66,17 +66,17 @@ export default defineConfig({
             { label: 'Handle UAT Failures', link: '/recipes/uat-failures/' },
             { label: 'Error Recovery', link: '/recipes/error-recovery/' },
             { label: 'Working in Teams', link: '/recipes/working-in-teams/' },
-            { label: 'Auto Mode', link: '/auto-mode/' },
-            { label: 'Git Strategy', link: '/git-strategy/' },
+            { label: 'Auto Mode', link: '/user-docs/auto-mode/' },
+            { label: 'Git Strategy', link: '/user-docs/git-strategy/' },
             { label: 'Control Your Costs', link: '/recipes/control-your-costs/' },
-            { label: 'Captures & Triage', link: '/captures-triage/' },
-            { label: 'Parallel Orchestration', link: '/parallel-orchestration/' },
+            { label: 'Captures & Triage', link: '/user-docs/captures-triage/' },
+            { label: 'Parallel Orchestration', link: '/user-docs/parallel-orchestration/' },
           ],
         },
         {
           label: 'Commands',
           items: [
-            { label: 'Commands Reference', link: '/commands/' },
+            { label: 'Commands Reference', link: '/user-docs/commands/' },
             {
               label: 'Running GSD',
               items: [
@@ -93,16 +93,12 @@ export default defineConfig({
                 { label: '/gsd discuss', link: '/commands/discuss/' },
                 { label: '/gsd steer', link: '/commands/steer/' },
                 { label: '/gsd queue', link: '/commands/queue/' },
-                { label: '/gsd new-milestone', link: '/commands/new-milestone/' },
               ],
             },
             {
               label: 'Monitoring & Capture',
               items: [
                 { label: '/gsd status', link: '/commands/status/' },
-                { label: '/gsd visualize', link: '/commands/visualize/' },
-                { label: '/gsd capture', link: '/commands/capture/' },
-                { label: '/gsd triage', link: '/commands/triage/' },
                 { label: '/gsd forensics', link: '/commands/forensics/' },
                 { label: '/gsd export', link: '/commands/export/' },
                 { label: '/gsd logs', link: '/commands/logs/' },
@@ -111,10 +107,7 @@ export default defineConfig({
             {
               label: 'Milestone Management',
               items: [
-                { label: '/gsd skip', link: '/commands/skip/' },
-                { label: '/gsd undo', link: '/commands/undo/' },
                 { label: '/gsd cleanup', link: '/commands/cleanup/' },
-                { label: '/gsd knowledge', link: '/commands/knowledge/' },
               ],
             },
             {
@@ -131,9 +124,6 @@ export default defineConfig({
               label: 'Diagnostics & Skills',
               items: [
                 { label: '/gsd doctor', link: '/commands/doctor/' },
-                { label: '/gsd skill-health', link: '/commands/skill-health/' },
-                { label: '/gsd hooks', link: '/commands/hooks/' },
-                { label: '/gsd run-hook', link: '/commands/run-hook/' },
               ],
             },
             {
@@ -145,23 +135,6 @@ export default defineConfig({
             {
               label: 'Reference',
               items: [
-                { label: '/gsd fast', link: '/commands/fast/' },
-                { label: '/gsd changelog', link: '/commands/changelog/' },
-                { label: '/gsd dispatch', link: '/commands/dispatch/' },
-                { label: '/gsd history', link: '/commands/history/' },
-                { label: '/gsd init', link: '/commands/init/' },
-                { label: '/gsd inspect', link: '/commands/inspect/' },
-                { label: '/gsd park', link: '/commands/park/' },
-                { label: '/gsd pause', link: '/commands/pause/' },
-                { label: '/gsd rate', link: '/commands/rate/' },
-                { label: '/gsd remote', link: '/commands/remote/' },
-                { label: '/gsd reset-slice', link: '/commands/reset-slice/' },
-                { label: '/gsd setup', link: '/commands/setup/' },
-                { label: '/gsd start', link: '/commands/start/' },
-                { label: '/gsd templates', link: '/commands/templates/' },
-                { label: '/gsd undo-task', link: '/commands/undo-task/' },
-                { label: '/gsd unpark', link: '/commands/unpark/' },
-                { label: '/gsd widget', link: '/commands/widget/' },
                 { label: '/gsd mcp', link: '/commands/mcp/' },
                 { label: '/gsd rethink', link: '/commands/rethink/' },
                 { label: 'Keyboard Shortcuts', link: '/commands/keyboard-shortcuts/' },
@@ -169,7 +142,6 @@ export default defineConfig({
                 { label: 'Headless Mode', link: '/commands/headless/' },
               ],
             },
-                { label: 'discuss-prepared', link: '/prompts/discuss-prepared/' },
                 { label: 'parallel-research-slices', link: '/prompts/parallel-research-slices/' },
           ],
         },
@@ -180,7 +152,7 @@ export default defineConfig({
               label: 'Understand GSD',
               items: [
                 { label: 'How Auto Mode Works', link: '/how-auto-mode-works/' },
-                { label: 'Architecture', link: '/architecture/' },
+                { label: 'Architecture', link: '/dev/architecture/' },
                 { label: 'The .gsd/ Directory', link: '/gsd-directory/' },
                 { label: 'The Story of GSD', link: '/story-of-gsd/' },
                 { label: 'GSD v1 vs v2', link: '/v1-to-v2/' },
@@ -189,12 +161,12 @@ export default defineConfig({
             {
               label: 'Configure & Extend',
               items: [
-                { label: 'Configuration', link: '/configuration/' },
-                { label: 'Custom Models', link: '/custom-models/' },
+                { label: 'Configuration', link: '/user-docs/configuration/' },
+                { label: 'Custom Models', link: '/user-docs/custom-models/' },
                 { label: 'Skills, Extensions & Agents', link: '/skills-extensions-agents/' },
-                { label: 'Web Interface', link: '/web-interface/' },
-                { label: 'Workflow Visualizer', link: '/visualizer/' },
-                { label: 'Remote Questions', link: '/remote-questions/' },
+                { label: 'Web Interface', link: '/user-docs/web-interface/' },
+                { label: 'Workflow Visualizer', link: '/user-docs/visualizer/' },
+                { label: 'Remote Questions', link: '/user-docs/remote-questions/' },
               ],
             },
             {
@@ -211,8 +183,8 @@ export default defineConfig({
             {
               label: 'Help',
               items: [
-                { label: 'Troubleshooting', link: '/troubleshooting/' },
-                { label: 'Migration from v1', link: '/migration/' },
+                { label: 'Troubleshooting', link: '/user-docs/troubleshooting/' },
+                { label: 'Migration from v1', link: '/user-docs/migration/' },
                 { label: 'Glossary', link: '/glossary/' },
               ],
             },

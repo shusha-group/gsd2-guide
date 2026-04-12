@@ -1,15 +1,15 @@
 ---
 title: "/gsd cleanup"
-description: "Git hygiene tool — remove merged branches, prune old snapshots, cull stale worktrees, and audit orphaned project state."
+description: "Git hygiene tool — remove merged GSD branches and prune old execution snapshot refs."
 ---
 
 ## What It Does
 
-`/gsd cleanup` is a housekeeping command that removes accumulated git debris from a GSD project. It covers four categories of stale artifacts: merged GSD branches, old execution snapshot refs, merged worktrees, and orphaned project-state directories in `~/.gsd/projects/`.
+`/gsd cleanup` is a housekeeping command that removes accumulated git debris from a GSD project. It covers two categories of stale artifacts: merged GSD branches and old execution snapshot refs.
 
-Running `/gsd cleanup` with no arguments handles the two most common cases at once — merged branches and old snapshots. Each category can also be targeted individually with a subcommand.
+Running `/gsd cleanup` with no arguments handles both cases at once. Each category can also be targeted individually with a subcommand.
 
-The command reports what it removed (or why it skipped), then exits. There's no dry-run confirmation step for branches and snapshots — cleanup is low-risk because it only removes artifacts that are already merged or are old copies of data that's been superseded.
+The command reports what it removed (or why it skipped), then exits. There is no dry-run confirmation step — cleanup is low-risk because it only removes branches that are already merged into main and snapshot refs that have been superseded by newer ones.
 
 ## Usage
 
@@ -17,19 +17,13 @@ The command reports what it removed (or why it skipped), then exits. There's no 
 /gsd cleanup
 /gsd cleanup branches
 /gsd cleanup snapshots
-/gsd cleanup worktrees
-/gsd cleanup projects
-/gsd cleanup projects --fix
 ```
 
 | Form | What it does |
 |------|-------------|
 | `/gsd cleanup` | Runs both `branches` and `snapshots` cleanup together |
-| `/gsd cleanup branches` | Delete merged `gsd/*` branches and detached stale milestone branches |
+| `/gsd cleanup branches` | Delete merged `gsd/*` branches |
 | `/gsd cleanup snapshots` | Prune old `refs/gsd/snapshots/` refs, keeping the 5 most recent per label |
-| `/gsd cleanup worktrees` | Remove worktrees that are merged into main and have no uncommitted changes |
-| `/gsd cleanup projects` | Audit `~/.gsd/projects/` for orphaned state directories (dry-run) |
-| `/gsd cleanup projects --fix` | Delete orphaned project state directories (permanent) |
 
 ## How It Works
 
@@ -37,45 +31,36 @@ The command reports what it removed (or why it skipped), then exits. There's no 
 
 ```mermaid
 flowchart TD
-    A(["/gsd cleanup branches"]) --> B[List gsd/* branches]
+    A(["/gsd cleanup branches"]) --> B[List all gsd/* branches]
     B --> C{Any branches?}
-    C -- No --> D[Nothing to clean up]
+    C -- No --> D([No GSD branches to clean up])
     C -- Yes --> E[Detect main branch]
-    E --> F[Find merged gsd/* branches<br/>excluding gsd/quick/*]
-    F --> G[Delete each merged branch]
-    G --> H[Find milestone/* branches<br/>not attached to a worktree]
-    H --> I{DB available AND<br/>has row for milestone?}
-    I -- Yes --> J[Check milestone status in DB]
-    I -- No --> K[Parse ROADMAP.md from disk]
-    J --> L{Status complete/done?}
-    K --> L
-    L -- Yes --> M[Force-delete stale<br/>milestone branch]
-    L -- No --> N[Skip branch]
-    M --> O[Report summary]
-    N --> O
+    E --> F[Find merged gsd/* branches<br/>via git branch --merged]
+    F --> G{Any merged?}
+    G -- No --> H([N branches found, none merged yet])
+    G -- Yes --> I[Delete each merged branch]
+    I --> J([Report: N cleaned up, M remain])
 
     style A fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style D fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style H fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style J fill:#0d180d,stroke:#39ff14,color:#39ff14
     style C fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style I fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style L fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style G fill:#0d180d,stroke:#39ff14,color:#39ff14
     style B fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style F fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style H fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style M fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style N fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style O fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-Branch cleanup runs in two passes:
+Branch cleanup runs in a straightforward sequence:
 
-1. **Merged GSD branches** — Lists all branches matching `gsd/*`, then uses `git branch --merged` to find which ones are already in the main branch. Deletes each merged branch with a standard (non-force) delete. `gsd/quick/*` branches are always skipped — quick-task branches are short-lived and managed separately.
+1. **List GSD branches** — Finds all local branches matching `gsd/*`.
+2. **Check for merges** — Uses `git branch --merged` against the detected main branch to find which `gsd/*` branches are fully contained in main.
+3. **Delete merged branches** — Removes each merged branch with a standard (non-force) delete. Branches that can't be deleted are silently skipped.
+4. **Report** — Shows how many were removed and how many remain.
 
-2. **Stale milestone branches** — Lists all `milestone/*` branches and cross-references the currently registered worktrees. Any `milestone/*` branch that is **not** attached to a live worktree is eligible for deletion if the milestone is complete. Completion is checked **DB-first**: if the GSD database is available and has a row for the milestone, it reads the status field directly. If the DB is unavailable or has no row for that milestone, it falls back to parsing the `ROADMAP.md` from disk. Branches for incomplete milestones are left untouched. Stale milestone branches are force-deleted (since they may not be merged into main).
+If no `gsd/*` branches exist at all, or none are merged yet, the command says so and exits cleanly.
 
 ### Snapshot Cleanup
 
@@ -87,78 +72,21 @@ GSD uses `refs/gsd/snapshots/` to store undo snapshots during task execution. Th
 
 This means you always have at least 5 rollback points per label. Old snapshots beyond that window are pruned.
 
-### Worktree Cleanup
-
-```mermaid
-flowchart TD
-    A(["/gsd cleanup worktrees"]) --> B[Inspect all GSD worktrees<br/>under .gsd/worktrees/]
-    B --> C{Any worktrees?}
-    C -- No --> D[Nothing to clean up]
-    C -- Yes --> E[Compute health status<br/>per worktree]
-    E --> F{Is worktree merged into main<br/>AND has no dirty files?}
-    F -- Yes --> G[Safe to remove]
-    F -- No --> H{No commits in 14+ days<br/>and not merged?}
-    H -- Yes --> I[Flag as stale — manual review]
-    H -- No --> J[Flag as active]
-    G --> K[Auto-remove each safe worktree<br/>skip if current dir]
-    K --> L[Report removed, stale, active]
-
-    style A fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style C fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style F fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style H fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style D fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style B fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style E fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style G fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style I fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style J fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style K fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style L fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-```
-
-Worktree cleanup inspects all GSD-managed worktrees under `.gsd/worktrees/` and classifies each into one of three buckets:
-
-| Category | Criteria | Action |
-|----------|----------|--------|
-| **Safe to remove** | Merged into main AND no uncommitted changes | Auto-removed (branch deleted) |
-| **Stale** | Not merged AND no commits in 14+ days | Listed for manual review — not removed |
-| **Active** | In progress | Listed for reference — not removed |
-
-A worktree is safe to remove when its branch is fully contained in main and it has no dirty files (staged or unstaged). Unpushed commits don't block removal — if the branch is merged, the work is already in main. A worktree that is currently your working directory is always skipped, even if it would otherwise be safe to remove.
-
-### Project State Cleanup
-
-GSD stores per-project planning state in `~/.gsd/projects/<hash>/` directories, keyed by a hash of the project's git remote URL. When a project is deleted or moved, its state directory becomes orphaned. The location can be overridden with `GSD_STATE_DIR` (or `GSD_HOME` for the parent directory).
-
-`/gsd cleanup projects` (dry-run) inspects each directory, reads its `repo-meta.json`, and checks whether the recorded git root path still exists on disk:
-
-- **Active** — git root exists → listed but left alone
-- **Orphaned** — git root is gone → listed as candidates for deletion
-- **Unknown** — no `repo-meta.json` yet → listed with a note to open the project in GSD once
-
-`/gsd cleanup projects --fix` deletes the **orphaned** directories. Unknown entries (no metadata) are never deleted automatically. This operation is permanent and cannot be undone.
-
 ## What Files It Touches
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| git branch list (`gsd/*`, `milestone/*`) | Identifies GSD-managed branches for cleanup |
+| git branch list (`gsd/*`) | Identifies GSD-managed branches to check for merges |
 | git refs (`refs/gsd/snapshots/`) | Finds snapshot refs to prune |
-| `.gsd/worktrees/` | Lists active worktrees for health checks |
-| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Filesystem fallback — checks milestone completion when DB is unavailable or has no row |
-| `~/.gsd/projects/<hash>/repo-meta.json` | Reads git root path to detect orphaned state directories |
 
 ### Deletes
 
-| File / Artifact | Purpose |
-|---------|---------|
-| git branches (`gsd/*`, `milestone/*`) | Merged or stale branches removed |
-| git refs (`refs/gsd/snapshots/<label>/<old>`) | Old snapshot refs beyond the 5-per-label window |
-| `.gsd/worktrees/<name>/` | Worktree directory removed (with its branch) |
-| `~/.gsd/projects/<hash>/` | Orphaned project state directory (only with `--fix`) |
+| Artifact | Condition |
+|---------|-----------|
+| git branches (`gsd/*`) | Merged into main |
+| git refs (`refs/gsd/snapshots/<label>/<old>`) | Beyond the 5-per-label window for that snapshot label |
 
 ## Examples
 
@@ -167,16 +95,16 @@ Default cleanup — branches and snapshots together:
 ```
 > /gsd cleanup
 
-Cleaned up 3 merged branches. Deleted 2 stale milestone branches. Skipped 1 quick branch (gsd/quick/*).
+Cleaned up 3 merged branches. 1 remain.
 Pruned 12 old snapshot refs. 10 remain.
 ```
 
-Nothing to clean up:
+No branches exist:
 
 ```
 > /gsd cleanup branches
 
-No non-quick GSD branches to clean up.
+No GSD branches to clean up.
 ```
 
 Branches exist but none merged yet:
@@ -184,52 +112,23 @@ Branches exist but none merged yet:
 ```
 > /gsd cleanup branches
 
-4 GSD branches found, none merged into main yet.
+4 GSD branches found, none are merged into main yet.
 ```
 
-Worktree cleanup with a mix of states:
+Branches cleaned up:
 
 ```
-> /gsd cleanup worktrees
+> /gsd cleanup branches
 
-3 worktrees found.
-
-Safe to remove (1) — merged into main, clean:
-  ✓ M003-auth  removed (branch worktree/M003-auth deleted)
-
-Removed 1 merged worktree.
-
-Stale (1) — no recent commits, not merged (review manually):
-  ⚠ M004-payments  no commits in 21 days
-
-Active (1) — in progress:
-  ● M005-api  last commit 2d ago
+Cleaned up 2 merged branches. 1 remain.
 ```
 
-Project state audit (dry-run):
+No old snapshots to prune:
 
 ```
-> /gsd cleanup projects
+> /gsd cleanup snapshots
 
-~/.gsd/projects  3 project state directories
-
-Active (2) — git root present on disk:
-  + a3f9b2c1  /Users/alice/dev/myapp  [github.com/alice/myapp]
-  + b8d4e7f0  /Users/alice/dev/backend  [github.com/alice/backend]
-
-Orphaned (1) — git root no longer exists:
-  - c1e6a9b2  /Users/alice/dev/old-project  [github.com/alice/old-project]
-
-Run /gsd cleanup projects --fix to permanently delete 1 orphaned directory.
-```
-
-Delete orphaned project state:
-
-```
-> /gsd cleanup projects --fix
-
-...
-Removed 1 orphaned directory.
+No snapshot refs to clean up.
 ```
 
 ## Related Commands

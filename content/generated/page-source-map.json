@@ -12,13 +12,6 @@
     "src/resources/extensions/gsd/auto-dashboard.ts",
     "src/resources/extensions/gsd/unit-runtime.ts"
   ],
-  "commands/capture.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/captures.ts",
-    "src/resources/extensions/gsd/prompts/triage-captures.md"
-  ],
   "commands/cleanup.mdx": [
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
@@ -81,13 +74,6 @@
     "src/resources/extensions/gsd/types.ts",
     "src/resources/extensions/gsd/prompts/discuss-headless.md"
   ],
-  "commands/hooks.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/post-unit-hooks.ts",
-    "src/resources/extensions/gsd/prompts/execute-task.md"
-  ],
   "commands/keyboard-shortcuts.mdx": [
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
@@ -97,13 +83,6 @@
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
     "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/knowledge.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/prompts/system.md",
-    "src/resources/extensions/gsd/files.ts"
   ],
   "commands/logs.mdx": [
     "src/resources/extensions/gsd/commands.ts",
@@ -131,11 +110,6 @@
     "src/resources/extensions/gsd/guided-flow.ts",
     "src/resources/extensions/gsd/preferences.ts"
   ],
-  "commands/new-milestone.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
   "commands/next.mdx": [
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
@@ -161,26 +135,6 @@
     "src/resources/extensions/gsd/types.ts",
     "src/resources/extensions/gsd/quick.ts"
   ],
-  "commands/run-hook.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/post-unit-hooks.ts"
-  ],
-  "commands/skill-health.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/skill-health.ts",
-    "src/resources/extensions/gsd/skill-telemetry.ts",
-    "src/resources/extensions/gsd/skill-discovery.ts",
-    "src/resources/extensions/gsd/prompts/heal-skill.md"
-  ],
-  "commands/skip.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
   "commands/status.mdx": [
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
@@ -199,32 +153,10 @@
     "src/resources/extensions/gsd/state.ts",
     "src/resources/extensions/gsd/types.ts"
   ],
-  "commands/triage.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/triage-ui.ts",
-    "src/resources/extensions/gsd/triage-resolution.ts",
-    "src/resources/extensions/gsd/prompts/triage-captures.md"
-  ],
-  "commands/undo.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/undo.ts"
-  ],
   "commands/update.mdx": [
     "src/resources/extensions/gsd/commands.ts",
     "src/resources/extensions/gsd/state.ts",
     "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/visualize.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/visualizer-data.ts",
-    "src/resources/extensions/gsd/visualizer-overlay.ts",
-    "src/resources/extensions/gsd/visualizer-views.ts"
   ],
   "recipes/new-milestone.mdx": [
     "src/resources/extensions/gsd/commands.ts",
@@ -1096,93 +1028,6 @@
   ],
   "prompts/worktree-merge.mdx": [
     "src/resources/extensions/gsd/prompts/worktree-merge.md"
-  ],
-  "commands/fast.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/changelog.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/changelog.ts"
-  ],
-  "commands/dispatch.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/history.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts",
-    "src/resources/extensions/gsd/history.ts"
-  ],
-  "commands/init.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/inspect.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/park.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/pause.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/rate.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/remote.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/reset-slice.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/setup.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/start.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/templates.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/undo-task.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/unpark.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
-  ],
-  "commands/widget.mdx": [
-    "src/resources/extensions/gsd/commands.ts",
-    "src/resources/extensions/gsd/state.ts",
-    "src/resources/extensions/gsd/types.ts"
   ],
   "commands/mcp.mdx": [
     "src/resources/extensions/gsd/commands.ts",

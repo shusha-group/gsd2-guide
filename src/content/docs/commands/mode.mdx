@@ -79,9 +79,11 @@ By default, `/gsd mode` writes to the **global** preferences at `~/.gsd/preferen
 
 ### File Creation
 
-Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If the target preferences file doesn't exist, it is created from the built-in `templates/preferences.md` template before proceeding. You won't be dropped into the selector against a missing file.
+Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If the target preferences file doesn't exist, it is created from the built-in `PREFERENCES.md` template before proceeding. You won't be dropped into the selector against a missing file.
 
 ### Mode Comparison
+
+The table below reflects the actual runtime defaults applied by `applyModeDefaults` when a mode is set:
 
 | Setting | Solo | Team |
 |---------|------|------|
@@ -91,6 +93,8 @@ Before opening the mode selector, `/gsd mode` calls `ensurePreferencesFile`. If 
 | `git.merge_strategy` | `squash` | `squash` |
 | `git.isolation` | `none` — work on current branch | `none` — work on current branch |
 | `unique_milestone_ids` | `false` — simple `M001`, `M002` | `true` — `M001-eh88as`, `M002-k4m9xz` (prevents ID collisions) |
+
+> **Note:** The confirmation notification shown after selecting a mode displays `isolation=worktree` as a summary label. The actual runtime default for isolation is `none` in both modes, as shown in the table above. If you want worktree isolation, set `git.isolation: worktree` explicitly in your preferences.
 
 ### Unique Milestone IDs
 
@@ -152,6 +156,8 @@ Workflow mode:
 Mode: team — defaults: auto_push=false, push_branches=true,
   pre_merge_check=true, merge_strategy=squash, isolation=worktree,
   unique_milestone_ids=true
+
+Saved global preferences to /Users/you/.gsd/preferences.md
 ```
 
 Switching to project-level solo mode (overrides global team mode for this repo):
@@ -170,6 +176,8 @@ Workflow mode (current: team):
 Mode: solo — defaults: auto_push=true, push_branches=false,
   pre_merge_check=auto, merge_strategy=squash, isolation=worktree,
   unique_milestone_ids=false
+
+Saved project preferences to /your/project/.gsd/preferences.md
 ```
 
 Removing mode defaults entirely (configure each preference manually):

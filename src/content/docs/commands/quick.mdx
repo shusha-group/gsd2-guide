@@ -7,7 +7,9 @@ description: "Execute a one-off task with GSD guarantees — atomic commits, sta
 
 `/gsd quick` is the lightweight path for small, self-contained changes. Instead of creating a milestone, roadmap, and slices, it skips the entire planning hierarchy and dispatches a single task directly.
 
-You describe what you want in plain English, and GSD creates a numbered task directory, a dedicated git branch, and dispatches the task to the agent. When the agent finishes, GSD squash-merges the quick branch back into your original branch and deletes it — leaving a single clean commit. The full GSD guarantees — atomic commits, state tracking, task summaries — apply, just without the milestone ceremony.
+You describe what you want in plain English, and GSD creates a numbered task directory and dispatches the task to the agent. When the agent finishes, the work lands as a clean commit. The full GSD guarantees — atomic commits, state tracking, task summaries — apply, just without the milestone ceremony.
+
+By default, the task executes directly on your current branch (`isolation: none`). If you've opted into branch isolation (`isolation: branch` or `isolation: worktree` in preferences), GSD also creates a dedicated `gsd/quick/N-slug` branch and squash-merges it back to your original branch when done — leaving a single clean commit.
 
 Use `/gsd quick` when the change is small enough that planning overhead isn't worth it: fixing a bug, adding a config option, updating a dependency, writing a utility function.
 
@@ -27,39 +29,52 @@ Everything after `quick` is captured as the description. Surrounding quotes are 
 
 ## How It Works
 
-Quick mode bypasses the milestone/slice/task hierarchy entirely. No roadmap, no slice plan, no dispatch loop. It's a direct path from description to execution — including automated cleanup when the task is done.
+Quick mode bypasses the milestone/slice/task hierarchy entirely. No roadmap, no slice plan, no dispatch loop. It's a direct path from description to execution.
 
 ```mermaid
 flowchart TD
     Start(["/gsd quick '...'"]) --> Validate{.gsd/ exists?}
     Validate -->|No| Fail([Error: initialize a project first])
-    Validate -->|Yes| Slug[Generate slug from description]
+    Validate -->|Yes| Empty{Description empty?}
+    Empty -->|Yes| Usage([Show usage])
+    Empty -->|No| Slug[Generate slug from description]
     Slug --> Num[Determine next task number]
-    Num --> Branch[Create branch gsd/quick/N-slug]
-    Branch --> Persist[Persist quick-return.json]
-    Persist --> Dir[Create task dir .gsd/quick/N-slug/]
-    Dir --> Commit[Auto-commit any dirty state]
-    Commit --> Dispatch[Dispatch task to agent]
+    Num --> Dir[Create task dir .gsd/quick/N-slug/]
+    Dir --> IsoCheck{isolation != none?}
+    IsoCheck -->|No| Notify[Notify user]
+    IsoCheck -->|Yes| BranchCreate[Auto-commit dirty state]
+    BranchCreate --> Branch[Create branch gsd/quick/N-slug]
+    Branch -->|Success| Persist[Persist quick-return.json]
+    Branch -->|Failure| WarnBranch[Warn — continue on current branch]
+    Persist --> Notify
+    WarnBranch --> Notify
+    Notify --> Dispatch[Dispatch task to agent]
     Dispatch --> Execute[Agent executes task]
     Execute --> Summary[Write N-SUMMARY.md]
-    Summary --> StateUpdate[Update STATE.md quick tasks table]
-    StateUpdate --> Squash[Squash-merge back to original branch]
+    Summary --> CleanupCheck{quick-return.json exists?}
+    CleanupCheck -->|No| Done([Complete])
+    CleanupCheck -->|Yes| Squash[Squash-merge back to original branch]
     Squash --> Cleanup[Delete quick branch + clear runtime state]
-    Cleanup --> Done([Complete])
+    Cleanup --> Done
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Validate fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Empty fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style IsoCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CleanupCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Fail fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style Usage fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style WarnBranch fill:#3a1a1a,stroke:#ff6600,color:#e8e8e8
     style Slug fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Num fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Dir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style BranchCreate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Branch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Persist fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Dir fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Commit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Summary fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style StateUpdate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Squash fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Cleanup fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -70,9 +85,35 @@ flowchart TD
 1. **Validate `.gsd/`** — Checks that a GSD project exists. If not, prompts you to run `/gsd` to initialize a project first. Quick tasks still need the GSD project structure, even though they skip milestones.
 2. **Generate slug** — Converts your description into a URL-safe slug (e.g., `"fix the login button color"` → `fix-the-login-button-color`), truncated to 40 characters.
 3. **Determine task number** — Scans `.gsd/quick/` for existing numbered directories and increments the highest number found. Returns `1` if no quick tasks exist yet.
-4. **Create branch** — Creates a git branch named `gsd/quick/N-slug`. If your working tree has uncommitted changes, GSD auto-commits them first before switching. If branch creation fails for any reason, GSD continues on the current branch with a warning.
-5. **Persist return state** — Writes `.gsd/runtime/quick-return.json` recording the original branch, quick branch, task number, slug, and description. This survives session resets so cleanup can always run.
-6. **Create task directory** — Creates `.gsd/quick/N-slug/` to hold the task summary.
+4. **Create task directory** — Creates `.gsd/quick/N-slug/` to hold the task summary.
+5. **Check isolation mode** — Reads `git.isolation` from preferences. The default is `"none"` — no branch is created and work lands directly on the current branch. With `"branch"` or `"worktree"`, GSD creates a dedicated branch (see Branch Isolation below).
+
+### Branch Isolation (opt-in)
+
+Branch isolation is disabled by default. To enable it, set `git.isolation` in your `.gsd/preferences.md`:
+
+```yaml
+## Git
+- isolation: branch
+```
+
+When isolation is enabled (`branch` or `worktree`), GSD:
+
+1. Auto-commits any dirty working tree state before switching branches.
+2. Creates a git branch named `gsd/quick/N-slug`.
+3. Writes `.gsd/runtime/quick-return.json` recording the original branch, quick branch, task number, slug, and description. This file survives session resets so cleanup can always run.
+4. If branch creation fails for any reason, GSD continues on the current branch with a warning.
+
+After the agent finishes, GSD automatically cleans up the quick branch:
+
+1. **Auto-commit remaining changes** — Any uncommitted work on the quick branch is committed before cleanup.
+2. **Checkout original branch** — Switches back to the branch that was active when `/gsd quick` was invoked.
+3. **Squash-merge** — Runs `git merge --squash gsd/quick/N-slug`, staging all quick branch changes as a single set of modifications.
+4. **Squash commit** — Creates a single commit with the message `quick(Q<N>): <slug>` (e.g., `quick(Q3): fix-the-login-button-color`).
+5. **Delete quick branch** — Removes the `gsd/quick/N-slug` branch.
+6. **Clear runtime state** — Deletes `.gsd/runtime/quick-return.json`.
+
+If the working tree had no staged changes after the squash (e.g., nothing was actually done), the squash commit is skipped. Cleanup runs on every turn end and is a no-op when no quick-return state exists.
 
 ### Execution
 
@@ -84,22 +125,8 @@ The task is dispatched as a focused prompt containing the description, branch na
 - Handles error cases and edge cases
 - Commits changes atomically using conventional commit messages (`feat:`, `fix:`, `refactor:`, etc.)
 - Writes a structured summary to `.gsd/quick/N-slug/N-SUMMARY.md`
-- Adds a row to the "Quick Tasks Completed" table in `.gsd/STATE.md` and updates the "Last activity" line
 
 The agent finishes by saying `"Quick task N complete."` — no multi-unit dispatch, no research/plan/execute phases.
-
-### Branch Cleanup
-
-After the agent finishes, GSD automatically cleans up the quick branch:
-
-1. **Auto-commit remaining changes** — Any uncommitted work on the quick branch is committed before cleanup.
-2. **Checkout original branch** — Switches back to the branch that was active when `/gsd quick` was invoked.
-3. **Squash-merge** — Runs `git merge --squash gsd/quick/N-slug`, staging all quick branch changes as a single set of modifications.
-4. **Squash commit** — Creates a single commit with the message `quick(Q<N>): <slug>` (e.g., `quick(Q3): fix-the-login-button-color`).
-5. **Delete quick branch** — Removes the `gsd/quick/N-slug` branch.
-6. **Clear runtime state** — Deletes `.gsd/runtime/quick-return.json`.
-
-The result is one clean commit on your original branch, with no leftover quick branches. If the working tree had no staged changes after the squash (e.g., nothing was actually done), the squash commit is skipped.
 
 ### Summary Format
 
@@ -124,18 +151,6 @@ Each quick task produces a `N-SUMMARY.md` file in its task directory:
 - Visually verified in Storybook
 ```
 
-### STATE.md Tracking
-
-After completion, the agent updates `.gsd/STATE.md` to record the task in a "Quick Tasks Completed" table and updates the "Last activity" line:
-
-```
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 3 | fix the login button color | 2026-01-15 | a1b2c3d | [3-fix-the-login-button-color](./quick/3-fix-the-login-button-color/) |
-```
-
-If the section doesn't exist yet, the agent creates it after the "Blockers/Concerns" section.
-
 ## What Files It Touches
 
 ### Creates
@@ -144,15 +159,14 @@ If the section doesn't exist yet, the agent creates it after the "Blockers/Conce
 |------|---------|
 | `.gsd/quick/N-slug/` | Task directory |
 | `.gsd/quick/N-slug/N-SUMMARY.md` | Summary of what was done |
-| `.gsd/runtime/quick-return.json` | Persisted return state (original branch, quick branch, task info) for cleanup across session resets |
-| `gsd/quick/N-slug` branch | Git branch for the change (deleted after squash-merge) |
+| `.gsd/runtime/quick-return.json` | Persisted return state for branch cleanup — only created when `isolation` is `branch` or `worktree` |
+| `gsd/quick/N-slug` branch | Git branch for the change — only created when `isolation` is `branch` or `worktree`; deleted after squash-merge |
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
 | `.gsd/quick/` | Scanned to determine the next task number |
-| `.gsd/STATE.md` | Read before updating the quick tasks table |
 | `.gsd/runtime/quick-return.json` | Read during cleanup to determine squash target and original branch |
 
 ### Writes
@@ -160,20 +174,19 @@ If the section doesn't exist yet, the agent creates it after the "Blockers/Conce
 | File | Purpose |
 |------|---------|
 | `.gsd/quick/N-slug/N-SUMMARY.md` | Task summary written by agent |
-| `.gsd/STATE.md` | "Quick Tasks Completed" table row added; "Last activity" line updated |
 | `.gsd/runtime/quick-return.json` | Written on branch creation; deleted after squash-merge |
 | Application files | Whatever the task requires |
 
 ## Examples
 
-Adding a dark mode toggle:
+Adding a dark mode toggle (default isolation: none — no branch created):
 
 ```
 > /gsd quick add dark mode toggle to the settings page
 
 ● Quick task 3: add dark mode toggle to the settings page
   Directory: .gsd/quick/3-add-dark-mode-toggle-to-the-settings
-  Branch: gsd/quick/3-add-dark-mode-toggle-to-the-settings
+  Branch: main
 
   ... agent executes task ...
 
@@ -181,14 +194,11 @@ Adding a dark mode toggle:
   ✓ Wired into settings page
   ✓ Dark mode CSS variables added
   ✓ Summary written to .gsd/quick/3-add-dark-mode-toggle-to-the-settings/3-SUMMARY.md
-  ✓ STATE.md updated
 
 Quick task 3 complete.
 ```
 
-The quick branch is squash-merged back to your original branch with commit `quick(Q3): add-dark-mode-toggle-to-the-settings` and then deleted.
-
-Fixing a bug quickly:
+With branch isolation enabled (`git.isolation: branch`):
 
 ```
 > /gsd quick fix null pointer in user profile loader
@@ -202,6 +212,8 @@ Fixing a bug quickly:
 Quick task 4 complete.
 ```
 
+The quick branch is squash-merged back to your original branch with commit `quick(Q4): fix-null-pointer-in-user-profile-lo` and then deleted.
+
 Running without a description shows usage:
 
 ```
@@ -211,10 +223,6 @@ Running without a description shows usage:
 
   Example: /gsd quick fix login button not responding on mobile
 ```
-
-## Prompts Used
-
-- [`quick-task`](../../prompts/quick-task/) — Lightweight task execution prompt
 
 ## Related Commands
 

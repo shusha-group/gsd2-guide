@@ -5,10 +5,10 @@ description: "Runtime health checks across project, milestone, slice, and task s
 
 ## What It Does
 
-`/gsd doctor` scans your `.gsd/` directory for structural integrity issues — missing summaries, unchecked roadmap entries, stale locks, orphaned worktrees, corrupt git state, environment misconfigurations, missing API keys, database constraint violations, and more. It operates in four modes:
+`/gsd doctor` scans your `.gsd/` directory for structural integrity issues — missing directories, stale locks, orphaned worktrees, corrupt git state, environment misconfigurations, missing API keys, database constraint violations, and more. It operates in four modes:
 
 - **Doctor** (default) — Scans and reports issues. Read-only, changes nothing.
-- **Fix** — Scans and auto-repairs what it can. Creates placeholder summaries, marks tasks done, removes stale locks, cleans up git state.
+- **Fix** — Scans and auto-repairs what it can. Removes stale locks, creates missing directories, sanitizes delimiter characters, cleans up git state.
 - **Heal** — Scans, auto-repairs fixable issues, then dispatches remaining errors to the LLM for interactive investigation and resolution.
 - **Audit** — Full scan with all warnings included, up to 50 issues displayed, no fixes applied.
 
@@ -32,6 +32,7 @@ During auto-mode, a proactive healing layer runs lightweight checks before each 
 
 | Flag | Description |
 |------|-------------|
+| `--fix` | Enable fix mode without changing the default `doctor` subcommand (equivalent to `/gsd doctor fix`) |
 | `--build` | Run `npm run build` and report failures as `env_build` (slow, opt-in) |
 | `--test` | Run `npm test` and report failures as `env_test` (slow, opt-in) |
 | `--dry-run` | Show what fix mode would change without applying any changes |
@@ -56,7 +57,7 @@ flowchart TD
     Scan --> Env[Environment health<br/>Node version, deps, ports,<br/>disk space, tools]
     Scan --> Engine[Engine health<br/>DB constraint violations,<br/>projection drift]
     Scan --> Provider[Provider checks<br/>API keys, remote channel]
-    Scan --> Struct[Structural checks<br/>Plans, summaries, UATs,<br/>duplicate IDs, dependencies]
+    Scan --> Struct[Structural checks<br/>Plans, dependencies,<br/>duplicate IDs, timestamps]
 
     Git --> Collect[Collect all issues]
     Runtime --> Collect
@@ -117,9 +118,9 @@ The scanner runs seven independent check functions:
 - **`checkRuntimeHealth`** — Stale crash locks, stranded lock directories, stale parallel sessions, orphaned completed-unit keys, stale hook state, macOS numbered `.gsd` collision variants, activity log bloat, STATE.md drift, gitignore drift, failed migration artifacts, broken `.gsd` symlinks, metrics ledger integrity and bloat, large planning file detection, snapshot ref bloat.
 - **`checkGlobalHealth`** — Cross-project check that scans `~/.gsd/projects/` for orphaned project state directories whose git root no longer exists on disk.
 - **`checkEnvironmentHealth`** — Node version vs. `engines` requirement, `node_modules` staleness, missing `.env` files, port conflicts on common dev ports, disk space, Docker availability, package manager, TypeScript/Python/Rust/Go tool presence, and git remote reachability. The `--build` and `--test` flags add opt-in slow checks that run your build/test scripts.
-- **`checkEngineHealth`** — When the GSD database is available, runs DB constraint checks: orphaned tasks (task references a non-existent slice), orphaned slices (slice references a non-existent milestone), tasks marked done in the DB without summaries, and duplicate entity IDs. Also detects projection drift — when the event log is newer than rendered markdown files — and re-renders stale projections automatically.
+- **`checkEngineHealth`** — When the GSD database is available, runs DB constraint checks: orphaned tasks (task references a non-existent slice), orphaned slices (slice references a non-existent milestone), tasks marked done in the DB without summaries, and duplicate entity IDs. Also detects projection drift — when the event log is newer than rendered markdown files — and re-renders stale projections automatically as a fix rather than reporting an issue. Emits `db_unavailable` if the database file exists on disk but cannot be loaded.
 - **`runProviderChecks`** — When an active milestone exists, checks required LLM provider API keys (based on configured model preferences), remote questions channel token (Slack/Discord/Telegram), and optional tool integrations (Brave, Tavily, Jina, Context7). Fast — reads `auth.json` and env vars only, no network I/O.
-- **Inline structural checks** — Preference validation, requirement auditing, and all milestone/slice/task structural integrity checks (circular dependencies, orphaned directories, duplicate task IDs, missing plans, completion drift, must-have verification, future timestamps) run directly in `runGSDDoctor`.
+- **Inline structural checks** — Preference validation, requirement auditing, and all milestone/slice/task structural integrity checks (circular dependencies, orphaned directories, duplicate task IDs, missing plans, must-have verification, future timestamps) run directly in `runGSDDoctor`.
 
 Checks are independent — a failure in one domain doesn't prevent others from running.
 
@@ -127,11 +128,6 @@ Checks are independent — a failure in one domain doesn't prevent others from r
 
 When fix mode is enabled, fixable issues are repaired in place during the scan. Fixes include:
 
-- Creating placeholder summary stubs for missing slice summaries
-- Creating placeholder UAT stubs for missing slice UAT files
-- **Unchecking tasks** in plan files when done-checked tasks are missing summaries (forces re-execution — does *not* create a stub)
-- Marking tasks done in plan files when summaries exist but the checkbox is unchecked
-- Marking slices done in roadmaps when all tasks are complete
 - Creating missing `tasks/` or slice directories
 - Removing stale crash locks (`auto.lock`) where the owning process is dead
 - Removing stranded lock directories left by hard crashes
@@ -159,7 +155,7 @@ When fix mode is enabled, fixable issues are repaired in place during the scan. 
 
 - **`GLOBAL_STATE_CODES`** — `orphaned_project_state` and `orphaned_completed_units`. Removing completed-unit keys can revert project state, treating finished tasks as incomplete. Removing orphaned project state directories deletes external state. These are only fixed by explicit manual doctor runs (`/gsd doctor fix`).
 
-All other fixable codes are fixed immediately even at `fixLevel: "task"` — including roadmap checkbox updates (`all_tasks_done_roadmap_not_checked`) and UAT stubs (`all_tasks_done_missing_slice_uat`) — to keep bookkeeping consistent after each task.
+All other fixable codes are applied immediately even at `fixLevel: "task"` — including delimiter sanitization (`delimiter_in_title`), missing directory creation, lock cleanup, and runtime file cleanup — to keep the workspace in a clean state after each task.
 
 ### Heal Mode Dispatch
 
@@ -255,6 +251,7 @@ These checks only run when the GSD SQLite database is available (`gsd.db`).
 
 | Code | Severity | Description | Fixable |
 |------|----------|-------------|---------|
+| `db_unavailable` | warning | Database file exists on disk but cannot be loaded — GSD falls back to filesystem state derivation | No |
 | `db_orphaned_task` | error | Task in the database references a slice that no longer exists | No |
 | `db_orphaned_slice` | error | Slice in the database references a milestone that no longer exists | No |
 | `db_done_task_no_summary` | warning | Task is marked done in the database but has no summary stored | No |
@@ -281,11 +278,6 @@ These checks only run when the GSD SQLite database is available (`gsd.db`).
 | `missing_tasks_dir` | error/warning | Slice has a plan but no `tasks/` directory (error if incomplete, warning if complete) | Yes |
 | `duplicate_task_id` | error | A task ID appears more than once in a slice plan — causes dispatch failures | No |
 | `task_file_not_in_plan` | info | A task summary file on disk references a task ID not found in the slice plan | No |
-| `all_tasks_done_missing_slice_summary` | error | All tasks complete but slice summary missing | Yes |
-| `all_tasks_done_missing_slice_uat` | warning | All tasks complete but UAT script missing | Yes |
-| `all_tasks_done_roadmap_not_checked` | error | All tasks done but slice not checked off in roadmap | Yes |
-| `slice_checked_missing_summary` | error | Slice is checked done in roadmap but has no summary | Yes |
-| `slice_checked_missing_uat` | warning | Slice is checked done but has no UAT | Yes |
 | `blocker_discovered_no_replan` | warning | A task summary has `blocker_discovered: true` but no `REPLAN.md` exists for the slice | No |
 | `stale_replan_file` | info | A `REPLAN.md` exists for a slice where all tasks are done — file may be stale | No |
 
@@ -293,8 +285,6 @@ These checks only run when the GSD SQLite database is available (`gsd.db`).
 
 | Code | Severity | Description | Fixable |
 |------|----------|-------------|---------|
-| `task_done_missing_summary` | error | Task is marked done but has no summary file — checkbox is unchecked to force re-execution | Yes |
-| `task_summary_without_done_checkbox` | warning | Summary exists but task not checked in plan | Yes |
 | `task_done_must_haves_not_verified` | warning | Task done but must-haves from task plan not mentioned in summary | No |
 | `future_timestamp` | warning | Task summary has a `completed_at` more than 24h in the future | No |
 
@@ -326,10 +316,7 @@ These checks only run when the GSD SQLite database is available (`gsd.db`).
 
 | File | Purpose |
 |------|---------|
-| `.gsd/milestones/*/slices/*/S*-SUMMARY.md` | Placeholder summary stubs |
-| `.gsd/milestones/*/slices/*/S*-UAT.md` | Placeholder UAT stubs |
-| `.gsd/milestones/*/slices/*/S*-PLAN.md` | Task checkbox updates (check done, or uncheck to force re-run) |
-| `.gsd/milestones/*/M*-ROADMAP.md` | Slice checkbox updates; sanitized delimiter characters; re-rendered projections |
+| `.gsd/milestones/*/M*-ROADMAP.md` | Sanitized delimiter characters in milestone titles; re-rendered projections |
 | `.gsd/milestones/*/slices/*/tasks/` | Created when `tasks/` directory is missing |
 | `.gsd/milestones/*/slices/*/` | Created when slice directory is missing |
 | `.gsd/STATE.md` | Regenerated from disk state |
@@ -353,13 +340,13 @@ GSD doctor report.
 Scope: M002/S03
 Issues: 3 total · 1 error(s) · 2 warning(s) · 2 fixable
 Top issue types:
-- task_summary_without_done_checkbox: 1
-- all_tasks_done_missing_slice_uat: 1
+- task_done_must_haves_not_verified: 1
+- worktree_stale: 1
 - stale_crash_lock: 1
 Priority issues:
 - [ERROR] M002/S03: stale auto.lock — PID 48221 is dead
-- [WARN] M002/S03/T02: summary exists but task not checked in plan
-- [WARN] M002/S03: all tasks done but UAT missing
+- [WARN] M002/S03/T02: Task T02 has 2 must-haves but summary addresses only 1
+- [WARN] M002/S03: stale worktree has had no commits in 8 days
 ```
 
 Auto-fixing:
@@ -369,10 +356,9 @@ Auto-fixing:
 
 GSD doctor report.
 Scope: M002/S03
-Issues: 3 total · 1 error(s) · 2 warning(s) · 2 fixable
+Issues: 2 total · 1 error(s) · 1 warning(s) · 1 fixable
 Fixes applied:
 - cleared stale auto.lock
-- marked T02 done in .gsd/milestones/M002/slices/S03/S03-PLAN.md
 ```
 
 Previewing fixes without applying them:
@@ -383,8 +369,8 @@ Previewing fixes without applying them:
 GSD doctor report.
 Scope: M002/S03
 Fixes applied:
-- [dry-run] would fix: uncheck T04 in plan for M002/S03/T04
-- [dry-run] would fix: create placeholder UAT for M002/S03
+- [dry-run] would fix: sanitized delimiter characters in M002 title
+- [dry-run] would fix: created .gsd/milestones/M002/slices/S03/tasks/
 ```
 
 Heal mode dispatching to LLM:
@@ -397,8 +383,8 @@ Scope: M002/S03
 Issues: 1 total · 1 error(s) · 0 warning(s) · 0 fixable
 Doctor heal dispatched 1 issue(s) to the LLM.
 
-● Investigating: all_tasks_done_missing_slice_uat for M002/S03...
-  Reading task summaries to build UAT script...
+● Investigating: db_orphaned_task for M002/S03/T04...
+  Checking database state via gsd_milestone_status...
 ```
 
 Full audit across all scopes:

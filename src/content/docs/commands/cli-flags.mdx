@@ -40,7 +40,6 @@ gsd <subcommand> --help
 | `--tools <a,b,c>` | | Restrict available tools to a comma-separated list. |
 | `--list-models [search]` | | List available models and exit. Optionally filter by a search term. |
 | `--web [path]` | | Launch browser-only web mode. Optionally specify a project path. Equivalent to `gsd web [path]`. |
-| `--debug` | | Enable structured JSONL diagnostic logging for troubleshooting dispatch and state issues. |
 | `--version` | `-v` | Print the installed GSD version and exit. |
 | `--help` | `-h` | Print help text and exit. |
 
@@ -51,6 +50,10 @@ gsd <subcommand> --help
 | [`gsd config`](../config/) | Re-run the interactive setup wizard to configure LLM providers, API keys, and tool integrations. |
 | `gsd update` | Update GSD to the latest version via npm (`npm install -g gsd-pi@latest`). |
 | `gsd sessions` | Interactive session picker — list up to 20 saved sessions for the current directory and choose one to resume. |
+| `gsd auto [args]` | Shorthand for `gsd headless auto [args...]`. Runs auto-mode without a TUI — pipeable, CI-friendly. |
+| `gsd install <source>` | Install a package or extension source and run post-install validation. |
+| `gsd remove <source>` | Remove an installed package source and its settings entry. |
+| `gsd list` | List installed package sources from user and project settings. |
 | `gsd worktree <cmd>` | Manage isolated git worktrees for parallel work streams. Alias: `gsd wt`. |
 | [`gsd headless`](../headless/) | Run `/gsd` commands without a TUI — for CI, cron jobs, and scripted automation. |
 | `gsd web [start\|stop] [path]` | Start or stop browser-only web mode. Omitting the action defaults to `start`. |
@@ -92,11 +95,14 @@ Headless flags:
 
 | Flag | Description |
 |------|-------------|
-| `--timeout <ms>` | Overall timeout in milliseconds (default: 300000). For `new-milestone`, the timeout is automatically extended to 600000ms (10 minutes) if the default is used. |
-| `--json` | Emit a JSONL event stream to stdout |
+| `--timeout <ms>` | Overall timeout in milliseconds (default: 300000). For `new-milestone`, the idle timeout is automatically extended to allow for longer pauses between tool calls. |
+| `--output-format <fmt>` | Output format: `text` (human-readable, default), `json` (structured result on stdout at exit), `stream-json` (JSONL events streamed in real time). |
+| `--json` | Alias for `--output-format stream-json` — emit a JSONL event stream to stdout. |
+| `--bare` | Minimal context mode: skip CLAUDE.md, AGENTS.md, user settings, and user skills. Useful for CI or ecosystem tooling. |
+| `--resume <id>` | Resume a prior headless session by ID or ID prefix. |
 | `--model <id>` | Override model for this headless session |
 | `--max-restarts <n>` | Number of times to restart on crash before giving up (default: 3). Set to `0` to disable restarts. |
-| `--supervised` | Forward interactive UI requests to an orchestrator via stdout/stdin |
+| `--supervised` | Forward interactive UI requests to an orchestrator via stdout/stdin. Implies `--json`. |
 | `--response-timeout <ms>` | Timeout for orchestrator response in supervised mode (default: 30000) |
 | `--answers <path>` | Pre-supply answers and secrets from a JSON file — useful for unattended CI runs |
 | `--events <types>` | Filter JSONL output to specific event types (comma-separated). Implies `--json`. |
@@ -110,7 +116,27 @@ Headless flags:
 | `--auto` | Start auto-mode automatically after milestone creation |
 | `--verbose` | Show tool calls in progress output |
 
-Exit codes for `gsd headless`: `0` = complete, `1` = error or timeout, `2` = blocked.
+Exit codes for `gsd headless`:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Complete — command finished successfully |
+| `1` | Error or timeout |
+| `10` | Blocked — command reported a blocker |
+| `11` | Cancelled — SIGINT or SIGTERM received |
+
+### `gsd install` Sources
+
+`gsd install` accepts several source formats:
+
+```bash
+gsd install npm:@foo/bar          # npm package
+gsd install git:github.com/user/repo  # git repository
+gsd install https://github.com/user/repo  # HTTPS URL
+gsd install ./local/path          # local path
+```
+
+Use `-l` / `--local` to install into project settings instead of user settings.
 
 ## What Files It Touches
 
@@ -228,8 +254,23 @@ Run headless auto-mode (no TUI, exits when done):
 
 ```bash
 gsd headless
-gsd headless --json          # machine-readable output
+# shorthand:
+gsd auto
+gsd headless --json          # machine-readable JSONL stream
+gsd headless --output-format json auto  # structured result on stdout at exit
 gsd headless --timeout 60000 # 1-minute timeout
+```
+
+Run headless with minimal context (CI-safe):
+
+```bash
+gsd headless --bare auto
+```
+
+Resume a prior headless session:
+
+```bash
+gsd headless --resume abc123 auto
 ```
 
 Create a milestone from a spec file, then auto-execute:
@@ -273,6 +314,13 @@ Instant state snapshot (no LLM call):
 
 ```bash
 gsd headless query
+```
+
+Install an extension:
+
+```bash
+gsd install npm:@foo/my-extension
+gsd install ./local/extension
 ```
 
 Re-run setup wizard:

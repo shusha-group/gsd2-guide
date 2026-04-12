@@ -1,6 +1,6 @@
 ---
 title: "/gsd next"
-description: "Execute one unit in step mode — identical to bare /gsd, with a --dry-run flag to preview the next unit without executing it."
+description: "Execute one unit in step mode — identical to bare /gsd, with milestone targeting and a --dry-run flag to preview the next unit without executing it."
 ---
 
 ## What It Does
@@ -9,18 +9,22 @@ description: "Execute one unit in step mode — identical to bare /gsd, with a -
 
 The key addition over bare `/gsd` is the `--dry-run` flag, which previews what would be dispatched next — unit type, ID, milestone, phase, estimated cost, estimated duration, budget remaining, and overall progress — without executing anything. Useful when you want to see what's coming before committing, or after making manual edits to plan files.
 
+You can also target a specific milestone by passing its ID (`/gsd next M003`). This locks dispatch to that milestone and ignores others, which is useful when multiple milestones are active or queued.
+
 ## Usage
 
 ```
 /gsd next
 /gsd next --dry-run
+/gsd next <MID>
 /gsd next --verbose
 /gsd next --debug
 ```
 
-| Flag | Effect |
-|------|--------|
+| Flag / Argument | Effect |
+|----------------|--------|
 | `--dry-run` | Show what the next unit would be without executing it |
+| `<MID>` | Target a specific milestone (e.g. `M003`) — locks dispatch to that milestone |
 | `--verbose` | Increase logging detail during dispatch and execution |
 | `--debug` | Enable debug-level tracing and write a debug log to `.gsd/` |
 
@@ -34,8 +38,12 @@ The `--dry-run` branch is the distinguishing feature. Instead of dispatching a u
 flowchart TD
     Start(["/gsd next"]) --> DryRun{"--dry-run flag?"}
     DryRun -->|Yes| DeriveState["Derive project state\n(deriveState)"]
-    DryRun -->|No| StepMode["Enter step mode\n(startAuto step:true)"]
+    DryRun -->|No| MilestoneLock{"Milestone ID\nspecified?"}
+    MilestoneLock -->|Yes| ValidateMid["Validate milestone exists"]
+    MilestoneLock -->|No| StepMode["Enter step mode\n(startAuto step:true)"]
+    ValidateMid --> StepModeLocked["Enter step mode\nwith milestone lock"]
     StepMode --> Execute["Execute one unit"]
+    StepModeLocked --> Execute
     Execute --> Wizard{"Step wizard"}
     Wizard -->|Continue| Execute
     Wizard -->|Stop| Done(["Session ended"])
@@ -50,11 +58,14 @@ flowchart TD
     style DryRun fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Wizard fill:#0d180d,stroke:#39ff14,color:#39ff14
     style NoMilestone fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style MilestoneLock fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DeriveState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ValidateMid fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style MapPhase fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style LoadMetrics fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Preview fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style StepMode fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style StepModeLocked fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Execute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Exit fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -65,8 +76,8 @@ flowchart TD
 
 When `--dry-run` is active, GSD:
 
-1. **Derives project state** — Calls `deriveState()`, which reads all roadmap and plan files under `.gsd/` to determine the active milestone, active slice, active task, and current phase.
-2. **Checks for an active milestone** — If there's no active milestone (e.g. all milestones are complete and the registry is empty), it exits with "nothing to dispatch." Note: when phase is `complete`, `activeMilestone` is still set to the last milestone entry, so the dry-run does proceed — it will display `nextType: complete`.
+1. **Derives project state** — Calls `deriveState()`, which reads the SQLite database (with filesystem fallback) to determine the active milestone, active slice, active task, and current phase.
+2. **Checks for an active milestone** — If there's no active milestone (e.g. all milestones are complete and none is queued), it exits with "nothing to dispatch."
 3. **Maps phase to unit type** — Uses a direct phase-to-unit-type mapping (not the full dispatch loop):
 
 | Phase | Unit type dispatched | Notes |
@@ -76,15 +87,14 @@ When `--dry-run` is active, GSD:
 | `executing` | `execute-task` | Requires both `activeSlice` and `activeTask` |
 | `summarizing` | `complete-slice` | Requires `activeSlice` to be set |
 | `completing-milestone` | `complete-milestone` | |
-| `validating-milestone` | `validating-milestone` | Falls through to verbatim |
-| `replanning-slice` | `replanning-slice` | Falls through to verbatim |
-| `needs-discussion` | `needs-discussion` | Falls through to verbatim |
-| `blocked` | `blocked` | Falls through to verbatim |
-| `discussing`, `researching`, `verifying`, `advancing`, `complete` | phase name verbatim | Falls through to verbatim |
-| any other phase | phase name verbatim | Catch-all for unknown phases |
+| Any other phase | phase name verbatim | Includes `needs-discussion`, `discussing`, `researching`, `evaluating-gates`, `verifying`, `advancing`, `validating-milestone`, `replanning-slice`, `complete`, `paused`, `blocked` |
 
 4. **Loads historical metrics** — Reads the in-memory metrics ledger (or falls back to the ledger on disk at `.gsd/metrics.json`) to calculate average cost and duration for units of the same type. Loads preferences to check the budget ceiling.
 5. **Shows preview** — Displays the unit type, ID, milestone, phase, estimated cost and duration (computed as averages over historical units of the same type), total spent, budget remaining, and task/slice progress.
+
+### Milestone targeting (no --dry-run)
+
+When a milestone ID is passed (`/gsd next M003`), GSD first validates that the milestone exists. If not, it reports the available IDs and stops. If valid, dispatch is locked to that milestone — `deriveState()` only considers the targeted milestone's work, ignoring others in the queue.
 
 ### Step mode (no --dry-run)
 
@@ -98,9 +108,9 @@ Read-only. Writes nothing.
 
 | File | Purpose |
 |------|---------|
-| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Read to derive active milestone and phase |
-| `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Read to derive active slice and task |
-| `.gsd/milestones/<MID>/slices/<SID>/<SID>-SUMMARY.md` | Read to determine slice completion |
+| `.gsd/<project-hash>/gsd.db` | Primary source for milestone, slice, and task state (DB-backed) |
+| `.gsd/milestones/<MID>/<MID>-ROADMAP.md` | Filesystem fallback — read to derive active milestone and phase |
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-PLAN.md` | Filesystem fallback — read to derive active slice and task |
 | `.gsd/metrics.json` | Read for historical unit cost and duration averages |
 | `.gsd/preferences.md` | Read for budget ceiling (`budget_ceiling`) |
 
@@ -158,6 +168,25 @@ Running the next unit:
   ❯ Continue to next unit (T04: Recipe search)
     Check status
     Stop
+```
+
+Targeting a specific milestone:
+
+```
+> /gsd next M003
+
+● Dispatching unit: plan-slice M003/S01
+  ─────────────────────────────────
+
+  ... agent plans S01 for milestone M003 ...
+```
+
+When the milestone ID doesn't exist:
+
+```
+> /gsd next M099
+
+● Milestone M099 does not exist. Available: M001, M003
 ```
 
 When there's nothing to dispatch:

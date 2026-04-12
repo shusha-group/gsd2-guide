@@ -5,9 +5,9 @@ description: "Open a real-time TUI dashboard showing auto-mode state, milestone 
 
 ## What It Does
 
-`/gsd status` opens a TUI dashboard overlay that shows the current state of your project at a glance — what auto-mode is doing right now, milestone and slice progress, task breakdown for the active slice, completed units, cost metrics, and environment health. The dashboard refreshes every 2 seconds.
+`/gsd status` opens a TUI dashboard overlay that shows the current state of your project at a glance — what auto-mode is doing right now, milestone and slice progress, task breakdown for the active slice, cost metrics, and environment health. The dashboard refreshes every 2 seconds.
 
-The dashboard is read-only. It doesn't modify any files or interrupt a running auto-mode session. You can open it while auto-mode is running to monitor progress without disrupting execution. When no session is active, it still shows project state (phase, milestone, slice, tasks remaining) derived from the planning files on disk.
+The dashboard is read-only. It doesn't modify any files or interrupt a running auto-mode session. You can open it while auto-mode is running to monitor progress without disrupting execution. When no session is active, it still shows project state (phase, milestone, slice, tasks remaining) derived from the planning database and files on disk.
 
 If the TUI is unavailable (e.g. non-interactive terminal), a plain-text summary is printed instead, showing phase, active milestone/slice/task, progress counts, and milestone registry.
 
@@ -21,16 +21,17 @@ Also available via keyboard shortcut: **Ctrl+Alt+G** (toggles the dashboard over
 
 ## How It Works
 
-The dashboard derives state from planning files on disk and overlays real-time data from the running auto-mode session.
+The dashboard opens the planning database, derives project state, then overlays real-time data from the running auto-mode session.
 
 ```mermaid
 flowchart TD
-    Start(["/gsd status or Ctrl+Alt+G"]) --> CheckMilestones{Milestones found?}
-    CheckMilestones -- No --> Notify[Show 'no milestones' message]
+    Start(["/gsd status or Ctrl+Alt+G"]) --> EnsureDb[ensureDbOpen — open gsd.db]
+    EnsureDb --> DeriveState[deriveState — DB-primary, filesystem fallback]
+    DeriveState --> CheckMilestones{Milestones found?}
+    CheckMilestones -- No --> Notify([Show 'no milestones' message])
     CheckMilestones -- Yes --> OpenOverlay[Open TUI overlay]
     OpenOverlay --> FetchLive[Fetch auto-mode dashboard data]
-    FetchLive --> DeriveState[deriveState — read roadmap + plan files]
-    DeriveState --> LoadMetrics[Load metrics ledger]
+    FetchLive --> LoadMetrics[Load metrics ledger]
     LoadMetrics --> Render[Render dashboard]
     Render --> Wait[Wait 2s]
     Wait --> FetchLive
@@ -38,12 +39,13 @@ flowchart TD
     Dismiss([Escape / Ctrl+Alt+G / Ctrl+C]) --> Close[Close overlay]
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Notify fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Dismiss fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style EnsureDb fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DeriveState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style CheckMilestones fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style OpenOverlay fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style FetchLive fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style DeriveState fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style LoadMetrics fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Render fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Wait fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -54,8 +56,10 @@ flowchart TD
 
 The dashboard builds its view from two data sources:
 
-1. **Planning files** — `deriveState()` reads roadmap and plan files directly from disk to determine current phase, active milestone, active slice, and task completion state. This is the same source-of-truth traversal the dispatch engine uses. Results are memoized for 100ms so repeated calls within a single refresh cycle don't re-read the entire `.gsd/` tree. When the native Rust batch parser is available, all `.md` files under `.gsd/` are read in a single pass and served from an in-memory cache.
-2. **Live session data** — `getAutoDashboardData()` returns in-memory state from the running auto-mode session: what unit is executing right now, how long it's been running, which units completed this session, and whether the session is active, paused, or idle.
+1. **Database (primary)** — `deriveState()` queries the `gsd.db` SQLite database for milestone, slice, and task state. Before calling `deriveState()`, the command explicitly opens the database so cold sessions use DB-backed state rather than the filesystem fallback. Results are memoized for 100ms so repeated calls within a single refresh cycle don't hit the database multiple times.
+2. **Planning files (fallback)** — When the database is unavailable or empty (e.g. unmigrated projects or first run), `deriveState()` reads roadmap and plan files directly from disk to determine current phase, active milestone, active slice, and task completion state. When the native Rust batch parser is available, all `.md` files under `.gsd/` are read in a single pass and served from an in-memory cache.
+
+For live session data, `getAutoDashboardData()` returns in-memory state from the running auto-mode session: what unit is executing right now, how long it's been running, pending capture count, and whether the session is active, paused, or idle. When another auto-mode session is detected via `auto.lock`, the dashboard shows that remote session's PID and current unit instead.
 
 For cost and token metrics, the dashboard reads the metrics ledger (in-memory, populated by the running session) and aggregates it by phase, slice, and model.
 
@@ -85,6 +89,7 @@ The dashboard header reflects the current phase derived from disk:
 | `discussing` | Active discussion in progress for a milestone or slice |
 | `researching` | Research phase running before planning |
 | `planning` | Active slice has no plan file, or plan exists but has no tasks |
+| `evaluating-gates` | Quality gates are being evaluated in parallel during slice planning |
 | `executing` | Tasks are being executed |
 | `verifying` | Post-task verification gate running |
 | `summarizing` | All tasks done but slice not yet marked complete |
@@ -100,15 +105,14 @@ The dashboard header reflects the current phase derived from disk:
 
 The overlay renders at 70% of terminal width (minimum 60 columns, maximum 90% of terminal height), anchored to the center. Content wider than 128 columns is capped and centered. It contains these sections:
 
-- **Header** — "GSD Dashboard" title, blinking `● AUTO` / `⏸ PAUSED` / `idle` status indicator, elapsed time, and ETA if estimable. Shows the active worktree name when running inside a worktree.
+- **Header** — "GSD Dashboard" title, blinking `● AUTO` / `⏸ PAUSED` / `idle` status indicator, elapsed time, and ETA if estimable. Shows the active worktree name when running inside a worktree. When a remote auto-mode session is detected, shows the remote session's PID and started-at time instead of the local elapsed timer.
 - **Progress score** — Visible when auto-mode is active or paused. A traffic-light `●` (green / yellow / red) with a one-line summary. When degraded, individual signal lines are shown below the summary.
-- **Current unit** — What's actively running (unit type and ID), how long it's been executing. Shows "No unit running · /gsd auto to start" when idle, or "/gsd auto to resume" when paused.
+- **Current unit** — What's actively running (unit type and ID), how long it's been executing. Shows "No unit running · /gsd auto to start" when idle, "/gsd auto to resume" when paused, or the remote session's current unit type and ID when another session is active.
 - **Parallel workers** — Visible only when subagent workers are active. Shows batch ID, worker agent, task preview, and elapsed time per worker.
 - **Pending captures badge** — Shown when there are pending captures awaiting triage.
 - **Milestone progress** — Active milestone ID and title, followed by filled progress bars for Tasks (active slice), Slices (current milestone), and Milestones (overall).
 - **Slice breakdown** — Every slice with status icon (✓ done / ▸ active / ○ pending) and risk level. For the active slice, each task is listed with its own status icon.
-- **Completed units** — Last 10 units from this session in reverse order with duration. Units that triggered context-pressure wrap-up are flagged with `→ wrap-up`; truncated units show a section count indicator (`▼N`).
-- **Cost & Usage** — Total cost (or request count for subscription users), tokens, tool calls, and unit count. Token breakdown by input / output / cache-read / cache-write. Budget aggregate line (truncation sections and continue-here count) when applicable. Cost broken down by phase and by slice. Per-slice cost projection for remaining work (if budget ceiling is configured). Cost broken down by model with context window size. Average cost and token count per unit. Cache hit rate when non-zero.
+- **Cost & Usage** — Total cost (or request count for subscription users), tokens, tool calls, and unit count. Token breakdown by input / output / cache-read / cache-write. Budget aggregate line (truncation sections and continue-here count) when applicable. Cost broken down by phase and by slice. Per-slice cost projection for remaining work (if budget ceiling is configured). Cost broken down by model with context window size. Average cost and token count per unit. Cache hit rate when non-zero. RTK token savings when RTK is enabled and has accumulated data.
 - **Environment** — Shown only when environment checks report issues. Lists errors (✗) and warnings (⚠) with detail lines.
 
 ### Keyboard navigation
@@ -123,7 +127,7 @@ The overlay renders at 70% of terminal width (minimum 60 columns, maximum 90% of
 
 ### Live refresh
 
-The dashboard polls every 2 seconds. If auto-mode completes a unit while the dashboard is open, you'll see it move to the Completed section within a couple of seconds. The refresh is skipped if a previous refresh is still in flight, preventing pile-up on slow disks. Terminal resize events also trigger an immediate re-render.
+The dashboard polls every 2 seconds. If auto-mode completes a unit while the dashboard is open, you'll see the milestone and task progress update within a couple of seconds. The refresh is skipped if a previous refresh is still in flight, preventing pile-up on slow disks. Terminal resize events also trigger an immediate re-render.
 
 ### Overlay behavior
 
@@ -137,16 +141,16 @@ Entirely read-only — the dashboard never writes to any file.
 
 | File | Purpose |
 |------|---------|
+| `.gsd/gsd.db` | Primary source for milestone, slice, and task state (SQLite database) |
 | `.gsd/CAPTURES.md` | Pending capture count for the captures badge |
 | `.gsd/parallel/<MID>.status.json` | Per-worker status for the parallel workers panel |
-| `M*/<MID>-ROADMAP.md` | Slice structure, ordering, and completion state |
+| `M*/<MID>-ROADMAP.md` | Slice structure, ordering, and completion state (filesystem fallback) |
 | `M*/<MID>-CONTEXT.md` | Milestone title and `depends_on` dependency declarations |
 | `M*/<MID>-CONTEXT-DRAFT.md` | Draft milestone detection (triggers `needs-discussion` phase) |
 | `M*/<MID>-VALIDATION.md` | Milestone validation state (determines `validating-milestone` vs `completing-milestone`) |
 | `M*/<MID>-PARKED` | Sentinel file — milestone excluded from active selection when present |
 | `M*/<MID>-SUMMARY.md` | Terminal completion artifact — milestone is complete when this exists |
-| `M*/S*/<SID>-PLAN.md` | Task breakdown within the active slice |
-| `M*/S*/T*/<TID>-SUMMARY.md` | Completed task summaries (for blocker detection) |
+| `M*/S*/<SID>-PLAN.md` | Task breakdown within the active slice (filesystem fallback) |
 | Metrics ledger (in-memory) | Token counts, costs, and unit timing from the running session |
 
 ## Examples
@@ -176,13 +180,6 @@ Checking progress during an active auto-mode run:
   │      ○ T03: Delete endpoint                              │
   │  ○ S03: Recipe search and filtering        low            │
   │  ○ S04: Image upload pipeline              high           │
-  │                                                           │
-  │  ──────────────────────────────────────────────────────  │
-  │  Completed                                               │
-  │                                                           │
-  │  ✓ Execute T01                                    14m     │
-  │  ✓ Plan S02                                        3m     │
-  │  ✓ Complete S01                                    2m     │
   │                                                           │
   │  ──────────────────────────────────────────────────────  │
   │  Cost & Usage                                            │

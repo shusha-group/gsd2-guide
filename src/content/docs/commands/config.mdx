@@ -1,19 +1,25 @@
 ---
 title: "/gsd config"
-description: "Re-run the provider setup wizard — configure your LLM provider and tool API keys in one interactive flow."
+description: "Configure API keys for external tools — search, docs, page extraction, and voice."
 ---
 
 ## What It Does
 
-`/gsd config` re-runs the onboarding wizard that GSD shows on first launch. It covers two things in one flow: LLM provider authentication (OAuth browser sign-in or API key) and tool API keys for search and documentation.
+`/gsd config` manages API keys for the external tools GSD uses during agent runs. It shows the current status of every configured tool key, then presents a select menu so you can paste new keys one at a time. The loop continues until you select "(done)" or press Escape.
 
-On the LLM side, you can sign in with your browser for providers that support OAuth (Anthropic, GitHub Copilot) or paste an API key for any other provider (OpenAI, OpenRouter, Groq, xAI, Mistral, and others). On the tool side, you can configure Tavily Search, Brave Search, and Context7 Docs — the three keys GSD uses for web search and library documentation with non-Anthropic models.
+Five tool integrations are configurable through this command:
 
-All credentials are saved to `~/.gsd/agent/auth.json` — a global file in your home directory, never inside a project, never committed to git. On every session start, GSD reads this file and loads stored keys into the process environment automatically. If a key is already set in your environment via other means (shell export, `.env` file), that value takes precedence.
+| Tool | Purpose |
+|------|---------|
+| Tavily Search | Web search for non-Anthropic models |
+| Brave Search | Web search alternative for non-Anthropic models |
+| Context7 Docs | Library and framework documentation lookup |
+| Jina Page Extract | Web page content extraction |
+| Groq Voice | Voice-mode audio processing |
 
-After saving, GSD waits for the current operation to idle, then reloads extensions so new credentials are active immediately — no restart needed.
+All keys are written to `~/.gsd/agent/auth.json` — a global file in your home directory, never inside a project, never committed to git. On every session start, GSD reads this file and loads stored keys into the process environment automatically. If a key is already set in your environment via other means (shell export, `.env` file), that value takes precedence and is not overwritten.
 
-`/gsd config` is the guided wizard for initial setup. For full key management — listing all configured providers, removing keys, testing live validity, rotating credentials, or managing remote integrations (Discord, Slack, Telegram) — use [`/gsd keys`](../keys/) instead. For workflow preferences (model selection, timeouts, git configuration), use [`/gsd prefs`](../prefs/).
+`/gsd config` is scoped to tool integrations only. For LLM provider authentication (Anthropic, OpenAI, OpenRouter, and others), use [`/gsd setup`](../setup/) or [`/gsd keys`](../keys/).
 
 ## Usage
 
@@ -28,80 +34,51 @@ No arguments — the wizard is fully interactive.
 ```mermaid
 flowchart TD
     Start(["/gsd config"]) --> LoadAuth[Load auth.json]
-    LoadAuth --> TopChoice{What to configure?}
-    TopChoice -->|Sign in with browser| OAuthPick[Pick OAuth provider\nAnthropic · GitHub Copilot]
-    TopChoice -->|Paste an API key| KeyPick[Pick provider\nOpenAI · OpenRouter · Groq · xAI · Mistral · ...]
-    TopChoice -->|Tool API keys| ToolLoop{Select tool}
-    OAuthPick --> OAuthFlow[Open browser → OAuth callback]
-    OAuthFlow --> SaveOAuth[Save OAuth token to auth.json]
-    SaveOAuth --> Reload[Wait for idle → reload extensions]
-    KeyPick --> KeyInput[Prompt for API key]
-    KeyInput --> SaveKey[Save to auth.json + set env var]
-    SaveKey --> Reload
-    ToolLoop -->|tool selected| ToolInput[Prompt for API key]
-    ToolInput --> SaveTool[Save to auth.json + set env var]
-    SaveTool --> ToolLoop
-    ToolLoop -->|done / escape| Changed{Any changes?}
-    Changed -->|yes| Reload
-    Changed -->|no| End([Done])
-    Reload --> Confirm[Show confirmation]
-    Confirm --> End
+    LoadAuth --> ShowStatus[Show ✓/✗ status for each tool key]
+    ShowStatus --> Menu{Select tool to configure}
+    Menu -->|tool selected| Prompt[Prompt for API key]
+    Prompt --> Save[Save to auth.json + set env var immediately]
+    Save --> Notify[Notify: key saved and activated]
+    Notify --> Menu
+    Menu -->|done / escape| Changed{Any changes?}
+    Changed -->|yes| Idle[Wait for idle → reload extensions]
+    Idle --> Confirm[Notify: configuration saved]
+    Confirm --> End([Done])
+    Changed -->|no| End
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style TopChoice fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style ToolLoop fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style Menu fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Changed fill:#0d180d,stroke:#39ff14,color:#39ff14
     style End fill:#0d180d,stroke:#39ff14,color:#39ff14
     style LoadAuth fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style OAuthPick fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style KeyPick fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style OAuthFlow fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SaveOAuth fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style KeyInput fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SaveKey fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style ToolInput fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SaveTool fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Reload fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style ShowStatus fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Prompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Save fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Notify fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Idle fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Confirm fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
 ### Wizard Flow
 
-1. **Load auth.json** — Reads `~/.gsd/agent/auth.json` (creating it and its parent directory if missing) to determine what is already configured.
-2. **Top-level choice** — Presents three paths: sign in with your browser, paste an API key, or configure tool API keys.
-3. **Browser sign-in (OAuth)** — For Anthropic (Claude) and GitHub Copilot, opens a browser window for the full OAuth flow and saves the resulting token to `auth.json`.
-4. **Paste an API key** — For all other providers (OpenAI, OpenRouter, Groq, xAI, Mistral, and more), prompts for the key and saves it to `auth.json`.
-5. **Tool API keys loop** — Presents the three tool keys as a select menu showing ✓ (configured) or ✗ (not set). Choose a tool to paste its key, or press Escape / select "(done)" to exit the loop.
-6. **Save and activate** — Each key is written to `auth.json` and immediately set as an environment variable in the current process.
-7. **Reload** — If any keys changed, GSD waits for the current operation to idle, then reloads extensions so the new credentials are active without restarting.
-
-### LLM Providers
-
-| Provider | Auth Method | Env Variable |
-|----------|-------------|-------------|
-| Anthropic (Claude) | OAuth or API key | `ANTHROPIC_API_KEY` |
-| GitHub Copilot | OAuth | `GH_TOKEN` |
-| OpenAI | API key | `OPENAI_API_KEY` |
-| OpenRouter | API key | `OPENROUTER_API_KEY` |
-| Groq | API key | `GROQ_API_KEY` |
-| xAI (Grok) | API key | `XAI_API_KEY` |
-| Mistral | API key | `MISTRAL_API_KEY` |
-
-For a full provider reference including Google Gemini, Amazon Bedrock, Azure OpenAI, Vertex AI, and local providers (Ollama, LM Studio), see the [Provider Setup Guide](../../docs/providers/).
+1. **Load auth.json** — Reads `~/.gsd/agent/auth.json` (creating it and its parent directory if missing) and checks `process.env` to determine which keys are already active.
+2. **Status display** — Prints a summary showing ✓ (configured) or ✗ (not set) for each of the five tool integrations.
+3. **Select loop** — Presents each tool as a labelled menu option, with its current status. Select a tool to configure it or select "(done)" to exit.
+4. **Key input** — For the selected tool, prompts for the API key. If you enter a non-empty value, it is trimmed and saved.
+5. **Save and activate** — The key is written to `auth.json` and immediately set as an environment variable in the current process, so tools can use it without restarting.
+6. **Reload** — If any keys changed, GSD waits for the current operation to idle, then reloads extensions so the new credentials are active without restarting.
 
 ### Tool API Keys
 
-These three keys are configured through the tool API keys section of the wizard. They apply to all projects automatically.
+| Tool | Env Variable | Get a key |
+|------|-------------|-----------|
+| Tavily Search | `TAVILY_API_KEY` | [tavily.com/app/api-keys](https://tavily.com/app/api-keys) |
+| Brave Search | `BRAVE_API_KEY` | [brave.com/search/api](https://brave.com/search/api) |
+| Context7 Docs | `CONTEXT7_API_KEY` | [context7.com/dashboard](https://context7.com/dashboard) |
+| Jina Page Extract | `JINA_API_KEY` | [jina.ai/api](https://jina.ai/api) |
+| Groq Voice | `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) |
 
-| Tool | Env Variable | Purpose | Get a key |
-|------|-------------|---------|-----------|
-| Tavily Search | `TAVILY_API_KEY` | Web search for non-Anthropic models | [tavily.com/app/api-keys](https://tavily.com/app/api-keys) |
-| Brave Search | `BRAVE_API_KEY` | Web search for non-Anthropic models | [brave.com/search/api](https://brave.com/search/api) |
-| Context7 Docs | `CONTEXT7_API_KEY` | Library/framework documentation lookup | [context7.com/dashboard](https://context7.com/dashboard) |
-
-> **Note:** Anthropic models have built-in web search and don't require Tavily or Brave. These keys are most useful when running non-Anthropic models.
-
-Jina Page Extract (`JINA_API_KEY`) is not part of the config wizard but can be added via [`/gsd keys add jina`](../keys/).
+> **Note:** Anthropic models have built-in web search and don't require Tavily or Brave. Those keys are most useful when running non-Anthropic models.
 
 ### Credential Storage
 
@@ -126,65 +103,29 @@ Keys are stored in `~/.gsd/agent/auth.json` — never inside a project, never co
 
 | File | Purpose |
 |------|---------|
-| `~/.gsd/agent/auth.json` | Updated credentials (OAuth tokens and API keys) |
+| `~/.gsd/agent/auth.json` | Updated tool API keys |
 
 ## Examples
 
-Signing in with Anthropic via browser:
+Checking and configuring tool keys:
 
 ```
 > /gsd config
 
-How do you want to get started?
-  ❯ Sign in with your browser
-    Paste an API key
-    Tool API keys (search, docs)
+GSD Tool Configuration
 
-Sign in with your browser — choose a provider:
-  ❯ Anthropic (Claude)
-    GitHub Copilot
+  ✓ Tavily Search
+  ✗ Brave Search — get key at brave.com/search/api
+  ✓ Context7 Docs
+  ✗ Jina Page Extract — get key at jina.ai/api
+  ✗ Groq Voice — get key at console.groq.com
 
-Opening browser for Anthropic sign-in...
-● Signed in to Anthropic (Claude).
-```
-
-Pasting an API key for OpenAI:
-
-```
-> /gsd config
-
-How do you want to get started?
-    Sign in with your browser
-  ❯ Paste an API key
-    Tool API keys (search, docs)
-
-Paste an API key — choose a provider:
-  ❯ OpenAI
-    OpenRouter
-    Groq
-    xAI (Grok)
-    ...
-
-API key for OpenAI (platform.openai.com/api-keys):
-> sk-...
-
-● OpenAI key saved and activated.
-```
-
-Configuring tool API keys:
-
-```
-> /gsd config
-
-How do you want to get started?
-    Sign in with your browser
-    Paste an API key
-  ❯ Tool API keys (search, docs)
-
-Tool API keys — which tool?
+Configure which tool? Press Escape when done.
   ❯ Tavily Search (configured ✓)
     Brave Search (not set)
     Context7 Docs (configured ✓)
+    Jina Page Extract (not set)
+    Groq Voice (not set)
     (done)
 
 API key for Brave Search (brave.com/search/api):
@@ -193,7 +134,19 @@ API key for Brave Search (brave.com/search/api):
 ● Brave Search key saved and activated.
 ```
 
-After completing the wizard with changes:
+After configuring Brave Search, the menu updates and loops:
+
+```
+Configure which tool? Press Escape when done.
+    Tavily Search (configured ✓)
+  ❯ Brave Search (configured ✓)
+    Context7 Docs (configured ✓)
+    Jina Page Extract (not set)
+    Groq Voice (not set)
+    (done)
+```
+
+After selecting "(done)" with changes:
 
 ```
 ● Configuration saved. Extensions reloaded with new keys.
@@ -201,7 +154,7 @@ After completing the wizard with changes:
 
 ## Related Commands
 
-- [`/gsd keys`](../keys/) — Full key manager: list, add, remove, test, rotate, and health-check all credentials
+- [`/gsd keys`](../keys/) — Full key manager: list, add, remove, test, rotate, and health-check all credentials including LLM provider keys
+- [`/gsd setup`](../setup/) — Global setup status and LLM provider authentication
 - [`/gsd prefs`](../prefs/) — Workflow preferences: models, timeouts, git, skills, budget
-- [`/gsd setup`](../setup/) — Global setup status overview
 - [`/gsd doctor`](../doctor/) — Health checks that can surface misconfigured or missing credentials

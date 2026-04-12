@@ -9,7 +9,7 @@ description: "Queue and reorder future milestones — manage execution order, ad
 
 The queue is safe to use while auto-mode is running. Queued milestones are picked up naturally when auto-mode advances past the current work — no restart needed. This makes `/gsd queue` the primary way to shape what comes next without interrupting what's happening now.
 
-When you have more than one non-complete, non-parked milestone (status `active` or `pending`), the hub presents three options: reorder the existing queue, add new work, or dismiss for now. If only one such milestone exists, it skips straight to the add-new-work flow.
+When you have more than one non-complete, non-parked milestone (status `active` or `pending`), the hub presents two options — reorder the existing queue or add new work — plus a dismiss option. If only one such milestone exists, it skips straight to the add-new-work flow.
 
 ## Usage
 
@@ -46,7 +46,7 @@ flowchart TD
     SurfaceDrafts --> Discuss
     Drafts -->|No| Discuss[LLM discussion — scope new milestone]
     Discuss --> Verify[Depth verification per milestone]
-    Verify --> Write[Write CONTEXT.md + slices dir]
+    Verify --> Write[Write CONTEXT.md via gsd_summary_save]
     Write --> UpdateDocs[Update PROJECT.md, QUEUE.md]
     UpdateDocs --> Done
 
@@ -109,15 +109,15 @@ When you confirm:
 
 ### Add Flow
 
-The add flow dispatches an LLM-assisted discussion session. Before asking "What do you want to add?", the LLM checks for any draft milestones — milestones that have a `CONTEXT-DRAFT.md` seed file (created when a prior discussion chose "Needs own discussion" instead of finalizing). If drafts exist, the LLM surfaces them first and offers to either discuss them now (completing the context file and deleting the draft) or leave them for later.
+The add flow activates the queue write-gate (which mechanically enforces depth verification before any `CONTEXT.md` can be written), then dispatches an LLM-assisted discussion session. Before asking "What do you want to add?", the LLM checks for any draft milestones — milestones that have a `CONTEXT-DRAFT.md` seed file (created when a prior multi-milestone discussion chose "Needs own discussion" instead of "Ready for auto-planning"). If drafts exist, the LLM surfaces them first and offers to either discuss them now (completing the context file and deleting the draft) or leave them for later — draft milestones left as-is cause auto-mode to pause when it reaches them.
 
 Once past any drafts, the discussion flow:
 
-1. **Investigates** — The LLM researches your codebase, relevant libraries, and existing milestones before each question round, so its questions are grounded in reality rather than assumptions.
+1. **Investigates** — Between each round of questions, the LLM scouts the codebase, checks library documentation, and searches the web to ground its questions in reality rather than assumptions.
 2. **Checks for overlap** — Dedup check against existing milestones, extension check for work that belongs with a pending milestone, and dependency check for prerequisites.
 3. **Assesses scope** — Determines whether the work is single-milestone (2–12 slices) or multi-milestone. If multi-milestone, proposes a split for your approval before writing anything.
-4. **Verifies before writing** — For each new milestone, a mandatory depth verification step presents the proposed scope and any technical risks. You confirm or correct before the context file is written. This gate is mechanically enforced — the system blocks `CONTEXT.md` writes until depth verification passes and cannot be skipped.
-5. **Writes artifacts** — Uses `gsd_milestone_generate_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, and writes `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
+4. **Verifies before writing** — For each new milestone, a mandatory depth verification gate fires: the LLM calls `ask_user_questions` with an ID containing both `depth_verification` and the milestone ID (e.g. `depth_verification_M010-3ym37m`). This triggers the write-gate — the system mechanically blocks `CONTEXT.md` writes until you confirm. You confirm or correct the proposed scope and any surfaced technical risks; the gate cannot be skipped or rationalized around.
+5. **Writes artifacts** — Calls `gsd_milestone_generate_id` to get a fresh ID (never invented manually), creates `.gsd/milestones/<ID>/slices/`, then calls `gsd_summary_save` to persist `<ID>-CONTEXT.md`. If the new work has dependencies on other milestones, YAML frontmatter with `depends_on` is added to the context file.
 
 The add flow does not auto-commit — `.gsd/` is managed externally by the CLI. Artifacts written during the add flow will be picked up by auto-mode naturally when it advances to those milestones.
 
@@ -254,10 +254,6 @@ Surfacing a draft milestone before adding new work:
 
   ● Picking up from draft context for M005...
 ```
-
-## Prompts Used
-
-- [`queue`](../../prompts/queue/) — Roadmap queuing prompt
 
 ## Related Commands
 

@@ -1,13 +1,13 @@
 ---
 title: "Keyboard Shortcuts"
-description: "Four instant-access shortcuts registered by GSD — plus the platform-level paste-image and interrupt bindings — for the dashboard, voice mode, background processes, and pausing auto mode."
+description: "Three instant-access shortcuts registered by GSD — plus the platform-level paste-image and interrupt bindings — for the dashboard, notification history, parallel worker monitor, and pausing auto mode."
 ---
 
 ## What It Does
 
 GSD registers three keyboard shortcuts and inherits two from the underlying platform. Together they cover the actions that benefit most from instant access over a slash command — no typing, no context switch.
 
-Three shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable detection. In terminals that don't support the protocol (macOS Terminal.app, Warp, JetBrains IDEs), GSD appends a slash-command fallback hint to the shortcut description rather than silently dropping it.
+All three GSD shortcuts use the `Ctrl+Alt` modifier combination and require the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable detection. In terminals that don't support the protocol (macOS Terminal.app, Warp, JetBrains IDEs), GSD appends a slash-command fallback hint to the shortcut description rather than silently dropping it.
 
 The remaining two — `Ctrl+V` for paste-image and `Escape` for interrupt — are platform-level bindings managed by the underlying pi coding agent. Both are configurable via `~/.gsd/agent/keybindings.json`.
 
@@ -16,8 +16,8 @@ The remaining two — `Ctrl+V` for paste-image and `Escape` for interrupt — ar
 | Shortcut | Action | Fallback |
 |----------|--------|----------|
 | `Ctrl+Alt+G` | Open GSD dashboard overlay | `/gsd status` |
-| `Ctrl+Alt+V` | Toggle voice mode | `/voice` |
-| `Ctrl+Alt+B` | Open background process manager | `/bg` |
+| `Ctrl+Alt+N` | Open notification history | `/gsd notifications` |
+| `Ctrl+Alt+P` | Open parallel worker monitor | `/gsd parallel watch` |
 | `Ctrl+V` | Paste image from clipboard (screenshot → vision input) | — |
 | `Escape` | Pause auto mode (preserves conversation) | — |
 
@@ -29,23 +29,17 @@ Opens a full-screen overlay showing milestone progress, the active slice and tas
 
 Only activates when a `.gsd/` directory is present in the current working directory. If not found, a notice is shown: _"No .gsd/ directory found. Run /gsd to start."_
 
-### Ctrl+Alt+V — Voice Mode
+### Ctrl+Alt+N — Notification History
 
-Toggles real-time speech-to-text transcription on and off. Requires a microphone. Equivalent to running `/voice`.
+Opens a scrollable overlay showing all persisted notifications with severity icons and relative timestamps. Entries are filterable by severity — cycling through `all → error → warning → info`. Equivalent to running [`/gsd notifications`](../status/).
 
-**macOS** — Compiles a Swift binary on first use (requires Xcode CLI tools). No external API key needed; transcription runs locally via the Speech framework.
+The overlay marks all visible notifications as read when opened. Use `c` inside the overlay to clear all notifications. Press `Escape` or `q` to close.
 
-**Linux** — Uses a Python script powered by Groq's Whisper API. Requires:
-- `GROQ_API_KEY` set in your environment (run `/gsd keys add groq` to configure)
-- `python3` installed (`sudo apt install python3`)
-- `libportaudio2` installed (`sudo apt install libportaudio2`)
-- Python dependencies are auto-installed on first run
+### Ctrl+Alt+P — Parallel Worker Monitor
 
-When voice is active, a flashing `● transcribing` indicator appears in the footer. Press `Escape` or `Enter` to stop transcription and dismiss the voice overlay. Pressing `Ctrl+Alt+V` again also toggles it off if the overlay is not the focused input.
+Opens a full-screen overlay showing real-time parallel worker progress — milestone assignments, worker statuses, timing, and recent log output. Equivalent to running `/gsd parallel watch`.
 
-### Ctrl+Alt+B — Background Process Manager
-
-Opens an overlay listing all running background shell processes — dev servers, file watchers, build processes. Shows process ID, command, status, and uptime. Equivalent to running `/bg`. Press `Escape` or `q` to close.
+Only activates when a `.gsd/parallel/` directory is present. If parallel workers haven't been started, a notice is shown: _"No parallel workers found. Run /gsd parallel start first."_
 
 ### Ctrl+V — Clipboard Image Paste
 
@@ -91,16 +85,15 @@ You don't need to configure anything — GSD detects terminal capabilities autom
 
 ## What Files It Touches
 
-Keyboard shortcuts are entirely read-only and in-memory. No files are created, modified, or deleted by pressing a shortcut. The dashboard overlay reads planning files the same way [`/gsd status`](../status/) does.
+Keyboard shortcuts are entirely read-only and in-memory. No files are created, modified, or deleted by pressing a shortcut. The dashboard overlay reads planning files the same way [`/gsd status`](../status/) does. The notification overlay reads from the notification store. The parallel monitor reads from `.gsd/parallel/`.
 
-The exception is first-run voice setup on macOS, which compiles a Swift binary to `~/.gsd/agent/speech-recognizer`. On Linux, Python dependencies are installed into `~/.gsd/voice-venv/` on first activation.
-
-### Creates (voice first-run only)
+### Reads
 
 | File | Purpose |
 |------|---------|
-| `~/.gsd/agent/speech-recognizer` | Compiled Swift speech recognizer binary (macOS, first run) |
-| `~/.gsd/voice-venv/` | Python virtualenv with speech dependencies (Linux, first run) |
+| `.gsd/` | Checked for existence before opening dashboard overlay |
+| `.gsd/parallel/` | Checked for existence before opening parallel monitor |
+| `.gsd/runtime/notifications.db` | Notification history read by the notification overlay |
 
 ## Examples
 
@@ -111,6 +104,24 @@ Checking milestone progress mid-execution without typing:
 → Press Ctrl+Alt+G
 [Dashboard overlay opens — shows S03/T02 in progress, 4/7 tasks done]
 → Press Escape to close and return to the conversation
+```
+
+Reviewing notification history after a long auto-mode run:
+
+```
+→ Press Ctrl+Alt+N
+[Notification overlay opens — shows warnings and info from recent units]
+→ Press f to cycle filters (all → error → warning → info)
+→ Press c to clear, Escape to close
+```
+
+Monitoring parallel workers without leaving the conversation:
+
+```
+[/gsd parallel start running three workers...]
+→ Press Ctrl+Alt+P
+[Parallel monitor overlay opens — shows M003, M004, M005 worker statuses]
+→ Press Escape to close
 ```
 
 Pasting a screenshot for analysis:
@@ -131,15 +142,6 @@ Pausing a running auto-mode turn to review progress:
 > /gsd auto    ← resume when ready
 ```
 
-Using voice instead of typing a long thought:
-
-```
-→ Press Ctrl+Alt+V
-● transcribing  (footer indicator flashes)
-[Speak your message — it types into the input bar]
-→ Press Escape or Enter to stop
-```
-
 Remapping paste-image for Warp users:
 
 ```json title="~/.gsd/agent/keybindings.json"
@@ -151,6 +153,7 @@ Remapping paste-image for Warp users:
 ## Related Commands
 
 - [`/gsd status`](../status/) — Dashboard (same as `Ctrl+Alt+G`)
+- [`/gsd notifications`](../status/) — Notification history (same as `Ctrl+Alt+N`)
 - [`/gsd stop`](../stop/) — Stop auto mode gracefully after the current unit finishes
 - [`/gsd auto`](../auto/) — Start or resume autonomous mode
-- [`/gsd keys`](../keys/) — Manage API keys (including GROQ for Linux voice)
+- [`/gsd parallel`](../queue/) — Parallel milestone orchestration (same as `Ctrl+Alt+P`)

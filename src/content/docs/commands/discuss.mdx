@@ -33,7 +33,6 @@ flowchart TD
     CheckMilestone -->|No| CheckPending2{Pending milestones?}
     CheckPending2 -->|No| NoMilestone([No milestone — run /gsd to create one])
     CheckPending2 -->|Yes| QueuedPicker[Show queued milestone picker]
-    QueuedPicker --> QueuedDiscuss[Milestone interview — no auto-start]
     CheckMilestone -->|Yes| CheckPhase{Phase?}
     CheckPhase -->|needs-discussion| DraftGate[Show draft discussion gate]
     DraftGate --> DraftChoice{Choice}
@@ -43,7 +42,9 @@ flowchart TD
     CheckPhase -->|normal| CheckRoadmap{Roadmap / slices?}
     CheckRoadmap -->|No| NoRoadmap([No roadmap — run /gsd to plan first])
     CheckRoadmap -->|Yes| CheckPending{Pending slices?}
-    CheckPending -->|None| NoPending([All slices complete — nothing to discuss])
+    CheckPending -->|None| CheckPending3{Pending milestones?}
+    CheckPending3 -->|Yes| QueuedPicker
+    CheckPending3 -->|No| NoPending([All slices complete — nothing to discuss])
     CheckPending -->|Yes| Picker[Show slice picker]
     Picker --> Select{Selection}
     Select -->|Slice chosen| AlreadyDiscussed{Already has CONTEXT?}
@@ -56,6 +57,11 @@ flowchart TD
     WriteCtx --> More{Discuss another?}
     More -->|Yes| Picker
     More -->|No| Done([Discussion complete])
+    QueuedPicker --> HasDraft{Has CONTEXT-DRAFT?}
+    HasDraft -->|Yes| QueuedDiscuss[Milestone interview with draft seed]
+    HasDraft -->|No| FastPathChoice{Full or fast path?}
+    FastPathChoice -->|Full discussion| QueuedDiscuss
+    FastPathChoice -->|Fast path| QueuedDiscuss
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CheckProject fill:#0d180d,stroke:#39ff14,color:#39ff14
@@ -66,8 +72,11 @@ flowchart TD
     style CheckRoadmap fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CheckPending fill:#0d180d,stroke:#39ff14,color:#39ff14
     style CheckPending2 fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style CheckPending3 fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Select fill:#0d180d,stroke:#39ff14,color:#39ff14
     style More fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style HasDraft fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style FastPathChoice fill:#0d180d,stroke:#39ff14,color:#39ff14
     style NoProject fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style NoMilestone fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style NoRoadmap fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
@@ -90,7 +99,7 @@ GSD reads the active milestone's slice list and filters to slices that are not y
 
 If there are any pending (queued) milestones in the registry, a "Discuss a queued milestone" option appears at the bottom of the picker. Selecting it opens a separate milestone picker without affecting the current milestone's execution.
 
-The picker loops: after each discussion finishes, it returns to the picker so you can chain multiple slice interviews in one session. When all pending slices have been discussed, it exits.
+The picker loops: after each discussion finishes, it returns to the picker so you can chain multiple slice interviews in one session. When all pending slices have been discussed, it checks whether any queued milestones remain before exiting — if they do, it routes to the queued milestone picker automatically.
 
 If a slice already has a `CONTEXT.md` from a prior discussion, selecting it shows a re-discuss confirmation. Confirming launches an update interview that reads the existing context, asks about changes and new decisions, then rewrites the file with merged findings.
 
@@ -104,6 +113,8 @@ The interview is a back-and-forth conversation, not a form. Before asking anythi
 - **Feel and experience** — Tone, responsiveness, feedback, transitions, what "done" feels like
 
 Questions come in rounds of 1–3 at a time. The agent continues asking rounds until it genuinely believes the slice is well understood. Only then does it offer a wrap-up choice: "Write the context file" or "One more pass." You decide the pace.
+
+**Incremental persistence:** Every two question rounds, the agent silently saves a draft `<SID>-CONTEXT-DRAFT.md` to the slice directory. This protects confirmed work against session crashes. The draft is invisible to you — the final `CONTEXT.md` replaces it when you choose to write.
 
 ### Context loaded before each interview
 
@@ -133,9 +144,14 @@ The agent preserves your exact terminology, emphasis, and specific framing rathe
 
 ### Queued milestone discussion
 
-When there is no active milestone (all are complete or none exist yet), `/gsd discuss` shows a picker of pending milestones from the registry. Selecting one dispatches the `guided-discuss-milestone` prompt for that milestone.
+When there is no active milestone (all are complete or none exist yet), `/gsd discuss` shows a picker of pending milestones from the registry. Selecting one launches a milestone-level interview for that milestone.
 
 The same option is available from inside the slice picker — even when there is an active milestone, you can break out and discuss an upcoming queued milestone to get its context ready in advance. Discussing a queued milestone does **not** activate it. Auto mode will still pause when it reaches that milestone and prompt you to confirm, but the context file will already be written so the actual planning can begin immediately.
+
+When a queued milestone already has a `CONTEXT-DRAFT.md`, the discussion seeds itself automatically from that draft. When there is no draft, you are offered two modes:
+
+- **Full discussion** — Scout the codebase, ask open-ended questions, explore deeply. Use this when you haven't thought through the milestone scope yet.
+- **I have the scope — fast path** — Treat your first message as authoritative seed context; skip codebase scouting. Use this when you already know exactly what the milestone should do and just want to lock in the context quickly.
 
 ### Needs-discussion phase
 
@@ -176,6 +192,7 @@ When auto mode encounters a slice that has a `CONTEXT.md`, it uses that file dur
 
 | File | Purpose |
 |------|---------|
+| `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT-DRAFT.md` | Incremental draft saved every 2 question rounds to protect against crashes |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT.md` | Slice context from the interview; rewritten on re-discuss |
 | `.gsd/milestones/<MID>/<MID>-CONTEXT.md` | Updated when a milestone-level re-discussion concludes |
 
@@ -257,7 +274,7 @@ Re-discussing a slice to update its context:
   [Agent reads existing S04-CONTEXT.md, asks about any changes since last time]
 ```
 
-Discussing a queued milestone without activating it:
+Discussing a queued milestone using the fast path:
 
 ```
 > /gsd discuss
@@ -279,14 +296,21 @@ Discussing a queued milestone without activating it:
 
 > M002: Analytics & Reporting
 
-  [Agent runs milestone interview for M002 without changing active milestone]
+● Discuss M002
+  Choose how to start the discussion.
+  Fast path skips generic scouting — use it when you already know the scope.
+
+  Full discussion  (recommended)
+  I have the scope — fast path
+
+> I have the scope — fast path
+
+> We need dashboard charts for DAU, retention cohorts, and funnel drop-off.
+  All data lives in the existing analytics_events table. No new ingestion.
+
+  [Agent treats first message as authoritative seed, skips scouting, writes context]
   ✓ M002 context written.
 ```
-
-## Prompts Used
-
-- [`guided-discuss-slice`](../../prompts/guided-discuss-slice/) — Slice interview prompt (normal flow)
-- [`guided-discuss-milestone`](../../prompts/guided-discuss-milestone/) — Milestone interview prompt (needs-discussion and queued milestone flows)
 
 ## Related Commands
 

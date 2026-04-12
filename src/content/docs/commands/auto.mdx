@@ -133,7 +133,7 @@ After initialization, GSD enters its core loop. Each iteration:
 4. **Auto-commit** — All changes are committed to the active milestone branch with a structured commit message.
 5. **Doctor checks** — Runs health checks on the `.gsd/` directory structure. Catches file corruption, missing summaries, or inconsistent state.
 6. **Worktree sync** — Synchronizes state between the worktree and the project root (when worktree isolation is enabled).
-7. **Sidecar drain** — After each primary unit, the sidecar queue is drained. Sidecars are lightweight units enqueued during post-unit processing: post-unit hooks (`hook/<name>`), triage captures (`triage-captures`), and quick-task captures queued after triage.
+7. **Sidecar drain** — After each primary unit, the sidecar queue is drained. Sidecars are lightweight units enqueued during post-unit processing: post-unit hooks (`hook/<name>`), triage captures (`triage-captures`), and quick-task captures queued after triage resolution.
 8. **Next dispatch** — Re-derives state from disk and loops back to step 1.
 
 When the final unit (`complete-milestone`) finishes, GSD squash-merges the `milestone/<MID>` branch into the integration branch (default: `main`) with a rich commit message listing all completed slices, then tears down the worktree.
@@ -162,8 +162,11 @@ The dispatch table maps project phases to these unit types:
 | `custom-step` | any (workflow) | Executes a custom workflow step defined in the active workflow template |
 | `hook/<name>` | sidecar | Post-unit hooks configured in preferences; run via the sidecar queue after primary units complete |
 | `triage-captures` | sidecar | Classifies pending captures at natural seams between units; see [`/gsd capture`](../capture/) |
+| `quick-task` | sidecar | Executes a one-off task queued after triage resolution for captures classified as "quick-task" |
 
 Some phases can be skipped entirely via preferences: `skip_research` (milestone and slice research), `skip_slice_research` (slice research only), `skip_reassess` (roadmap reassessment), and `skip_milestone_validation` (milestone validation). Roadmap reassessment only runs when `phases.reassess_after_slice` is also set to `true`.
+
+When `phases.require_slice_discussion` is enabled, auto mode pauses before each new slice that does not yet have a slice context file, prompting you to run [`/gsd discuss`](../discuss/) before planning begins. This gives you a checkpoint to review slice scope before the planner runs.
 
 ### UAT verdict gate
 
@@ -187,7 +190,7 @@ When a [`/gsd steer`](../steer/) override is pending, the `rewrite-docs` rule fi
 
 Four safety guards block milestone completion when the pipeline state is inconsistent:
 
-- **Missing SUMMARY guard** — Both `validating-milestone` and `completing-milestone` check that every slice in the roadmap has a SUMMARY file before proceeding. If any slice is missing a summary, auto mode stops with an error and a list of the affected slices.
+- **Missing SUMMARY guard** — Both `validating-milestone` and `completing-milestone` check that every active slice in the roadmap has a SUMMARY file before proceeding. Slices in `skipped`, `complete`, or `done` status are excluded from this check. If any eligible slice is missing a summary, auto mode stops with an error and a list of the affected slices.
 - **Remediation verdict guard** — `completing-milestone` checks the VALIDATION file verdict. If the verdict is `needs-remediation`, GSD stops rather than completing — remediation work must be addressed first. (Note: the state machine treats `needs-remediation` as terminal to prevent validation loops, but completion is blocked regardless.)
 - **Implementation artifact guard** — `completing-milestone` verifies that the milestone branch contains at least one non-`.gsd/` file change compared to the integration branch. A milestone that only wrote plan files and no implementation code is not considered complete.
 - **Verification class compliance guard** — `completing-milestone` checks whether the milestone had planned operational verification (`verification_operational` field). If so, the VALIDATION file must include evidence that operational verification was addressed (structured table with MET/N/A or prose evidence). If not present, auto mode stops and prompts re-running validation with verification class awareness.
@@ -346,6 +349,17 @@ UAT verdict blocking progression:
   Review the UAT result and update the verdict to PASS, or re-run /gsd auto after fixing.
 ```
 
+## Related Commands
+
+- [`/gsd stop`](../stop/) — Gracefully terminate auto mode
+- [`/gsd pause`](../pause/) — Pause auto mode, preserving state for resumption
+- [`/gsd next`](../next/) — Execute one unit, then pause for input
+- [`/gsd status`](../status/) — View progress dashboard without interrupting
+- [`/gsd steer`](../steer/) — Inject a course-correction override while auto mode runs
+- [`/gsd capture`](../capture/) — Record a thought without interrupting auto mode
+- [`/gsd widget`](../widget/) — Change the progress widget display mode
+- [`/gsd discuss`](../discuss/) — Discuss a slice before planning (required when `require_slice_discussion` is enabled)
+
 ## Prompts Used
 
 - [`complete-milestone`](../../prompts/complete-milestone/) — Closes out a milestone after all slices are done
@@ -361,13 +375,3 @@ UAT verdict blocking progression:
 - [`rewrite-docs`](../../prompts/rewrite-docs/) — Documentation refresh prompt
 - [`run-uat`](../../prompts/run-uat/) — User acceptance testing prompt
 - [`validate-milestone`](../../prompts/validate-milestone/) — Reconciliation gate before milestone completion
-
-## Related Commands
-
-- [`/gsd stop`](../stop/) — Gracefully terminate auto mode
-- [`/gsd pause`](../pause/) — Pause auto mode, preserving state for resumption
-- [`/gsd next`](../next/) — Execute one unit, then pause for input
-- [`/gsd status`](../status/) — View progress dashboard without interrupting
-- [`/gsd steer`](../steer/) — Inject a course-correction override while auto mode runs
-- [`/gsd capture`](../capture/) — Record a thought without interrupting auto mode
-- [`/gsd widget`](../widget/) — Change the progress widget display mode

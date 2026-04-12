@@ -55,7 +55,7 @@ flowchart TD
     Cat -->|Workflow Mode| CfgMode[solo / team / none]
     Cat -->|Models| CfgModels[Provider + model per phase, optional fallbacks]
     Cat -->|Timeouts| CfgTime[soft / idle / hard timeout]
-    Cat -->|Git| CfgGit[branch, push, snapshots, commit type, isolation, merge strategy]
+    Cat -->|Git| CfgGit[branch, push, snapshots, commit type, isolation, merge strategy, stale threshold]
     Cat -->|Skills| CfgSkills[discovery mode, UAT dispatch]
     Cat -->|Budget| CfgBudget[ceiling, enforcement, context pause]
     Cat -->|Notifications| CfgNotify[event-based alert toggles]
@@ -106,9 +106,9 @@ flowchart TD
 | Category | What It Configures | Key Fields |
 |----------|-------------------|------------|
 | **Workflow Mode** | Solo or team workflow with coordinated defaults | `mode` (`solo`/`team`) |
-| **Models** | Model selection per execution phase, with optional per-phase fallbacks | `models.research`, `models.planning`, `models.execution`, `models.completion` |
+| **Models** | Model selection per execution phase, with optional per-phase fallbacks | `models.research`, `models.planning`, `models.discuss`, `models.execution`, `models.execution_simple`, `models.completion`, `models.validation`, `models.subagent` |
 | **Timeouts** | Auto-mode supervisor timeouts | `auto_supervisor.soft_timeout_minutes`, `idle_timeout_minutes`, `hard_timeout_minutes` |
-| **Git** | Branch naming, push behavior, WIP snapshots, commit type, isolation, merge strategy | `git.main_branch`, `git.auto_push`, `git.push_branches`, `git.snapshots`, `git.remote`, `git.pre_merge_check`, `git.commit_type`, `git.merge_strategy`, `git.isolation` |
+| **Git** | Branch naming, push behavior, WIP snapshots, commit type, isolation, merge strategy, stale threshold | `git.main_branch`, `git.auto_push`, `git.push_branches`, `git.snapshots`, `git.remote`, `git.pre_merge_check`, `git.commit_type`, `git.merge_strategy`, `git.isolation`, `git.absorb_snapshot_commits`, `stale_commit_threshold_minutes` |
 | **Skills** | Skill discovery mode and UAT dispatch behavior | `skill_discovery` (`auto`/`suggest`/`off`), `uat_dispatch` |
 | **Budget** | Cost ceiling, enforcement policy, context pause | `budget_ceiling`, `budget_enforcement` (`warn`/`pause`/`halt`), `context_pause_threshold` |
 | **Notifications** | Event-based alert toggles | `notifications.enabled`, `on_complete`, `on_error`, `on_budget`, `on_milestone`, `on_attention` |
@@ -122,14 +122,14 @@ Selecting `solo` or `team` sets a bundle of git defaults as the lowest-priority 
 |---------|--------|--------|
 | `git.auto_push` | `true` | `false` |
 | `git.push_branches` | `false` | `true` |
-| `git.pre_merge_check` | `false` | `true` |
+| `git.pre_merge_check` | `auto` | `true` |
 | `git.merge_strategy` | `squash` | `squash` |
-| `git.isolation` | `worktree` | `worktree` |
+| `git.isolation` | `none` | `none` |
 | `unique_milestone_ids` | `false` | `true` |
 
 ### Models Category
 
-The model wizard groups available models by provider. For each of the four phases (`research`, `planning`, `execution`, `completion`) you pick a provider first, then select a specific model ID from that provider's list. You can also type a model ID manually or clear the phase back to the inherited default.
+The model wizard groups available models by provider. For each of the eight phases (`research`, `planning`, `discuss`, `execution`, `execution_simple`, `completion`, `validation`, `subagent`) you pick a provider first, then select a specific model ID from that provider's list. You can also type a model ID manually or clear the phase back to the inherited default.
 
 Each phase can be configured as a plain model ID string or as an object with a primary model, an optional `provider` hint (to disambiguate when the same ID exists across providers), and an ordered `fallbacks` list that GSD tries in sequence when the primary fails due to rate limits or exhausted credits.
 
@@ -142,21 +142,25 @@ The Git category exposes all git-related settings in one place:
 | `main_branch` | `main` | Branch name used for merge operations |
 | `auto_push` | `false` | Push commits to remote after each commit |
 | `push_branches` | `false` | Push milestone branches to remote |
-| `snapshots` | `false` | Create WIP snapshot commits during long tasks |
+| `snapshots` | `true` | Create WIP snapshot commits during long tasks |
 | `remote` | `origin` | Git remote name |
 | `pre_merge_check` | `false` | Run checks before merging (`true`/`false`/`auto`) |
 | `commit_type` | *(inferred)* | Default conventional-commit type (`feat`, `fix`, `chore`, etc.) |
 | `merge_strategy` | *(unset)* | `squash` or `merge` |
-| `isolation` | `worktree` | `worktree`, `branch`, or `none` |
+| `isolation` | `none` | `worktree`, `branch`, or `none` |
+| `absorb_snapshot_commits` | `true` | Absorb WIP snapshot commits into real commits when committing |
+| `stale_commit_threshold_minutes` | `30` | Minutes without a commit before flagging dirty working tree as stale; `0` disables |
 
 `pre_merge_check: "auto"` lets GSD detect whether CI checks are configured and run them only when present.
+
+`stale_commit_threshold_minutes` is a top-level preference (not nested under `git`) but is displayed and configured inside the Git wizard category for convenience. When the threshold is exceeded and the working tree is dirty, GSD's doctor will auto-commit a safety snapshot tagged with `[gsd safety]`.
 
 ### Skills Category
 
 The wizard configures:
 
 - **`skill_discovery`** (`auto`/`suggest`/`off`) — Controls how GSD discovers and loads skills at dispatch time. `auto` loads relevant skills silently; `suggest` proposes them for confirmation; `off` disables discovery entirely.
-- **`uat_dispatch`** — When `true`, GSD dispatches a UAT agent after each slice completes.
+- **`uat_dispatch`** — When `true`, GSD dispatches a UAT agent after each slice completes. Default: `false`.
 
 `skill_staleness_days` (skills deprioritized after this many days of disuse; defaults to `60`) is not exposed in the wizard and must be set by editing the preferences file directly.
 

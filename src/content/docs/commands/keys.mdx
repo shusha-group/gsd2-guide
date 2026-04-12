@@ -79,6 +79,8 @@ flowchart TD
 
 Prints a grouped dashboard of all known providers organized by category. Each row shows whether the key is configured, its source (`auth.json` or env), and a masked credential description. Backed-off providers are flagged. Categories are displayed in this order: LLM Providers → Search Providers → Tool Keys → Remote Integrations.
 
+The summary line at the bottom reports how many providers are configured, how many come from `auth.json` versus environment variables, and — when OAuth credentials are present — how many are OAuth-based.
+
 #### `add [provider]`
 
 Prompts for a provider (if not given), then:
@@ -106,7 +108,9 @@ Makes a live API call to validate the key. Tests all configured providers when n
 | `invalid` | HTTP 401 or 403 |
 | `rate_limited` | HTTP 429 |
 | `error` | Network error, timeout (15s), or unexpected status |
-| `skipped` | No test endpoint configured, or key uses credential chain |
+| `skipped` | No test endpoint configured, key uses credential chain, or key is not in auth.json |
+
+Note: the test reads credentials from `auth.json` only. Providers configured solely via environment variable (not stored in `auth.json`) will show as `skipped` with "not configured" even though they appear as configured in the dashboard.
 
 #### `rotate [provider]`
 
@@ -174,9 +178,9 @@ Show the key status dashboard:
 GSD API Key Manager
 
   LLM Providers
-  ✓ anthropic             — API key (sk-a***cdef)
-  ✗ openai                — not configured (platform.openai.com/api-keys)
-  ✓ google                — env GEMINI_API_KEY
+  ✓ anthropic             — OAuth (expires in 2h 14m)
+  ✓ openai                — API key (sk-p***7890)
+  ✗ google                — not configured (aistudio.google.com/apikey)
   …
 
   Search Providers
@@ -184,7 +188,7 @@ GSD API Key Manager
   …
 
   Source: /Users/you/.gsd/agent/auth.json
-  2 configured | 1 in auth.json | 1 from env
+  2 configured | 1 in auth.json | 1 from env | 1 OAuth
 ```
 
 Add a key interactively:
@@ -224,7 +228,7 @@ API Key Test Results
 
   ✓ anthropic             — valid  312ms
   ✗ openai                — invalid key (401)  88ms
-  — google                — skipped (uses credential chain)
+  — github-copilot        — uses credential chain (not testable)
 
   1 valid | 1 invalid | 1 skipped
 ```

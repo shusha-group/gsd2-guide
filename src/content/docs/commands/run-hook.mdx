@@ -1,15 +1,19 @@
 ---
 title: "/gsd run-hook"
-description: "Manually trigger a specific post-unit hook for a given unit — bypass normal auto-mode flow to force a hook run on demand."
+description: "Manually trigger a configured post-unit hook outside of auto mode — useful for testing, debugging, or one-off hook runs on committed work."
 ---
 
 ## What It Does
 
-`/gsd run-hook` manually triggers a named post-unit hook for a specific unit. This bypasses the normal auto-mode flow where hooks fire automatically after unit completion — instead, you pick exactly which hook to run, on which unit type, for which unit ID.
+`/gsd run-hook` fires a named post-unit hook on demand, outside of the normal auto-mode dispatch loop. You give it the hook name, a unit type, and a unit ID, and GSD creates a new agent session running that hook's prompt — exactly as auto-mode would, except it bypasses the artifact-based skip check, so the hook runs even if the artifact file already exists.
 
-Use this when you want to re-run a hook that already completed (e.g., run code review again after manual edits), or trigger a hook outside the normal auto-mode pipeline.
+The main use cases are:
 
-Note that `/gsd run-hook` only works with **post-unit hooks** (configured under `post_unit_hooks` in preferences). Pre-dispatch hooks appear in the hook list but cannot actually be triggered this way — passing a pre-dispatch hook name will fail at the trigger step, because `triggerHookManually` only searches `post_unit_hooks` configurations.
+- **Testing a new hook configuration** before turning it loose in auto mode
+- **Re-running a review** on work that was already committed, without re-executing the task
+- **Debugging hook prompts** — see exactly what the hook agent produces in isolation
+
+`/gsd run-hook` only works with post-unit hooks (`post_unit_hooks` in preferences). Pre-dispatch hooks intercept before dispatch and cannot be manually invoked. To view all configured hooks and their current state, use [`/gsd hooks`](../hooks/).
 
 ## Usage
 
@@ -17,156 +21,176 @@ Note that `/gsd run-hook` only works with **post-unit hooks** (configured under 
 /gsd run-hook <hook-name> <unit-type> <unit-id>
 ```
 
-| Argument | Description | Example |
-|----------|-------------|---------|
-| `hook-name` | The name of the hook to trigger | `code-review` |
-| `unit-type` | The type of unit that serves as the trigger context | `execute-task` |
-| `unit-id` | The unit ID in `M001/S01/T01` format | `M001/S01/T03` |
+All three arguments are required:
 
-### Unit ID Format
+| Argument | Description |
+|----------|-------------|
+| `hook-name` | The `name` field of the hook as defined in preferences |
+| `unit-type` | The unit type to simulate as the trigger |
+| `unit-id` | The task-level unit ID, in `M001/S01/T01` format |
 
-The unit ID must be in **task-level format** (`M001/S01/T01`) regardless of which unit type you specify. The validator enforces this pattern — slice-level (`M001/S01`) or milestone-level (`M001`) IDs will be rejected with a warning.
+Running the command without arguments shows usage:
 
-### Unit Types
+```
+/gsd run-hook
+→ Usage: /gsd run-hook <hook-name> <unit-type> <unit-id>
+```
 
-The following unit types are recognized by the hook engine and appear in the usage help:
+**Valid unit types:**
 
-| Unit type | Description |
-|-----------|-------------|
+| Unit type | Trigger context |
+|-----------|----------------|
 | `execute-task` | Task execution |
 | `plan-slice` | Slice planning |
 | `research-milestone` | Milestone research |
 | `complete-slice` | Slice completion |
 | `complete-milestone` | Milestone completion |
 
+The unit type is used to perform prompt substitutions (`{milestoneId}`, `{sliceId}`, `{taskId}`) — it does not filter which hooks are eligible. The hook runs regardless of what `after` fields it declares in preferences.
+
 ## How It Works
 
 ```mermaid
 flowchart TD
-    Start(["/gsd run-hook name type id"]) --> Parse[Parse arguments]
-    Parse --> ArgCheck{Fewer than 3<br/>arguments?}
-    ArgCheck -->|Yes| UsageErr([Show usage help])
-    ArgCheck -->|No| HookCheck{Hook exists in<br/>getHookStatus?}
-    HookCheck -->|No| NotFound([Error: hook not found<br/>+ show configured hooks])
-    HookCheck -->|Yes| IdCheck{Unit ID matches<br/>M000/S00/T00?}
-    IdCheck -->|No| IdErr([Warning: invalid format])
-    IdCheck -->|Yes| Trigger[triggerHookManually]
-    Trigger --> PostCheck{Hook found in<br/>post_unit_hooks?}
-    PostCheck -->|No| TriggerFail([Error: hook may be disabled<br/>or wrong unit type])
-    PostCheck -->|Yes| Build[Build prompt with<br/>variable substitution]
-    Build --> NewSession[Open new Claude session]
-    NewSession --> Dispatch[dispatchHookUnit<br/>send prompt]
-    Dispatch --> Result{Dispatch<br/>succeeded?}
-    Result -->|Yes| Done([Hook running])
-    Result -->|No| Fail([Error: dispatch failed])
+    Start(["/gsd run-hook name type id"]) --> ArgCheck{3 args\nprovided?}
+    ArgCheck -->|No| ShowUsage([Show usage message])
+    ArgCheck -->|Yes| HookLookup[Look up hook by name\nin configured post-unit hooks]
+    HookLookup --> HookExists{Hook\nfound?}
+    HookExists -->|No| ShowHooks([Error: show configured hooks])
+    HookExists -->|Yes| ValidateId{Unit ID matches\nM###/S##/T## format?}
+    ValidateId -->|No| InvalidId([Warning: invalid format])
+    ValidateId -->|Yes| TriggerManually[triggerHookManually — bypass artifact skip]
+    TriggerManually --> TriggerResult{Hook\nbuildable?}
+    TriggerResult -->|No| TriggerFail([Error: hook disabled or empty prompt])
+    TriggerResult -->|Yes| Dispatch[dispatchHookUnit — new agent session]
+    Dispatch --> SessionResult{Session\ncancelled?}
+    SessionResult -->|Yes| StopAuto([Stop auto state, return false])
+    SessionResult -->|No| SetModel[Apply model override if configured]
+    SetModel --> RunHook[Run hook/<name> agent with prompt]
+    RunHook --> Done([Complete])
 
     style Start fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Parse fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ArgCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style UsageErr fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
-    style HookCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style NotFound fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
-    style IdCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style IdErr fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
-    style Trigger fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style PostCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style HookExists fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ValidateId fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style TriggerResult fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style SessionResult fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style ShowUsage fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style ShowHooks fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style InvalidId fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
     style TriggerFail fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
-    style Build fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style NewSession fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style StopAuto fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
+    style HookLookup fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style TriggerManually fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Dispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style Result fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style SetModel fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style RunHook fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style Fail fill:#3a1a1a,stroke:#ff4444,color:#e8e8e8
 ```
 
-### Validation
+### Hook lookup and validation
 
-The command runs three checks before dispatching:
+GSD looks up the hook by name across all configured post-unit hooks. If the hook isn't found, the command prints all configured hooks so you can check the name. The unit ID must match the full task-level format `M001/S01/T01` — slice-level or milestone-level IDs are not accepted.
 
-1. **Argument count** — Requires at least 3 positional arguments. Shows usage help with all unit types and examples if fewer are provided.
-2. **Hook existence** — Looks up the hook name via `getHookStatus()`. If not found, shows an error with the full list of configured hooks (both post-unit and pre-dispatch). Note: only post-unit hooks can actually be triggered — passing a pre-dispatch hook name passes this check but fails at the trigger step, because `triggerHookManually` only searches `post_unit_hooks` configurations.
-3. **Unit ID format** — Validates against the pattern `M\d{3}/S\d{2,3}/T\d{2,3}` (task-level only). Returns a warning and stops if the format doesn't match. Slice-level IDs like `M001/S01` are not accepted even when the unit type implies a slice-level context.
+### Bypassing artifact skip logic
 
-### Dispatch
+In auto mode, a hook is skipped if its `artifact` file already exists at the resolved path. `run-hook` bypasses this check — the hook always runs, regardless of whether the artifact is already there. This is the key difference from the automatic path: it lets you re-run a hook on work that was already reviewed or processed without deleting the artifact file first.
 
-Once validated, the command:
+### Prompt substitutions
 
-1. Calls `triggerHookManually()` which sets the active hook state, populates a single-entry hook queue, performs `{milestoneId}`, `{sliceId}`, `{taskId}` variable substitution on the hook's prompt, and increments the in-memory cycle counter.
-2. Opens a **new Claude session** via `dispatchHookUnit()`. If auto-mode is not already active, it starts in step mode first.
-3. Applies a model override if the hook's configuration specifies one.
-4. Writes a lock file (`auto.lock`) and a runtime record, starts a hard timeout (default 30 minutes), and sends the prompt.
-5. The hook runs in the new session window, just like it would during auto-mode.
+Hook prompts support three substitution variables that are resolved from the provided unit ID before the agent session starts:
 
-### Idempotency Bypass
+| Variable | Resolves to |
+|----------|-------------|
+| `{milestoneId}` | The milestone component (e.g. `M001`) |
+| `{sliceId}` | The slice component (e.g. `S01`) |
+| `{taskId}` | The task component (e.g. `T01`) |
 
-Unlike normal auto-mode hook execution, manual triggering via `/gsd run-hook` bypasses the artifact idempotency check. If the hook already produced its artifact (e.g., a review file), it still runs again. This is intentional — manual triggering implies you want to re-run regardless of prior output.
+### Synthetic unit type
+
+The hook runs under the synthetic unit type `hook/<hook-name>` (e.g. `hook/code-review`). This is the same unit type used in auto mode. It appears in logs and the activity directory with this label.
+
+### Model override
+
+If the hook configuration includes a `model` field, GSD switches the active session model before dispatching the hook agent. If the specified model isn't available, GSD falls back to the current session model and shows a warning.
 
 ## What Files It Touches
+
+`/gsd run-hook` does not write configuration files. It reads hook definitions from preferences and writes only what the hook agent produces.
 
 ### Reads
 
 | File | Purpose |
 |------|---------|
-| `.gsd/preferences.md` | Look up hook configuration and prompt by name |
+| `~/.gsd/PREFERENCES.md` | Global hook definitions |
+| `.gsd/PREFERENCES.md` | Project-local hook definitions (merged with global) |
 
-### Writes
+### Writes (hook agent output — varies by hook configuration)
 
 | File | Purpose |
 |------|---------|
-| `.gsd/auto.lock` | Session lock file written for the hook unit |
-| `.gsd/runtime/units/hook-<name>-<unitId>.json` | Runtime record tracking the hook unit's dispatch phase and timeout state |
-| Hook-specific artifacts | Whatever the hook's prompt produces (e.g., review files in the task directory) |
+| `.gsd/milestones/<M>/slices/<S>/tasks/<T>-<artifact>` | Hook artifact output, if `artifact` is configured |
+| `.gsd/hook-state.json` | Updated cycle count for the triggered hook |
 
 ## Examples
 
-Running a code review hook on a completed task:
+Manually triggering a code-review hook on task T01:
 
 ```
-> /gsd run-hook code-review execute-task M001/S01/T03
+> /gsd run-hook code-review execute-task M001/S01/T01
 
-Manually triggering hook: code-review for execute-task M001/S01/T03
+● Manually triggering hook: code-review for execute-task M001/S01/T01
+  ... hook agent runs with configured prompt ...
 ```
 
-When the hook doesn't exist:
+What happens when the hook name doesn't match:
 
 ```
-> /gsd run-hook spellcheck execute-task M001/S01/T01
+> /gsd run-hook typo-review execute-task M001/S01/T01
 
-Hook "spellcheck" not found. Configured hooks:
-
-Post-Unit Hooks (run after unit completes):
-  code-review [enabled] → after: execute-task
+✗ Hook "typo-review" not found. Configured hooks:
+  Post-Unit Hooks (run after unit completes):
+    code-review [enabled] → after: execute-task
+    security-scan [enabled] → after: complete-slice
 ```
 
-When no arguments are provided, the full usage help is shown:
-
-```
-> /gsd run-hook
-
-Usage: /gsd run-hook <hook-name> <unit-type> <unit-id>
-
-Unit types:
-  execute-task   - Task execution (unit-id: M001/S01/T01)
-  plan-slice     - Slice planning (unit-id: M001/S01)
-  research-milestone - Milestone research (unit-id: M001)
-  complete-slice - Slice completion (unit-id: M001/S01)
-  complete-milestone - Milestone completion (unit-id: M001)
-
-Examples:
-  /gsd run-hook code-review execute-task M001/S01/T01
-  /gsd run-hook lint-check plan-slice M001/S01
-```
-
-When an invalid unit ID format is used:
+What happens when the unit ID is malformed:
 
 ```
 > /gsd run-hook code-review execute-task M001/S01
 
-Invalid unit ID format: "M001/S01". Expected format: M004/S04/T03
+⚠ Invalid unit ID format: "M001/S01". Expected format: M004/S04/T03
+```
+
+A hook prompt using variable substitutions — given `M002/S03/T07`, the prompt resolves before the agent session starts:
+
+```yaml
+post_unit_hooks:
+  - name: code-review
+    after: [execute-task]
+    prompt: |
+      Review the changes made in {milestoneId}/{sliceId}/{taskId}.
+      Focus on correctness and security.
+      Write REVIEW.md if the work looks good.
+      Write NEEDS-REWORK.md if issues need addressing.
+    artifact: REVIEW.md
+    retry_on: NEEDS-REWORK.md
+    model: claude-opus-4-6
+```
+
+Running `code-review` on `M002/S03/T07` sends the agent:
+
+```
+Review the changes made in M002/S03/T07.
+Focus on correctness and security.
+Write REVIEW.md if the work looks good.
+Write NEEDS-REWORK.md if issues need addressing.
 ```
 
 ## Related Commands
 
-- [`/gsd hooks`](../hooks/) — View all configured hooks and their status
-- [`/gsd prefs`](../prefs/) — Configure hooks in preferences
-- [`/gsd auto`](../auto/) — Hooks run automatically during auto-mode execution
+- [`/gsd hooks`](../hooks/) — View all configured hooks and their current state
+- [`/gsd auto`](../auto/) — Auto mode that triggers post-unit hooks automatically after each unit
+- [`/gsd prefs`](../prefs/) — Edit preferences where `post_unit_hooks` and `pre_dispatch_hooks` are defined
+- [`/gsd status`](../status/) — Progress dashboard showing current unit and hook activity
+- [`/gsd quick`](../quick/) — Execute a quick task immediately without hooks or dispatch overhead
