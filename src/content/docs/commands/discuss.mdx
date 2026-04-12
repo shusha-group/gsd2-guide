@@ -148,7 +148,7 @@ When there is no active milestone (all are complete or none exist yet), `/gsd di
 
 The same option is available from inside the slice picker — even when there is an active milestone, you can break out and discuss an upcoming queued milestone to get its context ready in advance. Discussing a queued milestone does **not** activate it. Auto mode will still pause when it reaches that milestone and prompt you to confirm, but the context file will already be written so the actual planning can begin immediately.
 
-When a queued milestone already has a `CONTEXT-DRAFT.md`, the discussion seeds itself automatically from that draft. When there is no draft, you are offered two modes:
+When a queued milestone already has a `CONTEXT-DRAFT.md`, the discussion seeds itself automatically from that draft and fast path mode is applied — broad codebase scouting is skipped and the draft is treated as authoritative seed context. When there is no draft, you are offered two modes:
 
 - **Full discussion** — Scout the codebase, ask open-ended questions, explore deeply. Use this when you haven't thought through the milestone scope yet.
 - **I have the scope — fast path** — Treat your first message as authoritative seed context; skip codebase scouting. Use this when you already know exactly what the milestone should do and just want to lock in the context quickly.
@@ -186,14 +186,15 @@ When auto mode encounters a slice that has a `CONTEXT.md`, it uses that file dur
 | `.gsd/milestones/<MID>/slices/<SID>/` | Created if the slice directory doesn't exist |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT.md` | Written on first discussion of a slice |
 | `.gsd/milestones/<MID>/<MID>-CONTEXT.md` | Written when discussing a milestone (needs-discussion or queued flow) |
-| `.gsd/DISCUSSION-MANIFEST.json` | Written during multi-milestone discussions to track gate completion |
 
 ### Writes
 
 | File | Purpose |
 |------|---------|
+| `.gsd/STATE.md` | Rebuilt from derived state before each dispatch |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT-DRAFT.md` | Incremental draft saved every 2 question rounds to protect against crashes |
 | `.gsd/milestones/<MID>/slices/<SID>/<SID>-CONTEXT.md` | Slice context from the interview; rewritten on re-discuss |
+| `.gsd/milestones/<MID>/<MID>-CONTEXT-DRAFT.md` | Incremental draft saved every 2 question rounds during milestone-level discussions |
 | `.gsd/milestones/<MID>/<MID>-CONTEXT.md` | Updated when a milestone-level re-discussion concludes |
 
 ## Examples

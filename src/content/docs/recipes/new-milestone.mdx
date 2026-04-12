@@ -7,11 +7,11 @@ description: "Start a new milestone after the previous one ships — define scop
 
 `/gsd new-milestone` starts the next milestone cycle on an existing GSD project. It reads project state, detects that no active milestone is running, and opens the milestone discussion wizard — gathering goals through a structured conversation, running a preparation phase that analyzes the codebase and prior context, writing `REQUIREMENTS.md` with scoped `R###` requirements, and calling `gsd_plan_milestone` to produce a sliced roadmap inside a new milestone directory.
 
-Prior milestone work stays completely intact. `PROJECT.md` carries forward the full capability contract. `REQUIREMENTS.md` accumulates requirements across milestones. The new milestone gets its own directory (e.g., `M002/`) with a `CONTEXT.md` and `ROADMAP.md`, and the slice plan continues from where the last milestone left off.
+Prior milestone work stays completely intact. `PROJECT.md` carries forward the full capability contract. `REQUIREMENTS.md` accumulates requirements across milestones. The new milestone gets its own directory (e.g., `M002/`) with a `CONTEXT.md` and `ROADMAP.md`, and slice numbering within each milestone always starts at `S01`.
 
 There are two entry paths:
 
-- **Standard path** — No seed file present. GSD opens the interactive discussion wizard, runs a preparation phase (codebase brief, prior context brief, ecosystem research), and dispatches the discuss prompt. The discuss flow reflects what's already been built before asking what to build next.
+- **Standard path** — No seed file present. GSD opens the interactive discussion wizard, runs a preparation phase (codebase brief, prior context brief), and dispatches the discuss prompt. The discuss flow reflects what's already been built before asking what to build next.
 - **Headless path** — A seed specification file exists at `.gsd/runtime/headless-context.md`. GSD reads it, deletes it, and dispatches a non-interactive flow that makes planning decisions autonomously from the spec and documents every assumption in `CONTEXT.md`.
 
 After the roadmap is approved and "Milestone M00x ready." is printed, auto-mode starts automatically.
@@ -36,12 +36,16 @@ flowchart TD
     ReadSeed --> HeadlessDiscover[Generate next milestone ID\nBootstrap .gsd/ if needed]
     HeadlessDiscover --> HeadlessDispatch[Dispatch discuss-headless prompt\nNo Q&A — autonomous decisions]
     SmartEntry --> StateCheck{Active\nmilestone?}
-    StateCheck -->|None| PrepPhase[Preparation phase\nCodebase · Prior context · Ecosystem]
-    PrepPhase --> DiscussPrompt[Dispatch discuss-prepared\nor discuss prompt]
+    StateCheck -->|None| PrepPhase[Preparation phase\nCodebase · Prior context]
+    PrepPhase --> DiscussPrompt[Dispatch discuss prompt\npreparation context injected]
     StateCheck -->|Complete| NewMilestone[Show 'Start new milestone'\noption]
     NewMilestone --> PrepPhase
-    DiscussPrompt --> QA[4-layer discussion protocol\nScope · Architecture · Errors · Quality]
-    QA --> Preview[Print requirements table\nPrint roadmap preview]
+    DiscussPrompt --> Reflect[Reflection step\nScope honesty · Size read]
+    Reflect --> Investigate[Mandatory investigation\nCodebase · Library docs · Web search]
+    Investigate --> QA[Natural questioning rounds\nDepth enforcement checklist]
+    QA --> DepthVerify{Depth\nverified?}
+    DepthVerify -->|Needs work| QA
+    DepthVerify -->|Confirmed| Preview[Print requirements table\nPrint roadmap preview]
     Preview --> Approve{Approved?}
     Approve -->|Adjust| QA
     Approve -->|Yes| WriteFiles[Write CONTEXT.md · ROADMAP.md\nREQUIREMENTS.md · PROJECT.md]
@@ -53,6 +57,7 @@ flowchart TD
     style CheckHeadless fill:#0d180d,stroke:#39ff14,color:#39ff14
     style StateCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Approve fill:#0d180d,stroke:#39ff14,color:#39ff14
+    style DepthVerify fill:#0d180d,stroke:#39ff14,color:#39ff14
     style ReadSeed fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style HeadlessDiscover fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -60,6 +65,8 @@ flowchart TD
     style PrepPhase fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style DiscussPrompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style NewMilestone fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Reflect fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style Investigate fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style QA fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style Preview fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style WriteFiles fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -71,34 +78,37 @@ flowchart TD
 
 **2. Detect project state** — `showSmartEntry` derives current state. If no active milestone exists (or the previous milestone is fully complete), it presents a "Create next milestone" option. Selecting it starts the preparation phase.
 
-**3. Preparation phase** — Before the discussion prompt is dispatched, GSD runs an automated preparation pass that produces three briefs:
+**3. Preparation phase** — Before the discussion prompt is dispatched, GSD runs an automated preparation pass that produces two briefs:
 
 | Brief | What it captures |
 |-------|-----------------|
 | **Codebase Brief** | Technology stack, key modules, established patterns, constraints current code imposes |
 | **Prior Context Brief** | Existing requirements, decisions, completed milestone summaries — what was built before |
-| **Ecosystem Brief** | Current best practices, known issues, library recommendations for the planned work |
 
-When preparation succeeds, the `discuss-prepared` template is used, which injects these briefs and runs a structured 4-layer discussion protocol. If preparation is disabled or fails, the standard `discuss` template is used instead.
+These briefs are injected as background context into the discuss prompt. The discuss flow still opens with "What's the vision?" — preparation gives the agent grounding, not the scope. If preparation is disabled or fails, the discuss prompt runs without this context.
 
-**4. 4-Layer Discussion Protocol** (prepared path) — The discuss prompt walks through four gated layers:
+**4. Reflection and Investigation** — The discuss prompt opens with a reflection step: the agent summarizes what it understood, gives an honest size read (milestone and slice counts), and invites correction before asking anything. This prevents runaway questioning by forcing comprehension proof first.
 
-| Layer | Focus |
-|-------|-------|
-| **Layer 1 — Scope** | What are we building? Feature boundaries, ambiguity resolution, priorities |
-| **Layer 2 — Architecture** | How will it work? Patterns, libraries, integration points, slice contracts |
-| **Layer 3 — Error States** | What can go wrong? Failure modes, validation, recovery strategy |
-| **Layer 4 — Quality Bar** | What does done mean? Acceptance criteria, test strategy, definition of done |
+After reflection is confirmed, the agent does a mandatory investigation pass: scouts the codebase with `ls`, `find`, and `rg`, checks library docs with `resolve_library` / `get_library_docs`, and runs targeted web searches. This happens once before the first question round so every question reflects what's actually true.
 
-Each layer presents findings from the preparation briefs, makes a concrete recommendation, asks clarifying questions, then gates on explicit user approval before advancing. The user cannot proceed to the next layer without approving the current one.
+**5. Questioning and Depth Verification** — The agent questions as a thinking partner, not an interviewer. It follows the user's energy, challenges vagueness, and makes abstract things concrete. Questioning depth matches scope — simple work needs 1-2 rounds, large ambiguous visions need more. The agent tracks a depth enforcement checklist internally:
 
-**5. Requirements contract** — Before writing the roadmap, the agent produces or updates `.gsd/REQUIREMENTS.md` with requirements organized into Active, Deferred, Out of Scope, and Traceability sections. Each requirement gets a stable `R###` ID, class, status, source, and primary owning slice. Requirements are printed as a table in chat for confirmation before any files are written.
+- What they're building (concrete enough to explain to a stranger)
+- Why it needs to exist
+- Who it's for
+- What "done" looks like
+- The biggest technical unknowns / risks
+- What external systems this touches
 
-**6. Roadmap preview and creation** — The planned roadmap is printed as a table in chat (Slice, Title, Risk, Depends, Demo) before any files are written. The user can request adjustments. Once approved, the agent calls `gsd_plan_milestone` to persist the roadmap — slices use `S01/`, `S02/` naming inside the milestone directory.
+Before offering to proceed, the agent presents a depth summary referencing the user's specific terminology and framing. It then calls `ask_user_questions` with a confirmation gate — this gate is **non-bypassable**: the system mechanically blocks CONTEXT.md writes until the user confirms the depth summary is correct.
 
-**7. Write artifacts** — In a single pass: creates the milestone directory and slices/ subdirectory, writes `CONTEXT.md`, calls `gsd_plan_milestone` to render `ROADMAP.md`, updates `PROJECT.md` with the current milestone sequence, and calls `gsd_decision_save` for any architectural decisions made during discussion.
+**6. Requirements contract** — Before writing the roadmap, the agent produces or updates `.gsd/REQUIREMENTS.md` with requirements organized into Active, Deferred, Out of Scope, and Traceability sections. Each requirement gets a stable `R###` ID, class, status, source, and primary owning slice. Requirements are printed as a table in chat for confirmation before any files are written. This gate is also non-bypassable.
 
-**8. Auto-start** — The agent says "Milestone M00x ready." — this phrase is mechanically detected, which triggers auto-mode to start immediately.
+**7. Roadmap preview and creation** — The planned roadmap is printed as a table in chat (Slice, Title, Risk, Depends, Demo) before any files are written. The user can request adjustments. Once approved, the agent calls `gsd_plan_milestone` to persist the roadmap — slices use `S01/`, `S02/` naming inside the milestone directory.
+
+**8. Write artifacts** — In a single pass: creates the milestone directory and slices/ subdirectory, writes `CONTEXT.md`, calls `gsd_plan_milestone` to render `ROADMAP.md`, updates `PROJECT.md` with the current milestone sequence, and calls `gsd_decision_save` for any architectural decisions made during discussion.
+
+**9. Auto-start** — The agent says "Milestone M00x ready." — this phrase is mechanically detected, which triggers auto-mode to start immediately.
 
 ### Milestone ID Numbering
 
@@ -108,9 +118,9 @@ GSD generates sequential milestone IDs (`M001`, `M002`, `M003`, ...) automatical
 
 If you describe a project spanning multiple milestones during the discussion, the agent proposes a milestone sequence, walks each remaining milestone through a sequential readiness gate, and decides per-milestone whether to:
 
-- **Discuss now** — Run the full 4-layer protocol for that milestone in the current session
-- **Write draft for later** — Write a `CONTEXT-DRAFT.md` with seed material; auto-mode pauses at that milestone and prompts you to run `/gsd discuss` to finalize it
-- **Just queue it** — Create the directory only; auto-mode starts a full discussion when it reaches this milestone
+- **Discuss now** — Run a focused discussion for that milestone in the current session, while context is still fresh. Produces a full `CONTEXT.md`.
+- **Write draft for later** — Write a `CONTEXT-DRAFT.md` with seed material; auto-mode pauses at that milestone and prompts you to run `/gsd` to finalize it.
+- **Just queue it** — Create the directory only; auto-mode starts a full discussion when it reaches this milestone.
 
 A `DISCUSSION-MANIFEST.json` file is written after each gate decision and mechanically blocks auto-start until all gates are complete.
 
@@ -130,7 +140,7 @@ This path is useful for CI-driven or scripted milestone creation from a prepared
 
 The preparation phase can be configured via preferences:
 
-- `discuss_preparation: false` — Disables preparation entirely; falls back to the standard discuss prompt
+- `discuss_preparation: false` — Disables preparation entirely; falls back to the discuss prompt without injected briefs
 - `discuss_web_research: false` — Skips web research during preparation
 - `discuss_depth` — Controls how deeply the preparation explores the codebase
 
@@ -192,21 +202,23 @@ The preparation phase can be configured via preferences:
 After selecting "Create next milestone", GSD runs the preparation phase and dispatches the discuss prompt:
 
 ```
-Based on your codebase and prior context, this milestone is primarily
-API/backend work.
+What's the vision?
+> Push notifications for social events — comments, follows, likes.
+  Also an in-app notification center with per-type opt-out.
+
+Here's my read:
+
+This is primarily API/backend work with a native push layer.
 
 From the codebase: you have an existing Express router with JWT auth
 in auth.ts. The users table has id, email, hashedPassword columns.
 
-What I'm hearing as the scope: push notifications for social events
-(comments, follows), in-app notification center.
+Here's what I'm hearing:
+- Delivery pipeline (APNs/FCM integration)
+- In-app notification history
+- Per-type opt-out preferences
 
-I'd recommend scoping M002 to: delivery pipeline (APNs/FCM), in-app
-notification history, and per-type opt-out preferences.
-
-Does this scope capture what you want to build?
-→ Yes, scope is correct (Recommended)
-  Needs adjustment
+Estimated scope: 1 milestone, 3 slices. Correct anything important I missed.
 ```
 
 ---
@@ -298,7 +310,7 @@ Users should receive push notifications for social events...
 ## Related Commands
 
 - [`/gsd`](../../commands/gsd/) — The same smart entry flow; routes based on current state
-- [`/gsd complete-milestone`](../../commands/complete-milestone/) — Archive the current milestone before starting a new one
-- [`/gsd discuss`](../../commands/discuss/) — Clarify implementation decisions for a specific slice before planning
-- [`/gsd plan-phase`](../../commands/plan-phase/) — Create a detailed slice plan after the roadmap is ready
-- [`/gsd new-project`](../../commands/new-project/) — Greenfield equivalent — initializes a brand-new project from scratch
+- [`/gsd discuss`](../../commands/discuss/) — Start or resume a guided milestone or slice discussion
+- [`/gsd auto`](../../commands/auto/) — Autonomous execution after the roadmap is ready
+- [`/gsd headless`](../../commands/headless/) — Programmatic milestone creation from a spec file
+- [`/gsd doctor`](../../commands/doctor/) — Diagnose and repair .gsd/ state if something looks wrong
