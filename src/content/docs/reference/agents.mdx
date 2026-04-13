@@ -1,14 +1,14 @@
 ---
 title: "Agents"
-description: "5 GSD agents — roles, capabilities, and when they're used."
+description: "13 GSD agents — roles, capabilities, and when they're used."
 ---
 
 import agents from '../../../../content/generated/agents.json';
 import ReferenceCard from '../../../../src/components/ReferenceCard.astro';
 
-5 specialized agents that can be delegated tasks via the subagent system. Each runs in an isolated context window with its own tools, memory settings, and model configuration — keeping delegated work out of the main conversation context.
+{agents.length} specialized agents that can be delegated tasks via the subagent system. Each runs in an isolated context window with its own tools and model configuration — keeping delegated work out of the main conversation context.
 
-Agents are dispatched automatically during parallel orchestration or invoked explicitly via [`/gsd dispatch`](../../commands/dispatch/). Some agents have a fixed model (`sonnet`) and project memory enabled; others are lean, tool-restricted scouts or one-shot workers.
+Agents are dispatched automatically by GSD during orchestration. Development specialists (`debugger`, `planner`, `reviewer`, and others) run on `sonnet` for full capability. Tool-restricted agents like `researcher` and `scout` have a curated toolset suited to their narrow role. The `worker` agent is a general-purpose fallback with full capabilities and no model pin.
 
 Click any card to expand for details.
 

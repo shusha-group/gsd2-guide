@@ -51,6 +51,7 @@ flowchart TD
 | `workingDirectory` | Absolute path to the project working directory | Yes |
 | `overridesSection` | Optional override instructions that supersede or amend the default task plan behavior | Yes |
 | `runtimeContext` | Injected runtime context block (available tools, model info, environment state) assembled by the dispatcher | Yes |
+| `phaseAnchorSection` | Phase handoff anchor from the `plan-slice` phase, injected when available to carry forward key planning context into execution | Yes |
 | `resumeSection` | Resume state block indicating where execution should pick up if this is a continuation run | Yes |
 | `carryForwardSection` | Context carried forward from a previous partial execution of this task, if the task is being resumed | Yes |
 | `taskPlanInline` | Full task plan content inlined directly into the prompt for the executor agent | Yes |
@@ -65,4 +66,5 @@ flowchart TD
 ## Used By
 
 - [`/gsd auto`](../../commands/auto/) — dispatched repeatedly throughout the `executing` phase, once per incomplete task
-- [`/gsd hooks`](../../commands/hooks/) — can dispatch `execute-task` directly for hook-triggered task execution
+- [`/gsd next`](../../commands/next/) — dispatches a single `execute-task` unit in step mode, then pauses for the next decision
+- [`/gsd`](../../commands/gsd/) — same dispatch engine as `/gsd next`; routes to `execute-task` when the next pending unit is a task

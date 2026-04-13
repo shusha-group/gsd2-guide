@@ -1,6 +1,6 @@
 ---
 title: "/gsd queue"
-description: "Queue and reorder future milestones — manage execution order, add new work via discussion, and resolve dependency conflicts."
+description: "Manage the milestone execution queue — reorder pending milestones, resolve dependency conflicts, and add new work via LLM-assisted discussion."
 ---
 
 ## What It Does
@@ -75,13 +75,13 @@ flowchart TD
     style Done fill:#0d180d,stroke:#39ff14,color:#39ff14
 ```
 
-### State Loading
+### State loading
 
 The command reads the full project state via `deriveState()`, which scans the milestone registry to determine which milestones are complete, active, pending, or parked. The hub appears when there are more than one milestone with status `active` or `pending` — the currently running milestone counts toward this total. If the number is one or less, the command skips the hub and goes straight to the add-new-work flow.
 
 The hub summary line shows the complete and pending counts, and appends a parked count when any parked milestones exist (e.g. `2 complete, 3 pending. 1 parked.`).
 
-### Reorder Flow
+### Reorder flow
 
 The reorder UI shows completed milestones (dimmed) and all non-complete, non-parked milestones in their current execution order. Parked milestones are excluded from both lists. Use the keyboard to navigate and reposition items:
 
@@ -90,7 +90,7 @@ The reorder UI shows completed milestones (dimmed) and all non-complete, non-par
 | `↑` / `↓` | Move cursor |
 | `Space` | Grab / release the cursor item for moving |
 | `↑` / `↓` (while grabbed) | Swap the grabbed item with its neighbor |
-| `d` | Remove the first active `depends_on` from the cursor item |
+| `d` / `D` | Remove the first active `depends_on` from the cursor item |
 | `Enter` | Confirm new order |
 | `Esc` | Cancel |
 
@@ -107,7 +107,7 @@ When you confirm:
 
 > **Non-interactive terminals**: If the reorder UI cannot display (RPC mode or headless context), a warning is shown with the current order and reordering is skipped. The add flow still works in all environments.
 
-### Add Flow
+### Add flow
 
 The add flow activates the queue write-gate (which mechanically enforces depth verification before any `CONTEXT.md` can be written), then dispatches an LLM-assisted discussion session. Before asking "What do you want to add?", the LLM checks for any draft milestones — milestones that have a `CONTEXT-DRAFT.md` seed file (created when a prior multi-milestone discussion chose "Needs own discussion" instead of "Ready for auto-planning"). If drafts exist, the LLM surfaces them first and offers to either discuss them now (completing the context file and deleting the draft) or leave them for later — draft milestones left as-is cause auto-mode to pause when it reaches them.
 
@@ -121,9 +121,9 @@ Once past any drafts, the discussion flow:
 
 The add flow does not auto-commit — `.gsd/` is managed externally by the CLI. Artifacts written during the add flow will be picked up by auto-mode naturally when it advances to those milestones.
 
-### CONTEXT.md Dependency Frontmatter
+### CONTEXT.md dependency frontmatter
 
-When a queued milestone depends on another, its context file gets YAML frontmatter:
+When a queued milestone depends on another, its context file gets YAML frontmatter with the exact milestone IDs (including any suffix like `-3ym37m` from unique ID mode):
 
 ```yaml
 ---
@@ -152,7 +152,7 @@ Auto-mode reads this field to enforce execution order. Without it, milestones ma
 | `.gsd/QUEUE.md` | Previous queue entries (for add-flow LLM context) |
 | `.gsd/QUEUE-ORDER.json` | Current custom execution order |
 | `.gsd/milestones/*/<ID>-CONTEXT.md` | Full context for each milestone (dedup and scope checks) |
-| `.gsd/milestones/*/<ID>-CONTEXT-DRAFT.md` | Draft seed files surfaced during add flow; also used as fallback when CONTEXT.md is absent |
+| `.gsd/milestones/*/<ID>-CONTEXT-DRAFT.md` | Draft seed files surfaced during add flow |
 | `.gsd/milestones/*/<ID>-ROADMAP.md` | Roadmap for active/pending/parked milestones (shows what's planned) |
 | `.gsd/milestones/*/<ID>-SUMMARY.md` | Read by state derivation to determine milestone completion status |
 
@@ -185,6 +185,7 @@ Reordering milestones in a project with three pending:
 
   ❯ Reorder queue (Recommended)
     Add new work
+    Not yet
 
 ● Queue Reorder
   Completed:
@@ -258,6 +259,6 @@ Surfacing a draft milestone before adding new work:
 ## Related Commands
 
 - [`/gsd auto`](../auto/) — Executes milestones in queue order
+- [`/gsd discuss`](../discuss/) — Start a milestone discussion without the full queue flow
 - [`/gsd steer`](../steer/) — Override plans during execution
 - [`/gsd status`](../status/) — See current progress and upcoming milestones
-- [`/gsd capture`](../capture/) — Quick thought capture without queue management

@@ -5,15 +5,13 @@ description: "Reconciliation gate before milestone completion — audits slice s
 
 ## What It Does
 
-`validate-milestone` sits between all-slices-complete and milestone-completion as an explicit quality gate. Its job is not to re-execute work, but to audit what was delivered against what was promised. For every success criterion in the milestone roadmap, it checks whether the slice summaries and UAT results provide evidence that the criterion was actually met. For every slice, it checks whether the demo/deliverable claim in the roadmap matches what the slice summary reports. It also verifies cross-slice integration points — confirming that boundary map `produces`/`consumes` entries align with what was actually built.
+`validate-milestone` sits between all-slices-complete and milestone-completion as an explicit quality gate. Its job is not to re-execute work, but to audit what was delivered against what was promised. For every success criterion in the milestone roadmap, it checks whether the slice summaries and UAT results provide evidence that the criterion was actually met. For every slice, it checks whether the demo/deliverable claim in the roadmap matches what the slice summary reports. It also verifies cross-slice integration points — confirming that boundary map `produces`/`consumes` entries align with what was actually built. A fourth check ensures requirement coverage: every active requirement must be addressed by at least one slice.
 
-A fifth validation tier covers **Verification Classes**. When the inlined context includes non-empty verification classes (Contract, Integration, Operational, UAT), the validator checks each tier for evidence in slice summaries, UAT results, or observable behavior. Unaddressed operational verification — planned migrations, deployments, or runtime checks that were never proven — is flagged explicitly. Gaps in verification classes may still yield a `pass` verdict if minor, but they must be documented in the Deferred Work Inventory.
+The validator's verdict determines what happens next. A `pass` verdict means all criteria are met, all slices delivered, and no integration gaps exist — the pipeline advances to `complete-milestone`. A `needs-attention` verdict means minor gaps exist that do not block completion but should be documented. A `needs-remediation` verdict means material gaps were found — the validator adds new remediation slices directly to the roadmap file, those slices are planned and executed, and then validation re-runs as a new remediation round.
 
-The validator's verdict determines what happens next. A `pass` verdict means all criteria are met, all slices delivered, and no integration gaps exist — the pipeline advances to `complete-milestone`. A `needs-attention` verdict means minor gaps exist that do not block completion but should be documented. A `needs-remediation` verdict means material gaps were found — the validator calls `gsd_reassess_roadmap` to add new remediation slices to the roadmap, those slices are planned and executed, and then validation re-runs as a new remediation round.
+This prompt is designed to catch the failure mode where individual tasks and slices all pass their own verification but the assembled milestone as a whole does not deliver its promised user-facing capability. All context (roadmap, slice summaries, UAT results, requirements, decisions, and project context) is preloaded inline so the validator can start working immediately without re-reading files.
 
-This prompt is designed to catch the failure mode where individual tasks and slices all pass their own verification but the assembled milestone as a whole does not deliver its promised user-facing capability. It is also the check that ensures requirement coverage — every active requirement must be addressed by at least one slice by the time this gate runs. All context (roadmap, slice summaries, UAT results, requirements, decisions, and project context) is preloaded inline so the validator can start working immediately without re-reading files.
-
-Results are persisted by calling `gsd_validate_milestone`, which writes the validation to the database and renders `VALIDATION.md` to disk. The report includes a success criteria checklist, a slice delivery audit table, cross-slice integration findings, requirement coverage check, verification classes compliance, verdict rationale, and (if needed) a remediation plan. When the verdict is `needs-remediation`, the validator also calls `gsd_reassess_roadmap` to add the remediation slices and re-render `ROADMAP.md`. The validation pass is the last substantive review before the milestone branch is merged and the worktree is torn down.
+Results are written directly to `{{validationPath}}` (typically `VALIDATION.md`). The report includes a success criteria checklist, a slice delivery audit table, cross-slice integration findings, requirement coverage check, verdict rationale, and — if the verdict is `needs-remediation` — a remediation plan listing the new slices to be added to the roadmap.
 
 ## Pipeline Position
 
@@ -35,7 +33,7 @@ flowchart TD
     style PlanExecute fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
 
-This prompt fires after all planned slices are complete. The `remediationRound` variable tracks how many validation cycles have run — on the first pass it is `0`, and it increments with each `needs-remediation` verdict. When remediation slices are added, they are planned and executed before validation re-runs with an incremented round number. The validation can be skipped entirely via the `skip_milestone_validation` preference, in which case `complete-milestone` fires directly.
+This prompt fires after all planned slices are complete. The `remediationRound` variable tracks how many validation cycles have run — on the first pass it is `0`, and it increments with each `needs-remediation` verdict. When remediation slices are needed, the validator appends them to the roadmap with unchecked `[ ]` status so they are picked up by the dispatcher in the next execution wave.
 
 ## Variables
 
@@ -46,8 +44,8 @@ This prompt fires after all planned slices are complete. The `remediationRound` 
 | `workingDirectory` | Absolute path to the project working directory | Yes |
 | `remediationRound` | Current remediation attempt number — `0` on first pass, increments with each needs-remediation cycle | Yes |
 | `inlinedContext` | Pre-assembled context block containing the roadmap, all slice summaries, UAT results, requirements, decisions, and project context | Yes |
-| `roadmapPath` | File path to the project roadmap, used for cross-referencing success criteria and adding remediation slices | Yes |
-| `skillActivation` | Injected skill-loading instruction block; activates any skills that match the current validation context | Yes |
+| `roadmapPath` | File path to the project roadmap, used for cross-referencing success criteria and appending remediation slices | Yes |
+| `validationPath` | File path where the validation report should be written (e.g. `VALIDATION.md`) | Yes |
 
 ## Used By
 

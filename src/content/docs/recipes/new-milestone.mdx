@@ -1,6 +1,6 @@
 ---
 title: "Recipe: New Milestone on an Existing Project"
-description: "Start a new milestone after the previous one ships — define scope, gather context, and produce a slice roadmap without losing prior history."
+description: "Start a new milestone after the previous one ships — define scope, gather context, and produce a sliced roadmap without losing prior history."
 ---
 
 ## What It Does
@@ -11,8 +11,8 @@ Prior milestone work stays completely intact. `PROJECT.md` carries forward the f
 
 There are two entry paths:
 
-- **Standard path** — No seed file present. GSD opens the interactive discussion wizard, runs a preparation phase (codebase brief, prior context brief), and dispatches the discuss prompt. The discuss flow reflects what's already been built before asking what to build next.
-- **Headless path** — A seed specification file exists at `.gsd/runtime/headless-context.md`. GSD reads it, deletes it, and dispatches a non-interactive flow that makes planning decisions autonomously from the spec and documents every assumption in `CONTEXT.md`.
+- **Standard path** — No headless seed is present. GSD opens the interactive discussion wizard, runs a preparation phase (codebase brief, prior context brief), and dispatches the discuss prompt. The discuss flow reflects what's already been built before asking what to build next.
+- **Headless path** — A specification is passed via `gsd headless new-milestone --context <file>`, `/gsd auto --yolo <file>`, or equivalent. GSD dispatches a non-interactive flow that makes planning decisions autonomously from the spec and documents every assumption in `CONTEXT.md`.
 
 After the roadmap is approved and "Milestone M00x ready." is printed, auto-mode starts automatically.
 
@@ -22,7 +22,7 @@ After the roadmap is approved and "Milestone M00x ready." is printed, auto-mode 
 /gsd new-milestone
 ```
 
-No arguments are accepted — the milestone ID and title are determined during the discussion. To trigger the headless path, write a specification document to `.gsd/runtime/headless-context.md` before running the command.
+No arguments are accepted — the milestone ID and title are determined during the discussion. To trigger the headless path without any Q&A, use `gsd headless new-milestone --context <file>` (from the terminal) or `/gsd auto --yolo <file>` (from Claude).
 
 ## How It Works
 
@@ -30,10 +30,9 @@ No arguments are accepted — the milestone ID and title are determined during t
 
 ```mermaid
 flowchart TD
-    Start(["/gsd new-milestone"]) --> CheckHeadless{headless-context.md\nexists?}
-    CheckHeadless -->|Yes| ReadSeed[Read seed spec\nDelete headless-context.md]
+    Start(["/gsd new-milestone"]) --> CheckHeadless{Headless seed\nprovided?}
+    CheckHeadless -->|Yes| HeadlessDiscover[Generate next milestone ID\nBootstrap .gsd/ if needed]
     CheckHeadless -->|No| SmartEntry[showSmartEntry\nDetect state]
-    ReadSeed --> HeadlessDiscover[Generate next milestone ID\nBootstrap .gsd/ if needed]
     HeadlessDiscover --> HeadlessDispatch[Dispatch discuss-headless prompt\nNo Q&A — autonomous decisions]
     SmartEntry --> StateCheck{Active\nmilestone?}
     StateCheck -->|None| PrepPhase[Preparation phase\nCodebase · Prior context]
@@ -58,9 +57,8 @@ flowchart TD
     style StateCheck fill:#0d180d,stroke:#39ff14,color:#39ff14
     style Approve fill:#0d180d,stroke:#39ff14,color:#39ff14
     style DepthVerify fill:#0d180d,stroke:#39ff14,color:#39ff14
-    style ReadSeed fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
-    style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style HeadlessDiscover fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style SmartEntry fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style HeadlessDispatch fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style PrepPhase fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style DiscussPrompt fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
@@ -74,7 +72,7 @@ flowchart TD
 
 ### Step-by-Step
 
-**1. Check for headless seed** — Looks for `.gsd/runtime/headless-context.md`. If found, reads it, deletes it, and routes to the headless path. Otherwise, routes through `showSmartEntry`.
+**1. Check for headless seed** — Determines whether a headless seed was provided (via `gsd headless new-milestone --context` or the `--yolo` flag). If yes, routes to the headless path. Otherwise, routes through `showSmartEntry`.
 
 **2. Detect project state** — `showSmartEntry` derives current state. If no active milestone exists (or the previous milestone is fully complete), it presents a "Create next milestone" option. Selecting it starts the preparation phase.
 
@@ -82,8 +80,8 @@ flowchart TD
 
 | Brief | What it captures |
 |-------|-----------------|
-| **Codebase Brief** | Technology stack, key modules, established patterns, constraints current code imposes |
-| **Prior Context Brief** | Existing requirements, decisions, completed milestone summaries — what was built before |
+| **Codebase brief** | Technology stack, key modules, established patterns, constraints current code imposes |
+| **Prior context brief** | Existing requirements, decisions, completed milestone summaries — what was built before |
 
 These briefs are injected as background context into the discuss prompt. The discuss flow still opens with "What's the vision?" — preparation gives the agent grounding, not the scope. If preparation is disabled or fails, the discuss prompt runs without this context.
 
@@ -100,7 +98,7 @@ After reflection is confirmed, the agent does a mandatory investigation pass: sc
 - The biggest technical unknowns / risks
 - What external systems this touches
 
-Before offering to proceed, the agent presents a depth summary referencing the user's specific terminology and framing. It then calls `ask_user_questions` with a confirmation gate — this gate is **non-bypassable**: the system mechanically blocks CONTEXT.md writes until the user confirms the depth summary is correct.
+Before offering to proceed, the agent presents a depth summary referencing the user's specific terminology and framing. It then presents a confirmation gate — this gate is **non-bypassable**: the system mechanically blocks `CONTEXT.md` writes until the user confirms the depth summary is correct.
 
 **6. Requirements contract** — Before writing the roadmap, the agent produces or updates `.gsd/REQUIREMENTS.md` with requirements organized into Active, Deferred, Out of Scope, and Traceability sections. Each requirement gets a stable `R###` ID, class, status, source, and primary owning slice. Requirements are printed as a table in chat for confirmation before any files are written. This gate is also non-bypassable.
 
@@ -126,7 +124,7 @@ A `DISCUSSION-MANIFEST.json` file is written after each gate decision and mechan
 
 ### Headless Path
 
-When `.gsd/runtime/headless-context.md` exists, the command runs without any Q&A. The agent:
+When a seed specification is provided via `gsd headless new-milestone --context <file>` (terminal) or `/gsd auto --yolo <file>` (Claude), the command runs without any Q&A. The agent:
 
 1. Reads and summarizes the specification
 2. Scouts the codebase and checks library docs for any tech mentioned
@@ -134,7 +132,7 @@ When `.gsd/runtime/headless-context.md` exists, the command runs without any Q&A
 4. Documents every assumption in an "Assumptions" section in `CONTEXT.md`
 5. Writes `PROJECT.md`, `REQUIREMENTS.md`, `CONTEXT.md`, and calls `gsd_plan_milestone`
 
-This path is useful for CI-driven or scripted milestone creation from a prepared spec.
+This path is useful for CI-driven or scripted milestone creation from a prepared spec. The headless prompt enforces an anti-reduction rule — if the spec describes a big vision, the full vision is planned rather than quietly trimmed.
 
 ### Preparation Phase Settings
 
@@ -161,7 +159,6 @@ The preparation phase can be configured via preferences:
 
 | File | Purpose |
 |------|---------|
-| `.gsd/runtime/headless-context.md` | Seed specification for headless path (deleted after reading) |
 | `.gsd/PROJECT.md` | Existing stack, decisions, milestone sequence |
 | `.gsd/REQUIREMENTS.md` | Prior requirements to continue numbering and traceability |
 | `.gsd/DECISIONS.md` | Prior decisions to surface as context during discussion |
@@ -181,7 +178,6 @@ The preparation phase can be configured via preferences:
 
 | File | Purpose |
 |------|---------|
-| `.gsd/runtime/headless-context.md` | Consumed and deleted when headless path runs |
 | `.gsd/milestones/MXXX/MXXX-CONTEXT-DRAFT.md` | Deleted when draft milestone context is promoted to full context |
 
 ## Examples
@@ -283,22 +279,23 @@ Ready to write, or want to adjust?
 
 **Headless path from a spec file:**
 
+```bash
+# From the terminal — creates milestone from a spec file, then starts auto mode
+gsd headless new-milestone --context ./push-notifications-spec.md --auto
+
+# From Claude — use the --yolo flag with /gsd auto
+/gsd auto --yolo ./push-notifications-spec.md
 ```
-$ cat .gsd/runtime/headless-context.md
-# M002 Spec: Push Notifications
 
-## Goal
-Users should receive push notifications for social events...
-[full spec here]
+The headless agent works through the spec autonomously:
 
-> /gsd new-milestone
-
-● Found headless-context.md — running autonomous milestone creation
+```
+● Found headless seed — running autonomous milestone creation
 
   Reflection: Building a push notification system for social events.
   Estimated scope: 3 slices, medium complexity.
   ...
-  
+
   Assumptions made:
   - APNs + FCM via expo-notifications (no web push in scope)
   - Badge count driven by server-side unread count
@@ -312,5 +309,5 @@ Users should receive push notifications for social events...
 - [`/gsd`](../../commands/gsd/) — The same smart entry flow; routes based on current state
 - [`/gsd discuss`](../../commands/discuss/) — Start or resume a guided milestone or slice discussion
 - [`/gsd auto`](../../commands/auto/) — Autonomous execution after the roadmap is ready
-- [`/gsd headless`](../../commands/headless/) — Programmatic milestone creation from a spec file
+- [`/gsd headless`](../../commands/headless/) — Programmatic milestone creation from a spec file, without user interaction
 - [`/gsd doctor`](../../commands/doctor/) — Diagnose and repair .gsd/ state if something looks wrong

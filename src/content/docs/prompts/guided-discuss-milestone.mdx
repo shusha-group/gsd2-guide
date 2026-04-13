@@ -9,11 +9,15 @@ description: "An interview-style prompt that surfaces behavioral and architectur
 
 The prompt starts with a lightweight codebase investigation — using `rg`, `find`, or the `scout` subagent to understand what already exists that the milestone touches. It also uses `resolve_library` / `get_library_docs` for unfamiliar libraries, and `search_and_read` for one-shot topic research, with a limited web search budget distributed across the investigation pass and subsequent rounds. This ensures questions are grounded in reality rather than generic assumptions.
 
-The agent then runs an interview in rounds of 1–3 questions each, covering six areas: what is being built (concrete enough to explain to a stranger), why it needs to exist, who it's for, what "done" looks like, the biggest technical unknowns and risks, and what external systems the milestone touches. When `structuredQuestionsAvailable` is true, each round uses `ask_user_questions` for interactive selection UI. When false, questions are posed in plain text.
+The agent then runs an interview in rounds of 1–3 questions each, covering six areas: what is being built (concrete enough to explain to a stranger), why it needs to exist, who it's for, what "done" looks like, the biggest technical unknowns and risks, and what external systems the milestone touches. When `structuredQuestionsAvailable` is true, each round uses `ask_user_questions` for interactive selection UI — exactly once per turn, never with overlapping questions. When false, questions are posed in plain text.
 
-The agent does **not** ask a "ready to wrap up?" gate after every round — it continues immediately into the next round unless the depth checklist is genuinely satisfied. A single wrap-up prompt is used only when the agent believes all six areas are covered or the user signals they want to stop. Before writing, the agent prints a structured depth summary using the user's exact terminology and runs a confirmation gate — when structured questions are available, the question ID must contain `depth_verification` to enable the write-gate downstream.
+The agent does **not** ask a "ready to wrap up?" gate after every round — it continues immediately into the next round unless the depth checklist is genuinely satisfied. A single wrap-up prompt is used only when the agent believes all six areas are covered or the user signals they want to stop.
 
-The output is a `{milestoneId}-CONTEXT.md` file that preserves the user's exact wording, emphasis, and framing. It is not a paraphrase — downstream agents read it as their only window into this conversation. The file is written directly to the milestone directory; the prompt then executes the `commitInstruction` (the dispatcher injects the appropriate commit behavior for the current context). After writing, the prompt says exactly `"{{milestoneId}} context written."` and nothing else. When a milestone has a context file, it is the first thing planning prompts read and the authoritative answer to scope questions.
+**Incremental persistence:** After every 2 question rounds, the agent silently saves a `{milestoneId}-CONTEXT-DRAFT.md` using `gsd_summary_save` with `artifact_type: "CONTEXT-DRAFT"`. This protects against session crashes losing confirmed work and is invisible to the user. The final context file overwrites it.
+
+Before writing the final output, the agent prints a structured depth summary using the user's exact terminology and runs a confirmation gate — when structured questions are available, the question ID must contain both `depth_verification` and the milestone id (e.g. `depth_verification_{{milestoneId}}_confirm`) to enable the write-gate downstream. This gate is non-bypassable: if the user declines, cancels, or does not respond, the agent must re-ask. It cannot rationalize past the block.
+
+The output is written by calling `gsd_summary_save` with `milestone_id`, `artifact_type: "CONTEXT"`, and the full context markdown as `content` — the tool writes the file to disk and persists it to the database. The file preserves the user's exact wording, emphasis, and framing — it is not a paraphrase. Downstream agents read it as their only window into this conversation. After writing, the prompt executes the `commitInstruction` injected by the dispatcher, then says exactly `"{{milestoneId}} context written."` and nothing else.
 
 ## Pipeline Position
 
@@ -22,7 +26,8 @@ flowchart TD
     GsdCommand["/gsd discuss"] --> SelectUnit["guided flow dispatch"]
     SelectUnit --> GuidedDiscussMilestone["guided-discuss-milestone"]
     GuidedDiscussMilestone --> QuestionRounds["question rounds"]
-    QuestionRounds --> DepthVerification{"depth verified?"}
+    QuestionRounds --> DraftSave["draft save every 2 rounds\n(CONTEXT-DRAFT.md)"]
+    DraftSave --> DepthVerification{"depth verified?"}
     DepthVerification -->|"no"| QuestionRounds
     DepthVerification -->|"yes"| ArtifactWritten["artifact written\n(milestoneId-CONTEXT.md)"]
 
@@ -30,6 +35,7 @@ flowchart TD
     style GsdCommand fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style SelectUnit fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style QuestionRounds fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
+    style DraftSave fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style DepthVerification fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
     style ArtifactWritten fill:#1a3a1a,stroke:#39ff14,color:#e8f4e8
 ```
@@ -43,6 +49,7 @@ flowchart TD
 | `milestoneId` | Current milestone identifier (e.g. M001) | Yes |
 | `milestoneTitle` | Human-readable title of the milestone being discussed | Yes |
 | `structuredQuestionsAvailable` | Whether `ask_user_questions` UI is available for interactive selection | Yes |
+| `fastPathInstruction` | Optional fast-path instruction injected by the dispatcher to skip or accelerate the interview when prior context is available | Yes |
 | `inlinedTemplates` | Output template content inlined directly into the prompt | Yes |
 | `commitInstruction` | Instruction for how to commit the context file after writing | Yes |
 

@@ -21,7 +21,7 @@ The discussion is behaviour-focused, not tech-focused. The agent asks about what
 /gsd discuss
 ```
 
-No flags. Requires an active milestone with a roadmap and at least one pending slice, or a pending milestone to discuss.
+No flags. Requires a GSD project (`.gsd/` directory) with at least one milestone. The slice picker flow additionally requires the active milestone to have a roadmap and at least one pending slice. The `needs-discussion` flow works without a roadmap. If there is no active milestone, at least one queued milestone must exist in the registry.
 
 ## How It Works
 
@@ -113,6 +113,8 @@ The interview is a back-and-forth conversation, not a form. Before asking anythi
 - **Feel and experience** — Tone, responsiveness, feedback, transitions, what "done" feels like
 
 Questions come in rounds of 1–3 at a time. The agent continues asking rounds until it genuinely believes the slice is well understood. Only then does it offer a wrap-up choice: "Write the context file" or "One more pass." You decide the pace.
+
+**Non-bypassable write gate:** The agent cannot write the context file until you explicitly select "Write the context file." If the option is dismissed or the tool fails, it re-asks rather than proceeding. This gate protects the interview work from being bypassed.
 
 **Incremental persistence:** Every two question rounds, the agent silently saves a draft `<SID>-CONTEXT-DRAFT.md` to the slice directory. This protects confirmed work against session crashes. The draft is invisible to you — the final `CONTEXT.md` replaces it when you choose to write.
 

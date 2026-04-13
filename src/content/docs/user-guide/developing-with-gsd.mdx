@@ -132,12 +132,11 @@ Before GSD writes any files, it presents a structured depth summary and asks you
 
 ### What discussion produces
 
-When discussion finishes, GSD writes several artifacts in a single pass:
+When discussion finishes, GSD writes several artifacts:
 
 - **`PROJECT.md`** — what the project is, current state, and milestone sequence
 - **`REQUIREMENTS.md`** — the capability contract: every requirement with ID, status, ownership, and traceability
 - **`M001-CONTEXT.md`** — the milestone brief: scope, goals, constraints, and decisions from the conversation
-- **`M001-ROADMAP.md`** — ordered slices with risk levels, demos, proof strategy, and boundary map
 - **`DECISIONS.md`** — architectural decisions made during discussion, auto-assigned IDs via `gsd_decision_save`
 - **`STATE.md`** — derived state cache, written last to signal discussion is complete
 
@@ -149,11 +148,10 @@ When discussion finishes, GSD writes several artifacts in a single pass:
 ├── STATE.md
 └── milestones/
     └── M001/
-        ├── M001-CONTEXT.md    ← scope, goals, key decisions
-        └── M001-ROADMAP.md    ← ordered slices with proof strategy
+        └── M001-CONTEXT.md    ← scope, goals, key decisions
 ```
 
-The context file is the authoritative record of what this milestone should achieve. Every downstream phase reads it.
+The context file is the authoritative record of what this milestone should achieve. Every downstream phase reads it. Once `STATE.md` is written, auto-mode starts automatically and runs through research and planning.
 
 ### Multi-milestone projects
 
@@ -179,7 +177,7 @@ depends_on: [M001]
 
 ## Phase 2: Research
 
-Research happens automatically when you run `/gsd auto` (or GSD dispatches it). The research agent:
+Research happens automatically when auto-mode starts (triggered after discussion completes). The research agent:
 
 - **Scouts the codebase** — what exists, what patterns are established, what constraints the current code imposes
 - **Checks library docs** — current API shapes, version-specific behavior, known gotchas
@@ -216,7 +214,7 @@ Planning happens in two stages: **milestone planning** (roadmap) and **slice pla
 
 ### Milestone Roadmap
 
-The milestone planner reads the context and research, then decomposes work into **slices** — demoable vertical increments ordered by risk:
+After research completes, the milestone planner (`plan-milestone`) reads the context and research, then decomposes work into **slices** — demoable vertical increments ordered by risk:
 
 ```
 .gsd/
@@ -424,8 +422,11 @@ Mid-execution of S01, the `.gsd/` directory looks like this:
 ├── STATE.md
 ├── DECISIONS.md                 ← architectural decisions accumulate here
 ├── KNOWLEDGE.md                 ← patterns and gotchas discovered during work
+├── CODEBASE.md                  ← generated codebase map cache (auto-refreshed)
 ├── OVERRIDES.md                 ← active /gsd steer overrides (if any)
 ├── QUEUE.md                     ← queued milestones log (if any)
+├── runtime/                     ← system-managed: dispatch state, do not edit
+├── activity/                    ← system-managed: JSONL execution logs, do not edit
 └── milestones/
     └── M001/
         ├── M001-CONTEXT.md
@@ -456,7 +457,7 @@ After all tasks are done, GSD runs through a post-completion sequence. The order
 
 1. **Complete slice** — runs all slice-level verification, fixes failures, writes `S01-SUMMARY.md`, marks the slice done in the roadmap. This is the `summarizing` phase.
 2. **Run UAT** — if `uat_dispatch` is enabled and a UAT script (`S01-UAT.md`) exists, executes the acceptance test script and writes `S01-UAT-RESULT.md`.
-3. **UAT verdict gate** — if UAT ran and the verdict is not `PASS`, auto-mode stops. You must fix the failures and re-run `/gsd auto` to continue.
+3. **UAT verdict gate** — if UAT ran and the verdict is not `PASS`, auto-mode stops. You must fix the failures and re-run `/gsd auto` to continue. If run-uat is dispatched 3 times without producing a verdict (e.g., broken verification commands), auto-mode stops with an error instead of looping indefinitely.
 4. **Reassess roadmap** — if `reassess_after_slice: true` is set in preferences, checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices. Also skipped when `skip_reassess: true` is set.
 
 The completion agent (step 1) also:
@@ -510,6 +511,7 @@ After S01 completes and S02 is in progress, the `.gsd/` tree looks like this:
 ├── REQUIREMENTS.md
 ├── DECISIONS.md
 ├── KNOWLEDGE.md
+├── CODEBASE.md
 └── milestones/
     └── M001/
         ├── M001-CONTEXT.md
@@ -544,7 +546,7 @@ GSD derives its state entirely from files on disk. There's no database, no hidde
 The state derivation algorithm:
 
 1. Find all milestone directories (M001, M002, ...)
-2. Skip **ghost milestones** — directories containing only `META.json` with no substantive files (`CONTEXT`, `ROADMAP`, or `SUMMARY`)
+2. Skip **ghost milestones** — directories containing only `META.json` with no substantive files (`CONTEXT`, `ROADMAP`, or `SUMMARY`), unless a DB row or worktree exists for the milestone
 3. Skip **parked milestones** — directories with a `PARKED` file; these do not satisfy `depends_on` for other milestones
 4. Check milestone-level `depends_on` frontmatter in each `CONTEXT.md` — skip milestones whose dependencies aren't complete
 5. The first incomplete, unblocked milestone becomes the **active milestone**
@@ -626,7 +628,7 @@ For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <de
 | **Summaries as context** | Each completed unit writes a summary that feeds into the next unit's context |
 | **Ordered dispatch rules** | Auto-mode is a table of rules evaluated in sequence — the first match wins |
 | **Post-completion hooks** | UAT and roadmap reassessment run after slice completion, before the next slice starts |
-| **UAT verdict gate** | A non-PASS UAT result blocks auto-mode until you fix the failures |
+| **UAT verdict gate** | A non-PASS UAT result blocks auto-mode until you fix the failures; 3 attempts without a verdict also stops auto-mode |
 | **Capability contract** | `REQUIREMENTS.md` tracks every requirement with status, ownership, and traceability |
 | **Milestone validation** | Before completing a milestone, GSD verifies the assembled work delivers the goal |
 | **Quality gate evaluation** | After slice planning, configured gates run against the plan before execution starts |
@@ -636,6 +638,7 @@ For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <de
 | **Parallel slice research** | When 2+ slices are ready for research simultaneously, GSD researches them in a single parallel unit |
 | **Observable artifacts** | Every phase produces readable markdown files — you can always see what happened |
 | **Intervention points** | Stop, pause, steer, edit plans, or fix things manually at any time |
+| **CODEBASE.md** | Generated codebase map cache in `.gsd/` root — auto-refreshed when tracked files change |
 
 ---
 
