@@ -110,11 +110,11 @@ flowchart TD
 ### Initialization sequence
 
 1. **Stale worktree escape** — If the process `cwd` is still inside a previous milestone's worktree (e.g., after an unclean stop), GSD detects it and escapes back to the project root before proceeding.
-2. **Resume check** — If a previous session was paused, GSD restores the saved state (base path, current unit, completed units), re-enters the worktree if needed, and jumps straight to dispatch. A recovery briefing is synthesized from the paused session's tool call history so the next agent knows what already happened.
+2. **Resume check** — If a previous session was paused, GSD reads `.gsd/runtime/paused-session.json` to restore the saved state (base path, current unit, completed units), re-enters the worktree if needed, and jumps straight to dispatch. A recovery briefing is synthesized from the paused session's tool call history so the next agent knows what already happened.
 3. **Git check** — Ensures the project is in a git repository. If not, initializes one with the configured main branch, sets up `.gitignore` baseline patterns, and bootstraps the `.gsd/` directory structure.
-4. **Crash recovery** — Checks for a crash lock file in `.gsd/`. If found and the process is no longer alive, GSD synthesizes a recovery context from the prior session's tool call history and prepends it to the first dispatch prompt. If the lock belongs to a live process, GSD aborts to prevent two concurrent sessions. A separate session lock (`.gsd/runtime/session.lock`) tracks the active PID and unit for cross-process coordination.
+4. **Crash recovery** — Checks for a crash lock file at `.gsd/auto.lock`. If found and the process is no longer alive, GSD synthesizes a recovery context from the prior session's tool call history and prepends it to the first dispatch prompt. If the lock belongs to a live process, GSD aborts to prevent two concurrent sessions.
 5. **Database** — Opens or auto-migrates the SQLite database at `.gsd/gsd.db`. If the database doesn't exist yet but `.gsd/` has markdown files (decisions, requirements, milestones), GSD automatically imports them into the database before the first dispatch.
-6. **Orphaned branch audit** — Scans all local `milestone/*` branches and checks each against the DB. For any completed milestone whose teardown (merge + branch delete) was never run, GSD attempts to clean up: if the branch is already merged into main, it deletes the branch and removes the orphaned worktree directory; if the branch is not yet merged, it warns the user rather than touching it. This catches sessions that ended between milestone completion and worktree teardown.
+6. **Orphaned branch audit** — Scans all local `milestone/*` branches (when worktree isolation is active) and checks each against the DB. For any completed milestone whose teardown (merge + branch delete) was never run, GSD attempts to clean up: if the branch is already merged into main, it deletes the branch and removes the orphaned worktree directory; if the branch is not yet merged, it warns the user rather than touching it. This catches sessions that ended between milestone completion and worktree teardown.
 7. **Derive state** — Reads all `.gsd/` files to determine the current phase: which milestone is active, which slice, which task. This is the same algorithm used by [`/gsd status`](../status/).
 8. **Discuss-milestone** — If no milestone exists yet, or the active milestone has a draft context file that needs discussion, GSD dispatches a `discuss-milestone` unit to talk through the project goals and produce a `CONTEXT.md` before planning begins.
 9. **Worktree setup** — If worktree isolation is enabled (opt-in via `git.isolation: "worktree"` in preferences), creates or re-enters `.gsd/worktrees/<MID>/` with a `milestone/<MID>` branch. When re-attaching to an existing branch, GSD forward-merges any plan checkpoint state from the project root into the worktree to handle crash scenarios. A user-configured post-create hook (`git.worktree_post_create` in preferences) is run after creation — useful for copying `.env` files or symlinking assets. When worktree isolation is disabled (the default), GSD executes directly in the project root.
@@ -201,7 +201,7 @@ If the same unit is re-dispatched 3 times without producing its expected artifac
 
 ### Progress widget
 
-While auto mode runs, a live progress widget is displayed in the terminal. The widget shows the current unit, milestone/slice context, slice progress bar, task checklist, cost, cache hit rate, and context window usage. Four display modes are available — cycle through them with **Esc**:
+While auto mode runs, a live progress widget is displayed in the terminal. The widget shows the current unit, milestone/slice context, slice progress bar, task checklist, cost, token counts, and context window usage. Four display modes are available — cycle through them with **Esc**:
 
 | Mode | What's shown |
 |------|-------------|
@@ -210,7 +210,7 @@ While auto mode runs, a live progress widget is displayed in the terminal. The w
 | `min` | Header line only |
 | `off` | Hidden |
 
-The selected mode is persisted to preferences so it survives restarts. You can also set the mode directly with [`/gsd widget <mode>`](../widget/).
+The selected mode is persisted to preferences so it survives restarts. You can also set the mode directly with `/gsd widget <mode>`.
 
 ## What Files It Touches
 
@@ -231,7 +231,7 @@ The selected mode is persisted to preferences so it survives restarts. You can a
 | File | Purpose |
 |------|---------|
 | `.gsd/STATE.md` | Updated after each unit completes |
-| `.gsd/auto.lock` | Written at startup, cleared on stop — used for crash detection and cross-process signaling |
+| `.gsd/auto.lock` | Crash and session lock — written at startup, cleared on stop; records PID and active unit for crash detection and concurrent-session prevention |
 | `.gsd/gsd.db` | SQLite database opened or auto-migrated at startup |
 | `.gsd/metrics.json` | Running cost, token, and timing totals synced across worktree and project root |
 | `.gsd/milestones/<MID>/<SID>/tasks/<TID>-SUMMARY.md` | Written by each task executor |
@@ -241,8 +241,7 @@ The selected mode is persisted to preferences so it survives restarts. You can a
 | `.gsd/milestones/<MID>/<SID>/<SID>-ASSESSMENT.md` | Roadmap reassessment written by `reassess-roadmap` |
 | `.gsd/milestones/<MID>/<MID>-VALIDATION.md` | Written at milestone validation |
 | `.gsd/milestones/<MID>/<MID>-SUMMARY.md` | Written at milestone completion |
-| `.gsd/runtime/auto.lock` | Crash lock file with PID and current unit |
-| `.gsd/runtime/session.lock` | Session lock tracking active PID and unit for cross-process coordination |
+| `.gsd/runtime/paused-session.json` | Written when a session is paused; read on resume to restore milestone and unit context |
 | `.gsd/runtime/rewrite-count.json` | Disk-persisted rewrite attempt counter (survives restarts) |
 | `.gsd/runtime/uat-count-<MID>-<SID>.json` | Per-slice run-uat dispatch counter (caps at 3 attempts before warning stop) |
 | `.gsd/runtime/units/` | Per-unit runtime records (phase, timeouts, progress tracking, recovery status) |
@@ -359,7 +358,6 @@ UAT verdict blocking progression:
 - [`/gsd status`](../status/) — View progress dashboard without interrupting
 - [`/gsd steer`](../steer/) — Inject a course-correction override while auto mode runs
 - [`/gsd capture`](../capture/) — Record a thought without interrupting auto mode
-- [`/gsd widget`](../widget/) — Change the progress widget display mode
 - [`/gsd discuss`](../discuss/) — Discuss a slice before planning (required when `require_slice_discussion` is enabled)
 
 **Prompt templates used by auto mode:**

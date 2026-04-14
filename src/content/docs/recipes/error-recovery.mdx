@@ -49,7 +49,6 @@ The `auto.lock` file confirms auto-mode was running and didn't shut down cleanly
   "unitType": "execute-task",
   "unitId": "M002/S01/T02",
   "unitStartedAt": "2025-01-15T10:24:00.000Z",
-  "completedUnits": 3,
   "sessionFile": ".gsd/activity/004-execute-task-M002-S01-T02.jsonl"
 }
 ```
@@ -80,11 +79,12 @@ Start by scanning for issues without making any changes:
 > /gsd doctor
 ```
 
-Doctor runs checks across six domains:
+Doctor runs checks across seven domains:
 
-- **Structural checks** — Missing summaries, UAT files, unchecked roadmap entries, missing `tasks/` directories, duplicate task IDs, premature slice completion
+- **Structural checks** — Missing summaries, UAT files, unchecked roadmap entries, missing `tasks/` directories, duplicate task IDs, premature slice completion, requirements without owners
 - **Git health** — Orphaned worktrees, stale milestone branches, corrupt merge or rebase state, runtime files tracked by git, orphaned worktree directories, stale or dirty worktrees
 - **Runtime health** — Stale `auto.lock` (PID check), stranded lock directory, stale parallel sessions, orphaned completed-unit keys, stale hook state, activity log bloat, STATE.md staleness, gitignore drift, metrics ledger bloat
+- **Engine health** — DB constraints and projection drift between disk state and the GSD database
 - **Global health** — Orphaned project state directories in `~/.gsd/projects/` whose git root no longer exists
 - **Environment health** — Node version, dependencies, missing `.env` files, port conflicts, disk space, Docker, package manager, TypeScript/Python/Rust/Go tool presence, git remote reachability
 - **Provider/auth checks** — API key availability for required LLM providers, remote questions channel tokens, optional tool integrations
@@ -149,8 +149,8 @@ Auto-mode re-derives state from disk on startup. If T02 never wrote a summary, a
 
 Auto-mode also runs lightweight self-healing on every startup:
 
-- **Stale runtime records** — Clears dispatched records older than 1 hour (which means the process crashed before the unit could complete).
-- **Complete-slice invariant repair** — If a `complete-slice` unit has both a SUMMARY and UAT file on disk but the roadmap checkbox is still unchecked (crashed after writing artifacts but before updating the roadmap), auto-mode flips the checkbox automatically.
+- **Stale runtime unit files** — Clears leftover `runtime/units/*.json` files for milestones that have already completed (have a SUMMARY on disk), preventing stale state from causing the wrong milestone to resume.
+- **Index lock removal** — If `.git/index.lock` is older than 60 seconds (from a prior crash), it is removed automatically so git operations succeed.
 - **Merge state reconciliation** — Checks for leftover `MERGE_HEAD` or `SQUASH_MSG` from a prior session. If all conflicts are resolved, it finalizes the commit. If conflicts involve only `.gsd/` state files, it auto-resolves by accepting theirs. If code conflicts remain, it aborts and resets.
 
 In addition to startup self-healing, a proactive healing layer runs continuously during an auto-mode session:
@@ -169,7 +169,7 @@ When auto-fix can't resolve everything (non-fixable issues, missing artifacts th
 > /gsd doctor heal
 ```
 
-Heal mode first applies all fixable repairs, then filters the remaining issues — all errors plus UAT-related warnings (`all_tasks_done_missing_slice_uat` and `slice_checked_missing_uat`) — and dispatches them to the LLM as a structured list. The LLM receives the full doctor report with issue codes, unit IDs, and file paths, and is instructed to generate real artifacts from existing context (task summaries, plan files) rather than leaving placeholders when possible.
+Heal mode first applies all fixable repairs, then filters the remaining issues — all fixable errors and warnings — and dispatches them to the LLM as a structured list. The LLM receives the full doctor report with issue codes, unit IDs, and file paths, and is instructed to generate real artifacts from existing context (task summaries, plan files) rather than leaving placeholders when possible.
 
 ```
 GSD doctor heal prep.
@@ -206,35 +206,33 @@ Every forensic report is saved as a timestamped file in `.gsd/forensics/` for fu
 
 ### 7. Manual state repair (last resort)
 
-If both doctor and forensics can't automatically resolve the state, you can repair manually. When auto-mode detects a stuck loop, it provides concrete remediation steps based on the unit type.
+If both doctor and forensics can't automatically resolve the state, use the reset commands to restore a clean baseline, then resume.
 
 **Stuck `execute-task`:**
 
-1. **Write the task summary** — Even a partial summary in `T02-SUMMARY.md` is sufficient to unblock the pipeline
-2. **Mark the task done** — Change `- [ ] **T02:` → `- [x] **T02:` in the slice plan
-3. **Reconcile state** — Run `/gsd doctor fix` to rebuild STATE.md and clear any stale runtime records
-4. **Resume** — Run `/gsd auto` to restart execution from the next task
+1. Run `gsd undo-task T02` to reset the task's completion state (DB + markdown)
+2. Resume auto-mode — it will re-execute the task from scratch
+3. If the task keeps failing, run `gsd recover` to rebuild DB state from disk
 
 **Stuck `complete-slice`:**
 
-1. Write the slice summary and UAT file
-2. Mark the slice `[x]` in the milestone roadmap
-3. Run `/gsd doctor fix`
-4. Resume auto-mode
+1. Run `gsd reset-slice S01` to reset the slice and all its tasks (DB + markdown)
+2. Resume auto-mode — it will re-execute incomplete tasks and re-complete the slice
+3. If the slice keeps failing, run `gsd recover` to rebuild DB state from disk
 
 **Stuck `plan-slice` or `research-slice`:**
 
 1. Write the slice plan or research file manually (or with the LLM in interactive mode)
-2. Run `/gsd doctor fix` to reconcile state
+2. Run `gsd recover` to rebuild DB state from disk
 3. Resume auto-mode
 
 **Stuck `validate-milestone`:**
 
 1. Write the validation file with `verdict: pass`
-2. Run `/gsd doctor fix`
+2. Run `gsd recover` to rebuild DB state from disk
 3. Resume auto-mode
 
-## What Gets Created
+## What Files It Touches
 
 The recovery process may produce:
 
@@ -312,4 +310,4 @@ flowchart TD
 - [`/gsd forensics`](../../commands/forensics/) — Behavioral investigation of stuck loops, cost spikes, and crash analysis
 - [`/gsd status`](../../commands/status/) — View current project state
 - [`/gsd auto`](../../commands/auto/) — Resume auto-mode after recovery
-- [`/gsd skip`](../../commands/skip/) — Skip a stuck unit and advance the pipeline
+- [`/gsd skip`](../../commands/skip/) — Prevent a unit from being dispatched by auto-mode

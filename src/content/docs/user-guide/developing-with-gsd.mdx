@@ -189,7 +189,7 @@ For Cookmate's M001, the researcher might discover:
 - Prisma's relation queries have specific patterns for recipe-ingredient relationships
 - PostgreSQL full-text search with `tsvector` is sufficient — no need for Meilisearch
 
-Milestone-level research is skipped for S01 (the first slice uses it directly). Subsequent slices get their own focused slice research unless `skip_slice_research` is set in preferences.
+Milestone-level research is skipped for S01 (the first slice uses it directly). Subsequent slices get their own focused slice research unless `phases.skip_slice_research` is set in preferences.
 
 ### What research produces
 
@@ -427,6 +427,7 @@ Mid-execution of S01, the `.gsd/` directory looks like this:
 ├── QUEUE.md                     ← queued milestones log (if any)
 ├── runtime/                     ← system-managed: dispatch state, do not edit
 ├── activity/                    ← system-managed: JSONL execution logs, do not edit
+├── worktrees/                   ← system-managed: auto-mode worktree checkouts, do not edit
 └── milestones/
     └── M001/
         ├── M001-CONTEXT.md
@@ -458,7 +459,7 @@ After all tasks are done, GSD runs through a post-completion sequence. The order
 1. **Complete slice** — runs all slice-level verification, fixes failures, writes `S01-SUMMARY.md`, marks the slice done in the roadmap. This is the `summarizing` phase.
 2. **Run UAT** — if `uat_dispatch` is enabled and a UAT script (`S01-UAT.md`) exists, executes the acceptance test script and writes `S01-UAT-RESULT.md`.
 3. **UAT verdict gate** — if UAT ran and the verdict is not `PASS`, auto-mode stops. You must fix the failures and re-run `/gsd auto` to continue. If run-uat is dispatched 3 times without producing a verdict (e.g., broken verification commands), auto-mode stops with an error instead of looping indefinitely.
-4. **Reassess roadmap** — if `reassess_after_slice: true` is set in preferences, checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices. Also skipped when `skip_reassess: true` is set.
+4. **Reassess roadmap** — if `phases.reassess_after_slice: true` is set in preferences, checks whether the remaining slices still make sense given what was built; may reorder, merge, or drop slices. Also skipped when `phases.skip_reassess: true` is set.
 
 The completion agent (step 1) also:
 - Writes `S01-UAT.md` — concrete test cases derived from what was actually built
@@ -467,7 +468,7 @@ The completion agent (step 1) also:
 
 ### Roadmap reassessment
 
-When `reassess_after_slice: true` is set in preferences, GSD reassesses the remaining roadmap after each slice completes. Plans made before execution may not survive contact with reality:
+When `phases.reassess_after_slice: true` is set in preferences, GSD reassesses the remaining roadmap after each slice completes. Plans made before execution may not survive contact with reality:
 
 - Maybe S02 is simpler than expected because S01 established patterns that transfer
 - Maybe a new risk emerged that should reorder the remaining slices
@@ -488,7 +489,7 @@ The validation agent:
 If remediation is needed and remediation slices exist in the roadmap, GSD executes them before re-validating. A `needs-remediation` verdict without any remediation slices is treated as terminal to prevent infinite loops — the report is preserved on disk for manual review.
 
 :::note[Skipping validation]
-Set `skip_milestone_validation: true` in preferences to write a pass-through validation file and proceed directly to completion. Useful for projects where the milestone definition of done is verified by other means.
+Set `phases.skip_milestone_validation: true` in preferences to write a pass-through validation file and proceed directly to completion. Useful for projects where the milestone definition of done is verified by other means.
 :::
 
 ### Milestone completion
@@ -512,6 +513,7 @@ After S01 completes and S02 is in progress, the `.gsd/` tree looks like this:
 ├── DECISIONS.md
 ├── KNOWLEDGE.md
 ├── CODEBASE.md
+├── worktrees/
 └── milestones/
     └── M001/
         ├── M001-CONTEXT.md
@@ -546,7 +548,7 @@ GSD derives its state entirely from files on disk. There's no database, no hidde
 The state derivation algorithm:
 
 1. Find all milestone directories (M001, M002, ...)
-2. Skip **ghost milestones** — directories containing only `META.json` with no substantive files (`CONTEXT`, `ROADMAP`, or `SUMMARY`), unless a DB row or worktree exists for the milestone
+2. Skip **ghost milestones** — directories with no substantive files (`CONTEXT`, `CONTEXT-DRAFT`, `ROADMAP`, or `SUMMARY`). A ghost is NOT skipped if it has a non-queued DB row or a worktree directory. Queued DB rows without any content files are still treated as ghosts.
 3. Skip **parked milestones** — directories with a `PARKED` file; these do not satisfy `depends_on` for other milestones
 4. Check milestone-level `depends_on` frontmatter in each `CONTEXT.md` — skip milestones whose dependencies aren't complete
 5. The first incomplete, unblocked milestone becomes the **active milestone**
@@ -634,11 +636,12 @@ For work that doesn't fit into the milestone/slice ceremony, use `/gsd quick <de
 | **Quality gate evaluation** | After slice planning, configured gates run against the plan before execution starts |
 | **DB-primary state** | Milestone and slice data is stored in `gsd.db`; filesystem parsing is the fallback |
 | **Blocker replanning** | Tasks or triage that discover plan-invalidating issues trigger automatic slice replanning |
-| **Roadmap reassessment** | Opt-in (`reassess_after_slice: true`) — re-evaluates remaining slices after each slice completes |
+| **Roadmap reassessment** | Opt-in (`phases.reassess_after_slice: true`) — re-evaluates remaining slices after each slice completes |
 | **Parallel slice research** | When 2+ slices are ready for research simultaneously, GSD researches them in a single parallel unit |
 | **Observable artifacts** | Every phase produces readable markdown files — you can always see what happened |
 | **Intervention points** | Stop, pause, steer, edit plans, or fix things manually at any time |
 | **CODEBASE.md** | Generated codebase map cache in `.gsd/` root — auto-refreshed when tracked files change |
+| **Slice discussion gate** | Set `phases.require_slice_discussion: true` to pause auto-mode before each slice for a focused discussion |
 
 ---
 
