@@ -284,12 +284,12 @@ export async function regeneratePage(pagePath, sourceFiles, options = {}) {
     systemPrompt = buildPromptSystemPrompt(exemplarContent);
   } else {
     // Command/reference page — use existing exemplar and system prompt
-    const exemplarPath = path.join(ROOT, "src", "content", "docs", "commands", "capture.mdx");
+    const exemplarPath = path.join(ROOT, "src", "content", "docs", "commands", "auto.mdx");
     let exemplarContent = "";
     try {
       exemplarContent = fs.readFileSync(exemplarPath, "utf8");
     } catch {
-      console.warn("[regenerate] Exemplar page not found: commands/capture.mdx");
+      console.warn("[regenerate] Exemplar page not found: commands/auto.mdx");
     }
     systemPrompt = buildSystemPrompt(exemplarContent);
   }
